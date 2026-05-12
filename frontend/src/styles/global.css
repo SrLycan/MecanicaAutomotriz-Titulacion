@@ -1,0 +1,203 @@
+/* ============================================================
+   SSWAP — Design System (basado en Tattool)
+   Tokens globales, fuentes, utilidades
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600&family=DM+Sans:wght@300;400;500&display=swap');
+
+/* ── Variables de tema ── */
+:root {
+  --bg:         #f5f0ff;
+  --bg-card:    rgba(255,255,255,0.92);
+  --bg-deep:    rgba(250,246,255,0.98);
+  --text:       #160830;
+  --text-muted: rgba(55,10,120,0.55);
+  --border:     rgba(100,30,180,0.16);
+  --border-h:   rgba(124,58,237,0.42);
+  --accent:     #7c3aed;
+  --accent-2:   #a855f7;
+  --hover-row:  rgba(124,58,237,0.03);
+  --input-bg:   rgba(124,58,237,0.04);
+  --sidebar-bg: #0f0820;
+  --sidebar-border: rgba(168,85,247,0.12);
+}
+
+[data-theme="dark"] {
+  --bg:         #09060f;
+  --bg-card:    rgba(255,255,255,0.025);
+  --bg-deep:    rgba(10,8,16,0.98);
+  --text:       #e2dff0;
+  --text-muted: rgba(226,223,240,0.42);
+  --border:     rgba(147,51,234,0.13);
+  --border-h:   rgba(168,85,247,0.42);
+  --hover-row:  rgba(168,85,247,0.04);
+  --input-bg:   rgba(255,255,255,0.03);
+  --sidebar-bg: #050309;
+  --sidebar-border: rgba(168,85,247,0.10);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Outfit', 'DM Sans', system-ui, sans-serif;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Spinner ── */
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px) scale(.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);   }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Scrollbar global ── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(168,85,247,0.25); border-radius: 4px; }
+
+/* ── Componentes reutilizables ── */
+
+/* Botón primario degradado */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: .75rem;
+  letter-spacing: .12em;
+  color: #fff;
+  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  border: none;
+  border-radius: 10px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: all .22s;
+  position: relative;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #9333ea, #c084fc);
+  opacity: 0;
+  transition: opacity .22s;
+}
+.btn-primary span { position: relative; z-index: 1; display: flex; align-items: center; gap: 7px; }
+.btn-primary:hover::before { opacity: 1; }
+.btn-primary:hover { box-shadow: 0 4px 22px rgba(168,85,247,.4); transform: translateY(-1px); }
+.btn-primary:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+/* Botón ghost con borde */
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: .7rem;
+  letter-spacing: .1em;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 8px 16px;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: all .2s;
+  white-space: nowrap;
+}
+.btn-ghost:hover {
+  border-color: var(--border-h);
+  color: var(--accent-2);
+}
+
+/* Botón icono cuadrado */
+.btn-icon {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .18s;
+}
+
+/* Input base */
+.sswap-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 13px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  font-weight: 400;
+  font-size: .88rem;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+.sswap-input:focus {
+  border-color: rgba(168,85,247,.55);
+  box-shadow: 0 0 0 3px rgba(168,85,247,.09);
+}
+.sswap-input::placeholder { opacity: .38; }
+
+/* Label estilo Tattool */
+.sswap-label {
+  display: block;
+  margin-bottom: 6px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: .6rem;
+  letter-spacing: .22em;
+  background: linear-gradient(90deg, #7c3aed, #a855f7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Backdrop modal */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0,0,0,.72);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: fadeIn .2s ease;
+}
+.modal-box {
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 20px;
+  padding: 30px;
+  position: relative;
+  animation: fadeUp .28s cubic-bezier(.4,0,.2,1);
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  scrollbar-width: thin;
+}
+.modal-box::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(168,85,247,.65), transparent);
+  pointer-events: none;
+}
+.modal-box::-webkit-scrollbar { width: 4px; }
+.modal-box::-webkit-scrollbar-thumb { background: rgba(168,85,247,.25); border-radius: 4px; }
