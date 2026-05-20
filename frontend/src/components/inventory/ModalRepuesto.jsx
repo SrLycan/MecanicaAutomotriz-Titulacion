@@ -1,9 +1,24 @@
 import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { useTheme } from '../../context/ThemeContext';
 
-const EMPTY = { codigo: '', nombre: '', descripcion: '', categoria_id: '', precio_compra: '', precio_venta: '', stock_actual: '', stock_minimo: '5', unidad_medida: 'unidad' };
+const EMPTY = {
+    codigo: '',
+    nombre: '',
+    descripcion: '',
+    categoria_id: '',
+    precio_compra: '',
+    precio_venta: '',
+    stock_actual: '',
+    stock_minimo: '5',
+    unidad_medida: 'unidad',
+    imagen_url: '',
+};
 
 function IconX() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>; }
+function IconImage() { return <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>; }
+
+const getImagenSrc = (repuesto = {}) => repuesto.imagen_url || repuesto.imagen || repuesto.foto_url || repuesto.foto || '';
 
 export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerrar }) {
     const { isDark } = useTheme();
@@ -22,10 +37,34 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
             categoria_id: repuesto.categoria_id || '', precio_compra: repuesto.precio_compra || '',
             precio_venta: repuesto.precio_venta || '', stock_actual: repuesto.stock_actual || '',
             stock_minimo: repuesto.stock_minimo || '5', unidad_medida: repuesto.unidad_medida || 'unidad',
+            imagen_url: getImagenSrc(repuesto),
         });
+        else setForm(EMPTY);
     }, [repuesto]);
 
     const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+    const handleImagenFile = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            toast.error('Selecciona un archivo de imagen valido.');
+            e.target.value = '';
+            return;
+        }
+
+        if (file.size > 2 * 1024 * 1024) {
+            toast.error('La imagen no debe superar 2 MB.');
+            e.target.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = () => setForm(prev => ({ ...prev, imagen_url: reader.result || '' }));
+        reader.onerror = () => toast.error('No se pudo leer la imagen.');
+        reader.readAsDataURL(file);
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -34,9 +73,12 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
         setSaving(false);
     };
 
+    const preview = form.imagen_url;
+    const urlValue = preview?.startsWith('data:') ? '' : preview;
+
     return (
         <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onCerrar()}>
-            <div className="modal-box" style={{ maxWidth: 560 }}>
+            <div className="modal-box" style={{ maxWidth: 620 }}>
 
                 {/* Header */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
@@ -89,6 +131,38 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
                             <textarea className="sswap-input" name="descripcion" value={form.descripcion} onChange={handleChange}
                                 rows={2} placeholder="Descripcion breve del repuesto..."
                                 style={{ ...inputSt, resize: 'vertical', minHeight: 64 }} />
+                        </div>
+
+                        {/* Imagen */}
+                        <div style={{ gridColumn: '1/-1' }}>
+                            <label className="sswap-label">FOTO DEL REPUESTO</label>
+                            <div style={{ display: 'grid', gridTemplateColumns: '108px 1fr', gap: 12, alignItems: 'stretch' }}>
+                                <div style={{ minHeight: 108, borderRadius: 14, border: `1px dashed ${bdr}`, background: isDark ? 'rgba(255,255,255,.025)' : 'rgba(124,58,237,.035)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', color: mut }}>
+                                    {preview ? (
+                                        <img src={preview} alt="Vista previa del repuesto" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    ) : (
+                                        <div style={{ textAlign: 'center' }}>
+                                            <IconImage />
+                                            <p style={{ fontFamily: "'Outfit'", fontSize: '.68rem', marginTop: 6 }}>Sin foto</p>
+                                        </div>
+                                    )}
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                    <input className="sswap-input" type="file" accept="image/*" onChange={handleImagenFile} style={{ ...inputSt, padding: '9px 12px' }} />
+                                    <input className="sswap-input" name="imagen_url" value={urlValue} onChange={handleChange}
+                                        placeholder="O pega una URL de imagen..." style={inputSt} />
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
+                                        <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.68rem', color: mut }}>
+                                            Se guarda como imagen_url. Maximo recomendado: 2 MB.
+                                        </p>
+                                        {preview && (
+                                            <button type="button" className="btn-ghost" onClick={() => setForm(prev => ({ ...prev, imagen_url: '' }))}>
+                                                Quitar
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         {/* Categoria */}

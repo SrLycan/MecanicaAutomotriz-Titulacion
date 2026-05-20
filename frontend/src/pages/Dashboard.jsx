@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
@@ -9,37 +9,91 @@ const ROL_META = {
     recepcionista: { label: 'Recepcion',       sub: 'Consulta de inventario'     },
 };
 
+const dateKey = (date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+};
+
+const ultimos7Dias = () => {
+    const hoy = new Date();
+    return Array.from({ length: 7 }, (_, index) => {
+        const fecha = new Date(hoy);
+        fecha.setHours(0, 0, 0, 0);
+        fecha.setDate(hoy.getDate() - (6 - index));
+        return {
+            key: dateKey(fecha),
+            label: fecha.toLocaleDateString('es-EC', { weekday: 'short' }).replace('.', ''),
+            fecha: fecha.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit' }),
+            entradas: 0,
+            salidas: 0,
+        };
+    });
+};
+
 export default function Dashboard() {
     const { usuario } = useAuth();
     const { isDark }  = useTheme();
     const [stats,   setStats]   = useState({ total: 0, bajo_stock: 0, entradas: 0, salidas: 0 });
     const [alertas, setAlertas] = useState([]);
+    const [mov7d, setMov7d] = useState(() => ultimos7Dias());
     const [loading, setLoading] = useState(true);
 
     const txt = isDark ? '#e2dff0' : '#160830';
     const mut = isDark ? 'rgba(226,223,240,0.42)' : 'rgba(55,10,120,0.55)';
     const bdr = isDark ? 'rgba(147,51,234,0.13)'  : 'rgba(100,30,180,0.16)';
     const card = isDark ? 'rgba(255,255,255,0.025)' : 'rgba(255,255,255,0.92)';
+    const puedeVerMovimientos = ['administrador', 'tecnico'].includes(usuario?.rol);
 
     useEffect(() => {
         const cargar = async () => {
+            setLoading(true);
             try {
-                const [repRes, bajRes, movRes] = await Promise.all([
+                const [repRes, bajRes] = await Promise.all([
                     api.get('/inventory/repuestos'),
                     api.get('/inventory/repuestos?bajo_stock=true'),
-                    api.get('/inventory/movimientos?limit=200'),
                 ]);
+
+                let movimientos = [];
+                if (puedeVerMovimientos) {
+                    try {
+                        const movRes = await api.get('/inventory/movimientos?limit=500');
+                        movimientos = movRes.data.movimientos || [];
+                    } catch {
+                        movimientos = [];
+                    }
+                }
+
                 const hoy = new Date().toDateString();
-                const movHoy = movRes.data.movimientos.filter(m => new Date(m.created_at).toDateString() === hoy);
-                setStats({ total: repRes.data.total, bajo_stock: bajRes.data.total, entradas: movHoy.filter(m => m.tipo === 'entrada').length, salidas: movHoy.filter(m => m.tipo === 'salida').length });
-                setAlertas(bajRes.data.repuestos.slice(0, 8));
+                const movHoy = movimientos.filter(m => new Date(m.created_at).toDateString() === hoy);
+                const dias = ultimos7Dias();
+                const porDia = Object.fromEntries(dias.map(d => [d.key, d]));
+
+                movimientos.forEach(m => {
+                    const key = dateKey(new Date(m.created_at));
+                    if (!porDia[key]) return;
+                    const cantidad = Number(m.cantidad) || 1;
+                    if (m.tipo === 'entrada') porDia[key].entradas += cantidad;
+                    if (m.tipo === 'salida') porDia[key].salidas += cantidad;
+                });
+
+                setStats({
+                    total: repRes.data.total,
+                    bajo_stock: bajRes.data.total,
+                    entradas: movHoy.filter(m => m.tipo === 'entrada').length,
+                    salidas: movHoy.filter(m => m.tipo === 'salida').length,
+                });
+                setAlertas((bajRes.data.repuestos || []).slice(0, 8));
+                setMov7d(dias);
             } catch {}
             finally { setLoading(false); }
         };
         cargar();
-    }, []);
+    }, [puedeVerMovimientos]);
 
     const meta = ROL_META[usuario?.rol] || ROL_META.recepcionista;
+    const maxMov7d = useMemo(() => Math.max(1, ...mov7d.flatMap(d => [d.entradas, d.salidas])), [mov7d]);
 
     const CARDS = [
         { key: 'total',      label: 'Total Repuestos', val: stats.total,      color: '#a855f7', roles: ['administrador','tecnico','recepcionista'] },
@@ -80,6 +134,42 @@ export default function Dashboard() {
                             <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.78rem', color: mut, marginTop: 6 }}>{c.label}</p>
                         </div>
                     ))}
+                </div>
+            )}
+
+            {/* ── Grafica movimientos 7 dias ── */}
+            {puedeVerMovimientos && !loading && (
+                <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 16, padding: '18px 20px', marginBottom: 28 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, marginBottom: 18, flexWrap: 'wrap' }}>
+                        <div>
+                            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.22em', color: isDark ? 'rgba(168,85,247,.5)' : 'rgba(124,58,237,.55)', marginBottom: 2 }}>MOVIMIENTOS</p>
+                            <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.35rem', letterSpacing: '.06em', color: txt, lineHeight: 1 }}>Ultimos 7 Dias</h2>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontFamily: "'Outfit'", fontSize: '.75rem', color: mut }}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><i style={{ width: 10, height: 10, borderRadius: 3, background: '#22c55e', display: 'inline-block' }} /> Entradas</span>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><i style={{ width: 10, height: 10, borderRadius: 3, background: '#ef4444', display: 'inline-block' }} /> Salidas</span>
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(46px, 1fr))', gap: 12, alignItems: 'end', minHeight: 170 }}>
+                        {mov7d.map(d => {
+                            const hEntrada = d.entradas ? Math.max(8, (d.entradas / maxMov7d) * 118) : 3;
+                            const hSalida = d.salidas ? Math.max(8, (d.salidas / maxMov7d) * 118) : 3;
+                            return (
+                                <div key={d.key} style={{ textAlign: 'center' }}>
+                                    <div style={{ height: 128, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 5, padding: '0 4px', borderBottom: `1px solid ${bdr}` }}>
+                                        <div title={`${d.entradas} entradas`} style={{ width: 13, height: hEntrada, borderRadius: '7px 7px 2px 2px', background: d.entradas ? 'linear-gradient(180deg, #22c55e, rgba(34,197,94,.45))' : (isDark ? 'rgba(255,255,255,.08)' : 'rgba(124,58,237,.08)') }} />
+                                        <div title={`${d.salidas} salidas`} style={{ width: 13, height: hSalida, borderRadius: '7px 7px 2px 2px', background: d.salidas ? 'linear-gradient(180deg, #ef4444, rgba(239,68,68,.45))' : (isDark ? 'rgba(255,255,255,.08)' : 'rgba(124,58,237,.08)') }} />
+                                    </div>
+                                    <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.78rem', letterSpacing: '.08em', color: txt, marginTop: 8, textTransform: 'uppercase' }}>{d.label}</p>
+                                    <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.68rem', color: mut, marginTop: 1 }}>{d.fecha}</p>
+                                </div>
+                            );
+                        })}
+                    </div>
+                    <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.72rem', color: mut, marginTop: 12 }}>
+                        Las barras suman cantidades movidas por dia; las tarjetas superiores siguen contando movimientos registrados hoy.
+                    </p>
                 </div>
             )}
 

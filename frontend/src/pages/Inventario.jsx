@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
@@ -13,6 +13,12 @@ function IconEdit()   { return <svg width="12" height="12" viewBox="0 0 24 24" f
 function IconTrash()  { return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>; }
 function IconArrows() { return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>; }
 function IconPkg()    { return <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>; }
+function IconImage()  { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>; }
+
+const getImagenSrc = (repuesto = {}) => repuesto.imagen_url || repuesto.imagen || repuesto.foto_url || repuesto.foto || '';
+const normalizarTexto = (value) => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+const numero = (value) => Number.isFinite(Number(value)) ? Number(value) : 0;
+const precio = (value) => numero(value).toFixed(2);
 
 export default function Inventario() {
     const { tieneRol }  = useAuth();
@@ -25,6 +31,10 @@ export default function Inventario() {
     const [soloAlerta,  setSoloAlerta]  = useState(false);
     const [modalRep,    setModalRep]    = useState({ open: false, data: null });
     const [modalMov,    setModalMov]    = useState({ open: false, repuesto: null });
+    const [sortConfig,  setSortConfig]  = useState({ key: 'nombre', direction: 'asc' });
+    const [seleccionados, setSeleccionados] = useState([]);
+    const [bulkCategoria, setBulkCategoria] = useState('');
+    const [bulkBusy, setBulkBusy] = useState(false);
     const debounceRef = useRef(null);
 
     const esAdmin  = tieneRol('administrador');
@@ -44,15 +54,41 @@ export default function Inventario() {
             if (catId)  params.set('categoria_id', catId);
             if (alerta) params.set('bajo_stock', 'true');
             const { data } = await api.get(`/inventory/repuestos?${params}`);
-            setRepuestos(data.repuestos);
+            setRepuestos(data.repuestos || []);
+            setSeleccionados([]);
         } catch { toast.error('Error al cargar repuestos.'); }
         finally { setLoading(false); }
     }, []);
 
     useEffect(() => {
         cargarRepuestos();
-        api.get('/inventory/categorias').then(r => setCategorias(r.data.categorias)).catch(() => {});
+        api.get('/inventory/categorias').then(r => setCategorias(r.data.categorias || [])).catch(() => {});
     }, [cargarRepuestos]);
+
+    const repuestosOrdenados = useMemo(() => {
+        const lista = [...repuestos];
+        if (!sortConfig.key) return lista;
+
+        const getters = {
+            nombre: (r) => normalizarTexto(r.nombre),
+            stock:  (r) => numero(r.stock_actual),
+            precio: (r) => numero(r.precio_venta),
+        };
+
+        lista.sort((a, b) => {
+            const aVal = getters[sortConfig.key]?.(a);
+            const bVal = getters[sortConfig.key]?.(b);
+            if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+            return normalizarTexto(a.nombre).localeCompare(normalizarTexto(b.nombre));
+        });
+
+        return lista;
+    }, [repuestos, sortConfig]);
+
+    const idsVisibles = useMemo(() => repuestosOrdenados.map(r => r.id), [repuestosOrdenados]);
+    const seleccionadosData = useMemo(() => repuestos.filter(r => seleccionados.includes(r.id)), [repuestos, seleccionados]);
+    const todosSeleccionados = idsVisibles.length > 0 && idsVisibles.every(id => seleccionados.includes(id));
 
     const handleBusqueda = (e) => {
         const val = e.target.value;
@@ -64,14 +100,109 @@ export default function Inventario() {
     const handleFiltroCateg = (e) => { setFiltroCateg(e.target.value); cargarRepuestos(busqueda, e.target.value, soloAlerta); };
     const handleSoloAlerta  = (e) => { setSoloAlerta(e.target.checked); cargarRepuestos(busqueda, filtroCateg, e.target.checked); };
 
-    const exportCSV = () => {
-        const rows = [['Codigo','Nombre','Categoria','Stock Actual','Stock Minimo','Precio Compra','Precio Venta']];
-        repuestos.forEach(r => rows.push([r.codigo, r.nombre, r.categoria_nombre || '', r.stock_actual, r.stock_minimo, r.precio_compra, r.precio_venta]));
-        const csv = rows.map(r => r.join(',')).join('\n');
+    const handleSort = (key) => {
+        setSortConfig(prev => ({
+            key,
+            direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc',
+        }));
+    };
+
+    const toggleSeleccion = (id) => {
+        setSeleccionados(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]);
+    };
+
+    const toggleSeleccionVisible = () => {
+        setSeleccionados(prev => {
+            if (todosSeleccionados) return prev.filter(id => !idsVisibles.includes(id));
+            return Array.from(new Set([...prev, ...idsVisibles]));
+        });
+    };
+
+    const buildPayloadRepuesto = (repuesto, overrides = {}) => ({
+        codigo: repuesto.codigo || '',
+        nombre: repuesto.nombre || '',
+        descripcion: repuesto.descripcion || '',
+        categoria_id: repuesto.categoria_id || '',
+        precio_compra: repuesto.precio_compra ?? 0,
+        precio_venta: repuesto.precio_venta ?? 0,
+        stock_actual: repuesto.stock_actual ?? 0,
+        stock_minimo: repuesto.stock_minimo ?? 0,
+        unidad_medida: repuesto.unidad_medida || 'unidad',
+        activo: repuesto.activo !== false,
+        imagen_url: getImagenSrc(repuesto),
+        ...overrides,
+    });
+
+    const rowsCSV = (items) => {
+        const rows = [['Codigo','Nombre','Categoria','Stock Actual','Stock Minimo','Precio Compra','Precio Venta','Estado']];
+        items.forEach(r => rows.push([
+            r.codigo,
+            r.nombre,
+            r.categoria_nombre || '',
+            r.stock_actual,
+            r.stock_minimo,
+            r.precio_compra,
+            r.precio_venta,
+            r.activo !== false ? 'Activo' : 'Inactivo',
+        ]));
+        return rows.map(row => row.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    };
+
+    const descargarCSV = (items, nombreArchivo) => {
         const a = document.createElement('a');
-        a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-        a.download = `inventario_${new Date().toISOString().slice(0,10)}.csv`;
+        a.href = URL.createObjectURL(new Blob([rowsCSV(items)], { type: 'text/csv;charset=utf-8;' }));
+        a.download = nombreArchivo;
         a.click();
+        URL.revokeObjectURL(a.href);
+    };
+
+    const exportCSV = () => {
+        descargarCSV(repuestosOrdenados, `inventario_${new Date().toISOString().slice(0,10)}.csv`);
+    };
+
+    const exportSeleccion = () => {
+        if (seleccionadosData.length === 0) return;
+        descargarCSV(seleccionadosData, `inventario_seleccion_${new Date().toISOString().slice(0,10)}.csv`);
+    };
+
+    const ejecutarBulkUpdate = async (overridesFactory, mensaje) => {
+        if (seleccionadosData.length === 0) return;
+        setBulkBusy(true);
+        try {
+            await Promise.all(seleccionadosData.map(r => api.put(`/inventory/repuestos/${r.id}`, buildPayloadRepuesto(r, overridesFactory(r)))));
+            toast.success(mensaje);
+            setSeleccionados([]);
+            setBulkCategoria('');
+            cargarRepuestos(busqueda, filtroCateg, soloAlerta);
+        } catch (err) {
+            toast.error(err.response?.data?.error || 'No se pudo aplicar la accion en lote.');
+        } finally {
+            setBulkBusy(false);
+        }
+    };
+
+    const handleBulkActivo = (activo) => ejecutarBulkUpdate(() => ({ activo }), activo ? 'Repuestos activados.' : 'Repuestos desactivados.');
+
+    const handleBulkCategoria = () => {
+        if (!bulkCategoria) { toast.error('Selecciona una categoria para aplicar.'); return; }
+        const categoria_id = bulkCategoria === '__none__' ? '' : bulkCategoria;
+        ejecutarBulkUpdate(() => ({ categoria_id }), 'Categoria actualizada para la seleccion.');
+    };
+
+    const handleBulkEliminar = async () => {
+        if (seleccionadosData.length === 0) return;
+        if (!window.confirm(`Eliminar ${seleccionadosData.length} repuesto${seleccionadosData.length !== 1 ? 's' : ''} seleccionado${seleccionadosData.length !== 1 ? 's' : ''}?`)) return;
+        setBulkBusy(true);
+        try {
+            await Promise.all(seleccionadosData.map(r => api.delete(`/inventory/repuestos/${r.id}`)));
+            toast.success('Seleccion eliminada.');
+            setSeleccionados([]);
+            cargarRepuestos(busqueda, filtroCateg, soloAlerta);
+        } catch (err) {
+            toast.error(err.response?.data?.error || 'No se pudo eliminar la seleccion.');
+        } finally {
+            setBulkBusy(false);
+        }
     };
 
     const handleGuardar = async (formData) => {
@@ -91,6 +222,20 @@ export default function Inventario() {
 
     const inputStyle = { padding: '8px 12px 8px 32px', background: inputBg, border: `1px solid ${bdr}`, borderRadius: 9, color: txt, fontFamily: "'Outfit'", fontSize: '.85rem', outline: 'none', width: 210 };
     const selStyle   = { padding: '8px 12px', background: inputBg, border: `1px solid ${bdr}`, borderRadius: 9, color: txt, fontFamily: "'Outfit'", fontSize: '.85rem', outline: 'none' };
+    const thStyle    = { padding: '12px 16px', textAlign: 'left', fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.2em', color: isDark ? 'rgba(168,85,247,.55)' : 'rgba(124,58,237,.6)', whiteSpace: 'nowrap' };
+    const checkboxStyle = { accentColor: '#a855f7', width: 14, height: 14, cursor: 'pointer' };
+
+    const sortableHeader = (label, key) => (
+        <th key={key} style={thStyle} aria-sort={sortConfig.key === key ? (sortConfig.direction === 'asc' ? 'ascending' : 'descending') : 'none'}>
+            <button type="button" onClick={() => handleSort(key)}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: 'none', background: 'transparent', padding: 0, color: 'inherit', font: 'inherit', letterSpacing: 'inherit', cursor: 'pointer' }}>
+                {label}
+                <span style={{ fontFamily: "'Outfit'", fontSize: '.62rem', color: sortConfig.key === key ? '#a855f7' : mut }}>
+                    {sortConfig.key === key ? (sortConfig.direction === 'asc' ? '▲' : '▼') : '↕'}
+                </span>
+            </button>
+        </th>
+    );
 
     return (
         <div>
@@ -99,7 +244,7 @@ export default function Inventario() {
                 <div>
                     <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.28em', color: isDark ? 'rgba(168,85,247,.5)' : 'rgba(124,58,237,.55)', marginBottom: 4 }}>SSWAP · Almacen</p>
                     <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.4rem', letterSpacing: '.06em', color: txt, lineHeight: 1 }}>Inventario</h1>
-                    <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.82rem', color: mut, marginTop: 4 }}>{repuestos.length} repuesto{repuestos.length !== 1 ? 's' : ''} en catalogo</p>
+                    <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.82rem', color: mut, marginTop: 4 }}>{repuestosOrdenados.length} repuesto{repuestosOrdenados.length !== 1 ? 's' : ''} en catalogo</p>
                 </div>
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
                     {/* Busqueda */}
@@ -116,7 +261,7 @@ export default function Inventario() {
                     </select>
                     {/* Bajo stock toggle */}
                     <label style={{ display: 'flex', alignItems: 'center', gap: 7, cursor: 'pointer', fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.82rem', color: mut }}>
-                        <input type="checkbox" checked={soloAlerta} onChange={handleSoloAlerta} style={{ accentColor: '#a855f7', width: 14, height: 14 }} />
+                        <input type="checkbox" checked={soloAlerta} onChange={handleSoloAlerta} style={checkboxStyle} />
                         Solo bajo stock
                     </label>
                     {/* Export */}
@@ -131,6 +276,31 @@ export default function Inventario() {
             </div>
             <div style={{ height: 1, marginBottom: 24, background: `linear-gradient(90deg, ${isDark ? 'rgba(168,85,247,.25)' : 'rgba(124,58,237,.2)'}, transparent)` }} />
 
+            {/* ── Acciones en lote ── */}
+            {seleccionados.length > 0 && (
+                <div style={{ marginBottom: 14, padding: '12px 14px', borderRadius: 13, border: `1px solid ${isDark ? 'rgba(168,85,247,.22)' : 'rgba(124,58,237,.18)'}`, background: isDark ? 'rgba(168,85,247,.055)' : 'rgba(124,58,237,.05)', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <span style={{ fontFamily: "'Bebas Neue'", letterSpacing: '.12em', fontSize: '.78rem', color: '#a855f7' }}>
+                        {seleccionados.length} seleccionado{seleccionados.length !== 1 ? 's' : ''}
+                    </span>
+                    <button className="btn-ghost" disabled={bulkBusy} onClick={exportSeleccion}><IconDownload /> Exportar seleccion</button>
+
+                    {esAdmin && (
+                        <>
+                            <button className="btn-ghost" disabled={bulkBusy} onClick={() => handleBulkActivo(true)}>Activar</button>
+                            <button className="btn-ghost" disabled={bulkBusy} onClick={() => handleBulkActivo(false)}>Desactivar</button>
+                            <select value={bulkCategoria} onChange={e => setBulkCategoria(e.target.value)} style={selStyle} disabled={bulkBusy}>
+                                <option value="">Cambiar categoria...</option>
+                                <option value="__none__">Sin categoria</option>
+                                {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                            </select>
+                            <button className="btn-ghost" disabled={bulkBusy} onClick={handleBulkCategoria}>Aplicar categoria</button>
+                            <button className="btn-ghost" disabled={bulkBusy} onClick={handleBulkEliminar} style={{ color: '#ef4444', borderColor: 'rgba(239,68,68,.25)' }}><IconTrash /> Eliminar</button>
+                        </>
+                    )}
+                    <button className="btn-ghost" disabled={bulkBusy} onClick={() => setSeleccionados([])}>Limpiar seleccion</button>
+                </div>
+            )}
+
             {/* ── Tabla ── */}
             <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, overflow: 'hidden' }}>
                 {loading ? (
@@ -138,7 +308,7 @@ export default function Inventario() {
                         <div style={{ width: 36, height: 36, borderRadius: '50%', border: `2px solid ${bdr}`, borderTopColor: '#a855f7', animation: 'spin 1s linear infinite' }} />
                         <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.85rem', color: mut }}>Cargando inventario...</p>
                     </div>
-                ) : repuestos.length === 0 ? (
+                ) : repuestosOrdenados.length === 0 ? (
                     <div style={{ padding: 80, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
                         <div style={{ width: 60, height: 60, borderRadius: 16, background: 'rgba(168,85,247,.08)', border: `1px solid ${bdr}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a855f7' }}><IconPkg /></div>
                         <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.4rem', letterSpacing: '.06em', color: isDark ? 'rgba(168,85,247,.2)' : 'rgba(124,58,237,.2)' }}>Sin repuestos</p>
@@ -146,21 +316,44 @@ export default function Inventario() {
                     </div>
                 ) : (
                     <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 800 }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 980 }}>
                             <thead>
                                 <tr style={{ borderBottom: `1px solid ${bdr}`, background: isDark ? 'rgba(168,85,247,.03)' : 'rgba(124,58,237,.025)' }}>
-                                    {['Codigo','Nombre','Categoria','Stock','P. Venta','Estado','Acciones'].map(h => (
-                                        <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.2em', color: isDark ? 'rgba(168,85,247,.55)' : 'rgba(124,58,237,.6)', whiteSpace: 'nowrap' }}>{h}</th>
-                                    ))}
+                                    <th style={{ ...thStyle, width: 38 }}>
+                                        <input type="checkbox" checked={todosSeleccionados} onChange={toggleSeleccionVisible} style={checkboxStyle} aria-label="Seleccionar repuestos visibles" />
+                                    </th>
+                                    <th style={{ ...thStyle, width: 68 }}>Imagen</th>
+                                    <th style={thStyle}>Codigo</th>
+                                    {sortableHeader('Nombre', 'nombre')}
+                                    <th style={thStyle}>Categoria</th>
+                                    {sortableHeader('Stock', 'stock')}
+                                    {sortableHeader('P. Venta', 'precio')}
+                                    <th style={thStyle}>Estado</th>
+                                    <th style={thStyle}>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {repuestos.map(r => {
-                                    const bajo = r.stock_actual <= r.stock_minimo;
+                                {repuestosOrdenados.map(r => {
+                                    const bajo = numero(r.stock_actual) <= numero(r.stock_minimo);
+                                    const imagen = getImagenSrc(r);
+                                    const activo = r.activo !== false;
+                                    const seleccionado = seleccionados.includes(r.id);
                                     return (
-                                        <tr key={r.id} style={{ borderBottom: `1px solid ${bdr}`, transition: 'background .12s' }}
+                                        <tr key={r.id} style={{ borderBottom: `1px solid ${bdr}`, transition: 'background .12s', background: seleccionado ? (isDark ? 'rgba(168,85,247,.08)' : 'rgba(124,58,237,.06)') : 'transparent' }}
                                             onMouseEnter={e => e.currentTarget.style.background = isDark ? 'rgba(168,85,247,0.04)' : 'rgba(124,58,237,0.03)'}
-                                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                            onMouseLeave={e => e.currentTarget.style.background = seleccionado ? (isDark ? 'rgba(168,85,247,.08)' : 'rgba(124,58,237,.06)') : 'transparent'}>
+                                            <td style={{ padding: '10px 16px' }}>
+                                                <input type="checkbox" checked={seleccionado} onChange={() => toggleSeleccion(r.id)} style={checkboxStyle} aria-label={`Seleccionar ${r.nombre}`} />
+                                            </td>
+                                            <td style={{ padding: '10px 16px' }}>
+                                                {imagen ? (
+                                                    <img src={imagen} alt={r.nombre} style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 10, border: `1px solid ${bdr}`, display: 'block' }} />
+                                                ) : (
+                                                    <div style={{ width: 44, height: 44, borderRadius: 10, border: `1px solid ${bdr}`, background: isDark ? 'rgba(255,255,255,.03)' : 'rgba(124,58,237,.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: mut }}>
+                                                        <IconImage />
+                                                    </div>
+                                                )}
+                                            </td>
                                             <td style={{ padding: '10px 16px' }}>
                                                 <code style={{ fontFamily: 'monospace', fontSize: '.78rem', background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(100,30,180,0.07)', padding: '2px 7px', borderRadius: 5, color: isDark ? 'rgba(168,85,247,.8)' : 'rgba(124,58,237,.8)' }}>{r.codigo}</code>
                                             </td>
@@ -170,15 +363,15 @@ export default function Inventario() {
                                             </td>
                                             <td style={{ padding: '10px 16px', fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.82rem', color: mut, whiteSpace: 'nowrap' }}>{r.categoria_nombre || '—'}</td>
                                             <td style={{ padding: '10px 16px' }}>
-                                                <span style={{ fontFamily: "'Bebas Neue'", fontSize: '1.1rem', letterSpacing: '.04em', color: bajo ? '#ef4444' : r.stock_actual < 20 ? '#f59e0b' : '#22c55e' }}>{r.stock_actual}</span>
+                                                <span style={{ fontFamily: "'Bebas Neue'", fontSize: '1.1rem', letterSpacing: '.04em', color: bajo ? '#ef4444' : numero(r.stock_actual) < 20 ? '#f59e0b' : '#22c55e' }}>{r.stock_actual}</span>
                                                 {bajo && <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.62rem', color: '#ef4444', marginTop: 1 }}>min. {r.stock_minimo}</p>}
                                             </td>
                                             <td style={{ padding: '10px 16px' }}>
-                                                <span style={{ fontFamily: "'Bebas Neue'", fontSize: '1.05rem', letterSpacing: '.04em', color: '#a855f7' }}>${parseFloat(r.precio_venta).toFixed(2)}</span>
+                                                <span style={{ fontFamily: "'Bebas Neue'", fontSize: '1.05rem', letterSpacing: '.04em', color: '#a855f7' }}>${precio(r.precio_venta)}</span>
                                             </td>
                                             <td style={{ padding: '10px 16px' }}>
-                                                <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.1em', padding: '3px 9px', borderRadius: 20, background: r.activo ? 'rgba(34,197,94,.1)' : 'rgba(239,68,68,.1)', color: r.activo ? '#22c55e' : '#ef4444', border: `1px solid ${r.activo ? 'rgba(34,197,94,.2)' : 'rgba(239,68,68,.2)'}` }}>
-                                                    {r.activo ? 'ACTIVO' : 'INACTIVO'}
+                                                <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.1em', padding: '3px 9px', borderRadius: 20, background: activo ? 'rgba(34,197,94,.1)' : 'rgba(239,68,68,.1)', color: activo ? '#22c55e' : '#ef4444', border: `1px solid ${activo ? 'rgba(34,197,94,.2)' : 'rgba(239,68,68,.2)'}` }}>
+                                                    {activo ? 'ACTIVO' : 'INACTIVO'}
                                                 </span>
                                             </td>
                                             <td style={{ padding: '10px 16px' }}>
