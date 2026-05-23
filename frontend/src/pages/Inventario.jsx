@@ -15,7 +15,21 @@ function IconArrows() { return <svg width="12" height="12" viewBox="0 0 24 24" f
 function IconPkg()    { return <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>; }
 function IconImage()  { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>; }
 
-const getImagenSrc = (repuesto = {}) => repuesto.imagen_url || repuesto.imagen || repuesto.foto_url || repuesto.foto || '';
+const getApiHost = () => {
+    const base = process.env.REACT_APP_API_URL || '/api';
+    if (/^https?:\/\//i.test(base)) return base.replace(/\/api\/?$/i, '').replace(/\/$/, '');
+    return window.location.origin;
+};
+
+const resolveImagenSrc = (value = '') => {
+    const src = String(value || '').trim();
+    if (!src) return '';
+    if (/^(data:image\/|blob:|https?:\/\/)/i.test(src)) return src;
+    if (src.startsWith('/')) return `${getApiHost()}${src}`;
+    return `${getApiHost()}/${src.replace(/^\/+/, '')}`;
+};
+
+const getImagenSrc = (repuesto = {}) => resolveImagenSrc(repuesto.imagen_url || repuesto.imagen || repuesto.foto_url || repuesto.foto || '');
 const normalizarTexto = (value) => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 const numero = (value) => Number.isFinite(Number(value)) ? Number(value) : 0;
 const precio = (value) => numero(value).toFixed(2);

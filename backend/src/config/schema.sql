@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS repuestos (
     stock_minimo    INTEGER NOT NULL DEFAULT 5,
     unidad_medida   VARCHAR(30) NOT NULL DEFAULT 'unidad',
     activo          BOOLEAN NOT NULL DEFAULT TRUE,
+    imagen_url      TEXT,
     created_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
