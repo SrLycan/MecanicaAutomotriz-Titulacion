@@ -15,6 +15,8 @@ import Layout         from './components/layout/Layout';
 import Dashboard      from './pages/Dashboard';
 import Inventario     from './pages/Inventario';
 import Movimientos    from './pages/Movimientos';
+import Usuarios       from './pages/Usuarios';
+import Sucursales     from './pages/Sucursales';
 
 import './styles/global.css';
 
@@ -58,6 +60,16 @@ export default function App() {
                             <Route path="movimientos"   element={
                                 <ProtectedRoute roles={['administrador', 'tecnico']}>
                                     <Movimientos />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="usuarios"      element={
+                                <ProtectedRoute roles={['administrador']}>
+                                    <Usuarios />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="sucursales"    element={
+                                <ProtectedRoute roles={['administrador']}>
+                                    <Sucursales />
                                 </ProtectedRoute>
                             } />
                         </Route>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
@@ -13,6 +13,10 @@ function IconEdit()   { return <svg width="12" height="12" viewBox="0 0 24 24" f
 function IconTrash()  { return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>; }
 function IconArrows() { return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>; }
 function IconPkg()    { return <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>; }
+function IconBox()    { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>; }
+function IconAlert()  { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>; }
+function IconCash()   { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>; }
+function IconTag()    { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>; }
 
 export default function Inventario() {
     const { tieneRol }  = useAuth();
@@ -30,11 +34,25 @@ export default function Inventario() {
     const esAdmin  = tieneRol('administrador');
     const puedeMov = tieneRol('administrador', 'tecnico');
 
-    const txt  = isDark ? '#e2dff0' : '#160830';
-    const mut  = isDark ? 'rgba(226,223,240,0.42)' : 'rgba(55,10,120,0.55)';
-    const bdr  = isDark ? 'rgba(147,51,234,0.13)'  : 'rgba(100,30,180,0.16)';
-    const card = isDark ? 'rgba(255,255,255,0.025)' : 'rgba(255,255,255,0.92)';
-    const inputBg = isDark ? '#0a0a14' : '#f5f0ff';
+    // ── Paleta celeste / blanco / negro ──
+    const SKY      = '#0ea5e9';   // sky-500 (acento principal)
+    const SKY_DEEP = '#0284c7';   // sky-600
+    const SKY_SOFT = '#7dd3fc';   // sky-300
+    const SKY_PALE = isDark ? 'rgba(14,165,233,0.10)' : 'rgba(14,165,233,0.05)';
+    const SKY_BDR  = isDark ? 'rgba(56,189,248,0.22)' : 'rgba(14,165,233,0.18)';
+
+    const txt     = isDark ? '#f1f5f9'                    : '#0f172a';
+    const txtSoft = isDark ? '#cbd5e1'                    : '#334155';
+    const mut     = isDark ? 'rgba(241,245,249,0.55)'     : '#64748b';
+    const faint   = isDark ? 'rgba(241,245,249,0.38)'     : '#94a3b8';
+    const bdr     = isDark ? 'rgba(148,163,184,0.18)'     : 'rgba(15,23,42,0.07)';
+    const card    = isDark ? 'rgba(255,255,255,0.025)'    : '#ffffff';
+    const cardSh  = isDark
+        ? '0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 40px -16px rgba(0,0,0,0.55)'
+        : '0 4px 16px -4px rgba(15,23,42,0.08), 0 2px 4px -2px rgba(15,23,42,0.04)';
+    const inputBg = isDark ? '#0b1220'                    : '#fafcff';
+    const rowHov  = isDark ? 'rgba(14,165,233,0.06)'      : 'rgba(14,165,233,0.04)';
+    const headBg  = isDark ? 'rgba(14,165,233,0.06)'      : 'rgba(14,165,233,0.025)';
 
     const cargarRepuestos = useCallback(async (q = '', catId = '', alerta = false) => {
         setLoading(true);
@@ -63,6 +81,9 @@ export default function Inventario() {
 
     const handleFiltroCateg = (e) => { setFiltroCateg(e.target.value); cargarRepuestos(busqueda, e.target.value, soloAlerta); };
     const handleSoloAlerta  = (e) => { setSoloAlerta(e.target.checked); cargarRepuestos(busqueda, filtroCateg, e.target.checked); };
+    const limpiarFiltros    = () => { setBusqueda(''); setFiltroCateg(''); setSoloAlerta(false); cargarRepuestos('', '', false); };
+    const hayFiltros = Boolean(busqueda || filtroCateg || soloAlerta);
+    const nombreCateg = categorias.find(c => String(c.id) === String(filtroCateg))?.nombre;
 
     const exportCSV = () => {
         const rows = [['Codigo','Nombre','Categoria','Stock Actual','Stock Minimo','Precio Compra','Precio Venta']];
@@ -89,125 +110,256 @@ export default function Inventario() {
         catch (err) { toast.error(err.response?.data?.error || 'Error al eliminar.'); }
     };
 
-    const inputStyle = { padding: '8px 12px 8px 32px', background: inputBg, border: `1px solid ${bdr}`, borderRadius: 9, color: txt, fontFamily: "'Outfit'", fontSize: '.85rem', outline: 'none', width: 210 };
-    const selStyle   = { padding: '8px 12px', background: inputBg, border: `1px solid ${bdr}`, borderRadius: 9, color: txt, fontFamily: "'Outfit'", fontSize: '.85rem', outline: 'none' };
+    // ── KPIs computados ──
+    const stats = useMemo(() => {
+        const total      = repuestos.length;
+        const bajo       = repuestos.filter(r => r.stock_actual <= r.stock_minimo).length;
+        const valor      = repuestos.reduce((s, r) => s + (r.stock_actual * parseFloat(r.precio_venta || 0)), 0);
+        const unidades   = repuestos.reduce((s, r) => s + (parseInt(r.stock_actual) || 0), 0);
+        return { total, bajo, valor, unidades };
+    }, [repuestos]);
+
+    const inputStyle = { padding: '9px 12px 9px 32px', background: inputBg, border: `1px solid ${bdr}`, borderRadius: 10, color: txt, fontFamily: "'Outfit'", fontSize: '.85rem', outline: 'none', width: 220, transition: 'border-color .18s, box-shadow .18s' };
+    const selStyle   = { padding: '9px 12px', background: inputBg, border: `1px solid ${bdr}`, borderRadius: 10, color: txt, fontFamily: "'Outfit'", fontSize: '.85rem', outline: 'none', transition: 'border-color .18s, box-shadow .18s' };
 
     return (
-        <div>
+        <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1500 }}>
+            {/* Animaciones locales */}
+            <style>{`
+                @keyframes invRowIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+                @keyframes invPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,.4); } 50% { box-shadow: 0 0 0 6px rgba(239,68,68,0); } }
+                .inv-row { animation: invRowIn .28s ease both; }
+                .inv-kpi { transition: transform .25s cubic-bezier(.4,0,.2,1), box-shadow .25s, border-color .25s; }
+                .inv-kpi:hover { transform: translateY(-3px); border-color: ${SKY_BDR}; }
+                .inv-input:focus { border-color: ${SKY} !important; box-shadow: 0 0 0 3px rgba(14,165,233,.14); }
+                .inv-stock-bar { transition: width .5s cubic-bezier(.4,0,.2,1); }
+                .inv-alert-dot { animation: invPulse 1.8s ease-in-out infinite; }
+            `}</style>
+
             {/* ── Header ── */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
                 <div>
-                    <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.28em', color: isDark ? 'rgba(168,85,247,.5)' : 'rgba(124,58,237,.55)', marginBottom: 4 }}>SSWAP · Almacen</p>
-                    <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.4rem', letterSpacing: '.06em', color: txt, lineHeight: 1 }}>Inventario</h1>
-                    <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.82rem', color: mut, marginTop: 4 }}>{repuestos.length} repuesto{repuestos.length !== 1 ? 's' : ''} en catalogo</p>
-                </div>
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-                    {/* Busqueda */}
-                    <div style={{ position: 'relative' }}>
-                        <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: mut, display: 'flex' }}><IconSearch /></span>
-                        <input placeholder="Buscar repuesto..." value={busqueda} onChange={handleBusqueda} style={inputStyle}
-                            onFocus={e => e.target.style.borderColor = '#a855f7'} onBlur={e => e.target.style.borderColor = bdr} />
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 10px', borderRadius: 999, background: SKY_PALE, border: `1px solid ${SKY_BDR}`, marginBottom: 8 }}>
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: SKY, boxShadow: `0 0 8px ${SKY}` }} />
+                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.24em', color: SKY_DEEP }}>SSWAP · ALMACEN</p>
                     </div>
-                    {/* Categoria */}
-                    <select value={filtroCateg} onChange={handleFiltroCateg} style={selStyle}
-                        onFocus={e => e.target.style.borderColor = '#a855f7'} onBlur={e => e.target.style.borderColor = bdr}>
+                    <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.6rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>Inventario</h1>
+                    <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.85rem', color: mut, marginTop: 6 }}>Catalogo de repuestos y control de stock en tiempo real</p>
+                </div>
+                {esAdmin && (
+                    <button onClick={() => setModalRep({ open: true, data: null })}
+                        style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 8,
+                            fontFamily: "'Bebas Neue'", fontSize: '.78rem', letterSpacing: '.14em',
+                            color: '#fff', background: `linear-gradient(135deg, ${SKY_DEEP}, ${SKY})`,
+                            border: 'none', borderRadius: 11, padding: '11px 22px', cursor: 'pointer',
+                            transition: 'all .22s', boxShadow: `0 6px 18px -6px ${SKY}`,
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = `0 10px 26px -8px ${SKY}`; }}
+                        onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = `0 6px 18px -6px ${SKY}`; }}>
+                        <IconPlus /> NUEVO REPUESTO
+                    </button>
+                )}
+            </div>
+
+            {/* ── KPI Cards ── */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 14, marginBottom: 20 }}>
+                <KpiCard label="Total Repuestos" value={stats.total} icon={<IconBox />}      color={SKY}      bg={card} bdr={bdr} mut={mut} txt={txt} shadow={cardSh} skyBdr={SKY_BDR} />
+                <KpiCard label="Bajo Stock"      value={stats.bajo}  icon={<IconAlert />}    color={stats.bajo > 0 ? '#ef4444' : '#10b981'} bg={card} bdr={bdr} mut={mut} txt={txt} shadow={cardSh} skyBdr={SKY_BDR} sub={stats.bajo > 0 ? 'Requiere atencion' : 'Todo en orden'} />
+                <KpiCard label="Unidades Totales" value={stats.unidades.toLocaleString()} icon={<IconTag />} color={SKY_DEEP} bg={card} bdr={bdr} mut={mut} txt={txt} shadow={cardSh} skyBdr={SKY_BDR} />
+                <KpiCard label="Valor Inventario" value={`$${stats.valor.toLocaleString('en-US', { maximumFractionDigits: 0 })}`} icon={<IconCash />} color={SKY} bg={card} bdr={bdr} mut={mut} txt={txt} shadow={cardSh} skyBdr={SKY_BDR} sub="Precio de venta" />
+            </div>
+
+            {/* ── Toolbar ── */}
+            <div style={{
+                padding: 16, marginBottom: 16,
+                background: card, border: `1px solid ${bdr}`, borderRadius: 14, boxShadow: cardSh,
+            }}>
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <div style={{ position: 'relative' }}>
+                        <span style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: faint, display: 'flex' }}><IconSearch /></span>
+                        <input className="inv-input" placeholder="Buscar por codigo o nombre..." value={busqueda} onChange={handleBusqueda} style={inputStyle} />
+                    </div>
+                    <select className="inv-input" value={filtroCateg} onChange={handleFiltroCateg} style={selStyle}>
                         <option value="">Todas las categorias</option>
                         {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                     </select>
-                    {/* Bajo stock toggle */}
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 7, cursor: 'pointer', fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.82rem', color: mut }}>
-                        <input type="checkbox" checked={soloAlerta} onChange={handleSoloAlerta} style={{ accentColor: '#a855f7', width: 14, height: 14 }} />
+                    <label style={{
+                        display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
+                        fontFamily: "'Outfit'", fontWeight: 500, fontSize: '.82rem', color: soloAlerta ? '#ef4444' : txtSoft,
+                        padding: '9px 14px', borderRadius: 10,
+                        background: soloAlerta ? 'rgba(239,68,68,0.08)' : 'transparent',
+                        border: `1px solid ${soloAlerta ? 'rgba(239,68,68,0.25)' : bdr}`,
+                        transition: 'all .18s',
+                    }}>
+                        <input type="checkbox" checked={soloAlerta} onChange={handleSoloAlerta} style={{ accentColor: '#ef4444', width: 14, height: 14 }} />
                         Solo bajo stock
                     </label>
-                    {/* Export */}
-                    <button className="btn-ghost" onClick={exportCSV}><IconDownload /> Exportar CSV</button>
-                    {/* Nuevo */}
-                    {esAdmin && (
-                        <button className="btn-primary" onClick={() => setModalRep({ open: true, data: null })}>
-                            <span><IconPlus /> Nuevo Repuesto</span>
-                        </button>
-                    )}
+                    <div style={{ flex: 1 }} />
+                    <button onClick={exportCSV}
+                        style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 7,
+                            fontFamily: "'Bebas Neue'", fontSize: '.72rem', letterSpacing: '.14em',
+                            background: card, border: `1px solid ${bdr}`, borderRadius: 10,
+                            padding: '9px 16px', cursor: 'pointer', color: txtSoft, transition: 'all .18s',
+                            boxShadow: '0 1px 2px rgba(15,23,42,0.04)',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = SKY_BDR; e.currentTarget.style.color = SKY_DEEP; e.currentTarget.style.background = SKY_PALE; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = bdr; e.currentTarget.style.color = txtSoft; e.currentTarget.style.background = card; }}>
+                        <IconDownload /> EXPORTAR CSV
+                    </button>
                 </div>
+
+                {/* Chips de filtros activos */}
+                {hayFiltros && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, paddingTop: 12, borderTop: `1px solid ${bdr}`, flexWrap: 'wrap' }}>
+                        <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.22em', color: mut }}>FILTROS ACTIVOS</span>
+                        {busqueda && (
+                            <FilterChip label={`"${busqueda}"`} onRemove={() => { setBusqueda(''); cargarRepuestos('', filtroCateg, soloAlerta); }} color={SKY_DEEP} bg={SKY_PALE} bdr={SKY_BDR} />
+                        )}
+                        {filtroCateg && (
+                            <FilterChip label={nombreCateg || 'Categoria'} onRemove={() => { setFiltroCateg(''); cargarRepuestos(busqueda, '', soloAlerta); }} color={SKY_DEEP} bg={SKY_PALE} bdr={SKY_BDR} />
+                        )}
+                        {soloAlerta && (
+                            <FilterChip label="Bajo stock" onRemove={() => { setSoloAlerta(false); cargarRepuestos(busqueda, filtroCateg, false); }} color="#ef4444" bg="rgba(239,68,68,0.08)" bdr="rgba(239,68,68,0.25)" />
+                        )}
+                        <button onClick={limpiarFiltros}
+                            style={{
+                                marginLeft: 'auto',
+                                fontFamily: "'Bebas Neue'", fontSize: '.66rem', letterSpacing: '.16em',
+                                background: 'transparent', border: 'none', cursor: 'pointer',
+                                color: mut, transition: 'color .15s',
+                                display: 'inline-flex', alignItems: 'center', gap: 5,
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
+                            onMouseLeave={e => e.currentTarget.style.color = mut}>
+                            LIMPIAR TODO ×
+                        </button>
+                    </div>
+                )}
             </div>
-            <div style={{ height: 1, marginBottom: 24, background: `linear-gradient(90deg, ${isDark ? 'rgba(168,85,247,.25)' : 'rgba(124,58,237,.2)'}, transparent)` }} />
+
+            {/* Contador de resultados */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, paddingLeft: 4 }}>
+                <span style={{ fontFamily: "'Outfit'", fontWeight: 500, fontSize: '.82rem', color: txtSoft }}>
+                    {repuestos.length} <span style={{ color: mut, fontWeight: 400 }}>repuesto{repuestos.length !== 1 ? 's' : ''}</span>
+                </span>
+                {hayFiltros && <span style={{ fontFamily: "'Outfit'", fontSize: '.76rem', color: faint }}>· filtrado</span>}
+            </div>
 
             {/* ── Tabla ── */}
-            <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, overflow: 'hidden' }}>
+            <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, overflow: 'hidden', boxShadow: cardSh }}>
                 {loading ? (
-                    <div style={{ padding: 60, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-                        <div style={{ width: 36, height: 36, borderRadius: '50%', border: `2px solid ${bdr}`, borderTopColor: '#a855f7', animation: 'spin 1s linear infinite' }} />
+                    <div style={{ padding: 80, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+                        <div style={{ width: 38, height: 38, borderRadius: '50%', border: `2px solid ${bdr}`, borderTopColor: SKY, animation: 'spin 1s linear infinite' }} />
                         <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.85rem', color: mut }}>Cargando inventario...</p>
                     </div>
                 ) : repuestos.length === 0 ? (
-                    <div style={{ padding: 80, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
-                        <div style={{ width: 60, height: 60, borderRadius: 16, background: 'rgba(168,85,247,.08)', border: `1px solid ${bdr}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a855f7' }}><IconPkg /></div>
-                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.4rem', letterSpacing: '.06em', color: isDark ? 'rgba(168,85,247,.2)' : 'rgba(124,58,237,.2)' }}>Sin repuestos</p>
-                        {esAdmin && <button className="btn-primary" onClick={() => setModalRep({ open: true, data: null })}><span><IconPlus /> Crear primero</span></button>}
+                    <div style={{ padding: 90, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18 }}>
+                        <div style={{ width: 72, height: 72, borderRadius: 20, background: SKY_PALE, border: `1px solid ${SKY_BDR}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: SKY }}><IconPkg /></div>
+                        <div>
+                            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.4rem', letterSpacing: '.06em', color: txt }}>Sin repuestos</p>
+                            <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.82rem', color: mut, marginTop: 4 }}>No se encontraron resultados con los filtros aplicados</p>
+                        </div>
+                        {esAdmin && (
+                            <button onClick={() => setModalRep({ open: true, data: null })}
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontFamily: "'Bebas Neue'", fontSize: '.75rem', letterSpacing: '.14em', color: '#fff', background: `linear-gradient(135deg, ${SKY_DEEP}, ${SKY})`, border: 'none', borderRadius: 10, padding: '10px 20px', cursor: 'pointer', boxShadow: `0 6px 18px -6px ${SKY}` }}>
+                                <IconPlus /> CREAR PRIMERO
+                            </button>
+                        )}
                     </div>
                 ) : (
                     <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 800 }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 880 }}>
                             <thead>
-                                <tr style={{ borderBottom: `1px solid ${bdr}`, background: isDark ? 'rgba(168,85,247,.03)' : 'rgba(124,58,237,.025)' }}>
-                                    {['Codigo','Nombre','Categoria','Stock','P. Venta','Estado','Acciones'].map(h => (
-                                        <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.2em', color: isDark ? 'rgba(168,85,247,.55)' : 'rgba(124,58,237,.6)', whiteSpace: 'nowrap' }}>{h}</th>
+                                <tr style={{ borderBottom: `1px solid ${bdr}`, background: headBg }}>
+                                    {['Codigo','Repuesto','Categoria','Stock','P. Venta','Estado','Acciones'].map(h => (
+                                        <th key={h} style={{
+                                            padding: '13px 18px', textAlign: 'left',
+                                            fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.22em',
+                                            color: SKY_DEEP, whiteSpace: 'nowrap',
+                                        }}>{h}</th>
                                     ))}
                                 </tr>
                             </thead>
                             <tbody>
-                                {repuestos.map(r => {
-                                    const bajo = r.stock_actual <= r.stock_minimo;
+                                {repuestos.map((r, idx) => {
+                                    const bajo  = r.stock_actual <= r.stock_minimo;
+                                    const limit = Math.max(r.stock_minimo * 4, 50);
+                                    const pct   = Math.min(100, Math.round((r.stock_actual / limit) * 100));
+                                    const stockColor = bajo ? '#ef4444' : r.stock_actual < r.stock_minimo * 2 ? '#f59e0b' : '#10b981';
                                     return (
-                                        <tr key={r.id} style={{ borderBottom: `1px solid ${bdr}`, transition: 'background .12s' }}
-                                            onMouseEnter={e => e.currentTarget.style.background = isDark ? 'rgba(168,85,247,0.04)' : 'rgba(124,58,237,0.03)'}
+                                        <tr key={r.id} className="inv-row"
+                                            style={{ borderBottom: `1px solid ${bdr}`, transition: 'background .15s', animationDelay: `${Math.min(idx * 18, 240)}ms` }}
+                                            onMouseEnter={e => e.currentTarget.style.background = rowHov}
                                             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                                            <td style={{ padding: '10px 16px' }}>
-                                                <code style={{ fontFamily: 'monospace', fontSize: '.78rem', background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(100,30,180,0.07)', padding: '2px 7px', borderRadius: 5, color: isDark ? 'rgba(168,85,247,.8)' : 'rgba(124,58,237,.8)' }}>{r.codigo}</code>
+                                            <td style={{ padding: '13px 18px' }}>
+                                                <code style={{
+                                                    fontFamily: 'monospace', fontSize: '.76rem', fontWeight: 600,
+                                                    background: SKY_PALE, padding: '3px 9px', borderRadius: 6,
+                                                    color: SKY_DEEP, border: `1px solid ${SKY_BDR}`,
+                                                }}>{r.codigo}</code>
                                             </td>
-                                            <td style={{ padding: '10px 16px', maxWidth: 220 }}>
-                                                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.9rem', letterSpacing: '.04em', color: txt, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.nombre}</p>
-                                                {r.descripcion && <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.68rem', color: mut, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.descripcion}</p>}
+                                            <td style={{ padding: '13px 18px', maxWidth: 260 }}>
+                                                <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.92rem', color: txt, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', letterSpacing: '.005em' }}>{r.nombre}</p>
+                                                {r.descripcion && <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.72rem', color: mut, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.descripcion}</p>}
                                             </td>
-                                            <td style={{ padding: '10px 16px', fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.82rem', color: mut, whiteSpace: 'nowrap' }}>{r.categoria_nombre || '—'}</td>
-                                            <td style={{ padding: '10px 16px' }}>
-                                                <span style={{ fontFamily: "'Bebas Neue'", fontSize: '1.1rem', letterSpacing: '.04em', color: bajo ? '#ef4444' : r.stock_actual < 20 ? '#f59e0b' : '#22c55e' }}>{r.stock_actual}</span>
-                                                {bajo && <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.62rem', color: '#ef4444', marginTop: 1 }}>min. {r.stock_minimo}</p>}
+                                            <td style={{ padding: '13px 18px', whiteSpace: 'nowrap' }}>
+                                                {r.categoria_nombre
+                                                    ? <span style={{ fontFamily: "'Outfit'", fontWeight: 500, fontSize: '.76rem', color: txtSoft, padding: '3px 10px', borderRadius: 999, background: isDark ? 'rgba(148,163,184,0.08)' : 'rgba(15,23,42,0.04)', border: `1px solid ${bdr}` }}>{r.categoria_nombre}</span>
+                                                    : <span style={{ color: mut, fontSize: '.8rem' }}>—</span>}
                                             </td>
-                                            <td style={{ padding: '10px 16px' }}>
-                                                <span style={{ fontFamily: "'Bebas Neue'", fontSize: '1.05rem', letterSpacing: '.04em', color: '#a855f7' }}>${parseFloat(r.precio_venta).toFixed(2)}</span>
+                                            <td style={{ padding: '13px 18px', minWidth: 150 }}>
+                                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                                                    <span style={{ fontFamily: "'Bebas Neue'", fontSize: '1.25rem', letterSpacing: '.02em', color: stockColor, lineHeight: 1 }}>{r.stock_actual}</span>
+                                                    <span style={{ fontFamily: "'Outfit'", fontSize: '.68rem', color: mut, fontWeight: 400 }}>/ min {r.stock_minimo}</span>
+                                                </div>
+                                                <div style={{ marginTop: 5, height: 4, background: isDark ? 'rgba(148,163,184,0.12)' : 'rgba(15,23,42,0.06)', borderRadius: 999, overflow: 'hidden' }}>
+                                                    <div className="inv-stock-bar" style={{
+                                                        width: `${pct}%`, height: '100%',
+                                                        background: bajo
+                                                            ? 'linear-gradient(90deg, #dc2626, #ef4444)'
+                                                            : r.stock_actual < r.stock_minimo * 2
+                                                                ? 'linear-gradient(90deg, #d97706, #f59e0b)'
+                                                                : `linear-gradient(90deg, ${SKY_DEEP}, ${SKY})`,
+                                                        borderRadius: 999,
+                                                    }} />
+                                                </div>
                                             </td>
-                                            <td style={{ padding: '10px 16px' }}>
-                                                <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.1em', padding: '3px 9px', borderRadius: 20, background: r.activo ? 'rgba(34,197,94,.1)' : 'rgba(239,68,68,.1)', color: r.activo ? '#22c55e' : '#ef4444', border: `1px solid ${r.activo ? 'rgba(34,197,94,.2)' : 'rgba(239,68,68,.2)'}` }}>
-                                                    {r.activo ? 'ACTIVO' : 'INACTIVO'}
-                                                </span>
+                                            <td style={{ padding: '13px 18px', whiteSpace: 'nowrap' }}>
+                                                <span style={{ fontFamily: "'Bebas Neue'", fontSize: '1.1rem', letterSpacing: '.03em', color: SKY_DEEP }}>${parseFloat(r.precio_venta).toFixed(2)}</span>
                                             </td>
-                                            <td style={{ padding: '10px 16px' }}>
+                                            <td style={{ padding: '13px 18px' }}>
+                                                {bajo ? (
+                                                    <span className="inv-alert-dot" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.14em', padding: '4px 10px', borderRadius: 999, background: 'rgba(239,68,68,.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,.25)' }}>
+                                                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#ef4444' }} /> ALERTA
+                                                    </span>
+                                                ) : r.activo ? (
+                                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.14em', padding: '4px 10px', borderRadius: 999, background: 'rgba(16,185,129,.08)', color: '#10b981', border: '1px solid rgba(16,185,129,.22)' }}>
+                                                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#10b981' }} /> ACTIVO
+                                                    </span>
+                                                ) : (
+                                                    <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.14em', padding: '4px 10px', borderRadius: 999, background: 'rgba(148,163,184,.1)', color: mut, border: `1px solid ${bdr}` }}>INACTIVO</span>
+                                                )}
+                                            </td>
+                                            <td style={{ padding: '13px 18px' }}>
                                                 <div style={{ display: 'flex', gap: 6 }}>
                                                     {puedeMov && (
-                                                        <button className="btn-icon" style={{ color: '#a855f7' }}
-                                                            onClick={() => setModalMov({ open: true, repuesto: r })}
-                                                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(168,85,247,.1)'}
-                                                            onMouseLeave={e => e.currentTarget.style.background = 'none'}
-                                                            title="Registrar movimiento">
+                                                        <ActionBtn color={SKY} hoverBg={SKY_PALE} bdr={bdr} title="Registrar movimiento"
+                                                            onClick={() => setModalMov({ open: true, repuesto: r })}>
                                                             <IconArrows />
-                                                        </button>
+                                                        </ActionBtn>
                                                     )}
                                                     {esAdmin && (
                                                         <>
-                                                            <button className="btn-icon" style={{ color: '#a855f7' }}
-                                                                onClick={() => setModalRep({ open: true, data: r })}
-                                                                onMouseEnter={e => e.currentTarget.style.background = 'rgba(168,85,247,.1)'}
-                                                                onMouseLeave={e => e.currentTarget.style.background = 'none'}
-                                                                title="Editar">
+                                                            <ActionBtn color={SKY_DEEP} hoverBg={SKY_PALE} bdr={bdr} title="Editar"
+                                                                onClick={() => setModalRep({ open: true, data: r })}>
                                                                 <IconEdit />
-                                                            </button>
-                                                            <button className="btn-icon" style={{ color: '#ef4444', borderColor: 'rgba(239,68,68,0.2)' }}
-                                                                onClick={() => handleEliminar(r.id, r.nombre)}
-                                                                onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,.1)'}
-                                                                onMouseLeave={e => e.currentTarget.style.background = 'none'}
-                                                                title="Eliminar">
+                                                            </ActionBtn>
+                                                            <ActionBtn color="#ef4444" hoverBg="rgba(239,68,68,.1)" bdr={bdr} title="Eliminar"
+                                                                onClick={() => handleEliminar(r.id, r.nombre)}>
                                                                 <IconTrash />
-                                                            </button>
+                                                            </ActionBtn>
                                                         </>
                                                     )}
                                                 </div>
@@ -225,5 +377,71 @@ export default function Inventario() {
             {modalRep.open && <ModalRepuesto repuesto={modalRep.data} categorias={categorias} onGuardar={handleGuardar} onCerrar={() => setModalRep({ open: false, data: null })} />}
             {modalMov.open && <ModalMovimiento repuesto={modalMov.repuesto} onGuardado={() => { setModalMov({ open: false, repuesto: null }); cargarRepuestos(busqueda, filtroCateg, soloAlerta); toast.success('Movimiento registrado.'); }} onCerrar={() => setModalMov({ open: false, repuesto: null })} />}
         </div>
+    );
+}
+
+// ── Subcomponentes ──
+function KpiCard({ label, value, icon, color, bg, bdr, mut, txt, sub, shadow, skyBdr }) {
+    return (
+        <div className="inv-kpi" style={{
+            padding: 18, background: bg, border: `1px solid ${bdr}`, borderRadius: 14,
+            display: 'flex', alignItems: 'center', gap: 14, position: 'relative', overflow: 'hidden',
+            boxShadow: shadow,
+        }}>
+            <div style={{
+                position: 'absolute', top: 0, left: 0, width: 3, height: '100%',
+                background: `linear-gradient(180deg, ${color}, transparent)`,
+            }} />
+            <div style={{
+                width: 44, height: 44, borderRadius: 11, flexShrink: 0,
+                background: `${color}14`, color: color, border: `1px solid ${color}33`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>{icon}</div>
+            <div style={{ minWidth: 0, flex: 1 }}>
+                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.56rem', letterSpacing: '.22em', color: mut, marginBottom: 4 }}>{label}</p>
+                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.7rem', letterSpacing: '.02em', color: txt, lineHeight: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{value}</p>
+                {sub && <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.7rem', color, marginTop: 4, opacity: .85 }}>{sub}</p>}
+            </div>
+        </div>
+    );
+}
+
+function FilterChip({ label, onRemove, color, bg, bdr }) {
+    return (
+        <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '4px 4px 4px 11px', borderRadius: 999,
+            background: bg, border: `1px solid ${bdr}`, color,
+            fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.74rem',
+            animation: 'bounceIn .25s ease',
+        }}>
+            {label}
+            <button onClick={onRemove}
+                style={{
+                    width: 18, height: 18, borderRadius: '50%',
+                    background: 'rgba(0,0,0,0.06)', border: 'none', cursor: 'pointer',
+                    color, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'background .15s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.12)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0.06)'}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </span>
+    );
+}
+
+function ActionBtn({ color, hoverBg, bdr, title, onClick, children }) {
+    return (
+        <button onClick={onClick} title={title}
+            style={{
+                background: 'none', border: `1px solid ${bdr}`, borderRadius: 8,
+                padding: 6, cursor: 'pointer', color, display: 'flex',
+                alignItems: 'center', justifyContent: 'center', transition: 'all .15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = hoverBg; e.currentTarget.style.borderColor = color + '55'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = bdr; e.currentTarget.style.transform = 'none'; }}>
+            {children}
+        </button>
     );
 }
