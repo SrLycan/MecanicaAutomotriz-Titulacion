@@ -93,10 +93,7 @@ export default function Navbar() {
                             </>
                         )}
                         {esAdmin && (
-                            <>
-                                <Link to="/dashboard" className="nav-btn-outline">Panel Admin</Link>
-                                <button onClick={handleLogout} className="nav-btn-outline">Salir</button>
-                            </>
+                            <button onClick={handleLogout} className="nav-btn-outline">Salir</button>
                         )}
                     </div>
 

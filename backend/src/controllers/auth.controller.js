@@ -10,7 +10,8 @@ const login = async (req, res) => {
 
     try {
         const { rows } = await pool.query(
-            'SELECT id, nombre, email, password, rol FROM usuarios WHERE email = $1 AND activo = TRUE',
+            `SELECT id, nombre, email, password, rol, activo, estado
+             FROM usuarios WHERE email = $1`,
             [email.toLowerCase().trim()]
         );
         const usuario = rows[0];
@@ -18,6 +19,13 @@ const login = async (req, res) => {
 
         const ok = await bcrypt.compare(password, usuario.password);
         if (!ok) return res.status(401).json({ error: 'Credenciales invalidas.' });
+
+        if (usuario.estado === 'bloqueado')
+            return res.status(403).json({ error: 'Tu cuenta esta bloqueada. Contacta al administrador.' });
+        if (usuario.estado === 'suspendido')
+            return res.status(403).json({ error: 'Tu cuenta esta suspendida temporalmente.' });
+        if (!usuario.activo)
+            return res.status(403).json({ error: 'Tu cuenta esta inactiva.' });
 
         const payload = { id: usuario.id, nombre: usuario.nombre, email: usuario.email, rol: usuario.rol };
         const token   = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '8h' });

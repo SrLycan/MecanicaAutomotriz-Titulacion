@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import api from '../../services/api';
 
-function IconX() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>; }
+function IconX()    { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>; }
+function IconIn()   { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>; }
+function IconOut()  { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>; }
 
 export default function ModalMovimiento({ repuesto, onGuardado, onCerrar }) {
     const { isDark } = useTheme();
@@ -10,17 +12,40 @@ export default function ModalMovimiento({ repuesto, onGuardado, onCerrar }) {
     const [saving, setSaving] = useState(false);
     const [error,  setError]  = useState('');
 
-    const txt     = isDark ? '#e2dff0' : '#160830';
-    const mut     = isDark ? 'rgba(226,223,240,0.42)' : 'rgba(55,10,120,0.55)';
-    const bdr     = isDark ? 'rgba(147,51,234,0.13)'  : 'rgba(100,30,180,0.16)';
-    const inputSt = { background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(124,58,237,0.04)', border: `1px solid ${bdr}`, color: txt };
+    // ── Paleta celeste / blanco / negro ──
+    const SKY      = '#0ea5e9';
+    const SKY_DEEP = '#0284c7';
+    const SKY_PALE = isDark ? 'rgba(14,165,233,0.10)' : 'rgba(14,165,233,0.06)';
+    const SKY_BDR  = isDark ? 'rgba(56,189,248,0.22)' : 'rgba(14,165,233,0.22)';
 
-    const esEntrada  = form.tipo === 'entrada';
-    const accentColor = esEntrada ? '#22c55e' : '#ef4444';
-    const qty        = parseInt(form.cantidad) || 0;
-    const stockNuevo = esEntrada ? repuesto.stock_actual + qty : repuesto.stock_actual - qty;
+    const txt     = isDark ? '#f1f5f9'                : '#0f172a';
+    const mut     = isDark ? 'rgba(241,245,249,0.55)' : 'rgba(15,23,42,0.55)';
+    const bdr     = isDark ? 'rgba(148,163,184,0.18)' : 'rgba(15,23,42,0.10)';
+    const inputBg = isDark ? '#0b1220'                : '#f8fafc';
+    const boxBg   = isDark ? '#0a0f1c'                : '#ffffff';
+    const previewBg = isDark ? 'rgba(14,165,233,0.05)' : 'rgba(14,165,233,0.04)';
+
+    const inputSt = {
+        width: '100%', boxSizing: 'border-box',
+        padding: '10px 13px', borderRadius: 10,
+        border: `1px solid ${bdr}`, background: inputBg, color: txt,
+        fontFamily: "'Outfit', sans-serif", fontWeight: 400, fontSize: '.88rem',
+        outline: 'none', transition: 'border-color .18s, box-shadow .18s',
+    };
+    const labelSt = {
+        display: 'block', marginBottom: 6,
+        fontFamily: "'Bebas Neue', sans-serif", fontSize: '.62rem', letterSpacing: '.22em',
+        color: SKY_DEEP, WebkitTextFillColor: SKY_DEEP, background: 'none',
+    };
+
+    const esEntrada   = form.tipo === 'entrada';
+    const accentColor = esEntrada ? '#10b981' : '#ef4444';
+    const qty         = parseInt(form.cantidad) || 0;
+    const stockNuevo  = esEntrada ? repuesto.stock_actual + qty : repuesto.stock_actual - qty;
 
     const handleChange = (e) => { setForm({ ...form, [e.target.name]: e.target.value }); setError(''); };
+    const onFocus = (e) => { e.target.style.borderColor = SKY; e.target.style.boxShadow = `0 0 0 3px rgba(14,165,233,.14)`; };
+    const onBlur  = (e) => { e.target.style.borderColor = bdr; e.target.style.boxShadow = 'none'; };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -39,55 +64,61 @@ export default function ModalMovimiento({ repuesto, onGuardado, onCerrar }) {
 
     return (
         <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onCerrar()}>
-            <div className="modal-box" style={{ maxWidth: 480, overflow: 'visible' }}>
+            <div className="modal-box" style={{ maxWidth: 500, overflow: 'visible', background: boxBg, border: `1px solid ${bdr}`, padding: 28 }}>
 
-                {/* Linea de color segun tipo */}
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, ${accentColor}66, transparent)`, borderRadius: '20px 20px 0 0' }} />
+                {/* Línea de color según tipo */}
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, transparent, ${accentColor}, transparent)`, borderRadius: '20px 20px 0 0', transition: 'background .3s' }} />
 
                 {/* Header */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
                     <div>
-                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.28em', color: isDark ? 'rgba(168,85,247,.45)' : 'rgba(124,58,237,.5)', marginBottom: 2 }}>
-                            SSWAP · Almacen
-                        </p>
-                        <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.6rem', letterSpacing: '.06em', color: txt, lineHeight: 1 }}>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '3px 9px', borderRadius: 999, background: SKY_PALE, border: `1px solid ${SKY_BDR}`, marginBottom: 6 }}>
+                            <span style={{ width: 5, height: 5, borderRadius: '50%', background: SKY }} />
+                            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.24em', color: SKY_DEEP }}>SSWAP · ALMACEN</p>
+                        </div>
+                        <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.7rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>
                             Movimiento de Stock
                         </h2>
-                        <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.78rem', color: mut, marginTop: 4 }}>
-                            <code style={{ fontFamily: 'monospace', fontSize: '.75rem', background: isDark ? 'rgba(168,85,247,.1)' : 'rgba(124,58,237,.08)', padding: '1px 6px', borderRadius: 4, color: isDark ? 'rgba(168,85,247,.9)' : 'rgba(124,58,237,.9)' }}>{repuesto.codigo}</code>
+                        <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.78rem', color: mut, marginTop: 6 }}>
+                            <code style={{ fontFamily: 'monospace', fontSize: '.74rem', fontWeight: 600, background: SKY_PALE, padding: '2px 7px', borderRadius: 5, color: SKY_DEEP, border: `1px solid ${SKY_BDR}` }}>{repuesto.codigo}</code>
                             {' '}{repuesto.nombre}
                         </p>
                     </div>
-                    <button className="btn-icon" onClick={onCerrar} style={{ color: mut, marginTop: 4 }}
+                    <button onClick={onCerrar}
+                        style={{ background: 'none', border: `1px solid ${bdr}`, borderRadius: 9, padding: 7, cursor: 'pointer', color: mut, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .15s', marginTop: 4 }}
                         onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,.1)'; e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.borderColor = 'rgba(239,68,68,.25)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = mut; e.currentTarget.style.borderColor = 'var(--border)'; }}>
+                        onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = mut; e.currentTarget.style.borderColor = bdr; }}>
                         <IconX />
                     </button>
                 </div>
 
                 {/* Preview de stock */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', background: isDark ? 'rgba(255,255,255,0.025)' : 'rgba(124,58,237,0.04)', borderRadius: 12, border: `1px solid ${bdr}`, marginBottom: 20 }}>
-                    {/* Stock actual */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 18px', background: previewBg, borderRadius: 12, border: `1px solid ${SKY_BDR}`, marginBottom: 18 }}>
                     <div style={{ textAlign: 'center', flex: 1 }}>
-                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '2rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>{repuesto.stock_actual}</p>
-                        <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.65rem', color: mut, marginTop: 2, textTransform: 'uppercase', letterSpacing: '.08em' }}>Stock Actual</p>
+                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '2.1rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>{repuesto.stock_actual}</p>
+                        <p style={{ fontFamily: "'Outfit'", fontWeight: 500, fontSize: '.62rem', color: mut, marginTop: 4, textTransform: 'uppercase', letterSpacing: '.14em' }}>Stock Actual</p>
                     </div>
 
                     {qty > 0 && (
                         <>
-                            <div style={{ textAlign: 'center' }}>
-                                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.4rem', color: accentColor }}>{esEntrada ? '+' : '-'}</p>
+                            <div style={{ textAlign: 'center', color: accentColor }}>
+                                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.6rem', lineHeight: 1 }}>{esEntrada ? '+' : '−'}</p>
                             </div>
-                            <div style={{ textAlign: 'center', flex: 1 }}>
-                                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '2rem', letterSpacing: '.04em', color: accentColor, lineHeight: 1 }}>{qty}</p>
-                                <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.65rem', color: accentColor, marginTop: 2, textTransform: 'uppercase', letterSpacing: '.08em', opacity: .8 }}>{esEntrada ? 'Entrada' : 'Salida'}</p>
+                            <div style={{ textAlign: 'center', flex: 1, transition: 'transform .25s', transform: 'scale(1)' }}>
+                                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '2.1rem', letterSpacing: '.04em', color: accentColor, lineHeight: 1 }}>{qty}</p>
+                                <p style={{ fontFamily: "'Outfit'", fontWeight: 500, fontSize: '.62rem', color: accentColor, marginTop: 4, textTransform: 'uppercase', letterSpacing: '.14em', opacity: .85 }}>{esEntrada ? 'Entrada' : 'Salida'}</p>
                             </div>
-                            <div style={{ textAlign: 'center' }}>
-                                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.4rem', color: mut }}>=</p>
+                            <div style={{ textAlign: 'center', color: mut }}>
+                                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.4rem', lineHeight: 1 }}>=</p>
                             </div>
-                            <div style={{ textAlign: 'center', flex: 1, background: stockNuevo < 0 ? 'rgba(239,68,68,.08)' : 'rgba(34,197,94,.06)', borderRadius: 10, padding: '8px 6px', border: `1px solid ${stockNuevo < 0 ? 'rgba(239,68,68,.2)' : 'rgba(34,197,94,.15)'}` }}>
-                                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '2rem', letterSpacing: '.04em', color: stockNuevo < 0 ? '#ef4444' : '#22c55e', lineHeight: 1 }}>{stockNuevo}</p>
-                                <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.65rem', color: stockNuevo < 0 ? '#ef4444' : '#22c55e', marginTop: 2, textTransform: 'uppercase', letterSpacing: '.08em', opacity: .8 }}>Nuevo Stock</p>
+                            <div style={{
+                                textAlign: 'center', flex: 1,
+                                background: stockNuevo < 0 ? 'rgba(239,68,68,.08)' : SKY_PALE,
+                                borderRadius: 10, padding: '8px 6px',
+                                border: `1px solid ${stockNuevo < 0 ? 'rgba(239,68,68,.25)' : SKY_BDR}`,
+                            }}>
+                                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '2.1rem', letterSpacing: '.04em', color: stockNuevo < 0 ? '#ef4444' : SKY_DEEP, lineHeight: 1 }}>{stockNuevo}</p>
+                                <p style={{ fontFamily: "'Outfit'", fontWeight: 500, fontSize: '.62rem', color: stockNuevo < 0 ? '#ef4444' : SKY_DEEP, marginTop: 4, textTransform: 'uppercase', letterSpacing: '.14em', opacity: .85 }}>Nuevo Stock</p>
                             </div>
                         </>
                     )}
@@ -97,53 +128,87 @@ export default function ModalMovimiento({ repuesto, onGuardado, onCerrar }) {
 
                     {/* Tipo toggle */}
                     <div>
-                        <label className="sswap-label">TIPO DE MOVIMIENTO</label>
+                        <label style={labelSt}>TIPO DE MOVIMIENTO</label>
                         <div style={{ display: 'flex', gap: 8 }}>
-                            {['entrada', 'salida'].map(t => (
-                                <button key={t} type="button"
-                                    style={{ flex: 1, padding: '10px', borderRadius: 9, border: `1px solid ${form.tipo === t ? (t === 'entrada' ? 'rgba(34,197,94,.4)' : 'rgba(239,68,68,.4)') : bdr}`, background: form.tipo === t ? (t === 'entrada' ? 'rgba(34,197,94,.1)' : 'rgba(239,68,68,.1)') : 'none', color: form.tipo === t ? (t === 'entrada' ? '#22c55e' : '#ef4444') : mut, fontFamily: "'Bebas Neue'", fontSize: '.78rem', letterSpacing: '.12em', cursor: 'pointer', transition: 'all .15s', textTransform: 'uppercase' }}
-                                    onClick={() => setForm(f => ({ ...f, tipo: t }))}>
-                                    {t === 'entrada' ? 'Entrada de Stock' : 'Salida de Stock'}
-                                </button>
-                            ))}
+                            {[
+                                { val: 'entrada', label: 'Entrada de Stock', color: '#10b981', icon: <IconIn /> },
+                                { val: 'salida',  label: 'Salida de Stock',  color: '#ef4444', icon: <IconOut /> },
+                            ].map(t => {
+                                const active = form.tipo === t.val;
+                                return (
+                                    <button key={t.val} type="button"
+                                        style={{
+                                            flex: 1, padding: '11px',
+                                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+                                            borderRadius: 10,
+                                            border: `1px solid ${active ? t.color + '66' : bdr}`,
+                                            background: active ? t.color + '15' : 'transparent',
+                                            color: active ? t.color : mut,
+                                            fontFamily: "'Bebas Neue'", fontSize: '.78rem', letterSpacing: '.14em',
+                                            cursor: 'pointer', transition: 'all .18s', textTransform: 'uppercase',
+                                            boxShadow: active ? `0 6px 18px -8px ${t.color}` : 'none',
+                                        }}
+                                        onClick={() => setForm(f => ({ ...f, tipo: t.val }))}>
+                                        {t.icon} {t.label}
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
 
                     {/* Cantidad */}
                     <div>
-                        <label className="sswap-label">CANTIDAD *</label>
-                        <input className="sswap-input" type="number" min="1" name="cantidad"
+                        <label style={labelSt}>CANTIDAD *</label>
+                        <input type="number" min="1" name="cantidad"
                             value={form.cantidad} onChange={handleChange}
+                            onFocus={onFocus} onBlur={onBlur}
                             required placeholder="0"
-                            style={{ ...inputSt, fontSize: '1.1rem', textAlign: 'center', fontFamily: "'Bebas Neue'", letterSpacing: '.04em' }} />
+                            style={{ ...inputSt, fontSize: '1.15rem', textAlign: 'center', fontFamily: "'Bebas Neue'", letterSpacing: '.04em', padding: '12px' }} />
                     </div>
 
                     {/* Motivo */}
                     <div>
-                        <label className="sswap-label">MOTIVO</label>
-                        <input className="sswap-input" name="motivo" value={form.motivo} onChange={handleChange}
+                        <label style={labelSt}>MOTIVO</label>
+                        <input name="motivo" value={form.motivo} onChange={handleChange}
+                            onFocus={onFocus} onBlur={onBlur}
                             placeholder="Ej: Compra proveedor, Uso en OT-042" style={inputSt} />
                     </div>
 
                     {/* Referencia */}
                     <div>
-                        <label className="sswap-label">REFERENCIA <span style={{ fontFamily: "'Outfit'", textTransform: 'none', letterSpacing: 0, fontSize: '.7rem', fontWeight: 300, WebkitTextFillColor: mut }}>Nro. factura / OT</span></label>
-                        <input className="sswap-input" name="referencia" value={form.referencia} onChange={handleChange}
+                        <label style={labelSt}>REFERENCIA <span style={{ fontFamily: "'Outfit'", textTransform: 'none', letterSpacing: 0, fontSize: '.7rem', fontWeight: 300, color: mut, WebkitTextFillColor: mut }}>· Nro. factura / OT</span></label>
+                        <input name="referencia" value={form.referencia} onChange={handleChange}
+                            onFocus={onFocus} onBlur={onBlur}
                             placeholder="FAC-001, OT-042" style={inputSt} />
                     </div>
 
                     {error && (
-                        <div style={{ padding: '10px 14px', borderRadius: 9, background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.22)', color: '#ef4444', fontFamily: "'Outfit'", fontSize: '.82rem', fontWeight: 500 }}>
+                        <div style={{ padding: '10px 14px', borderRadius: 10, background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.25)', color: '#ef4444', fontFamily: "'Outfit'", fontSize: '.82rem', fontWeight: 500 }}>
                             {error}
                         </div>
                     )}
 
                     {/* Footer */}
-                    <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', paddingTop: 16, borderTop: `1px solid ${isDark ? 'rgba(255,255,255,.06)' : 'rgba(100,30,180,.08)'}`, marginTop: 4 }}>
-                        <button type="button" className="btn-ghost" onClick={onCerrar}>Cancelar</button>
+                    <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', paddingTop: 16, borderTop: `1px solid ${bdr}`, marginTop: 4 }}>
+                        <button type="button" onClick={onCerrar}
+                            style={{ fontFamily: "'Bebas Neue'", fontSize: '.72rem', letterSpacing: '.14em', background: 'none', border: `1px solid ${bdr}`, borderRadius: 10, padding: '10px 18px', cursor: 'pointer', color: mut, transition: 'all .18s' }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = SKY_BDR; e.currentTarget.style.color = txt; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = bdr; e.currentTarget.style.color = mut; }}>
+                            CANCELAR
+                        </button>
                         <button type="submit" disabled={saving}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontFamily: "'Bebas Neue'", fontSize: '.75rem', letterSpacing: '.12em', color: '#fff', background: `linear-gradient(135deg, ${esEntrada ? '#16a34a, #22c55e' : '#dc2626, #ef4444'})`, border: 'none', borderRadius: 10, padding: '10px 20px', cursor: 'pointer', transition: 'all .2s', opacity: saving ? .6 : 1 }}>
-                            {saving ? 'Guardando...' : `Confirmar ${esEntrada ? 'Entrada' : 'Salida'}`}
+                            style={{
+                                display: 'inline-flex', alignItems: 'center', gap: 7,
+                                fontFamily: "'Bebas Neue'", fontSize: '.78rem', letterSpacing: '.14em',
+                                color: '#fff',
+                                background: `linear-gradient(135deg, ${esEntrada ? '#059669' : '#dc2626'}, ${accentColor})`,
+                                border: 'none', borderRadius: 10, padding: '10px 22px',
+                                cursor: saving ? 'not-allowed' : 'pointer', transition: 'all .2s',
+                                opacity: saving ? .6 : 1, boxShadow: `0 6px 18px -8px ${accentColor}`,
+                            }}
+                            onMouseEnter={e => { if (!saving) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = `0 10px 26px -8px ${accentColor}`; } }}
+                            onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = `0 6px 18px -8px ${accentColor}`; }}>
+                            {saving ? 'GUARDANDO...' : `CONFIRMAR ${esEntrada ? 'ENTRADA' : 'SALIDA'}`}
                         </button>
                     </div>
                 </form>
