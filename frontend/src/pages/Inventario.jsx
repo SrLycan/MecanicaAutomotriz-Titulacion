@@ -29,6 +29,10 @@ export default function Inventario() {
     const [soloAlerta,  setSoloAlerta]  = useState(false);
     const [modalRep,    setModalRep]    = useState({ open: false, data: null });
     const [modalMov,    setModalMov]    = useState({ open: false, repuesto: null });
+    const [sortConfig,  setSortConfig]  = useState({ key: 'nombre', direction: 'asc' });
+    const [seleccionados, setSeleccionados] = useState([]);
+    const [bulkCategoria, setBulkCategoria] = useState('');
+    const [bulkBusy, setBulkBusy] = useState(false);
     const debounceRef = useRef(null);
 
     const esAdmin  = tieneRol('administrador');
@@ -62,15 +66,41 @@ export default function Inventario() {
             if (catId)  params.set('categoria_id', catId);
             if (alerta) params.set('bajo_stock', 'true');
             const { data } = await api.get(`/inventory/repuestos?${params}`);
-            setRepuestos(data.repuestos);
+            setRepuestos(data.repuestos || []);
+            setSeleccionados([]);
         } catch { toast.error('Error al cargar repuestos.'); }
         finally { setLoading(false); }
     }, []);
 
     useEffect(() => {
         cargarRepuestos();
-        api.get('/inventory/categorias').then(r => setCategorias(r.data.categorias)).catch(() => {});
+        api.get('/inventory/categorias').then(r => setCategorias(r.data.categorias || [])).catch(() => {});
     }, [cargarRepuestos]);
+
+    const repuestosOrdenados = useMemo(() => {
+        const lista = [...repuestos];
+        if (!sortConfig.key) return lista;
+
+        const getters = {
+            nombre: (r) => normalizarTexto(r.nombre),
+            stock:  (r) => numero(r.stock_actual),
+            precio: (r) => numero(r.precio_venta),
+        };
+
+        lista.sort((a, b) => {
+            const aVal = getters[sortConfig.key]?.(a);
+            const bVal = getters[sortConfig.key]?.(b);
+            if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+            return normalizarTexto(a.nombre).localeCompare(normalizarTexto(b.nombre));
+        });
+
+        return lista;
+    }, [repuestos, sortConfig]);
+
+    const idsVisibles = useMemo(() => repuestosOrdenados.map(r => r.id), [repuestosOrdenados]);
+    const seleccionadosData = useMemo(() => repuestos.filter(r => seleccionados.includes(r.id)), [repuestos, seleccionados]);
+    const todosSeleccionados = idsVisibles.length > 0 && idsVisibles.every(id => seleccionados.includes(id));
 
     const handleBusqueda = (e) => {
         const val = e.target.value;
@@ -85,14 +115,109 @@ export default function Inventario() {
     const hayFiltros = Boolean(busqueda || filtroCateg || soloAlerta);
     const nombreCateg = categorias.find(c => String(c.id) === String(filtroCateg))?.nombre;
 
-    const exportCSV = () => {
-        const rows = [['Codigo','Nombre','Categoria','Stock Actual','Stock Minimo','Precio Compra','Precio Venta']];
-        repuestos.forEach(r => rows.push([r.codigo, r.nombre, r.categoria_nombre || '', r.stock_actual, r.stock_minimo, r.precio_compra, r.precio_venta]));
-        const csv = rows.map(r => r.join(',')).join('\n');
+    const handleSort = (key) => {
+        setSortConfig(prev => ({
+            key,
+            direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc',
+        }));
+    };
+
+    const toggleSeleccion = (id) => {
+        setSeleccionados(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]);
+    };
+
+    const toggleSeleccionVisible = () => {
+        setSeleccionados(prev => {
+            if (todosSeleccionados) return prev.filter(id => !idsVisibles.includes(id));
+            return Array.from(new Set([...prev, ...idsVisibles]));
+        });
+    };
+
+    const buildPayloadRepuesto = (repuesto, overrides = {}) => ({
+        codigo: repuesto.codigo || '',
+        nombre: repuesto.nombre || '',
+        descripcion: repuesto.descripcion || '',
+        categoria_id: repuesto.categoria_id || '',
+        precio_compra: repuesto.precio_compra ?? 0,
+        precio_venta: repuesto.precio_venta ?? 0,
+        stock_actual: repuesto.stock_actual ?? 0,
+        stock_minimo: repuesto.stock_minimo ?? 0,
+        unidad_medida: repuesto.unidad_medida || 'unidad',
+        activo: repuesto.activo !== false,
+        imagen_url: getImagenSrc(repuesto),
+        ...overrides,
+    });
+
+    const rowsCSV = (items) => {
+        const rows = [['Codigo','Nombre','Categoria','Stock Actual','Stock Minimo','Precio Compra','Precio Venta','Estado']];
+        items.forEach(r => rows.push([
+            r.codigo,
+            r.nombre,
+            r.categoria_nombre || '',
+            r.stock_actual,
+            r.stock_minimo,
+            r.precio_compra,
+            r.precio_venta,
+            r.activo !== false ? 'Activo' : 'Inactivo',
+        ]));
+        return rows.map(row => row.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    };
+
+    const descargarCSV = (items, nombreArchivo) => {
         const a = document.createElement('a');
-        a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-        a.download = `inventario_${new Date().toISOString().slice(0,10)}.csv`;
+        a.href = URL.createObjectURL(new Blob([rowsCSV(items)], { type: 'text/csv;charset=utf-8;' }));
+        a.download = nombreArchivo;
         a.click();
+        URL.revokeObjectURL(a.href);
+    };
+
+    const exportCSV = () => {
+        descargarCSV(repuestosOrdenados, `inventario_${new Date().toISOString().slice(0,10)}.csv`);
+    };
+
+    const exportSeleccion = () => {
+        if (seleccionadosData.length === 0) return;
+        descargarCSV(seleccionadosData, `inventario_seleccion_${new Date().toISOString().slice(0,10)}.csv`);
+    };
+
+    const ejecutarBulkUpdate = async (overridesFactory, mensaje) => {
+        if (seleccionadosData.length === 0) return;
+        setBulkBusy(true);
+        try {
+            await Promise.all(seleccionadosData.map(r => api.put(`/inventory/repuestos/${r.id}`, buildPayloadRepuesto(r, overridesFactory(r)))));
+            toast.success(mensaje);
+            setSeleccionados([]);
+            setBulkCategoria('');
+            cargarRepuestos(busqueda, filtroCateg, soloAlerta);
+        } catch (err) {
+            toast.error(err.response?.data?.error || 'No se pudo aplicar la accion en lote.');
+        } finally {
+            setBulkBusy(false);
+        }
+    };
+
+    const handleBulkActivo = (activo) => ejecutarBulkUpdate(() => ({ activo }), activo ? 'Repuestos activados.' : 'Repuestos desactivados.');
+
+    const handleBulkCategoria = () => {
+        if (!bulkCategoria) { toast.error('Selecciona una categoria para aplicar.'); return; }
+        const categoria_id = bulkCategoria === '__none__' ? '' : bulkCategoria;
+        ejecutarBulkUpdate(() => ({ categoria_id }), 'Categoria actualizada para la seleccion.');
+    };
+
+    const handleBulkEliminar = async () => {
+        if (seleccionadosData.length === 0) return;
+        if (!window.confirm(`Eliminar ${seleccionadosData.length} repuesto${seleccionadosData.length !== 1 ? 's' : ''} seleccionado${seleccionadosData.length !== 1 ? 's' : ''}?`)) return;
+        setBulkBusy(true);
+        try {
+            await Promise.all(seleccionadosData.map(r => api.delete(`/inventory/repuestos/${r.id}`)));
+            toast.success('Seleccion eliminada.');
+            setSeleccionados([]);
+            cargarRepuestos(busqueda, filtroCateg, soloAlerta);
+        } catch (err) {
+            toast.error(err.response?.data?.error || 'No se pudo eliminar la seleccion.');
+        } finally {
+            setBulkBusy(false);
+        }
     };
 
     const handleGuardar = async (formData) => {
@@ -246,6 +371,31 @@ export default function Inventario() {
                 </span>
                 {hayFiltros && <span style={{ fontFamily: "'Outfit'", fontSize: '.76rem', color: faint }}>· filtrado</span>}
             </div>
+
+            {/* ── Acciones en lote ── */}
+            {seleccionados.length > 0 && (
+                <div style={{ marginBottom: 14, padding: '12px 14px', borderRadius: 13, border: `1px solid ${isDark ? 'rgba(168,85,247,.22)' : 'rgba(124,58,237,.18)'}`, background: isDark ? 'rgba(168,85,247,.055)' : 'rgba(124,58,237,.05)', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <span style={{ fontFamily: "'Bebas Neue'", letterSpacing: '.12em', fontSize: '.78rem', color: '#a855f7' }}>
+                        {seleccionados.length} seleccionado{seleccionados.length !== 1 ? 's' : ''}
+                    </span>
+                    <button className="btn-ghost" disabled={bulkBusy} onClick={exportSeleccion}><IconDownload /> Exportar seleccion</button>
+
+                    {esAdmin && (
+                        <>
+                            <button className="btn-ghost" disabled={bulkBusy} onClick={() => handleBulkActivo(true)}>Activar</button>
+                            <button className="btn-ghost" disabled={bulkBusy} onClick={() => handleBulkActivo(false)}>Desactivar</button>
+                            <select value={bulkCategoria} onChange={e => setBulkCategoria(e.target.value)} style={selStyle} disabled={bulkBusy}>
+                                <option value="">Cambiar categoria...</option>
+                                <option value="__none__">Sin categoria</option>
+                                {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                            </select>
+                            <button className="btn-ghost" disabled={bulkBusy} onClick={handleBulkCategoria}>Aplicar categoria</button>
+                            <button className="btn-ghost" disabled={bulkBusy} onClick={handleBulkEliminar} style={{ color: '#ef4444', borderColor: 'rgba(239,68,68,.25)' }}><IconTrash /> Eliminar</button>
+                        </>
+                    )}
+                    <button className="btn-ghost" disabled={bulkBusy} onClick={() => setSeleccionados([])}>Limpiar seleccion</button>
+                </div>
+            )}
 
             {/* ── Tabla ── */}
             <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, overflow: 'hidden', boxShadow: cardSh }}>
