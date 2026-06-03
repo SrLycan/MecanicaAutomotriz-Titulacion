@@ -1,14 +1,81 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import toast from 'react-hot-toast';
 import { useTheme } from '../../context/ThemeContext';
 
-const EMPTY = { codigo: '', nombre: '', descripcion: '', categoria_id: '', precio_compra: '', precio_venta: '', stock_actual: '', stock_minimo: '5', unidad_medida: 'unidad' };
+const EMPTY = {
+    codigo: '',
+    nombre: '',
+    descripcion: '',
+    categoria_id: '',
+    precio_compra: '',
+    precio_venta: '',
+    stock_actual: '',
+    stock_minimo: '5',
+    unidad_medida: 'unidad',
+    imagen_url: '',
+};
 
 function IconX() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>; }
+function IconImage() { return <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>; }
+
+const getApiHost = () => {
+    const base = process.env.REACT_APP_API_URL || '/api';
+    if (/^https?:\/\//i.test(base)) return base.replace(/\/api\/?$/i, '').replace(/\/$/, '');
+    return window.location.origin;
+};
+
+const resolveImagenSrc = (value = '') => {
+    const src = String(value || '').trim();
+    if (!src) return '';
+    if (/^(data:image\/|blob:|https?:\/\/)/i.test(src)) return src;
+    if (src.startsWith('/')) return `${getApiHost()}${src}`;
+    return `${getApiHost()}/${src.replace(/^\/+/, '')}`;
+};
+
+const getImagenSrc = (repuesto = {}) => resolveImagenSrc(repuesto.imagen_url || repuesto.imagen || repuesto.foto_url || repuesto.foto || '');
+
+const fileToDataUrl = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result || '');
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+});
+
+const comprimirImagen = (file, maxSize = 900, quality = 0.78) => new Promise((resolve, reject) => {
+    if (file.type === 'image/svg+xml') {
+        fileToDataUrl(file).then(resolve).catch(reject);
+        return;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+
+    img.onload = () => {
+        const ratio = Math.min(1, maxSize / Math.max(img.width, img.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(img.width * ratio));
+        canvas.height = Math.max(1, Math.round(img.height * ratio));
+
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(objectUrl);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+
+    img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('No se pudo procesar la imagen.'));
+    };
+
+    img.src = objectUrl;
+});
 
 export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerrar }) {
     const { isDark } = useTheme();
-    const [form, setForm]     = useState(EMPTY);
+    const [form, setForm] = useState(EMPTY);
+    const [preview, setPreview] = useState('');
     const [saving, setSaving] = useState(false);
+    const objectUrlRef = useRef('');
     const esEdicion = Boolean(repuesto);
 
     // ── Paleta celeste / blanco / negro ──
@@ -36,13 +103,38 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
         color: SKY_DEEP, WebkitTextFillColor: SKY_DEEP, background: 'none',
     };
 
+    const limpiarObjectUrl = () => {
+        if (objectUrlRef.current) {
+            URL.revokeObjectURL(objectUrlRef.current);
+            objectUrlRef.current = '';
+        }
+    };
+
+    useEffect(() => () => limpiarObjectUrl(), []);
+
     useEffect(() => {
-        if (repuesto) setForm({
-            codigo: repuesto.codigo || '', nombre: repuesto.nombre || '', descripcion: repuesto.descripcion || '',
-            categoria_id: repuesto.categoria_id || '', precio_compra: repuesto.precio_compra || '',
-            precio_venta: repuesto.precio_venta || '', stock_actual: repuesto.stock_actual || '',
-            stock_minimo: repuesto.stock_minimo || '5', unidad_medida: repuesto.unidad_medida || 'unidad',
-        });
+        limpiarObjectUrl();
+
+        if (repuesto) {
+            const imagen = repuesto.imagen_url || repuesto.imagen || repuesto.foto_url || repuesto.foto || '';
+            const nextForm = {
+                codigo: repuesto.codigo || '',
+                nombre: repuesto.nombre || '',
+                descripcion: repuesto.descripcion || '',
+                categoria_id: repuesto.categoria_id || '',
+                precio_compra: repuesto.precio_compra || '',
+                precio_venta: repuesto.precio_venta || '',
+                stock_actual: repuesto.stock_actual || '',
+                stock_minimo: repuesto.stock_minimo || '5',
+                unidad_medida: repuesto.unidad_medida || 'unidad',
+                imagen_url: imagen,
+            };
+            setForm(nextForm);
+            setPreview(resolveImagenSrc(imagen));
+        } else {
+            setForm(EMPTY);
+            setPreview('');
+        }
     }, [repuesto]);
 
     const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
@@ -52,9 +144,11 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
     const handleSubmit = async (e) => {
         e.preventDefault();
         setSaving(true);
-        await onGuardar(form);
+        await onGuardar({ ...form, imagen_url: form.imagen_url || '' });
         setSaving(false);
     };
+
+    const urlValue = form.imagen_url?.startsWith('data:image/') ? '' : form.imagen_url;
 
     return (
         <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onCerrar()}>
@@ -120,6 +214,38 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
                                 onFocus={onFocus} onBlur={onBlur}
                                 rows={2} placeholder="Descripcion breve del repuesto..."
                                 style={{ ...inputSt, resize: 'vertical', minHeight: 64 }} />
+                        </div>
+
+                        {/* Imagen */}
+                        <div style={{ gridColumn: '1/-1' }}>
+                            <label className="sswap-label">FOTO DEL REPUESTO</label>
+                            <div style={{ display: 'grid', gridTemplateColumns: '108px 1fr', gap: 12, alignItems: 'stretch' }}>
+                                <div style={{ minHeight: 108, borderRadius: 14, border: `1px dashed ${bdr}`, background: isDark ? 'rgba(255,255,255,.025)' : 'rgba(124,58,237,.035)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', color: mut }}>
+                                    {preview ? (
+                                        <img src={preview} alt="Vista previa del repuesto" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={() => setPreview('')} />
+                                    ) : (
+                                        <div style={{ textAlign: 'center' }}>
+                                            <IconImage />
+                                            <p style={{ fontFamily: "'Outfit'", fontSize: '.68rem', marginTop: 6 }}>Sin foto</p>
+                                        </div>
+                                    )}
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                    <input className="sswap-input" type="file" accept="image/*" onChange={handleImagenFile} style={{ ...inputSt, padding: '9px 12px' }} />
+                                    <input className="sswap-input" name="imagen_url" value={urlValue} onChange={handleChange}
+                                        placeholder="O pega una URL/ruta de imagen..." style={inputSt} />
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
+                                        <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.68rem', color: mut }}>
+                                            {form.imagen_url?.startsWith('data:image/') ? 'Imagen cargada desde archivo.' : 'Puedes pegar una URL o subir una foto.'}
+                                        </p>
+                                        {preview && (
+                                            <button type="button" className="btn-ghost" onClick={quitarImagen}>
+                                                Quitar
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         {/* Categoria */}

@@ -68,7 +68,18 @@ const obtenerRepuesto = async (req, res) => {
  * Roles permitidos: administrador
  */
 const crearRepuesto = async (req, res) => {
-    const { codigo, nombre, descripcion, categoria_id, precio_compra, precio_venta, stock_actual, stock_minimo, unidad_medida } = req.body;
+    const {
+        codigo,
+        nombre,
+        descripcion,
+        categoria_id,
+        precio_compra,
+        precio_venta,
+        stock_actual,
+        stock_minimo,
+        unidad_medida,
+        imagen_url,
+    } = req.body;
 
     if (!codigo || !nombre) {
         return res.status(400).json({ error: 'Código y nombre son obligatorios.' });
@@ -77,12 +88,21 @@ const crearRepuesto = async (req, res) => {
     try {
         const { rows } = await pool.query(
             `INSERT INTO repuestos
-                (codigo, nombre, descripcion, categoria_id, precio_compra, precio_venta, stock_actual, stock_minimo, unidad_medida)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+                (codigo, nombre, descripcion, categoria_id, precio_compra, precio_venta, stock_actual, stock_minimo, unidad_medida, imagen_url)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
              RETURNING *`,
-            [codigo.trim().toUpperCase(), nombre.trim(), descripcion, categoria_id || null,
-             precio_compra || 0, precio_venta || 0, stock_actual || 0, stock_minimo || 5,
-             unidad_medida || 'unidad']
+            [
+                codigo.trim().toUpperCase(),
+                nombre.trim(),
+                descripcion || null,
+                categoria_id || null,
+                precio_compra === '' || precio_compra == null ? 0 : precio_compra,
+                precio_venta === '' || precio_venta == null ? 0 : precio_venta,
+                stock_actual === '' || stock_actual == null ? 0 : stock_actual,
+                stock_minimo === '' || stock_minimo == null ? 5 : stock_minimo,
+                unidad_medida || 'unidad',
+                imagen_url || null,
+            ]
         );
         return res.status(201).json(rows[0]);
     } catch (err) {
@@ -91,7 +111,6 @@ const crearRepuesto = async (req, res) => {
         return res.status(500).json({ error: 'Error al crear repuesto.' });
     }
 };
-
 /**
  * PUT /api/inventory/repuestos/:id
  * Roles permitidos: administrador
@@ -99,44 +118,101 @@ const crearRepuesto = async (req, res) => {
  */
 const actualizarRepuesto = async (req, res) => {
     const { id } = req.params;
-    const { nombre, descripcion, categoria_id, precio_compra, precio_venta, stock_minimo, unidad_medida } = req.body;
+    const {
+        codigo,
+        nombre,
+        descripcion,
+        categoria_id,
+        precio_compra,
+        precio_venta,
+        stock_minimo,
+        unidad_medida,
+        activo,
+        imagen_url,
+    } = req.body;
+
+    if (!nombre) {
+        return res.status(400).json({ error: 'El nombre es obligatorio.' });
+    }
 
     try {
         const { rows } = await pool.query(
             `UPDATE repuestos
-             SET nombre=$1, descripcion=$2, categoria_id=$3, precio_compra=$4,
-                 precio_venta=$5, stock_minimo=$6, unidad_medida=$7
-             WHERE id=$8 AND activo=TRUE
+             SET codigo=COALESCE(NULLIF($1, ''), codigo),
+                 nombre=$2,
+                 descripcion=$3,
+                 categoria_id=$4,
+                 precio_compra=$5,
+                 precio_venta=$6,
+                 stock_minimo=$7,
+                 unidad_medida=$8,
+                 activo=COALESCE($9, activo),
+                 imagen_url=$10
+             WHERE id=$11
              RETURNING *`,
-            [nombre, descripcion, categoria_id || null, precio_compra, precio_venta, stock_minimo, unidad_medida, id]
+            [
+                codigo ? codigo.trim().toUpperCase() : null,
+                nombre.trim(),
+                descripcion || null,
+                categoria_id || null,
+                precio_compra === '' || precio_compra == null ? 0 : precio_compra,
+                precio_venta === '' || precio_venta == null ? 0 : precio_venta,
+                stock_minimo === '' || stock_minimo == null ? 5 : stock_minimo,
+                unidad_medida || 'unidad',
+                typeof activo === 'boolean' ? activo : null,
+                imagen_url || null,
+                id,
+            ]
         );
         if (!rows[0]) return res.status(404).json({ error: 'Repuesto no encontrado.' });
         return res.json(rows[0]);
     } catch (err) {
+        if (err.code === '23505') return res.status(409).json({ error: 'El código ya existe.' });
         console.error('Error actualizarRepuesto:', err);
         return res.status(500).json({ error: 'Error al actualizar repuesto.' });
     }
 };
-
 /**
  * DELETE /api/inventory/repuestos/:id
  * Soft delete — solo administrador
  */
 const eliminarRepuesto = async (req, res) => {
     const { id } = req.params;
+    const client = await pool.connect();
+
     try {
-        const { rowCount } = await pool.query(
-            'UPDATE repuestos SET activo=FALSE WHERE id=$1 AND activo=TRUE',
+        await client.query('BEGIN');
+
+        // Borra primero los movimientos relacionados para evitar errores de llave foranea.
+        await client.query(
+            'DELETE FROM movimientos_inventario WHERE repuesto_id=$1',
             [id]
         );
-        if (!rowCount) return res.status(404).json({ error: 'Repuesto no encontrado.' });
-        return res.json({ mensaje: 'Repuesto eliminado correctamente.' });
+
+        // Ahora borra el repuesto de verdad de la tabla repuestos.
+        const { rows, rowCount } = await client.query(
+            'DELETE FROM repuestos WHERE id=$1 RETURNING id, nombre',
+            [id]
+        );
+
+        if (!rowCount) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ error: 'Repuesto no encontrado.' });
+        }
+
+        await client.query('COMMIT');
+        return res.json({
+            mensaje: 'Repuesto eliminado definitivamente de la base de datos.',
+            repuesto: rows[0],
+        });
     } catch (err) {
+        await client.query('ROLLBACK');
         console.error('Error eliminarRepuesto:', err);
         return res.status(500).json({ error: 'Error al eliminar repuesto.' });
+    } finally {
+        client.release();
     }
 };
-
 // ─────────────────────────────────────────────────────────────
 // MOVIMIENTOS DE STOCK
 // ─────────────────────────────────────────────────────────────

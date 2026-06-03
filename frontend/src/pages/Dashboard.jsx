@@ -44,12 +44,23 @@ export default function Dashboard() {
 
     useEffect(() => {
         const cargar = async () => {
+            setLoading(true);
             try {
-                const [repRes, bajRes, movRes] = await Promise.all([
+                const [repRes, bajRes] = await Promise.all([
                     api.get('/inventory/repuestos'),
                     api.get('/inventory/repuestos?bajo_stock=true'),
-                    api.get('/inventory/movimientos?limit=200'),
                 ]);
+
+                let movimientos = [];
+                if (puedeVerMovimientos) {
+                    try {
+                        const movRes = await api.get('/inventory/movimientos?limit=500');
+                        movimientos = movRes.data.movimientos || [];
+                    } catch {
+                        movimientos = [];
+                    }
+                }
+
                 const hoy = new Date().toDateString();
                 const movHoy = movRes.data.movimientos.filter(m => new Date(m.created_at).toDateString() === hoy);
                 const valor = (repRes.data.repuestos || []).reduce((s, r) => s + (r.stock_actual * parseFloat(r.precio_venta || 0)), 0);
@@ -66,7 +77,7 @@ export default function Dashboard() {
             finally { setLoading(false); }
         };
         cargar();
-    }, []);
+    }, [puedeVerMovimientos]);
 
     const meta = ROL_META[usuario?.rol] || ROL_META.recepcionista;
     const esAdmin   = usuario?.rol === 'administrador';
