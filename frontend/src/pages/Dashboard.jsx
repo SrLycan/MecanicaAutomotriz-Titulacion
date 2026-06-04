@@ -20,11 +20,12 @@ function IconBolt()   { return <svg width="16" height="16" viewBox="0 0 24 24" f
 function IconWrench() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>; }
 
 export default function Dashboard() {
-    const { usuario } = useAuth();
+    const { usuario, tieneRol } = useAuth();
     const { isDark }  = useTheme();
     const [stats,   setStats]   = useState({ total: 0, bajo_stock: 0, entradas: 0, salidas: 0, valor: 0 });
     const [alertas, setAlertas] = useState([]);
     const [movRecientes, setMovRecientes] = useState([]);
+    const puedeVerMovimientos = tieneRol('administrador', 'tecnico', 'recepcionista');
     const [loading, setLoading] = useState(true);
 
     const SKY      = '#0ea5e9';
@@ -62,7 +63,7 @@ export default function Dashboard() {
                 }
 
                 const hoy = new Date().toDateString();
-                const movHoy = movRes.data.movimientos.filter(m => new Date(m.created_at).toDateString() === hoy);
+                const movHoy = movimientos.filter(m => new Date(m.created_at).toDateString() === hoy);
                 const valor = (repRes.data.repuestos || []).reduce((s, r) => s + (r.stock_actual * parseFloat(r.precio_venta || 0)), 0);
                 setStats({
                     total: repRes.data.total,
@@ -72,7 +73,7 @@ export default function Dashboard() {
                     valor,
                 });
                 setAlertas(bajRes.data.repuestos.slice(0, 6));
-                setMovRecientes(movRes.data.movimientos.slice(0, 5));
+                setMovRecientes(movimientos.slice(0, 5));
             } catch {}
             finally { setLoading(false); }
         };

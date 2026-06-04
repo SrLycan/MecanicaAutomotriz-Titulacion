@@ -15,8 +15,11 @@ import Layout         from './components/layout/Layout';
 import Dashboard      from './pages/Dashboard';
 import Inventario     from './pages/Inventario';
 import Movimientos    from './pages/Movimientos';
+import RegistrarMovimiento from './pages/RegistrarMovimiento';
 import Usuarios       from './pages/Usuarios';
 import Sucursales     from './pages/Sucursales';
+import OrdenesTrabajo from './pages/OrdenesTrabajo';
+import Vehiculos      from './pages/Vehiculos';
 
 import './styles/global.css';
 
@@ -57,14 +60,29 @@ export default function App() {
                         }>
                             <Route index                element={<Dashboard />} />
                             <Route path="inventario"    element={<Inventario />} />
+                            <Route path="registrar"     element={
+                                <ProtectedRoute roles={['administrador', 'tecnico', 'recepcionista']}>
+                                    <RegistrarMovimiento />
+                                </ProtectedRoute>
+                            } />
                             <Route path="movimientos"   element={
-                                <ProtectedRoute roles={['administrador', 'tecnico']}>
+                                <ProtectedRoute roles={['administrador', 'tecnico', 'recepcionista']}>
                                     <Movimientos />
                                 </ProtectedRoute>
                             } />
                             <Route path="usuarios"      element={
                                 <ProtectedRoute roles={['administrador']}>
                                     <Usuarios />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="ordenes"       element={
+                                <ProtectedRoute roles={['administrador','tecnico','recepcionista']}>
+                                    <OrdenesTrabajo />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="vehiculos"    element={
+                                <ProtectedRoute roles={['administrador','tecnico','recepcionista']}>
+                                    <Vehiculos />
                                 </ProtectedRoute>
                             } />
                             <Route path="sucursales"    element={

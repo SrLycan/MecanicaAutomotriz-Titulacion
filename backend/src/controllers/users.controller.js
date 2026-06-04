@@ -100,6 +100,74 @@ const cambiarEstado = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────
+// ACTUALIZAR USUARIO (nombre, email, telefono, cedula)
+// PUT /api/users/:id   (admin)
+// ─────────────────────────────────────────────────────────────
+const actualizarUsuario = async (req, res) => {
+    const { id } = req.params;
+    const { nombre, email, telefono, cedula } = req.body;
+
+    if (!nombre) return res.status(400).json({ error: 'El nombre es obligatorio.' });
+
+    if (Number(id) === Number(req.usuario.id))
+        return res.status(400).json({ error: 'No puedes editar tu propia cuenta desde aqui. Usa el perfil.' });
+
+    try {
+        // Verificar si el email ya está en uso por otro usuario
+        if (email) {
+            const { rows: existe } = await pool.query(
+                'SELECT id FROM usuarios WHERE email = $1 AND id != $2',
+                [email.toLowerCase().trim(), id]
+            );
+            if (existe.length > 0)
+                return res.status(409).json({ error: 'Ya existe otro usuario con ese email.' });
+        }
+
+        const { rows } = await pool.query(
+            `UPDATE usuarios SET
+                nombre = COALESCE($1, nombre),
+                email = COALESCE($2, email),
+                telefono = $3,
+                cedula = $4
+             WHERE id = $5
+             RETURNING id, nombre, email, rol, telefono, cedula, activo, estado, created_at`,
+            [nombre.trim(), email ? email.toLowerCase().trim() : null, telefono || null, cedula || null, id]
+        );
+        if (rows.length === 0) return res.status(404).json({ error: 'Usuario no encontrado.' });
+        return res.json({ usuario: rows[0] });
+    } catch (err) {
+        console.error('Error actualizarUsuario:', err);
+        return res.status(500).json({ error: 'Error al actualizar usuario.' });
+    }
+};
+
+// ─────────────────────────────────────────────────────────────
+// CAMBIAR CONTRASEÑA
+// PUT /api/users/:id/password   (admin)
+// ─────────────────────────────────────────────────────────────
+const cambiarPassword = async (req, res) => {
+    const { id } = req.params;
+    const { password } = req.body;
+
+    if (!password || password.length < 6)
+        return res.status(400).json({ error: 'La contrasena debe tener al menos 6 caracteres.' });
+
+    try {
+        const hash = await bcrypt.hash(password, 10);
+        const { rows } = await pool.query(
+            `UPDATE usuarios SET password = $1 WHERE id = $2
+             RETURNING id, nombre, email, rol`,
+            [hash, id]
+        );
+        if (rows.length === 0) return res.status(404).json({ error: 'Usuario no encontrado.' });
+        return res.json({ ok: true, mensaje: 'Contrasena actualizada correctamente.' });
+    } catch (err) {
+        console.error('Error cambiarPassword:', err);
+        return res.status(500).json({ error: 'Error al cambiar contrasena.' });
+    }
+};
+
+// ─────────────────────────────────────────────────────────────
 // ELIMINAR USUARIO
 // DELETE /api/users/:id   (admin)
 // Verifica que no tenga movimientos asociados.
@@ -166,4 +234,4 @@ const crearUsuario = async (req, res) => {
     }
 };
 
-module.exports = { listarUsuarios, cambiarRol, cambiarEstado, eliminarUsuario, crearUsuario };
+module.exports = { listarUsuarios, cambiarRol, cambiarEstado, eliminarUsuario, crearUsuario, actualizarUsuario, cambiarPassword };

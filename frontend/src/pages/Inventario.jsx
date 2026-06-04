@@ -17,10 +17,152 @@ function IconBox()    { return <svg width="20" height="20" viewBox="0 0 24 24" f
 function IconAlert()  { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>; }
 function IconCash()   { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>; }
 function IconTag()    { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>; }
+function IconAlertTri() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>; }
+function IconXSm()   { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>; }
+
+/* ── Modal de alerta de stock bajo (dismissible) ── */
+function StockAlertModal({ repuestos, onCerrar, onIrAAlertas, isDark }) {
+    return (
+        <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onCerrar()}>
+            <div style={{
+                maxWidth: 520, width: '92%',
+                background: isDark ? '#0a0f1c' : '#ffffff',
+                border: '1px solid ' + (isDark ? 'rgba(239,68,68,.25)' : 'rgba(239,68,68,.18)'),
+                borderRadius: 18, padding: 28,
+                position: 'relative', overflow: 'hidden',
+                boxShadow: isDark
+                    ? '0 20px 60px -16px rgba(0,0,0,0.7), 0 0 0 1px rgba(239,68,68,.1) inset'
+                    : '0 20px 60px -16px rgba(15,23,42,0.25), 0 0 0 1px rgba(239,68,68,.08) inset',
+                animation: 'fadeIn .25s ease',
+            }}>
+                {/* Accent line */}
+                <div style={{
+                    position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+                    background: 'linear-gradient(90deg, transparent, #ef4444, #dc2626, #ef4444, transparent)',
+                    borderRadius: '18px 18px 0 0',
+                }} />
+
+                {/* Header */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{
+                            width: 44, height: 44, borderRadius: 12,
+                            background: 'rgba(239,68,68,.1)',
+                            border: '1px solid rgba(239,68,68,.2)',
+                            color: '#ef4444',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            animation: 'alertPulse 2s ease-in-out infinite',
+                        }}>
+                            <IconAlertTri />
+                        </div>
+                        <div>
+                            <p style={{
+                                fontFamily: "'Bebas Neue', sans-serif",
+                                fontSize: '1.1rem', letterSpacing: '.04em',
+                                color: isDark ? '#f1f5f9' : '#0f172a',
+                                lineHeight: 1,
+                            }}>Stock Bajo Detectado</p>
+                            <p style={{
+                                fontFamily: "'Outfit', sans-serif",
+                                fontSize: '.78rem', color: isDark ? 'rgba(241,245,249,.55)' : '#64748b',
+                                marginTop: 4,
+                            }}>
+                                {repuestos.length} repuesto{repuestos.length !== 1 ? 's' : ''} necesita{repuestos.length === 1 ? '' : 'n'} atencion
+                            </p>
+                        </div>
+                    </div>
+                    <button onClick={onCerrar}
+                        style={{
+                            background: 'none', border: '1px solid ' + (isDark ? 'rgba(148,163,184,.18)' : 'rgba(15,23,42,.1)'),
+                            borderRadius: 8, padding: 6, cursor: 'pointer',
+                            color: isDark ? 'rgba(241,245,249,.55)' : '#64748b',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            transition: 'all .15s', flexShrink: 0,
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,.1)'; e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.borderColor = 'rgba(239,68,68,.25)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = isDark ? 'rgba(241,245,249,.55)' : '#64748b'; e.currentTarget.style.borderColor = isDark ? 'rgba(148,163,184,.18)' : 'rgba(15,23,42,.1)'; }}>
+                        <IconXSm />
+                    </button>
+                </div>
+
+                {/* List of low stock products */}
+                <div style={{ maxHeight: 260, overflowY: 'auto', marginBottom: 18 }}>
+                    {repuestos.map((r, i) => (
+                        <div key={r.id} style={{
+                            display: 'flex', alignItems: 'center', gap: 12,
+                            padding: '10px 12px', borderRadius: 10,
+                            background: i % 2 === 0 ? (isDark ? 'rgba(255,255,255,.02)' : 'rgba(239,68,68,.02)') : 'transparent',
+                            marginBottom: 4,
+                        }}>
+                            <code style={{
+                                fontFamily: 'monospace', fontSize: '.72rem', fontWeight: 600,
+                                background: isDark ? 'rgba(14,165,233,.1)' : 'rgba(14,165,233,.05)',
+                                padding: '2px 8px', borderRadius: 5,
+                                color: '#0284c7', border: '1px solid ' + (isDark ? 'rgba(56,189,248,.22)' : 'rgba(14,165,233,.18)'),
+                                flexShrink: 0,
+                            }}>{r.codigo}</code>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                                <p style={{
+                                    fontFamily: "'Outfit', sans-serif", fontWeight: 600, fontSize: '.82rem',
+                                    color: isDark ? '#f1f5f9' : '#0f172a',
+                                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                                }}>{r.nombre}</p>
+                            </div>
+                            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.1rem', color: '#ef4444', lineHeight: 1 }}>{r.stock_actual}</p>
+                                <p style={{ fontFamily: "'Outfit'", fontSize: '.62rem', color: isDark ? 'rgba(241,245,249,.4)' : '#94a3b8' }}>min {r.stock_minimo}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Actions */}
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', borderTop: '1px solid ' + (isDark ? 'rgba(148,163,184,.12)' : 'rgba(15,23,42,.07)'), paddingTop: 16 }}>
+                    <button onClick={onCerrar}
+                        style={{
+                            fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.14em',
+                            background: 'none', border: '1px solid ' + (isDark ? 'rgba(148,163,184,.18)' : 'rgba(15,23,42,.1)'),
+                            borderRadius: 9, padding: '9px 18px', cursor: 'pointer',
+                            color: isDark ? 'rgba(241,245,249,.55)' : '#64748b',
+                            transition: 'all .18s',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = isDark ? 'rgba(56,189,248,.25)' : 'rgba(14,165,233,.25)'; e.currentTarget.style.color = isDark ? '#f1f5f9' : '#0f172a'; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = isDark ? 'rgba(148,163,184,.18)' : 'rgba(15,23,42,.1)'; e.currentTarget.style.color = isDark ? 'rgba(241,245,249,.55)' : '#64748b'; }}>
+                        IGNORAR
+                    </button>
+                    <button onClick={onIrAAlertas}
+                        style={{
+                            fontFamily: "'Bebas Neue'", fontSize: '.75rem', letterSpacing: '.14em',
+                            background: 'linear-gradient(135deg, #dc2626, #ef4444)',
+                            border: 'none', borderRadius: 9, padding: '9px 20px', cursor: 'pointer',
+                            color: '#fff',
+                            boxShadow: '0 6px 18px -6px rgba(239,68,68,.55)',
+                            transition: 'all .2s',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 10px 24px -8px rgba(239,68,68,.65)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 6px 18px -6px rgba(239,68,68,.55)'; }}>
+                        VER ALERTAS
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 export default function Inventario() {
     const { tieneRol }  = useAuth();
     const { isDark }    = useTheme();
+
+    // Helpers locales que faltaban
+    const normalizarTexto = (s) => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const numero = (v) => parseFloat(v) || 0;
+    const getImagenSrc = (r = {}) => {
+        const src = r.imagen_url || r.imagen || r.foto_url || r.foto || '';
+        if (!src) return '';
+        if (/^(data:image\/|blob:|https?:\/\/)/i.test(src)) return src;
+        const base = (process.env.REACT_APP_API_URL || '/api').replace(/\/api\/?$/i, '').replace(/\/$/, '') || window.location.origin;
+        return src.startsWith('/') ? `${base}${src}` : `${base}/${src.replace(/^\/+/, '')}`;
+    };
     const [repuestos,   setRepuestos]   = useState([]);
     const [categorias,  setCategorias]  = useState([]);
     const [loading,     setLoading]     = useState(true);
@@ -31,12 +173,18 @@ export default function Inventario() {
     const [modalMov,    setModalMov]    = useState({ open: false, repuesto: null });
     const [sortConfig,  setSortConfig]  = useState({ key: 'nombre', direction: 'asc' });
     const [seleccionados, setSeleccionados] = useState([]);
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
     const [bulkCategoria, setBulkCategoria] = useState('');
     const [bulkBusy, setBulkBusy] = useState(false);
     const debounceRef = useRef(null);
 
-    const esAdmin  = tieneRol('administrador');
-    const puedeMov = tieneRol('administrador', 'tecnico');
+    const esAdmin    = tieneRol('administrador');
+    const esAdminTec = tieneRol('administrador', 'tecnico');
+    const puedeMov   = tieneRol('administrador', 'tecnico', 'recepcionista');
+    const [showAlertModal, setShowAlertModal] = useState(false);
+    const [bajoStockList, setBajoStockList] = useState([]);
+    const alertaInicialRef = useRef(false);
 
     // ── Paleta celeste / blanco / negro ──
     const SKY      = '#0ea5e9';   // sky-500 (acento principal)
@@ -58,15 +206,19 @@ export default function Inventario() {
     const rowHov  = isDark ? 'rgba(14,165,233,0.06)'      : 'rgba(14,165,233,0.04)';
     const headBg  = isDark ? 'rgba(14,165,233,0.06)'      : 'rgba(14,165,233,0.025)';
 
-    const cargarRepuestos = useCallback(async (q = '', catId = '', alerta = false) => {
+    const cargarRepuestos = useCallback(async (q = '', catId = '', alerta = false, pg = 1) => {
         setLoading(true);
+        setPage(pg);
         try {
             const params = new URLSearchParams();
             if (q)      params.set('q', q);
             if (catId)  params.set('categoria_id', catId);
             if (alerta) params.set('bajo_stock', 'true');
+            params.set('page', pg);
+            params.set('limit', 15);
             const { data } = await api.get(`/inventory/repuestos?${params}`);
             setRepuestos(data.repuestos || []);
+            setTotalPages(data.totalPages || 1);
             setSeleccionados([]);
         } catch { toast.error('Error al cargar repuestos.'); }
         finally { setLoading(false); }
@@ -76,6 +228,18 @@ export default function Inventario() {
         cargarRepuestos();
         api.get('/inventory/categorias').then(r => setCategorias(r.data.categorias || [])).catch(() => {});
     }, [cargarRepuestos]);
+
+    // Show low stock alert modal only on initial page load
+    useEffect(() => {
+        if (!loading && repuestos.length > 0 && !alertaInicialRef.current) {
+            const bajos = repuestos.filter(r => r.stock_actual <= r.stock_minimo);
+            if (bajos.length > 0) {
+                setBajoStockList(bajos);
+                setShowAlertModal(true);
+                alertaInicialRef.current = true;
+            }
+        }
+    }, [loading, repuestos]);
 
     const repuestosOrdenados = useMemo(() => {
         const lista = [...repuestos];
@@ -106,12 +270,12 @@ export default function Inventario() {
         const val = e.target.value;
         setBusqueda(val);
         clearTimeout(debounceRef.current);
-        debounceRef.current = setTimeout(() => cargarRepuestos(val, filtroCateg, soloAlerta), 300);
+        debounceRef.current = setTimeout(() => cargarRepuestos(val, filtroCateg, soloAlerta, 1), 300);
     };
 
-    const handleFiltroCateg = (e) => { setFiltroCateg(e.target.value); cargarRepuestos(busqueda, e.target.value, soloAlerta); };
-    const handleSoloAlerta  = (e) => { setSoloAlerta(e.target.checked); cargarRepuestos(busqueda, filtroCateg, e.target.checked); };
-    const limpiarFiltros    = () => { setBusqueda(''); setFiltroCateg(''); setSoloAlerta(false); cargarRepuestos('', '', false); };
+    const handleFiltroCateg = (e) => { setFiltroCateg(e.target.value); cargarRepuestos(busqueda, e.target.value, soloAlerta, 1); };
+    const handleSoloAlerta  = (e) => { setSoloAlerta(e.target.checked); cargarRepuestos(busqueda, filtroCateg, e.target.checked, 1); };
+    const limpiarFiltros    = () => { setBusqueda(''); setFiltroCateg(''); setSoloAlerta(false); cargarRepuestos('', '', false, 1); };
     const hayFiltros = Boolean(busqueda || filtroCateg || soloAlerta);
     const nombreCateg = categorias.find(c => String(c.id) === String(filtroCateg))?.nombre;
 
@@ -188,7 +352,7 @@ export default function Inventario() {
             toast.success(mensaje);
             setSeleccionados([]);
             setBulkCategoria('');
-            cargarRepuestos(busqueda, filtroCateg, soloAlerta);
+            cargarRepuestos(busqueda, filtroCateg, soloAlerta, page);
         } catch (err) {
             toast.error(err.response?.data?.error || 'No se pudo aplicar la accion en lote.');
         } finally {
@@ -212,7 +376,7 @@ export default function Inventario() {
             await Promise.all(seleccionadosData.map(r => api.delete(`/inventory/repuestos/${r.id}`)));
             toast.success('Seleccion eliminada.');
             setSeleccionados([]);
-            cargarRepuestos(busqueda, filtroCateg, soloAlerta);
+            cargarRepuestos(busqueda, filtroCateg, soloAlerta, page);
         } catch (err) {
             toast.error(err.response?.data?.error || 'No se pudo eliminar la seleccion.');
         } finally {
@@ -225,13 +389,13 @@ export default function Inventario() {
             if (modalRep.data) { await api.put(`/inventory/repuestos/${modalRep.data.id}`, formData); toast.success('Repuesto actualizado.'); }
             else                { await api.post('/inventory/repuestos', formData); toast.success('Repuesto creado.'); }
             setModalRep({ open: false, data: null });
-            cargarRepuestos(busqueda, filtroCateg, soloAlerta);
+            cargarRepuestos(busqueda, filtroCateg, soloAlerta, page);
         } catch (err) { toast.error(err.response?.data?.error || 'Error al guardar.'); }
     };
 
     const handleEliminar = async (id, nombre) => {
         if (!window.confirm(`Eliminar "${nombre}"?`)) return;
-        try { await api.delete(`/inventory/repuestos/${id}`); toast.success('Repuesto eliminado.'); cargarRepuestos(busqueda, filtroCateg, soloAlerta); }
+        try { await api.delete(`/inventory/repuestos/${id}`); toast.success('Repuesto eliminado.'); cargarRepuestos(busqueda, filtroCateg, soloAlerta, page); }
         catch (err) { toast.error(err.response?.data?.error || 'Error al eliminar.'); }
     };
 
@@ -271,7 +435,7 @@ export default function Inventario() {
                     <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.6rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>Inventario</h1>
                     <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.85rem', color: mut, marginTop: 6 }}>Catalogo de repuestos y control de stock en tiempo real</p>
                 </div>
-                {esAdmin && (
+                {esAdminTec && (
                     <button onClick={() => setModalRep({ open: true, data: null })}
                         style={{
                             display: 'inline-flex', alignItems: 'center', gap: 8,
@@ -369,6 +533,11 @@ export default function Inventario() {
                 <span style={{ fontFamily: "'Outfit'", fontWeight: 500, fontSize: '.82rem', color: txtSoft }}>
                     {repuestos.length} <span style={{ color: mut, fontWeight: 400 }}>repuesto{repuestos.length !== 1 ? 's' : ''}</span>
                 </span>
+                {!loading && totalPages > 1 && (
+                    <span style={{ fontFamily: "'Outfit'", fontSize: '.76rem', color: faint }}>
+                        · Pagina {page} de {totalPages}
+                    </span>
+                )}
                 {hayFiltros && <span style={{ fontFamily: "'Outfit'", fontSize: '.76rem', color: faint }}>· filtrado</span>}
             </div>
 
@@ -411,7 +580,7 @@ export default function Inventario() {
                             <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.4rem', letterSpacing: '.06em', color: txt }}>Sin repuestos</p>
                             <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.82rem', color: mut, marginTop: 4 }}>No se encontraron resultados con los filtros aplicados</p>
                         </div>
-                        {esAdmin && (
+                        {esAdminTec && (
                             <button onClick={() => setModalRep({ open: true, data: null })}
                                 style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontFamily: "'Bebas Neue'", fontSize: '.75rem', letterSpacing: '.14em', color: '#fff', background: `linear-gradient(135deg, ${SKY_DEEP}, ${SKY})`, border: 'none', borderRadius: 10, padding: '10px 20px', cursor: 'pointer', boxShadow: `0 6px 18px -6px ${SKY}` }}>
                                 <IconPlus /> CREAR PRIMERO
@@ -500,17 +669,17 @@ export default function Inventario() {
                                                             <IconArrows />
                                                         </ActionBtn>
                                                     )}
+                                                    {esAdminTec && (
+                                                        <ActionBtn color={SKY_DEEP} hoverBg={SKY_PALE} bdr={bdr} title="Editar"
+                                                            onClick={() => setModalRep({ open: true, data: r })}>
+                                                            <IconEdit />
+                                                        </ActionBtn>
+                                                    )}
                                                     {esAdmin && (
-                                                        <>
-                                                            <ActionBtn color={SKY_DEEP} hoverBg={SKY_PALE} bdr={bdr} title="Editar"
-                                                                onClick={() => setModalRep({ open: true, data: r })}>
-                                                                <IconEdit />
-                                                            </ActionBtn>
-                                                            <ActionBtn color="#ef4444" hoverBg="rgba(239,68,68,.1)" bdr={bdr} title="Eliminar"
-                                                                onClick={() => handleEliminar(r.id, r.nombre)}>
-                                                                <IconTrash />
-                                                            </ActionBtn>
-                                                        </>
+                                                        <ActionBtn color="#ef4444" hoverBg="rgba(239,68,68,.1)" bdr={bdr} title="Eliminar"
+                                                            onClick={() => handleEliminar(r.id, r.nombre)}>
+                                                            <IconTrash />
+                                                        </ActionBtn>
                                                     )}
                                                 </div>
                                             </td>
@@ -519,13 +688,64 @@ export default function Inventario() {
                                 })}
                             </tbody>
                         </table>
+
+                        {/* ── Paginacion ── */}
+                        {totalPages > 1 && (
+                            <div style={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                gap: 6, padding: '16px 18px',
+                                borderTop: `1px solid ${bdr}`,
+                                background: headBg,
+                            }}>
+                                <PageBtn
+                                    disabled={page <= 1}
+                                    onClick={() => cargarRepuestos(busqueda, filtroCateg, soloAlerta, page - 1)}
+                                    bdr={bdr} txtSoft={txtSoft} mut={mut}
+                                    isDark={isDark} SKY={SKY} SKY_BDR={SKY_BDR} SKY_PALE={SKY_PALE}
+                                >
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+                                </PageBtn>
+
+                                {generarPaginas(page, totalPages).map((p, i) =>
+                                    p === '...' ? (
+                                        <span key={`e${i}`} style={{ fontFamily: "'Outfit'", fontSize: '.78rem', color: mut, padding: '0 4px' }}>...</span>
+                                    ) : (
+                                        <PageNumBtn
+                                            key={p}
+                                            active={p === page}
+                                            onClick={() => cargarRepuestos(busqueda, filtroCateg, soloAlerta, p)}
+                                            isDark={isDark} SKY={SKY} SKY_DEEP={SKY_DEEP} SKY_PALE={SKY_PALE} txt={txt} mut={mut} bdr={bdr}
+                                        >
+                                            {p}
+                                        </PageNumBtn>
+                                    )
+                                )}
+
+                                <PageBtn
+                                    disabled={page >= totalPages}
+                                    onClick={() => cargarRepuestos(busqueda, filtroCateg, soloAlerta, page + 1)}
+                                    bdr={bdr} txtSoft={txtSoft} mut={mut}
+                                    isDark={isDark} SKY={SKY} SKY_BDR={SKY_BDR} SKY_PALE={SKY_PALE}
+                                >
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                                </PageBtn>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
 
             {/* Modales */}
             {modalRep.open && <ModalRepuesto repuesto={modalRep.data} categorias={categorias} onGuardar={handleGuardar} onCerrar={() => setModalRep({ open: false, data: null })} />}
-            {modalMov.open && <ModalMovimiento repuesto={modalMov.repuesto} onGuardado={() => { setModalMov({ open: false, repuesto: null }); cargarRepuestos(busqueda, filtroCateg, soloAlerta); toast.success('Movimiento registrado.'); }} onCerrar={() => setModalMov({ open: false, repuesto: null })} />}
+            {modalMov.open && <ModalMovimiento repuesto={modalMov.repuesto} onGuardado={() => {            setModalMov({ open: false, repuesto: null }); cargarRepuestos(busqueda, filtroCateg, soloAlerta, page); toast.success('Movimiento registrado.'); }} onCerrar={() => setModalMov({ open: false, repuesto: null })} />}
+            {showAlertModal && bajoStockList.length > 0 && (
+                <StockAlertModal
+                    repuestos={bajoStockList}
+                    onCerrar={() => setShowAlertModal(false)}
+                    onIrAAlertas={() => { setShowAlertModal(false); setSoloAlerta(true); cargarRepuestos('', '', true, 1); }}
+                    isDark={isDark}
+                />
+            )}
         </div>
     );
 }
@@ -581,6 +801,64 @@ function FilterChip({ label, onRemove, color, bg, bdr }) {
     );
 }
 
+/* ── Generador de numeros de pagina (con elipsis) ── */
+function generarPaginas(current, total) {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const pages = [];
+    if (current <= 3) {
+        for (let i = 1; i <= Math.min(5, total); i++) pages.push(i);
+        if (total > 5) { pages.push('...'); pages.push(total); }
+    } else if (current >= total - 2) {
+        pages.push(1); pages.push('...');
+        for (let i = Math.max(total - 4, 2); i <= total; i++) pages.push(i);
+    } else {
+        pages.push(1); pages.push('...');
+        pages.push(current - 1); pages.push(current); pages.push(current + 1);
+        pages.push('...'); pages.push(total);
+    }
+    return pages;
+}
+
+/* ── Boton de pagina anterior/siguiente ── */
+function PageBtn({ disabled, onClick, bdr, txtSoft, mut, isDark, SKY, SKY_BDR, SKY_PALE, children }) {
+    return (
+        <button disabled={disabled} onClick={onClick}
+            style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                width: 34, height: 34, borderRadius: 9,
+                background: 'transparent', border: `1px solid ${bdr}`,
+                color: disabled ? mut : txtSoft, cursor: disabled ? 'not-allowed' : 'pointer',
+                opacity: disabled ? 0.35 : 1,
+                transition: 'all .18s',
+            }}
+            onMouseEnter={e => { if (!disabled) { e.currentTarget.style.borderColor = SKY_BDR; e.currentTarget.style.color = SKY; e.currentTarget.style.background = SKY_PALE; } }}
+            onMouseLeave={e => { if (!disabled) { e.currentTarget.style.borderColor = bdr; e.currentTarget.style.color = txtSoft; e.currentTarget.style.background = 'transparent'; } }}>
+            {children}
+        </button>
+    );
+}
+
+/* ── Boton de numero de pagina ── */
+function PageNumBtn({ active, onClick, isDark, SKY, SKY_DEEP, SKY_PALE, txt, mut, bdr, children }) {
+    return (
+        <button onClick={onClick}
+            style={{
+                minWidth: 34, height: 34, borderRadius: 9,
+                background: active ? `linear-gradient(135deg, ${SKY_DEEP}, ${SKY})` : 'transparent',
+                border: active ? 'none' : `1px solid ${bdr}`,
+                color: active ? '#fff' : txt,
+                fontFamily: "'Outfit'", fontWeight: active ? 700 : 500, fontSize: '.82rem',
+                cursor: 'pointer', padding: '0 8px',
+                boxShadow: active ? `0 4px 12px -4px ${SKY}` : 'none',
+                transition: 'all .18s',
+            }}
+            onMouseEnter={e => { if (!active) { e.currentTarget.style.borderColor = SKY + '55'; e.currentTarget.style.background = SKY_PALE; } }}
+            onMouseLeave={e => { if (!active) { e.currentTarget.style.borderColor = bdr; e.currentTarget.style.background = 'transparent'; } }}>
+            {children}
+        </button>
+    );
+}
+
 function ActionBtn({ color, hoverBg, bdr, title, onClick, children }) {
     return (
         <button onClick={onClick} title={title}
@@ -595,3 +873,4 @@ function ActionBtn({ color, hoverBg, bdr, title, onClick, children }) {
         </button>
     );
 }
+

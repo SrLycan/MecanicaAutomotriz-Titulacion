@@ -12,15 +12,15 @@ router.use(verificarToken);
 // Categorias — cualquier usuario autenticado (incluyendo clientes para el portal)
 router.get('/categorias', listarCategorias);
 
-// Repuestos — lectura: staff + clientes; escritura: solo admin
+// Repuestos — lectura: staff + clientes; escritura: admin + tecnico
 router.get('/repuestos',          listarRepuestos);
 router.get('/repuestos/:id',      obtenerRepuesto);
-router.post('/repuestos',         verificarRol('administrador'), crearRepuesto);
-router.put('/repuestos/:id',      verificarRol('administrador'), actualizarRepuesto);
+router.post('/repuestos',         verificarRol('administrador','tecnico'), crearRepuesto);
+router.put('/repuestos/:id',      verificarRol('administrador','tecnico'), actualizarRepuesto);
 router.delete('/repuestos/:id',   verificarRol('administrador'), eliminarRepuesto);
 
-// Movimientos — registro: admin + tecnico; consulta: staff
-router.post('/movimientos',       verificarRol('administrador','tecnico'), registrarMovimiento);
+// Movimientos — registro: admin + tecnico + recepcionista; consulta: staff
+router.post('/movimientos',       verificarRol('administrador','tecnico','recepcionista'), registrarMovimiento);
 router.get('/movimientos',        soloStaff, listarMovimientos);
 
 module.exports = router;

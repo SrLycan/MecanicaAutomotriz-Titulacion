@@ -205,8 +205,17 @@ function ModalSucursal({ data, onClose, onGuardar }) {
     const inputSt = { width: '100%', boxSizing: 'border-box', padding: '10px 13px', borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: txt, fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.88rem', outline: 'none' };
     const labelSt = { display: 'block', marginBottom: 6, fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.22em', color: SKY_DEEP };
 
+    const handlePhoneChange = (e) => {
+        let val = e.target.value.replace(/[^\d+]/g, '');
+        if (!val.startsWith('+')) val = '+' + val;
+        if (val === '+') val = '+593';
+        if (!val.startsWith('+593')) val = '+593' + val.replace(/^\+?\d*/, '');
+        if (val.length > 13) val = val.slice(0, 13);
+        setForm({ ...form, telefono: val });
+    };
     const onChange = (e) => {
         const { name, value, type, checked } = e.target;
+        if (name === 'telefono') return handlePhoneChange(e);
         setForm({ ...form, [name]: type === 'checkbox' ? checked : value });
     };
 

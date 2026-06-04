@@ -141,6 +141,21 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
     const onFocus = (e) => { e.target.style.borderColor = SKY; e.target.style.boxShadow = `0 0 0 3px rgba(14,165,233,.14)`; };
     const onBlur  = (e) => { e.target.style.borderColor = bdr; e.target.style.boxShadow = 'none'; };
 
+    const handleImagenFile = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+            const dataUrl = await comprimirImagen(file);
+            setForm(f => ({ ...f, imagen_url: dataUrl }));
+            setPreview(dataUrl);
+        } catch { toast.error('No se pudo procesar la imagen.'); }
+    };
+
+    const quitarImagen = () => {
+        setForm(f => ({ ...f, imagen_url: '' }));
+        setPreview('');
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setSaving(true);

@@ -1,0 +1,291 @@
+const pool = require('../config/db');
+
+// ═══════════════════════════════════════════════════════════════
+// CLIENTES
+// ═══════════════════════════════════════════════════════════════
+
+const listarClientes = async (req, res) => {
+    const { q } = req.query;
+    let query = 'SELECT * FROM clientes WHERE 1=1';
+    const params = [];
+    if (q) {
+        params.push(`%${q}%`);
+        query += ` AND (nombre ILIKE $${params.length} OR cedula ILIKE $${params.length} OR telefono ILIKE $${params.length})`;
+    }
+    query += ' ORDER BY nombre ASC';
+    try {
+        const { rows } = await pool.query(query, params);
+        return res.json({ clientes: rows });
+    } catch (err) {
+        console.error('Error listarClientes:', err);
+        return res.status(500).json({ error: 'Error al obtener clientes.' });
+    }
+};
+
+const obtenerCliente = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { rows } = await pool.query('SELECT * FROM clientes WHERE id = $1', [id]);
+        if (!rows[0]) return res.status(404).json({ error: 'Cliente no encontrado.' });
+        return res.json(rows[0]);
+    } catch (err) {
+        console.error('Error obtenerCliente:', err);
+        return res.status(500).json({ error: 'Error al obtener cliente.' });
+    }
+};
+
+const crearCliente = async (req, res) => {
+    const { nombre, email, telefono, cedula, direccion } = req.body;
+    if (!nombre) return res.status(400).json({ error: 'El nombre es obligatorio.' });
+    try {
+        if (cedula) {
+            const { rows: dup } = await pool.query('SELECT id FROM clientes WHERE cedula = $1', [cedula]);
+            if (dup.length > 0) return res.status(409).json({ error: 'Ya existe un cliente con esa cedula.' });
+        }
+        const { rows } = await pool.query(
+            `INSERT INTO clientes (nombre, email, telefono, cedula, direccion)
+             VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+            [nombre.trim(), email || null, telefono || null, cedula || null, direccion || null]
+        );
+        return res.status(201).json({ cliente: rows[0] });
+    } catch (err) {
+        console.error('Error crearCliente:', err);
+        return res.status(500).json({ error: 'Error al crear cliente.' });
+    }
+};
+
+const eliminarCliente = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { rowCount } = await pool.query('DELETE FROM clientes WHERE id = $1', [id]);
+        if (rowCount === 0) return res.status(404).json({ error: 'Cliente no encontrado.' });
+        return res.json({ ok: true });
+    } catch (err) {
+        console.error('Error eliminarCliente:', err);
+        return res.status(500).json({ error: 'Error al eliminar cliente.' });
+    }
+};
+
+const actualizarCliente = async (req, res) => {
+    const { id } = req.params;
+    const { nombre, email, telefono, cedula, direccion } = req.body;
+    if (!nombre) return res.status(400).json({ error: 'El nombre es obligatorio.' });
+    try {
+        if (cedula) {
+            const { rows: dup } = await pool.query(
+                'SELECT id FROM clientes WHERE cedula = $1 AND id != $2', [cedula, id]
+            );
+            if (dup.length > 0) return res.status(409).json({ error: 'Ya existe otro cliente con esa cedula.' });
+        }
+        const { rows } = await pool.query(
+            `UPDATE clientes SET nombre=$1, email=$2, telefono=$3, cedula=$4, direccion=$5 WHERE id=$6 RETURNING *`,
+            [nombre.trim(), email || null, telefono || null, cedula || null, direccion || null, id]
+        );
+        if (!rows[0]) return res.status(404).json({ error: 'Cliente no encontrado.' });
+        return res.json({ cliente: rows[0] });
+    } catch (err) {
+        console.error('Error actualizarCliente:', err);
+        return res.status(500).json({ error: 'Error al actualizar cliente.' });
+    }
+};
+
+// ═══════════════════════════════════════════════════════════════
+// VEHICULOS
+// ═══════════════════════════════════════════════════════════════
+
+const listarVehiculos = async (req, res) => {
+    const { cliente_id, q } = req.query;
+    let query = `SELECT v.*, c.nombre AS cliente_nombre
+                 FROM vehiculos v
+                 JOIN clientes c ON c.id = v.cliente_id
+                 WHERE 1=1`;
+    const params = [];
+    if (cliente_id) { params.push(cliente_id); query += ` AND v.cliente_id = $${params.length}`; }
+    if (q) {
+        params.push(`%${q}%`);
+        query += ` AND (v.placa ILIKE $${params.length} OR v.marca ILIKE $${params.length})`;
+    }
+    query += ' ORDER BY v.created_at DESC';
+    try {
+        const { rows } = await pool.query(query, params);
+        return res.json({ vehiculos: rows });
+    } catch (err) {
+        console.error('Error listarVehiculos:', err);
+        return res.status(500).json({ error: 'Error al obtener vehiculos.' });
+    }
+};
+
+const crearVehiculo = async (req, res) => {
+    const { cliente_id, placa, marca, modelo, anio, color, vin } = req.body;
+    if (!cliente_id || !placa || !marca) {
+        return res.status(400).json({ error: 'cliente_id, placa y marca son obligatorios.' });
+    }
+    try {
+        const { rows } = await pool.query(
+            `INSERT INTO vehiculos (cliente_id, placa, marca, modelo, anio, color, vin)
+             VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+            [cliente_id, placa.trim().toUpperCase(), marca.trim(),
+             modelo || null, anio || null, color || null, vin || null]
+        );
+        return res.status(201).json({ vehiculo: rows[0] });
+    } catch (err) {
+        console.error('Error crearVehiculo:', err);
+        return res.status(500).json({ error: 'Error al crear vehiculo.' });
+    }
+};
+
+const actualizarVehiculo = async (req, res) => {
+    const { id } = req.params;
+    const { placa, marca, modelo, anio, color, vin } = req.body;
+    try {
+        const { rows } = await pool.query(
+            `UPDATE vehiculos SET placa=$1, marca=$2, modelo=$3, anio=$4, color=$5, vin=$6
+             WHERE id=$7 RETURNING *`,
+            [placa?.trim().toUpperCase(), marca?.trim(), modelo || null,
+             anio || null, color || null, vin || null, id]
+        );
+        if (!rows[0]) return res.status(404).json({ error: 'Vehiculo no encontrado.' });
+        return res.json({ vehiculo: rows[0] });
+    } catch (err) {
+        console.error('Error actualizarVehiculo:', err);
+        return res.status(500).json({ error: 'Error al actualizar vehiculo.' });
+    }
+};
+
+const eliminarVehiculo = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { rowCount } = await pool.query('DELETE FROM vehiculos WHERE id = $1', [id]);
+        if (rowCount === 0) return res.status(404).json({ error: 'Vehiculo no encontrado.' });
+        return res.json({ ok: true });
+    } catch (err) {
+        console.error('Error eliminarVehiculo:', err);
+        return res.status(500).json({ error: 'Error al eliminar vehiculo.' });
+    }
+};
+
+// ═══════════════════════════════════════════════════════════════
+// ORDENES DE TRABAJO
+// ═══════════════════════════════════════════════════════════════
+
+const listarOrdenes = async (req, res) => {
+    const { estado, cliente_id, q } = req.query;
+    let query = `
+        SELECT o.*,
+               c.nombre AS cliente_nombre, c.telefono AS cliente_telefono,
+               v.placa, v.marca, v.modelo, v.anio, v.color,
+               u.nombre AS usuario_nombre
+        FROM ordenes_trabajo o
+        JOIN clientes  c ON c.id = o.cliente_id
+        LEFT JOIN vehiculos v ON v.id = o.vehiculo_id
+        JOIN usuarios  u ON u.id = o.usuario_id
+        WHERE 1=1`;
+    const params = [];
+    if (estado) { params.push(estado); query += ` AND o.estado = $${params.length}`; }
+    if (cliente_id) { params.push(cliente_id); query += ` AND o.cliente_id = $${params.length}`; }
+    if (q) {
+        params.push(`%${q}%`);
+        query += ` AND (c.nombre ILIKE $${params.length} OR v.placa ILIKE $${params.length} OR o.descripcion ILIKE $${params.length})`;
+    }
+    query += ' ORDER BY o.created_at DESC';
+    try {
+        const { rows } = await pool.query(query, params);
+        return res.json({ ordenes: rows });
+    } catch (err) {
+        console.error('Error listarOrdenes:', err);
+        return res.status(500).json({ error: 'Error al obtener ordenes.' });
+    }
+};
+
+const obtenerOrden = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { rows } = await pool.query(`
+            SELECT o.*,
+                   c.nombre AS cliente_nombre, c.email AS cliente_email,
+                   c.telefono AS cliente_telefono, c.cedula AS cliente_cedula,
+                   c.direccion AS cliente_direccion,
+                   v.placa, v.marca, v.modelo, v.anio, v.color, v.vin,
+                   u.nombre AS usuario_nombre
+            FROM ordenes_trabajo o
+            JOIN clientes  c ON c.id = o.cliente_id
+            LEFT JOIN vehiculos v ON v.id = o.vehiculo_id
+            JOIN usuarios  u ON u.id = o.usuario_id
+            WHERE o.id = $1`, [id]);
+        if (!rows[0]) return res.status(404).json({ error: 'Orden no encontrada.' });
+        return res.json(rows[0]);
+    } catch (err) {
+        console.error('Error obtenerOrden:', err);
+        return res.status(500).json({ error: 'Error al obtener orden.' });
+    }
+};
+
+const crearOrden = async (req, res) => {
+    const { cliente_id, vehiculo_id, descripcion, diagnostico, kilometraje } = req.body;
+    const usuario_id = req.usuario.id;
+    if (!cliente_id || !descripcion) {
+        return res.status(400).json({ error: 'cliente_id y descripcion son obligatorios.' });
+    }
+    try {
+        const { rows } = await pool.query(
+            `INSERT INTO ordenes_trabajo (cliente_id, vehiculo_id, usuario_id, descripcion, diagnostico, kilometraje)
+             VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+            [cliente_id, vehiculo_id || null, usuario_id, descripcion.trim(),
+             diagnostico || null, kilometraje || null]
+        );
+        return res.status(201).json({ orden: rows[0] });
+    } catch (err) {
+        console.error('Error crearOrden:', err);
+        return res.status(500).json({ error: 'Error al crear orden de trabajo.' });
+    }
+};
+
+const actualizarOrden = async (req, res) => {
+    const { id } = req.params;
+    let { estado, descripcion, diagnostico, kilometraje, vehiculo_id, fecha_salida } = req.body;
+    const VALIDOS = ['pendiente', 'en_progreso', 'completado', 'cancelado'];
+    if (estado && !VALIDOS.includes(estado)) {
+        return res.status(400).json({ error: `Estado invalido. Validos: ${VALIDOS.join(', ')}.` });
+    }
+    // Auto-asignar fecha de salida al completar
+    if (estado === 'completado' && !fecha_salida) {
+        fecha_salida = new Date().toISOString().slice(0, 10);
+    }
+    try {
+        const { rows } = await pool.query(
+            `UPDATE ordenes_trabajo SET
+                estado=COALESCE($1, estado),
+                descripcion=COALESCE($2, descripcion),
+                diagnostico=COALESCE($3, diagnostico),
+                kilometraje=COALESCE($4, kilometraje),
+                vehiculo_id=COALESCE($5, vehiculo_id),
+                fecha_salida=COALESCE($6, fecha_salida)
+             WHERE id=$7 RETURNING *`,
+            [estado || null, descripcion || null, diagnostico || null,
+             kilometraje || null, vehiculo_id || null, fecha_salida || null, id]
+        );
+        if (!rows[0]) return res.status(404).json({ error: 'Orden no encontrada.' });
+        return res.json({ orden: rows[0] });
+    } catch (err) {
+        console.error('Error actualizarOrden:', err);
+        return res.status(500).json({ error: 'Error al actualizar orden.' });
+    }
+};
+
+const eliminarOrden = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { rowCount } = await pool.query('DELETE FROM ordenes_trabajo WHERE id = $1', [id]);
+        if (rowCount === 0) return res.status(404).json({ error: 'Orden no encontrada.' });
+        return res.json({ ok: true });
+    } catch (err) {
+        console.error('Error eliminarOrden:', err);
+        return res.status(500).json({ error: 'Error al eliminar orden.' });
+    }
+};
+
+module.exports = {
+    listarClientes, obtenerCliente, crearCliente, actualizarCliente, eliminarCliente,
+    listarVehiculos, crearVehiculo, actualizarVehiculo, eliminarVehiculo,
+    listarOrdenes, obtenerOrden, crearOrden, actualizarOrden, eliminarOrden,
+};

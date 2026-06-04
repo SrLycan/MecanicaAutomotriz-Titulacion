@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS usuarios (
     password    VARCHAR(255) NOT NULL,
     rol         VARCHAR(20)  NOT NULL DEFAULT 'cliente'
                     CHECK (rol IN ('administrador','tecnico','recepcionista','cliente')),
+    estado      VARCHAR(20)  NOT NULL DEFAULT 'activo'
+                    CHECK (estado IN ('activo','suspendido','bloqueado')),
     telefono    VARCHAR(20),
     cedula      VARCHAR(20),
     activo      BOOLEAN NOT NULL DEFAULT TRUE,
@@ -66,10 +68,17 @@ RETURNS TRIGGER AS $$
 BEGIN NEW.updated_at = NOW(); RETURN NEW; END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER set_updated_at_usuarios
-    BEFORE UPDATE ON usuarios FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
-CREATE TRIGGER set_updated_at_repuestos
-    BEFORE UPDATE ON repuestos FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_updated_at_usuarios') THEN
+        CREATE TRIGGER set_updated_at_usuarios
+            BEFORE UPDATE ON usuarios FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_updated_at_repuestos') THEN
+        CREATE TRIGGER set_updated_at_repuestos
+            BEFORE UPDATE ON repuestos FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
+    END IF;
+END $$;
 
 -- ── Indices ──────────────────────────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_repuestos_codigo ON repuestos(codigo);

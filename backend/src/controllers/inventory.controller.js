@@ -9,33 +9,50 @@ const pool = require('../config/db');
  * Query params: q (búsqueda), categoria_id, bajo_stock
  */
 const listarRepuestos = async (req, res) => {
-    const { q, categoria_id, bajo_stock } = req.query;
+    const { q, categoria_id, bajo_stock, page = 1, limit = 15 } = req.query;
 
-    let query = `
-        SELECT r.*, c.nombre AS categoria_nombre
-        FROM repuestos r
-        LEFT JOIN categorias_repuesto c ON r.categoria_id = c.id
-        WHERE r.activo = TRUE
-    `;
+    const pageNum  = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 15));
+    const offset   = (pageNum - 1) * limitNum;
+
+    let where   = 'WHERE r.activo = TRUE';
     const params = [];
 
     if (q) {
         params.push(`%${q}%`);
-        query += ` AND (r.nombre ILIKE $${params.length} OR r.codigo ILIKE $${params.length})`;
+        where += ` AND (r.nombre ILIKE $${params.length} OR r.codigo ILIKE $${params.length})`;
     }
     if (categoria_id) {
         params.push(categoria_id);
-        query += ` AND r.categoria_id = $${params.length}`;
+        where += ` AND r.categoria_id = $${params.length}`;
     }
     if (bajo_stock === 'true') {
-        query += ` AND r.stock_actual <= r.stock_minimo`;
+        where += ` AND r.stock_actual <= r.stock_minimo`;
     }
 
-    query += ' ORDER BY r.nombre ASC';
+    const countQuery = `SELECT COUNT(*) AS total FROM repuestos r ${where}`;
+    const dataQuery  = `
+        SELECT r.*, c.nombre AS categoria_nombre
+        FROM repuestos r
+        LEFT JOIN categorias_repuesto c ON r.categoria_id = c.id
+        ${where}
+        ORDER BY r.nombre ASC
+        LIMIT $${params.length + 1} OFFSET $${params.length + 2}
+    `;
 
     try {
-        const { rows } = await pool.query(query, params);
-        return res.json({ repuestos: rows, total: rows.length });
+        const [{ rows: countRows }, { rows }] = await Promise.all([
+            pool.query(countQuery, params),
+            pool.query(dataQuery, [...params, limitNum, offset]),
+        ]);
+        const total = parseInt(countRows[0].total, 10);
+        return res.json({
+            repuestos: rows,
+            total,
+            page: pageNum,
+            limit: limitNum,
+            totalPages: Math.ceil(total / limitNum),
+        });
     } catch (err) {
         console.error('Error listarRepuestos:', err);
         return res.status(500).json({ error: 'Error al obtener repuestos.' });

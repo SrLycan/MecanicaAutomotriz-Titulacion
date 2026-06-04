@@ -199,12 +199,20 @@ export default function AuthPage() {
                                         <input className="auth-input" style={inputBase} type="tel"
                                             placeholder="099 XXX XXXX"
                                             value={regForm.telefono}
-                                            onChange={e => setRegForm({ ...regForm, telefono: e.target.value })} />
+                                            onChange={e => {
+                                                let val = e.target.value.replace(/[^\d+]/g, '');
+                                                if (!val.startsWith('+')) val = '+' + val;
+                                                if (val === '+') val = '+593';
+                                                if (!val.startsWith('+593')) val = '+593' + val.replace(/^\+?\d*/, '');
+                                                if (val.length > 13) val = val.slice(0, 13);
+                                                setRegForm({ ...regForm, telefono: val });
+                                            }} />
                                     </div>
                                     <div>
                                         <label style={labelBase}>Cedula</label>
                                         <input className="auth-input" style={inputBase} type="text"
                                             placeholder="1712345678"
+                                            maxLength={15}
                                             value={regForm.cedula}
                                             onChange={e => setRegForm({ ...regForm, cedula: e.target.value })} />
                                     </div>

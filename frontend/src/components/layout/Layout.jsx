@@ -1,15 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import api from '../../services/api';
 import toast from 'react-hot-toast';
 
+function IconRegMov() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/><polyline points="5 12 12 5 19 12"/></svg>; }
+
 const NAV_ITEMS = [
-    { to: '/dashboard',             label: 'Dashboard',   icon: IconDash,  roles: ['administrador','tecnico','recepcionista'] },
-    { to: '/dashboard/inventario',  label: 'Inventario',  icon: IconInv,   roles: ['administrador','tecnico','recepcionista'] },
-    { to: '/dashboard/movimientos', label: 'Movimientos', icon: IconMov,   roles: ['administrador','tecnico'] },
-    { to: '/dashboard/usuarios',    label: 'Usuarios',    icon: IconUsers, roles: ['administrador'] },
-    { to: '/dashboard/sucursales',  label: 'Sucursales',  icon: IconBranch,roles: ['administrador'] },
+    { to: '/dashboard',             label: 'Dashboard',   icon: IconDash,   roles: ['administrador','tecnico','recepcionista'] },
+    { to: '/dashboard/inventario',  label: 'Inventario',  icon: IconInv,    roles: ['administrador','tecnico','recepcionista'] },
+    { to: '/dashboard/registrar',   label: 'Registrar',   icon: IconRegMov, roles: ['administrador','tecnico','recepcionista'] },
+    { to: '/dashboard/movimientos', label: 'Movimientos', icon: IconMov,    roles: ['administrador','tecnico','recepcionista'] },
+    { to: '/dashboard/usuarios',    label: 'Usuarios',    icon: IconUsers,  roles: ['administrador'] },
+    { to: '/dashboard/vehiculos',   label: 'Vehiculos',   icon: IconCar,    roles: ['administrador','tecnico','recepcionista'] },
+    { to: '/dashboard/ordenes',     label: 'Ordenes',     icon: IconOrden,  roles: ['administrador','tecnico','recepcionista'] },
+    { to: '/dashboard/sucursales',  label: 'Sucursales',  icon: IconBranch, roles: ['administrador'] },
 ];
 
 const ROL_COLOR = { administrador: '#0ea5e9', tecnico: '#10b981', recepcionista: '#f59e0b' };
@@ -20,6 +26,8 @@ function IconInv()  { return <svg width="16" height="16" viewBox="0 0 24 24" fil
 function IconMov()  { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>; }
 function IconUsers(){ return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>; }
 function IconBranch(){return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>; }
+function IconCar()   { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M5 17h14M5 17a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.5l2-3h7l2 3H19a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2"/><circle cx="8" cy="15" r="2"/><circle cx="16" cy="15" r="2"/></svg>; }
+function IconOrden(){ return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>; }
 
 export default function Layout() {
     const { usuario, logout, tieneRol } = useAuth();
@@ -27,6 +35,20 @@ export default function Layout() {
     const navigate = useNavigate();
     const location = useLocation();
     const [collapsed, setCollapsed] = useState(false);
+    const [bajoStockCount, setBajoStockCount] = useState(0);
+
+    // Fetch low stock count for sidebar badge
+    useEffect(() => {
+        api.get('/inventory/repuestos?bajo_stock=true')
+            .then(r => setBajoStockCount(r.data.total || 0))
+            .catch(() => {});
+        const interval = setInterval(() => {
+            api.get('/inventory/repuestos?bajo_stock=true')
+                .then(r => setBajoStockCount(r.data.total || 0))
+                .catch(() => {});
+        }, 30000);
+        return () => clearInterval(interval);
+    }, []);
 
     // ── Paleta celeste / blanco / negro ──
     const SKY      = '#0ea5e9';
@@ -50,6 +72,7 @@ export default function Layout() {
         if (location.pathname.endsWith('/inventario'))   return 'Inventario';
         if (location.pathname.endsWith('/movimientos'))  return 'Movimientos';
         if (location.pathname.endsWith('/usuarios'))     return 'Usuarios';
+        if (location.pathname.endsWith('/ordenes'))      return 'Ordenes';
         if (location.pathname.endsWith('/sucursales'))   return 'Sucursales';
         return 'Dashboard';
     })();
@@ -126,13 +149,39 @@ export default function Layout() {
                                 justifyContent: collapsed ? 'center' : 'flex-start',
                                 color: isActive ? '#fff' : navMut,
                                 textDecoration: 'none',
+                                position: 'relative',
                                 background: isActive ? 'linear-gradient(90deg, rgba(14,165,233,0.18), rgba(14,165,233,0.02))' : 'transparent',
                                 transition: 'all .2s cubic-bezier(.4,0,.2,1)',
                                 fontSize: '.85rem', fontFamily: "'Outfit'", fontWeight: 500,
                                 animationDelay: `${idx * 50}ms`,
                             })}>
-                            <span className="sb-icon" style={{ flexShrink: 0, display: 'flex', color: 'inherit' }}><item.icon /></span>
+                            <span className="sb-icon" style={{ flexShrink: 0, display: 'flex', color: 'inherit', position: 'relative' }}>
+                                <item.icon />
+                                {/* Low stock badge on Inventario */}
+                                {item.to === '/dashboard/inventario' && bajoStockCount > 0 && (
+                                    <span style={{
+                                        position: 'absolute', top: -6, right: -8,
+                                        minWidth: 16, height: 16, borderRadius: 999,
+                                        background: '#ef4444', color: '#fff',
+                                        fontSize: '.5rem', fontFamily: "'Bebas Neue'",
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        padding: '0 4px',
+                                        boxShadow: '0 2px 6px rgba(239,68,68,.55)',
+                                    }}>{bajoStockCount}</span>
+                                )}
+                            </span>
                             {!collapsed && <span style={{ whiteSpace: 'nowrap' }}>{item.label}</span>}
+                            {/* Low stock badge text on Inventario */}
+                            {!collapsed && item.to === '/dashboard/inventario' && bajoStockCount > 0 && (
+                                <span style={{
+                                    marginLeft: 'auto',
+                                    fontFamily: "'Bebas Neue'", fontSize: '.5rem', letterSpacing: '.08em',
+                                    color: '#ef4444', background: 'rgba(239,68,68,.15)',
+                                    padding: '2px 7px', borderRadius: 999,
+                                }}>
+                                    {bajoStockCount} alert{bajoStockCount !== 1 ? 'as' : 'a'}
+                                </span>
+                            )}
                         </NavLink>
                     ))}
                 </nav>
