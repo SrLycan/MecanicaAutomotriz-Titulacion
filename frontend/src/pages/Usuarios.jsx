@@ -35,20 +35,8 @@ export default function Usuarios() {
     const [modalNew,    setModalNew]  = useState(false);
     const [modalEdit,   setModalEdit] = useState(null);
     const [modalPass,   setModalPass] = useState(null);
-    const [menuOpen,    setMenuOpen]  = useState(null);
-    const menuRef = useRef(null);
+    const [modalAccion, setModalAccion] = useState(null);
     const debounceRef = useRef(null);
-
-    // Cerrar menu al hacer clic fuera
-    useEffect(() => {
-        const handler = (e) => {
-            if (menuRef.current && !menuRef.current.contains(e.target)) {
-                setMenuOpen(null);
-            }
-        };
-        document.addEventListener('mousedown', handler);
-        return () => document.removeEventListener('mousedown', handler);
-    }, []);
 
     // ── Paleta celeste / blanco / negro ──
     const SKY      = '#0ea5e9';
@@ -199,7 +187,7 @@ export default function Usuarios() {
             </div>
 
             {/* ── Tabla ── */}
-            <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, overflow: 'hidden', boxShadow: cardSh }}>
+            <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, boxShadow: cardSh }}>
                 {loading ? (
                     <Loader bdr={bdr} mut={mut} sky={SKY} />
                 ) : usuarios.length === 0 ? (
@@ -265,67 +253,21 @@ export default function Usuarios() {
                                             <td style={{ padding: '13px 18px', fontFamily: "'Outfit'", fontSize: '.82rem', color: mut, whiteSpace: 'nowrap' }}>{u.telefono || '—'}</td>
                                             <td style={{ padding: '13px 18px' }}>
                                                 {!esYo && (
-                                                    <div style={{ position: 'relative' }} ref={menuOpen === u.id ? menuRef : null}>
-                                                        <button onClick={() => setMenuOpen(menuOpen === u.id ? null : u.id)}
-                                                            style={{
-                                                                background: menuOpen === u.id ? `${SKY_DEEP}14` : 'none',
-                                                                border: `1px solid ${menuOpen === u.id ? SKY_BDR : bdr}`,
-                                                                borderRadius: 8, padding: '6px 10px', cursor: 'pointer',
-                                                                color: menuOpen === u.id ? SKY_DEEP : mut,
-                                                                display: 'inline-flex', alignItems: 'center', gap: 4,
-                                                                fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.12em',
-                                                                transition: 'all .15s',
-                                                            }}
-                                                            onMouseEnter={e => { e.currentTarget.style.background = SKY_DEEP + '14'; e.currentTarget.style.borderColor = SKY_BDR; e.currentTarget.style.color = SKY_DEEP; }}
-                                                            onMouseLeave={e => { if (menuOpen !== u.id) { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = bdr; e.currentTarget.style.color = mut; } }}>
-                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-                                                            ACCIONES
-                                                        </button>
-                                                        {menuOpen === u.id && (
-                                                            <div style={{
-                                                                position: 'absolute', right: 0, top: '100%', marginTop: 6,
-                                                                minWidth: 210, zIndex: 50,
-                                                                background: boxBg, border: `1px solid ${bdr}`,
-                                                                borderRadius: 12, boxShadow: cardSh,
-                                                                overflow: 'hidden', animation: 'fadeUp .15s ease',
-                                                            }}>
-                                                                {/* Editar */}
-                                                                <MenuItem icon={<IconEdit />} label="Editar usuario" onClick={() => { setMenuOpen(null); setModalEdit(u); }} />
-                                                                {/* Cambiar contrasena */}
-                                                                <MenuItem icon={<IconLock />} label="Cambiar contrasena" onClick={() => { setMenuOpen(null); setModalPass(u); }} />
-                                                                {/* Separador */}
-                                                                <div style={{ height: 1, background: bdr, margin: '0 10px' }} />
-                                                                {/* Cambiar rol */}
-                                                                <div style={{ padding: '8px 12px 4px', fontFamily: "'Bebas Neue'", fontSize: '.52rem', letterSpacing: '.2em', color: mut }}>CAMBIAR ROL</div>
-                                                                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                                    {ROLES.filter(r => r.val !== u.rol).map(r => (
-                                                                        <MenuItem key={r.val}
-                                                                            icon={<span style={{ width: 8, height: 8, borderRadius: '50%', background: r.color, flexShrink: 0 }} />}
-                                                                            label={r.label}
-                                                                            color={r.color}
-                                                                            onClick={() => { setMenuOpen(null); cambiarRol(u, r.val); }} />
-                                                                    ))}
-                                                                </div>
-                                                                {/* Separador */}
-                                                                <div style={{ height: 1, background: bdr, margin: '0 10px' }} />
-                                                                {/* Cambiar estado */}
-                                                                <div style={{ padding: '8px 12px 4px', fontFamily: "'Bebas Neue'", fontSize: '.52rem', letterSpacing: '.2em', color: mut }}>CAMBIAR ESTADO</div>
-                                                                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                                    {ESTADOS.filter(s => s.val !== u.estado).map(s => (
-                                                                        <MenuItem key={s.val}
-                                                                            icon={<span style={{ width: 8, height: 8, borderRadius: '50%', background: s.color, flexShrink: 0 }} />}
-                                                                            label={s.label}
-                                                                            color={s.color}
-                                                                            onClick={() => { setMenuOpen(null); cambiarEstado(u, s.val); }} />
-                                                                    ))}
-                                                                </div>
-                                                                {/* Separador */}
-                                                                <div style={{ height: 1, background: bdr, margin: '0 10px' }} />
-                                                                {/* Eliminar */}
-                                                                <MenuItem icon={<IconTrash />} label="Eliminar usuario" color="#ef4444" onClick={() => { setMenuOpen(null); eliminar(u); }} />
-                                                            </div>
-                                                        )}
-                                                    </div>
+                                                    <button onClick={() => setModalAccion(u)}
+                                                        style={{
+                                                            background: 'none',
+                                                            border: `1px solid ${bdr}`,
+                                                            borderRadius: 8, padding: '6px 10px', cursor: 'pointer',
+                                                            color: mut,
+                                                            display: 'inline-flex', alignItems: 'center', gap: 4,
+                                                            fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.12em',
+                                                            transition: 'all .15s',
+                                                        }}
+                                                        onMouseEnter={e => { e.currentTarget.style.background = SKY_DEEP + '14'; e.currentTarget.style.borderColor = SKY_BDR; e.currentTarget.style.color = SKY_DEEP; }}
+                                                        onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = bdr; e.currentTarget.style.color = mut; }}>
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                                                        ACCIONES
+                                                    </button>
                                                 )}
                                             </td>
                                         </tr>
@@ -340,6 +282,17 @@ export default function Usuarios() {
             {modalNew && <ModalNuevoUsuario onClose={() => setModalNew(false)} onCreado={() => { setModalNew(false); cargar(); }} />}
             {modalEdit && <ModalEditarUsuario usuario={modalEdit} onClose={() => setModalEdit(null)} onActualizado={() => { setModalEdit(null); cargar(); }} />}
             {modalPass && <ModalCambiarPassword usuario={modalPass} onClose={() => setModalPass(null)} onCambiado={() => { setModalPass(null); }} />}
+            {modalAccion && <ModalAccionesUsuario usuario={modalAccion} onClose={() => setModalAccion(null)}
+                onAccion={(accion) => {
+                    const u = modalAccion;
+                    setModalAccion(null);
+                    if (accion === 'editar') setModalEdit(u);
+                    else if (accion === 'password') setModalPass(u);
+                    else if (accion === 'eliminar') eliminar(u);
+                }}
+                onCambiarRol={(rol) => { setModalAccion(null); cambiarRol(modalAccion, rol); }}
+                onCambiarEstado={(est) => { setModalAccion(null); cambiarEstado(modalAccion, est); }}
+            />}
         </div>
     );
 }
@@ -530,24 +483,111 @@ function ModalCambiarPassword({ usuario, onClose, onCambiado }) {
     );
 }
 
-function MenuItem({ icon, label, color, onClick }) {
-    const txt = '#0f172a';
-    const mut = '#64748b';
+function ModalAccionesUsuario({ usuario, onClose, onAccion, onCambiarRol, onCambiarEstado }) {
+    const { isDark } = useTheme();
+    const txt = isDark ? '#f1f5f9' : '#0f172a';
+    const mut = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
+    const bdr = isDark ? 'rgba(148,163,184,0.18)' : 'rgba(15,23,42,0.10)';
+    const boxBg = isDark ? '#0a0f1c' : '#ffffff';
+
     const SKY_DEEP = '#0284c7';
-    return (
+
+    const ActionBtn = ({ icon, label, color, desc, onClick }) => (
         <button onClick={onClick}
             style={{
-                width: '100%', display: 'flex', alignItems: 'center', gap: 9,
-                padding: '9px 14px', border: 'none', background: 'transparent',
-                cursor: 'pointer', textAlign: 'left',
-                fontFamily: "'Outfit'", fontWeight: 500, fontSize: '.82rem', color: color || txt,
-                transition: 'background .12s',
+                width: '100%', display: 'flex', alignItems: 'center', gap: 14,
+                padding: '13px 16px', border: `1px solid ${bdr}`, borderRadius: 12,
+                background: 'transparent', cursor: 'pointer', textAlign: 'left',
+                transition: 'all .15s',
             }}
-            onMouseEnter={e => e.currentTarget.style.background = SKY_DEEP + '10'}
-            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-            <span style={{ flexShrink: 0, display: 'flex', color: color || mut }}>{icon}</span>
-            <span>{label}</span>
+            onMouseEnter={e => { e.currentTarget.style.borderColor = (color || SKY_DEEP) + '60'; e.currentTarget.style.background = (color || SKY_DEEP) + '08'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = bdr; e.currentTarget.style.background = 'transparent'; }}>
+            <span style={{
+                width: 36, height: 36, borderRadius: 10,
+                background: (color || SKY_DEEP) + '14', color: color || SKY_DEEP,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}>{icon}</span>
+            <div>
+                <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.85rem', color: color || txt }}>{label}</p>
+                {desc && <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.72rem', color: mut, marginTop: 2 }}>{desc}</p>}
+            </div>
         </button>
+    );
+
+    return (
+        <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
+            <div className="modal-box" style={{ maxWidth: 480, background: boxBg, border: `1px solid ${bdr}`, padding: 28 }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, transparent, ${SKY_DEEP}, #0ea5e9, ${SKY_DEEP}, transparent)`, borderRadius: '20px 20px 0 0' }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+                    <div>
+                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 6 }}>ADMIN · USUARIOS</p>
+                        <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.7rem', letterSpacing: '.04em', color: txt }}>Acciones</h2>
+                        <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.78rem', color: mut, marginTop: 4 }}>{usuario.nombre} · {usuario.email}</p>
+                    </div>
+                    <button onClick={onClose} style={{ background: 'none', border: `1px solid ${bdr}`, borderRadius: 9, padding: 7, cursor: 'pointer', color: mut, display: 'flex' }}>
+                        <IconX />
+                    </button>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {/* Editar */}
+                    <ActionBtn icon={<IconEdit />} label="Editar usuario" desc="Modificar nombre, email, telefono y cedula" onClick={() => onAccion('editar')} />
+                    {/* Cambiar contrasena */}
+                    <ActionBtn icon={<IconLock />} label="Cambiar contrasena" desc="Restablecer la contrasena del usuario" color="#f59e0b" onClick={() => onAccion('password')} />
+
+                    {/* Separador */}
+                    <div style={{ height: 1, background: bdr, margin: '4px 0' }} />
+
+                    {/* Cambiar rol */}
+                    <div>
+                        <p style={{ padding: '4px 0 6px', fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.2em', color: mut }}>CAMBIAR ROL</p>
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                            {ROLES.filter(r => r.val !== usuario.rol).map(r => (
+                                <button key={r.val} onClick={() => onCambiarRol(r.val)}
+                                    style={{
+                                        padding: '7px 14px', borderRadius: 999,
+                                        background: r.color + '14', border: `1px solid ${r.color}40`,
+                                        color: r.color, cursor: 'pointer',
+                                        fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.16em',
+                                        transition: 'all .12s',
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.background = r.color + '28'}
+                                    onMouseLeave={e => e.currentTarget.style.background = r.color + '14'}>
+                                    {r.label.toUpperCase()}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Cambiar estado */}
+                    <div>
+                        <p style={{ padding: '6px 0 6px', fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.2em', color: mut }}>CAMBIAR ESTADO</p>
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                            {ESTADOS.filter(s => s.val !== usuario.estado).map(s => (
+                                <button key={s.val} onClick={() => onCambiarEstado(s.val)}
+                                    style={{
+                                        padding: '7px 14px', borderRadius: 999,
+                                        background: s.color + '14', border: `1px solid ${s.color}40`,
+                                        color: s.color, cursor: 'pointer',
+                                        fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.16em',
+                                        transition: 'all .12s',
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.background = s.color + '28'}
+                                    onMouseLeave={e => e.currentTarget.style.background = s.color + '14'}>
+                                    {s.label.toUpperCase()}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Separador */}
+                    <div style={{ height: 1, background: bdr, margin: '4px 0' }} />
+
+                    {/* Eliminar */}
+                    <ActionBtn icon={<IconTrash />} label="Eliminar usuario" desc="Esta accion no se puede deshacer" color="#ef4444" onClick={() => onAccion('eliminar')} />
+                </div>
+            </div>
+        </div>
     );
 }
 

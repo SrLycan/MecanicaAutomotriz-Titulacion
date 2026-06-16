@@ -521,8 +521,8 @@ function Car3DGold() {
             {/* Sombra debajo */}
             <div style={{ position: 'absolute', bottom: '6%', left: '10%', right: '10%', height: 30, borderRadius: '50%',
                           background: 'radial-gradient(ellipse, rgba(201,162,39,.45), rgba(201,162,39,0) 65%)',
-                          filter: 'blur(12px)', animation: 'pubFloat 5s ease-in-out infinite' }} />
-            <div style={{ position: 'absolute', inset: 0, animation: 'pubFloat 5s ease-in-out infinite', transformStyle: 'preserve-3d' }}>
+                          filter: 'blur(12px)' }} />
+            <div style={{ position: 'absolute', inset: 0, transformStyle: 'preserve-3d' }}>
                 <div ref={stageRef} style={{ position: 'absolute', inset: 0, transformStyle: 'preserve-3d', transform: 'rotateX(8deg) rotateY(-14deg)', transition: 'transform .35s cubic-bezier(.4,0,.2,1)' }}>
                     <CarSVGGold />
                 </div>
@@ -631,6 +631,22 @@ function CarSVGGold() {
                     </g>
                 </g>
             ))}
+            {/* Herramientas mecanicas */}
+            <g transform="translate(360, 42)">
+                <circle cx="0" cy="0" r="30" fill="rgba(201,162,39,0.12)" stroke="rgba(201,162,39,0.5)" strokeWidth="1.5" />
+                <g transform="rotate(-30)">
+                    <path d="M -5 -20 L 5 -20 L 6 -8 Q 16 0 16 12 Q 16 24 0 24 Q -16 24 -16 12 Q -16 0 -6 -8 Z"
+                          fill="#fde68a" stroke="#c9a227" strokeWidth="1.2" />
+                    <circle cx="0" cy="12" r="6" fill="#1f2937" stroke="#c9a227" strokeWidth="1" />
+                </g>
+            </g>
+            <g transform="translate(398, 78)">
+                <circle cx="0" cy="0" r="17" fill="#1f2937" stroke="#c9a227" strokeWidth="1.5" />
+                {[0, 60, 120, 180, 240, 300].map(deg => (
+                    <rect key={deg} x="-3" y="-19" width="6" height="9" rx="1" fill="#c9a227" transform={`rotate(${deg})`} />
+                ))}
+                <circle cx="0" cy="0" r="5" fill="#0a0a0a" />
+            </g>
         </svg>
     );
 }

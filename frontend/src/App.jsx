@@ -20,6 +20,7 @@ import Usuarios       from './pages/Usuarios';
 import Sucursales     from './pages/Sucursales';
 import OrdenesTrabajo from './pages/OrdenesTrabajo';
 import Vehiculos      from './pages/Vehiculos';
+import Clientes       from './pages/Clientes';
 
 import './styles/global.css';
 
@@ -73,6 +74,11 @@ export default function App() {
                             <Route path="usuarios"      element={
                                 <ProtectedRoute roles={['administrador']}>
                                     <Usuarios />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="clientes"      element={
+                                <ProtectedRoute roles={['administrador','recepcionista']}>
+                                    <Clientes />
                                 </ProtectedRoute>
                             } />
                             <Route path="ordenes"       element={

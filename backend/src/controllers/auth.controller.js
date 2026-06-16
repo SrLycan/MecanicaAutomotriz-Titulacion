@@ -55,12 +55,24 @@ const register = async (req, res) => {
             return res.status(409).json({ error: 'Ya existe una cuenta con ese email.' });
 
         const hash = await bcrypt.hash(password, 10);
+        const emailNorm = email.toLowerCase().trim();
         const { rows } = await pool.query(
             `INSERT INTO usuarios (nombre, email, password, rol, telefono, cedula)
              VALUES ($1, $2, $3, 'cliente', $4, $5)
              RETURNING id, nombre, email, rol`,
-            [nombre.trim(), email.toLowerCase().trim(), hash, telefono || null, cedula || null]
+            [nombre.trim(), emailNorm, hash, telefono || null, cedula || null]
         );
+
+        const { rows: cliExiste } = await pool.query(
+            'SELECT id FROM clientes WHERE LOWER(email) = $1', [emailNorm]
+        );
+        if (cliExiste.length === 0) {
+            await pool.query(
+                `INSERT INTO clientes (nombre, email, telefono, cedula)
+                 VALUES ($1, $2, $3, $4)`,
+                [nombre.trim(), emailNorm, telefono || null, cedula || null]
+            );
+        }
 
         const payload = { id: rows[0].id, nombre: rows[0].nombre, email: rows[0].email, rol: rows[0].rol };
         const token   = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '8h' });

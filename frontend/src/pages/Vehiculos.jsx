@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import { ESTADO_ORDEN_MAP, ESTADO_PROGRESO_MAP } from '../constants/ordenes';
 
 function IconSearch() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>; }
 function IconPlus()  { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>; }
@@ -12,7 +14,10 @@ function IconCar()   { return <svg width="20" height="20" viewBox="0 0 24 24" fi
 function IconHistory(){return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>; }
 
 export default function Vehiculos() {
+    const { tieneRol } = useAuth();
     const { isDark } = useTheme();
+    const esRecepcion = tieneRol('recepcionista');
+    const puedeEliminar = tieneRol('administrador');
     const [vehiculos, setVehiculos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [busqueda, setBusqueda] = useState('');
@@ -105,6 +110,7 @@ export default function Vehiculos() {
                     <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.6rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>Vehiculos</h1>
                     <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.85rem', color: mut, marginTop: 6 }}>
                         {clientesUnicos.length} clientes · {vehiculos.length} vehiculos registrados
+                        {esRecepcion && ' · Asociacion y consulta de datos'}
                     </p>
                 </div>
                 <button onClick={() => setModal({ open: true, data: null })}
@@ -174,8 +180,10 @@ export default function Vehiculos() {
                                         <td style={{ padding: '13px 18px' }}>
                                             <div style={{ display: 'flex', gap: 6 }}>
                                                 <ActionBtn title="Historial de ordenes" color={SKY_DEEP} bdr={bdr} onClick={() => verHistorial(v)}><IconHistory /></ActionBtn>
-                                                <ActionBtn title="Editar" color={SKY_DEEP} bdr={bdr} onClick={() => setModal({ open: true, data: v })}><IconEdit /></ActionBtn>
-                                                <ActionBtn title="Eliminar" color="#ef4444" bdr={bdr} onClick={() => eliminar(v)}><IconTrash /></ActionBtn>
+                                                <ActionBtn title="Asociar / Editar datos" color={SKY_DEEP} bdr={bdr} onClick={() => setModal({ open: true, data: v })}><IconEdit /></ActionBtn>
+                                                {puedeEliminar && (
+                                                    <ActionBtn title="Eliminar" color="#ef4444" bdr={bdr} onClick={() => eliminar(v)}><IconTrash /></ActionBtn>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
@@ -220,13 +228,6 @@ function ActionBtn({ color, bdr, title, onClick, children }) {
     );
 }
 
-const ESTADO_MAP = {
-    pendiente:   { label: 'Pendiente',   color: '#f59e0b' },
-    en_progreso: { label: 'En Progreso', color: '#0ea5e9' },
-    completado:  { label: 'Completado',  color: '#10b981' },
-    cancelado:   { label: 'Cancelado',   color: '#ef4444' },
-};
-
 function ModalHistorial({ vehiculo, ordenes, onClose, isDark }) {
     const SKY = '#0ea5e9'; const SKY_DEEP = '#0284c7';
     const txt = isDark ? '#f1f5f9' : '#0f172a';
@@ -254,12 +255,18 @@ function ModalHistorial({ vehiculo, ordenes, onClose, isDark }) {
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                         {ordenes.map(o => {
-                            const est = ESTADO_MAP[o.estado] || { label: o.estado, color: '#64748b' };
+                            const est = ESTADO_ORDEN_MAP[o.estado] || { label: o.estado, color: '#64748b' };
+                            const prog = o.estado_progreso ? ESTADO_PROGRESO_MAP[o.estado_progreso] : null;
                             return (
                                 <div key={o.id} style={{ padding: '12px 16px', borderRadius: 10, background: isDark ? 'rgba(255,255,255,.015)' : 'rgba(14,165,233,.02)', border: `1px solid ${bdr}` }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, flexWrap: 'wrap', gap: 6 }}>
                                         <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.9rem', letterSpacing: '.03em', color: txt }}>#{String(o.id).padStart(4, '0')}</span>
-                                        <span style={{ padding: '2px 9px', borderRadius: 999, background: `${est.color}14`, border: `1px solid ${est.color}35`, color: est.color, fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.16em' }}>{est.label.toUpperCase()}</span>
+                                        <div style={{ display: 'flex', gap: 6 }}>
+                                            <span style={{ padding: '2px 9px', borderRadius: 999, background: `${est.color}14`, border: `1px solid ${est.color}35`, color: est.color, fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.16em' }}>{est.label.toUpperCase()}</span>
+                                            {prog && (
+                                                <span style={{ padding: '2px 9px', borderRadius: 999, background: `${prog.color}14`, border: `1px solid ${prog.color}35`, color: prog.color, fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.16em' }}>{prog.label.toUpperCase()}</span>
+                                            )}
+                                        </div>
                                     </div>
                                     <p style={{ fontFamily: "'Outfit'", fontSize: '.78rem', color: mut, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{o.descripcion}</p>
                                     <p style={{ fontFamily: "'Outfit'", fontSize: '.68rem', color: mut, marginTop: 4 }}>{new Date(o.created_at).toLocaleDateString('es-EC')} · {o.usuario_nombre}</p>
@@ -318,7 +325,7 @@ function ModalVehiculo({ data, onClose, onGuardar, isDark }) {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
                     <div>
                         <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 6 }}>TALLER · VEHICULOS</p>
-                        <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.7rem', letterSpacing: '.04em', color: txt }}>{esEdicion ? 'Editar Vehiculo' : 'Nuevo Vehiculo'}</h2>
+                        <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.7rem', letterSpacing: '.04em', color: txt }}>{esEdicion ? 'Asociar / Editar Vehiculo' : 'Nuevo Vehiculo'}</h2>
                     </div>
                     <button onClick={onClose} style={{ background: 'none', border: `1px solid ${bdr}`, borderRadius: 9, padding: 7, cursor: 'pointer', color: mut, display: 'flex' }}><IconX /></button>
                 </div>

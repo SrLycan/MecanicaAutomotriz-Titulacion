@@ -1,18 +1,36 @@
 const pool = require('../config/db');
 
+const ESTADOS_ORDEN = ['pendiente', 'en_progreso', 'completado', 'cancelado'];
+const ESTADOS_PROGRESO = [
+    'en_revision', 'deteccion_falla', 'en_reparacion',
+    'esperando_repuestos', 'pruebas_finales', 'listo_entrega',
+];
+const PUEDE_ACTUALIZAR_ESTADO = ['administrador', 'tecnico'];
+
+const validarDatosCliente = ({ nombre, email, telefono, cedula }) => {
+    if (!nombre?.trim()) return 'El nombre es obligatorio.';
+    if (!cedula?.trim()) return 'La cedula es obligatoria.';
+    if (!telefono?.trim() && !email?.trim()) return 'Debe indicar telefono o email.';
+    return null;
+};
+
 // ═══════════════════════════════════════════════════════════════
 // CLIENTES
 // ═══════════════════════════════════════════════════════════════
 
 const listarClientes = async (req, res) => {
     const { q } = req.query;
-    let query = 'SELECT * FROM clientes WHERE 1=1';
+    let query = `SELECT c.*,
+                        (u.id IS NOT NULL) AS cuenta_web
+                 FROM clientes c
+                 LEFT JOIN usuarios u ON LOWER(u.email) = LOWER(c.email) AND u.rol = 'cliente'
+                 WHERE 1=1`;
     const params = [];
     if (q) {
         params.push(`%${q}%`);
-        query += ` AND (nombre ILIKE $${params.length} OR cedula ILIKE $${params.length} OR telefono ILIKE $${params.length})`;
+        query += ` AND (c.nombre ILIKE $${params.length} OR c.cedula ILIKE $${params.length} OR c.telefono ILIKE $${params.length} OR c.email ILIKE $${params.length})`;
     }
-    query += ' ORDER BY nombre ASC';
+    query += ' ORDER BY c.nombre ASC';
     try {
         const { rows } = await pool.query(query, params);
         return res.json({ clientes: rows });
@@ -27,7 +45,34 @@ const obtenerCliente = async (req, res) => {
     try {
         const { rows } = await pool.query('SELECT * FROM clientes WHERE id = $1', [id]);
         if (!rows[0]) return res.status(404).json({ error: 'Cliente no encontrado.' });
-        return res.json(rows[0]);
+
+        let cuenta_web = false;
+        if (rows[0].email) {
+            const { rows: vinculo } = await pool.query(
+                `SELECT u.id FROM usuarios u
+                 WHERE LOWER(u.email) = LOWER($1) AND u.rol = 'cliente' LIMIT 1`,
+                [rows[0].email]
+            );
+            cuenta_web = vinculo.length > 0;
+        }
+
+        const { rows: vehiculos } = await pool.query(
+            'SELECT * FROM vehiculos WHERE cliente_id = $1 ORDER BY created_at DESC', [id]
+        );
+        const { rows: ordenes } = await pool.query(`
+            SELECT o.*, v.placa, v.marca, v.modelo, u.nombre AS usuario_nombre
+            FROM ordenes_trabajo o
+            LEFT JOIN vehiculos v ON v.id = o.vehiculo_id
+            JOIN usuarios u ON u.id = o.usuario_id
+            WHERE o.cliente_id = $1
+            ORDER BY o.created_at DESC`, [id]
+        );
+
+        return res.json({
+            cliente: { ...rows[0], cuenta_web },
+            vehiculos,
+            ordenes,
+        });
     } catch (err) {
         console.error('Error obtenerCliente:', err);
         return res.status(500).json({ error: 'Error al obtener cliente.' });
@@ -36,7 +81,8 @@ const obtenerCliente = async (req, res) => {
 
 const crearCliente = async (req, res) => {
     const { nombre, email, telefono, cedula, direccion } = req.body;
-    if (!nombre) return res.status(400).json({ error: 'El nombre es obligatorio.' });
+    const errVal = validarDatosCliente({ nombre, email, telefono, cedula });
+    if (errVal) return res.status(400).json({ error: errVal });
     try {
         if (cedula) {
             const { rows: dup } = await pool.query('SELECT id FROM clientes WHERE cedula = $1', [cedula]);
@@ -69,7 +115,8 @@ const eliminarCliente = async (req, res) => {
 const actualizarCliente = async (req, res) => {
     const { id } = req.params;
     const { nombre, email, telefono, cedula, direccion } = req.body;
-    if (!nombre) return res.status(400).json({ error: 'El nombre es obligatorio.' });
+    const errVal = validarDatosCliente({ nombre, email, telefono, cedula });
+    if (errVal) return res.status(400).json({ error: errVal });
     try {
         if (cedula) {
             const { rows: dup } = await pool.query(
@@ -169,7 +216,7 @@ const eliminarVehiculo = async (req, res) => {
 // ═══════════════════════════════════════════════════════════════
 
 const listarOrdenes = async (req, res) => {
-    const { estado, cliente_id, q } = req.query;
+    const { estado, grupo, cliente_id, q } = req.query;
     let query = `
         SELECT o.*,
                c.nombre AS cliente_nombre, c.telefono AS cliente_telefono,
@@ -181,7 +228,12 @@ const listarOrdenes = async (req, res) => {
         JOIN usuarios  u ON u.id = o.usuario_id
         WHERE 1=1`;
     const params = [];
-    if (estado) { params.push(estado); query += ` AND o.estado = $${params.length}`; }
+    if (grupo === 'anteriores') {
+        query += ` AND o.estado IN ('completado', 'cancelado')`;
+    } else if (estado) {
+        params.push(estado);
+        query += ` AND o.estado = $${params.length}`;
+    }
     if (cliente_id) { params.push(cliente_id); query += ` AND o.cliente_id = $${params.length}`; }
     if (q) {
         params.push(`%${q}%`);
@@ -242,15 +294,33 @@ const crearOrden = async (req, res) => {
 
 const actualizarOrden = async (req, res) => {
     const { id } = req.params;
-    let { estado, descripcion, diagnostico, kilometraje, vehiculo_id, fecha_salida } = req.body;
-    const VALIDOS = ['pendiente', 'en_progreso', 'completado', 'cancelado'];
-    if (estado && !VALIDOS.includes(estado)) {
-        return res.status(400).json({ error: `Estado invalido. Validos: ${VALIDOS.join(', ')}.` });
+    let {
+        estado, descripcion, diagnostico, kilometraje, vehiculo_id,
+        fecha_salida, estado_progreso, notas_progreso,
+    } = req.body;
+    const rol = req.usuario?.rol;
+
+    if (estado && !ESTADOS_ORDEN.includes(estado)) {
+        return res.status(400).json({ error: `Estado invalido. Validos: ${ESTADOS_ORDEN.join(', ')}.` });
     }
+    if (estado_progreso && !ESTADOS_PROGRESO.includes(estado_progreso)) {
+        return res.status(400).json({ error: `Progreso invalido. Validos: ${ESTADOS_PROGRESO.join(', ')}.` });
+    }
+
+    const cambiaEstado = estado !== undefined || estado_progreso !== undefined || notas_progreso !== undefined;
+    if (cambiaEstado && !PUEDE_ACTUALIZAR_ESTADO.includes(rol)) {
+        return res.status(403).json({ error: 'Solo el tecnico puede actualizar el estado de reparacion.' });
+    }
+
     // Auto-asignar fecha de salida al completar
     if (estado === 'completado' && !fecha_salida) {
         fecha_salida = new Date().toISOString().slice(0, 10);
     }
+    // Al iniciar trabajo, asignar progreso inicial si no existe
+    if (estado === 'en_progreso' && !estado_progreso) {
+        estado_progreso = 'en_revision';
+    }
+
     try {
         const { rows } = await pool.query(
             `UPDATE ordenes_trabajo SET
@@ -259,10 +329,13 @@ const actualizarOrden = async (req, res) => {
                 diagnostico=COALESCE($3, diagnostico),
                 kilometraje=COALESCE($4, kilometraje),
                 vehiculo_id=COALESCE($5, vehiculo_id),
-                fecha_salida=COALESCE($6, fecha_salida)
-             WHERE id=$7 RETURNING *`,
+                fecha_salida=COALESCE($6, fecha_salida),
+                estado_progreso=COALESCE($7, estado_progreso),
+                notas_progreso=COALESCE($8, notas_progreso)
+             WHERE id=$9 RETURNING *`,
             [estado || null, descripcion || null, diagnostico || null,
-             kilometraje || null, vehiculo_id || null, fecha_salida || null, id]
+             kilometraje || null, vehiculo_id || null, fecha_salida || null,
+             estado_progreso || null, notas_progreso !== undefined ? notas_progreso : null, id]
         );
         if (!rows[0]) return res.status(404).json({ error: 'Orden no encontrada.' });
         return res.json({ orden: rows[0] });

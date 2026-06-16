@@ -146,3 +146,22 @@ BEGIN
             BEFORE UPDATE ON ordenes_trabajo FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
     END IF;
 END $$;
+
+-- ============================================================
+-- Sprint 4: Progreso de reparacion (estados de mecanica)
+-- ============================================================
+
+ALTER TABLE ordenes_trabajo ADD COLUMN IF NOT EXISTS estado_progreso VARCHAR(30);
+ALTER TABLE ordenes_trabajo ADD COLUMN IF NOT EXISTS notas_progreso TEXT;
+
+-- Ampliar estados de progreso mecanico (idempotente)
+DO $$
+BEGIN
+    ALTER TABLE ordenes_trabajo DROP CONSTRAINT IF EXISTS ordenes_trabajo_estado_progreso_check;
+    ALTER TABLE ordenes_trabajo ADD CONSTRAINT ordenes_trabajo_estado_progreso_check
+        CHECK (estado_progreso IS NULL OR estado_progreso IN (
+            'en_revision', 'deteccion_falla', 'en_reparacion',
+            'esperando_repuestos', 'pruebas_finales', 'listo_entrega'
+        ));
+EXCEPTION WHEN others THEN NULL;
+END $$;

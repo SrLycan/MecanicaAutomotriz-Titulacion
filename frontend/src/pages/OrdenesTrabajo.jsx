@@ -3,6 +3,10 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import {
+    ESTADOS_ORDEN, ESTADOS_PROGRESO,
+    ESTADO_ORDEN_MAP, ESTADO_PROGRESO_MAP, FILTROS_ORDEN,
+} from '../constants/ordenes';
 
 // ── Iconos ────────────────────────────────────────────────────
 function IconPlus()  { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>; }
@@ -12,20 +16,13 @@ function IconEdit()  { return <svg width="13" height="13" viewBox="0 0 24 24" fi
 function IconTrash() { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>; }
 function IconCar()   { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M5 17h14M5 17a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.5l2-3h7l2 3H19a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2"/><circle cx="8" cy="15" r="2"/><circle cx="16" cy="15" r="2"/></svg>; }
 
-const ESTADOS = [
-    { val: 'pendiente',   label: 'Pendiente',   color: '#f59e0b' },
-    { val: 'en_progreso', label: 'En Progreso',  color: '#0ea5e9' },
-    { val: 'completado',  label: 'Completado',   color: '#10b981' },
-    { val: 'cancelado',   label: 'Cancelado',    color: '#ef4444' },
-];
-const ESTADO_MAP = Object.fromEntries(ESTADOS.map(e => [e.val, e]));
-
 export default function OrdenesTrabajo() {
-    const { usuario } = useAuth();
+    const { tieneRol } = useAuth();
     const { isDark }  = useTheme();
+    const esTecnico = tieneRol('tecnico', 'administrador');
     const [ordenes, setOrdenes] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [filtroEstado, setFiltroEstado] = useState('');
+    const [filtroGrupo, setFiltroGrupo] = useState('');
     const [busqueda, setBusqueda] = useState('');
     const [modal, setModal] = useState({ open: false, data: null });
     const [modalCliente, setModalCliente] = useState(false);
@@ -44,31 +41,40 @@ export default function OrdenesTrabajo() {
         : '0 4px 16px -4px rgba(15,23,42,0.08), 0 2px 4px -2px rgba(15,23,42,0.04)';
     const inputBg = isDark ? '#0b1220' : '#fafcff';
 
-    const cargar = useCallback(async (q = '', est = filtroEstado) => {
+    const cargar = useCallback(async (q = '', grupo = filtroGrupo) => {
         setLoading(true);
         try {
             const params = new URLSearchParams();
             if (q) params.set('q', q);
-            if (est) params.set('estado', est);
+            if (grupo === 'anteriores') params.set('grupo', 'anteriores');
+            else if (grupo) params.set('estado', grupo);
             const { data } = await api.get(`/ordenes/ordenes?${params}`);
             setOrdenes(data.ordenes);
         } catch { toast.error('Error al cargar ordenes.'); }
         finally { setLoading(false); }
-    }, [filtroEstado]);
+    }, [filtroGrupo]);
 
-    useEffect(() => { cargar(busqueda, filtroEstado); }, []);
+    useEffect(() => { cargar(busqueda, filtroGrupo); }, []);
 
     const handleBusqueda = (e) => {
         const v = e.target.value;
         setBusqueda(v);
-        setTimeout(() => cargar(v, filtroEstado), 300);
+        setTimeout(() => cargar(v, filtroGrupo), 300);
     };
 
-    const cambiarEstado = async (id, nuevo) => {
+    const cambiarEstado = async (id, nuevo, extra = {}) => {
         try {
-            await api.put(`/ordenes/ordenes/${id}`, { estado: nuevo });
-            toast.success(`Orden ${ESTADO_MAP[nuevo]?.label || nuevo}.`);
-            cargar(busqueda, filtroEstado);
+            await api.put(`/ordenes/ordenes/${id}`, { estado: nuevo, ...extra });
+            toast.success(`Orden ${ESTADO_ORDEN_MAP[nuevo]?.label || nuevo}.`);
+            cargar(busqueda, filtroGrupo);
+        } catch (err) { toast.error(err.response?.data?.error || 'Error.'); }
+    };
+
+    const actualizarProgreso = async (id, estado_progreso, notas_progreso) => {
+        try {
+            await api.put(`/ordenes/ordenes/${id}`, { estado_progreso, notas_progreso: notas_progreso || null });
+            toast.success('Progreso actualizado.');
+            cargar(busqueda, filtroGrupo);
         } catch (err) { toast.error(err.response?.data?.error || 'Error.'); }
     };
 
@@ -77,7 +83,7 @@ export default function OrdenesTrabajo() {
         try {
             await api.delete(`/ordenes/ordenes/${o.id}`);
             toast.success('Orden eliminada.');
-            cargar(busqueda, filtroEstado);
+            cargar(busqueda, filtroGrupo);
         } catch (err) { toast.error(err.response?.data?.error || 'Error.'); }
     };
 
@@ -91,7 +97,7 @@ export default function OrdenesTrabajo() {
                 toast.success('Orden creada.');
             }
             setModal({ open: false, data: null });
-            cargar(busqueda, filtroEstado);
+            cargar(busqueda, filtroGrupo);
         } catch (err) { toast.error(err.response?.data?.error || 'Error al guardar.'); }
     };
 
@@ -100,11 +106,9 @@ export default function OrdenesTrabajo() {
         setModal({ open: true, data: null, clientePre: cliente });
     };
 
-    const stats = {
-        total: ordenes.length,
-        pendientes: ordenes.filter(o => o.estado === 'pendiente').length,
-        progreso: ordenes.filter(o => o.estado === 'en_progreso').length,
-        completado: ordenes.filter(o => o.estado === 'completado').length,
+    const aplicarFiltro = (grupo) => {
+        setFiltroGrupo(grupo);
+        cargar(busqueda, grupo);
     };
 
     return (
@@ -133,28 +137,33 @@ export default function OrdenesTrabajo() {
                 </button>
             </div>
 
-            {/* KPI Cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14, marginBottom: 20 }}>
-                <Kpi label="Total"     value={stats.total}      color={SKY}      card={card} bdr={bdr} mut={mut} txt={txt} sh={cardSh} />
-                <Kpi label="Pendiente" value={stats.pendientes} color="#f59e0b"  card={card} bdr={bdr} mut={mut} txt={txt} sh={cardSh} />
-                <Kpi label="Progreso"  value={stats.progreso}   color="#0ea5e9"  card={card} bdr={bdr} mut={mut} txt={txt} sh={cardSh} />
-                <Kpi label="Completado"value={stats.completado}  color="#10b981" card={card} bdr={bdr} mut={mut} txt={txt} sh={cardSh} />
+            {/* Filtros por grupo */}
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+                {FILTROS_ORDEN.map(f => {
+                    const activo = filtroGrupo === f.val;
+                    return (
+                        <button key={f.val} onClick={() => aplicarFiltro(f.val)}
+                            style={{
+                                fontFamily: "'Bebas Neue'", fontSize: '.72rem', letterSpacing: '.12em',
+                                padding: '10px 18px', borderRadius: 10, cursor: 'pointer', transition: 'all .15s',
+                                background: activo ? `linear-gradient(135deg, ${SKY_DEEP}, ${SKY})` : card,
+                                color: activo ? '#fff' : mut,
+                                border: activo ? 'none' : `1px solid ${bdr}`,
+                                boxShadow: activo ? `0 4px 14px -4px ${SKY}` : 'none',
+                            }}>
+                            {f.label.toUpperCase()}
+                        </button>
+                    );
+                })}
             </div>
 
             {/* Toolbar */}
             <div style={{ padding: 16, marginBottom: 16, background: card, border: `1px solid ${bdr}`, borderRadius: 14, boxShadow: cardSh }}>
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-                    <div style={{ position: 'relative' }}>
-                        <span style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: mut, display: 'flex' }}><IconSearch /></span>
-                        <input placeholder="Buscar cliente, placa o descripcion..."
-                               value={busqueda} onChange={handleBusqueda}
-                               style={{ padding: '10px 12px 10px 32px', background: inputBg, border: `1px solid ${bdr}`, borderRadius: 10, color: txt, fontFamily: "'Outfit'", fontSize: '.85rem', outline: 'none', width: 280 }} />
-                    </div>
-                    <select value={filtroEstado} onChange={e => { setFiltroEstado(e.target.value); cargar(busqueda, e.target.value); }}
-                            style={{ padding: '10px 12px', background: inputBg, border: `1px solid ${bdr}`, borderRadius: 10, color: txt, fontFamily: "'Outfit'", fontSize: '.85rem', outline: 'none' }}>
-                        <option value="">Todos los estados</option>
-                        {ESTADOS.map(e => <option key={e.val} value={e.val}>{e.label}</option>)}
-                    </select>
+                <div style={{ position: 'relative' }}>
+                    <span style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: mut, display: 'flex' }}><IconSearch /></span>
+                    <input placeholder="Buscar cliente, placa o descripcion..."
+                           value={busqueda} onChange={handleBusqueda}
+                           style={{ padding: '10px 12px 10px 32px', background: inputBg, border: `1px solid ${bdr}`, borderRadius: 10, color: txt, fontFamily: "'Outfit'", fontSize: '.85rem', outline: 'none', width: '100%', boxSizing: 'border-box' }} />
                 </div>
             </div>
 
@@ -173,7 +182,8 @@ export default function OrdenesTrabajo() {
             ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     {ordenes.map((o, i) => {
-                        const est = ESTADO_MAP[o.estado] || ESTADOS[0];
+                        const est = ESTADO_ORDEN_MAP[o.estado] || ESTADOS_ORDEN[0];
+                        const prog = o.estado_progreso ? ESTADO_PROGRESO_MAP[o.estado_progreso] : null;
                         const expanded = expandedId === o.id;
                         return (
                             <div key={o.id} style={{
@@ -196,6 +206,13 @@ export default function OrdenesTrabajo() {
                                                 background: `${est.color}14`, border: `1px solid ${est.color}35`,
                                                 color: est.color, fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.16em',
                                             }}>{est.label.toUpperCase()}</span>
+                                            {prog && (
+                                                <span style={{
+                                                    padding: '3px 10px', borderRadius: 999,
+                                                    background: `${prog.color}14`, border: `1px solid ${prog.color}35`,
+                                                    color: prog.color, fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.16em',
+                                                }}>{prog.label.toUpperCase()}</span>
+                                            )}
                                         </div>
                                         <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.85rem', color: txt, marginTop: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                             {o.cliente_nombre} {o.placa && <span style={{ color: mut, fontWeight: 400 }}>· {o.placa} {o.marca && `(${o.marca})`}</span>}
@@ -237,14 +254,33 @@ export default function OrdenesTrabajo() {
                                             </div>
                                         )}
 
+                                        {o.notas_progreso && (
+                                            <div style={{ padding: '10px 14px', borderRadius: 10, background: isDark ? 'rgba(99,102,241,.08)' : 'rgba(99,102,241,.04)', border: `1px solid ${isDark ? 'rgba(99,102,241,.25)' : 'rgba(99,102,241,.15)'}`, marginBottom: 14 }}>
+                                                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.2em', color: '#6366f1', marginBottom: 3 }}>NOTAS DE PROGRESO</p>
+                                                <p style={{ fontFamily: "'Outfit'", fontSize: '.82rem', color: txtSf }}>{o.notas_progreso}</p>
+                                            </div>
+                                        )}
+
+                                        {esTecnico && o.estado === 'en_progreso' && (
+                                            <PanelProgreso
+                                                orden={o}
+                                                onGuardar={actualizarProgreso}
+                                                isDark={isDark}
+                                                bdr={bdr}
+                                                inputBg={inputBg}
+                                                txt={txt}
+                                                mut={mut}
+                                            />
+                                        )}
+
                                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', borderTop: `1px solid ${bdr}`, paddingTop: 12 }}>
-                                            {o.estado === 'pendiente' && (
-                                                <EstBtn color="#0ea5e9" label="Iniciar" onClick={() => cambiarEstado(o.id, 'en_progreso')} />
+                                            {esTecnico && o.estado === 'pendiente' && (
+                                                <EstBtn color="#0ea5e9" label="Iniciar" onClick={() => cambiarEstado(o.id, 'en_progreso', { estado_progreso: 'en_revision' })} />
                                             )}
-                                            {o.estado === 'en_progreso' && (
+                                            {esTecnico && o.estado === 'en_progreso' && (
                                                 <EstBtn color="#10b981" label="Completar" onClick={() => cambiarEstado(o.id, 'completado')} />
                                             )}
-                                            {o.estado === 'pendiente' && (
+                                            {esTecnico && o.estado === 'pendiente' && (
                                                 <EstBtn color="#ef4444" label="Cancelar" onClick={() => cambiarEstado(o.id, 'cancelado')} />
                                             )}
                                             {o.estado !== 'completado' && o.estado !== 'cancelado' && (
@@ -253,10 +289,12 @@ export default function OrdenesTrabajo() {
                                                     <IconEdit /> EDITAR
                                                 </button>
                                             )}
-                                            <button onClick={() => eliminarOrden(o)}
-                                                style={{ marginLeft: 'auto', background: 'none', border: `1px solid ${bdr}`, borderRadius: 8, padding: '7px 12px', cursor: 'pointer', color: '#ef4444', display: 'flex', alignItems: 'center', gap: 6, fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.14em' }}>
-                                                <IconTrash /> ELIMINAR
-                                            </button>
+                                            {tieneRol('administrador') && (
+                                                <button onClick={() => eliminarOrden(o)}
+                                                    style={{ marginLeft: 'auto', background: 'none', border: `1px solid ${bdr}`, borderRadius: 8, padding: '7px 12px', cursor: 'pointer', color: '#ef4444', display: 'flex', alignItems: 'center', gap: 6, fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.14em' }}>
+                                                    <IconTrash /> ELIMINAR
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 )}
@@ -290,12 +328,32 @@ export default function OrdenesTrabajo() {
     );
 }
 
-function Kpi({ label, value, color, card, bdr, mut, txt, sh }) {
+function PanelProgreso({ orden, onGuardar, isDark, bdr, inputBg, txt, mut }) {
+    const [progreso, setProgreso] = useState(orden.estado_progreso || 'en_revision');
+    const [notas, setNotas] = useState(orden.notas_progreso || '');
+    const SKY_DEEP = '#0284c7';
+
     return (
-        <div style={{ padding: 18, background: card, border: `1px solid ${bdr}`, borderRadius: 14, position: 'relative', overflow: 'hidden', boxShadow: sh }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, width: 3, height: '100%', background: `linear-gradient(180deg, ${color}, transparent)` }} />
-            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.56rem', letterSpacing: '.22em', color: mut, marginBottom: 4 }}>{label.toUpperCase()}</p>
-            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.9rem', letterSpacing: '.02em', color, lineHeight: 1 }}>{value}</p>
+        <div style={{ padding: 14, borderRadius: 12, background: isDark ? 'rgba(14,165,233,.06)' : 'rgba(14,165,233,.03)', border: `1px solid ${bdr}`, marginBottom: 14 }}>
+            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.2em', color: SKY_DEEP, marginBottom: 10 }}>ACTUALIZAR PROGRESO DE REPARACION</p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                <div style={{ gridColumn: '1/-1' }}>
+                    <select value={progreso} onChange={e => setProgreso(e.target.value)}
+                        style={{ width: '100%', padding: '9px 12px', borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: txt, fontFamily: "'Outfit'", fontSize: '.85rem', outline: 'none' }}>
+                        {ESTADOS_PROGRESO.map(e => <option key={e.val} value={e.val}>{e.label}</option>)}
+                    </select>
+                </div>
+                <div style={{ gridColumn: '1/-1' }}>
+                    <textarea value={notas} onChange={e => setNotas(e.target.value)}
+                        placeholder="Detalles opcionales para el cliente (ej: se detecto falla en el alternador)..."
+                        rows={2}
+                        style={{ width: '100%', boxSizing: 'border-box', padding: '9px 12px', borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: txt, fontFamily: "'Outfit'", fontSize: '.82rem', outline: 'none', resize: 'vertical' }} />
+                </div>
+            </div>
+            <button onClick={() => onGuardar(orden.id, progreso, notas)}
+                style={{ fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.14em', padding: '7px 16px', borderRadius: 8, background: 'linear-gradient(135deg, #0284c7, #0ea5e9)', border: 'none', color: '#fff', cursor: 'pointer' }}>
+                GUARDAR PROGRESO
+            </button>
         </div>
     );
 }
@@ -341,7 +399,10 @@ function ModalCliente({ onClose, onCreado, isDark }) {
         setForm({ ...form, [name]: value });
     };
     const onSubmit = async (e) => {
-        e.preventDefault(); setSaving(true);
+        e.preventDefault();
+        if (!form.cedula?.trim()) { toast.error('La cedula es obligatoria.'); return; }
+        if (!form.telefono?.trim() && !form.email?.trim()) { toast.error('Debe indicar telefono o email.'); return; }
+        setSaving(true);
         try {
             const { data } = await api.post('/ordenes/clientes', form);
             toast.success('Cliente registrado.');
@@ -368,19 +429,19 @@ function ModalCliente({ onClose, onCreado, isDark }) {
                             <input name="nombre" value={form.nombre} onChange={onChange} required placeholder="Nombre completo" style={inputSt} />
                         </div>
                         <div>
-                            <label style={labelSt}>EMAIL</label>
+                            <label style={labelSt}>CEDULA / RUC *</label>
+                            <input name="cedula" value={form.cedula} onChange={onChange} required maxLength={15} placeholder="Cedula o RUC" style={inputSt} />
+                        </div>
+                        <div>
+                            <label style={labelSt}>EMAIL (tel. o email obligatorio)</label>
                             <input type="email" name="email" value={form.email} onChange={onChange} placeholder="cliente@email.com" style={inputSt} />
                         </div>
                         <div>
-                            <label style={labelSt}>TELEFONO</label>
+                            <label style={labelSt}>TELEFONO (tel. o email obligatorio)</label>
                             <input name="telefono" value={form.telefono} onChange={onChange} placeholder="+593 99 XXX XXXX" style={inputSt} />
                         </div>
-                        <div>
-                            <label style={labelSt}>CEDULA / RUC</label>
-                            <input name="cedula" value={form.cedula} onChange={onChange} maxLength={15} placeholder="Cedula o RUC" style={inputSt} />
-                        </div>
                         <div style={{ gridColumn: '1/-1' }}>
-                            <label style={labelSt}>DIRECCION</label>
+                            <label style={labelSt}>DIRECCION (opcional)</label>
                             <input name="direccion" value={form.direccion} onChange={onChange} placeholder="Direccion del cliente" style={inputSt} />
                         </div>
                     </div>

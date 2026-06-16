@@ -5,9 +5,9 @@ import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
 
 const ROL_META = {
-    administrador: { label: 'Administracion', sub: 'Vista completa del sistema' },
-    tecnico:       { label: 'Taller',          sub: 'Gestion de stock y trabajo' },
-    recepcionista: { label: 'Recepcion',       sub: 'Consulta de inventario'     },
+    administrador: { label: 'Administracion', sub: 'Inventario, ordenes, clientes y usuarios del taller' },
+    tecnico:       { label: 'Taller',          sub: 'Reparaciones, progreso de vehiculos e inventario' },
+    recepcionista: { label: 'Recepcion',       sub: 'Clientes, vehiculos y ordenes de trabajo' },
 };
 
 function IconBox()    { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>; }
@@ -18,11 +18,15 @@ function IconArrowR() { return <svg width="14" height="14" viewBox="0 0 24 24" f
 function IconClock()  { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>; }
 function IconBolt()   { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>; }
 function IconWrench() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>; }
+function IconUsers()  { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>; }
+function IconCar()    { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M5 17h14M5 17a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.5l2-3h7l2 3H19a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2"/><circle cx="8" cy="15" r="2"/><circle cx="16" cy="15" r="2"/></svg>; }
+function IconOrden()  { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>; }
 
 export default function Dashboard() {
     const { usuario, tieneRol } = useAuth();
     const { isDark }  = useTheme();
     const [stats,   setStats]   = useState({ total: 0, bajo_stock: 0, entradas: 0, salidas: 0, valor: 0 });
+    const [taller,  setTaller]  = useState({ clientes: 0, vehiculos: 0, pendientes: 0, progreso: 0 });
     const [alertas, setAlertas] = useState([]);
     const [movRecientes, setMovRecientes] = useState([]);
     const puedeVerMovimientos = tieneRol('administrador', 'tecnico', 'recepcionista');
@@ -33,10 +37,11 @@ export default function Dashboard() {
     const SKY_PALE = isDark ? 'rgba(14,165,233,0.10)' : 'rgba(14,165,233,0.05)';
     const SKY_BDR  = isDark ? 'rgba(56,189,248,0.22)' : 'rgba(14,165,233,0.18)';
 
-    const txt    = isDark ? '#f1f5f9' : '#0f172a';
-    const txtSf  = isDark ? '#cbd5e1' : '#334155';
-    const mut    = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
-    const faint  = isDark ? 'rgba(241,245,249,0.38)' : '#94a3b8';
+    const GOLD     = '#c9a227';
+    const txt    = isDark ? '#f1f5f9' : '#020617';
+    const txtSf  = isDark ? '#cbd5e1' : '#0f172a';
+    const mut    = isDark ? 'rgba(241,245,249,0.55)' : '#475569';
+    const faint  = isDark ? 'rgba(241,245,249,0.38)' : '#64748b';
     const bdr    = isDark ? 'rgba(148,163,184,0.16)' : 'rgba(15,23,42,0.07)';
     const card   = isDark ? 'rgba(255,255,255,0.025)' : '#ffffff';
     const cardSh = isDark
@@ -47,10 +52,20 @@ export default function Dashboard() {
         const cargar = async () => {
             setLoading(true);
             try {
-                const [repRes, bajRes] = await Promise.all([
+                const [repRes, bajRes, ordRes, cliRes, vehRes] = await Promise.all([
                     api.get('/inventory/repuestos'),
                     api.get('/inventory/repuestos?bajo_stock=true'),
+                    api.get('/ordenes/ordenes').catch(() => ({ data: { ordenes: [] } })),
+                    api.get('/ordenes/clientes').catch(() => ({ data: { clientes: [] } })),
+                    api.get('/ordenes/vehiculos').catch(() => ({ data: { vehiculos: [] } })),
                 ]);
+                const ordenes = ordRes.data.ordenes || [];
+                setTaller({
+                    clientes: cliRes.data.clientes?.length || 0,
+                    vehiculos: vehRes.data.vehiculos?.length || 0,
+                    pendientes: ordenes.filter(o => o.estado === 'pendiente').length,
+                    progreso: ordenes.filter(o => o.estado === 'en_progreso').length,
+                });
 
                 let movimientos = [];
                 if (puedeVerMovimientos) {
@@ -81,8 +96,9 @@ export default function Dashboard() {
     }, [puedeVerMovimientos]);
 
     const meta = ROL_META[usuario?.rol] || ROL_META.recepcionista;
-    const esAdmin   = usuario?.rol === 'administrador';
-    const esTecnico = usuario?.rol === 'tecnico';
+    const esAdmin     = usuario?.rol === 'administrador';
+    const esTecnico   = usuario?.rol === 'tecnico';
+    const esRecepcion = usuario?.rol === 'recepcionista';
 
     const greet = (() => {
         const h = new Date().getHours();
@@ -92,11 +108,15 @@ export default function Dashboard() {
     })();
 
     const CARDS = [
-        { key: 'total',      label: 'Total Repuestos', val: stats.total,      color: SKY,        icon: <IconBox />,   roles: ['administrador','tecnico','recepcionista'] },
-        { key: 'bajo_stock', label: 'Bajo Stock',      val: stats.bajo_stock, color: '#ef4444',  icon: <IconAlert />, roles: ['administrador','tecnico','recepcionista'], alert: true },
-        { key: 'entradas',   label: 'Entradas Hoy',    val: stats.entradas,   color: '#10b981',  icon: <IconIn />,    roles: ['administrador','tecnico'] },
-        { key: 'salidas',    label: 'Salidas Hoy',     val: stats.salidas,    color: '#f59e0b',  icon: <IconOut />,   roles: ['administrador','tecnico'] },
-    ].filter(c => c.roles.includes(usuario?.rol));
+        { key: 'pendientes', label: 'Ordenes Pendientes', val: taller.pendientes, color: '#f59e0b',  icon: <IconOrden />, roles: ['administrador','tecnico','recepcionista'] },
+        { key: 'progreso',   label: 'En Reparacion',      val: taller.progreso,   color: SKY,        icon: <IconWrench />, roles: ['administrador','tecnico','recepcionista'] },
+        { key: 'clientes',   label: 'Clientes',           val: taller.clientes,   color: GOLD,       icon: <IconUsers />, roles: ['administrador','recepcionista'] },
+        { key: 'vehiculos',  label: 'Vehiculos',          val: taller.vehiculos,  color: '#10b981',  icon: <IconCar />,   roles: ['administrador','tecnico','recepcionista'] },
+        { key: 'total',      label: 'Repuestos',          val: stats.total,       color: '#6366f1',  icon: <IconBox />,   roles: ['administrador','tecnico','recepcionista'] },
+        { key: 'bajo_stock', label: 'Bajo Stock',         val: stats.bajo_stock,  color: '#ef4444',  icon: <IconAlert />, roles: ['administrador','tecnico','recepcionista'], alert: true },
+        { key: 'entradas',   label: 'Entradas Hoy',       val: stats.entradas,    color: '#10b981',  icon: <IconIn />,    roles: ['administrador','tecnico'] },
+        { key: 'salidas',    label: 'Salidas Hoy',        val: stats.salidas,     color: '#f59e0b',  icon: <IconOut />,   roles: ['administrador','tecnico'] },
+    ].filter(c => c.roles.includes(usuario?.rol)).slice(0, 4);
 
     const fechaHoy = new Date().toLocaleDateString('es-EC', { weekday: 'long', day: 'numeric', month: 'long' });
 
@@ -105,8 +125,8 @@ export default function Dashboard() {
             <style>{`
                 @keyframes dashCardIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
                 @keyframes alertPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,.35); } 50% { box-shadow: 0 0 0 5px rgba(239,68,68,0); } }
-                @keyframes carFloat { 0%, 100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-8px) rotate(1deg); } }
-                @keyframes carShadow { 0%, 100% { transform: scale(1); opacity: .35; } 50% { transform: scale(.88); opacity: .22; } }
+                @keyframes carShadow { 0%, 100% { transform: scale(1); opacity: .35; } 50% { transform: scale(.95); opacity: .28; } }
+                @keyframes wrenchIdle { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(4deg); } }
                 @keyframes wheelSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
                 @keyframes headlightGlow { 0%, 100% { opacity: .9; } 50% { opacity: 1; filter: drop-shadow(0 0 8px #fde68a); } }
                 @keyframes roadFlow { from { background-position: 0 0; } to { background-position: -80px 0; } }
@@ -121,8 +141,8 @@ export default function Dashboard() {
                 .quick-action:hover .qa-arrow { transform: translateX(4px); color: ${SKY}; }
                 .qa-arrow { transition: transform .22s, color .22s; }
                 .mov-mini { animation: dashCardIn .3s ease both; }
-                .car-3d { animation: carFloat 4.5s ease-in-out infinite; transform-origin: center; will-change: transform; }
-                .car-shadow { animation: carShadow 4.5s ease-in-out infinite; transform-origin: center; }
+                .car-shadow { animation: carShadow 5s ease-in-out infinite; transform-origin: center; }
+                .wrench-badge { animation: wrenchIdle 6s ease-in-out infinite; transform-origin: center; }
                 .car-wheel { animation: wheelSpin 1.8s linear infinite; transform-origin: center; transform-box: fill-box; }
                 .car-headlight { animation: headlightGlow 2.2s ease-in-out infinite; }
                 .hero-orb-1 { animation: orbGlow 5s ease-in-out infinite; }
@@ -253,6 +273,34 @@ export default function Dashboard() {
                             </div>
                             <span className="qa-arrow" style={{ color: faint }}><IconArrowR /></span>
                         </Link>
+                        {(esRecepcion || esAdmin) && (
+                            <Link to="/dashboard/clientes" className="quick-action" style={qaStyle(card, bdr, txt, mut)}>
+                                <span style={{ color: GOLD }}><IconUsers /></span>
+                                <div style={{ flex: 1 }}>
+                                    <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.85rem', color: txt }}>Gestionar clientes</p>
+                                    <p style={{ fontFamily: "'Outfit'", fontSize: '.72rem', color: mut }}>Registro e historial</p>
+                                </div>
+                                <span className="qa-arrow" style={{ color: faint }}><IconArrowR /></span>
+                            </Link>
+                        )}
+                        <Link to="/dashboard/ordenes" className="quick-action" style={qaStyle(card, bdr, txt, mut)}>
+                            <span style={{ color: SKY }}><IconOrden /></span>
+                            <div style={{ flex: 1 }}>
+                                <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.85rem', color: txt }}>Ordenes de trabajo</p>
+                                <p style={{ fontFamily: "'Outfit'", fontSize: '.72rem', color: mut }}>{taller.pendientes} pendientes</p>
+                            </div>
+                            <span className="qa-arrow" style={{ color: faint }}><IconArrowR /></span>
+                        </Link>
+                        {(esRecepcion || esAdmin || esTecnico) && (
+                            <Link to="/dashboard/vehiculos" className="quick-action" style={qaStyle(card, bdr, txt, mut)}>
+                                <span style={{ color: '#10b981' }}><IconCar /></span>
+                                <div style={{ flex: 1 }}>
+                                    <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.85rem', color: txt }}>Vehiculos</p>
+                                    <p style={{ fontFamily: "'Outfit'", fontSize: '.72rem', color: mut }}>Asociar y consultar</p>
+                                </div>
+                                <span className="qa-arrow" style={{ color: faint }}><IconArrowR /></span>
+                            </Link>
+                        )}
                         {(esAdmin || esTecnico) && (
                             <Link to="/dashboard/movimientos" className="quick-action" style={qaStyle(card, bdr, txt, mut)}>
                                 <span style={{ color: '#10b981' }}><IconIn /></span>
@@ -487,12 +535,7 @@ function Car3D() {
                 animation: 'carShadow 5s ease-in-out infinite',
             }} />
 
-            {/* Float wrapper (movimiento vertical) */}
-            <div style={{
-                position: 'absolute', inset: 0,
-                animation: 'carFloat 5s ease-in-out infinite',
-                transformStyle: 'preserve-3d',
-            }}>
+            <div style={{ position: 'absolute', inset: 0, transformStyle: 'preserve-3d' }}>
                 {/* 3D rotation stage (parallax del mouse) */}
                 <div ref={stageRef}
                      style={{
@@ -725,6 +768,24 @@ function CarSVG() {
                     <circle cx="390" cy="188" r="7" fill="url(#hubGrad)" stroke="#0f172a" strokeWidth="1" />
                     <circle cx="390" cy="188" r="2" fill="#020617" />
                 </g>
+            </g>
+
+            {/* Herramientas — llave y tuerca */}
+            <g className="wrench-badge" transform="translate(360, 38)">
+                <circle cx="0" cy="0" r="28" fill="rgba(201,162,39,0.15)" stroke="rgba(201,162,39,0.45)" strokeWidth="1.5" />
+                <g transform="rotate(-35)">
+                    <path d="M -4 -18 L 4 -18 L 5 -6 Q 14 0 14 10 Q 14 20 0 20 Q -14 20 -14 10 Q -14 0 -5 -6 Z"
+                          fill="#e2e8f0" stroke="#c9a227" strokeWidth="1.2" />
+                    <circle cx="0" cy="10" r="5" fill="#0f172a" stroke="#c9a227" strokeWidth="1" />
+                </g>
+            </g>
+            <g className="wrench-badge" transform="translate(395, 72)" style={{ animationDelay: '-2s' }}>
+                <circle cx="0" cy="0" r="16" fill="#1e293b" stroke="#c9a227" strokeWidth="1.5" />
+                {[0, 60, 120, 180, 240, 300].map(deg => (
+                    <rect key={deg} x="-3" y="-18" width="6" height="8" rx="1" fill="#c9a227"
+                          transform={`rotate(${deg})`} />
+                ))}
+                <circle cx="0" cy="0" r="5" fill="#0f172a" />
             </g>
         </svg>
     );
