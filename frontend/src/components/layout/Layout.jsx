@@ -40,7 +40,18 @@ export default function Layout() {
     const navigate = useNavigate();
     const location = useLocation();
     const [collapsed, setCollapsed] = useState(false);
+    const [mobileOpen, setMobileOpen] = useState(false);
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
     const [bajoStockCount, setBajoStockCount] = useState(0);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth <= 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    // Cerrar drawer al navegar en móvil
+    useEffect(() => { setMobileOpen(false); }, [location.pathname]);
 
     // Fetch low stock count for sidebar badge
     useEffect(() => {
@@ -83,6 +94,9 @@ export default function Layout() {
         return 'Dashboard';
     })();
 
+    const sidebarVisible = isMobile ? mobileOpen : true;
+    const sidebarWidth = isMobile ? 232 : (collapsed ? 68 : 232);
+
     return (
         <div style={{ display: 'flex', height: '100vh', background: mainBg, overflow: 'hidden' }}>
             <style>{`
@@ -98,18 +112,31 @@ export default function Layout() {
                 .sb-icon { transition: transform .2s, color .2s; }
                 .hdr-pill { transition: border-color .2s, background .2s; }
                 .hdr-pill:hover { border-color: rgba(56,189,248,.45); }
+                @media (max-width: 768px) {
+                    .main-content-pad { padding: 18px 16px !important; }
+                    .hdr-username { display: none; }
+                }
             `}</style>
+
+            {/* ── Mobile overlay ── */}
+            {isMobile && mobileOpen && (
+                <div onClick={() => setMobileOpen(false)}
+                    style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 19, backdropFilter: 'blur(2px)' }} />
+            )}
 
             {/* ── Sidebar ── */}
             <aside style={{
-                width: collapsed ? 68 : 232,
+                width: sidebarWidth,
                 background: sbBg,
                 display: 'flex', flexDirection: 'column',
-                transition: 'width .28s cubic-bezier(.4,0,.2,1)',
+                transition: 'width .28s cubic-bezier(.4,0,.2,1), transform .28s cubic-bezier(.4,0,.2,1)',
                 flexShrink: 0,
                 borderRight: `1px solid ${sbBdr}`,
                 overflow: 'hidden',
-                position: 'relative', zIndex: 10,
+                position: isMobile ? 'fixed' : 'relative',
+                top: 0, left: 0, bottom: 0,
+                zIndex: isMobile ? 20 : 10,
+                transform: isMobile ? (mobileOpen ? 'translateX(0)' : 'translateX(-100%)') : 'none',
             }}>
                 {/* Glow superior */}
                 <div style={{ position: 'absolute', top: -120, left: -40, right: -40, height: 240, background: `radial-gradient(closest-side, rgba(201,162,39,0.18), transparent)`, pointerEvents: 'none' }} />
@@ -192,7 +219,8 @@ export default function Layout() {
                     ))}
                 </nav>
 
-                {/* Toggle collapse */}
+                {/* Toggle collapse — hidden on mobile */}
+                {!isMobile && (
                 <button onClick={() => setCollapsed(c => !c)}
                     style={{
                         margin: '0 14px 16px', padding: '10px',
@@ -209,6 +237,7 @@ export default function Layout() {
                     </svg>
                     {!collapsed && <span>COLAPSAR</span>}
                 </button>
+                )}
             </aside>
 
             {/* ── Main ── */}
@@ -223,6 +252,13 @@ export default function Layout() {
                     flexShrink: 0, backdropFilter: 'blur(14px)', position: 'relative', zIndex: 5,
                 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {/* Hamburger — mobile only */}
+                        {isMobile && (
+                            <button onClick={() => setMobileOpen(o => !o)}
+                                style={{ background: 'none', border: `1px solid ${isDark ? 'rgba(201,162,39,0.20)' : 'rgba(15,23,42,0.10)'}`, borderRadius: 8, padding: '6px 8px', cursor: 'pointer', color: mut, display: 'flex', marginRight: 4 }}>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                            </button>
+                        )}
                         <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.28em', color: SKY_DEEP }}>ADMIN</p>
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={mut} strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
                         <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.85rem', color: txt }}>{crumb}</p>
@@ -253,7 +289,7 @@ export default function Layout() {
                             }}>
                                 <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.78rem', color: '#fff' }}>{usuario?.nombre?.[0]?.toUpperCase()}</span>
                             </div>
-                            <div>
+                            <div className="hdr-username">
                                 <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.8rem', color: txt, lineHeight: 1 }}>{usuario?.nombre}</p>
                                 <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.54rem', letterSpacing: '.16em', color: ROL_COLOR[usuario?.rol] || SKY, lineHeight: 1.5 }}>{ROL_LABEL[usuario?.rol] || usuario?.rol}</p>
                             </div>
@@ -271,7 +307,7 @@ export default function Layout() {
                 </header>
 
                 {/* Content */}
-                <main style={{ flex: 1, overflowY: 'auto', padding: '32px 36px', animation: 'fadeIn .35s ease', background: mainBg }}>
+                <main className="main-content-pad" style={{ flex: 1, overflowY: 'auto', padding: '32px 36px', animation: 'fadeIn .35s ease', background: mainBg }}>
                     <Outlet />
                 </main>
             </div>

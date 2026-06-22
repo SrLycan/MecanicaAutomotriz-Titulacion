@@ -165,3 +165,11 @@ BEGIN
         ));
 EXCEPTION WHEN others THEN NULL;
 END $$;
+
+-- ============================================================
+-- Sprint 5: Asignacion de tecnico + permisos de estado
+-- ============================================================
+
+-- Columna tecnico asignado a la orden
+ALTER TABLE ordenes_trabajo ADD COLUMN IF NOT EXISTS tecnico_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_ordenes_tecnico ON ordenes_trabajo(tecnico_id);

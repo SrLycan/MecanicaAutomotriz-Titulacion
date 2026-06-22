@@ -15,11 +15,17 @@ function IconX()     { return <svg width="16" height="16" viewBox="0 0 24 24" fi
 function IconEdit()  { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>; }
 function IconTrash() { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>; }
 function IconCar()   { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M5 17h14M5 17a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.5l2-3h7l2 3H19a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2"/><circle cx="8" cy="15" r="2"/><circle cx="16" cy="15" r="2"/></svg>; }
+function IconUser()  { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>; }
 
 export default function OrdenesTrabajo() {
-    const { tieneRol } = useAuth();
+    const { tieneRol, usuario } = useAuth();
     const { isDark }  = useTheme();
-    const esTecnico = tieneRol('tecnico', 'administrador');
+    const esAdmin        = tieneRol('administrador');
+    const esRecepcionista = tieneRol('recepcionista');
+    const esTecnico      = tieneRol('tecnico');
+    const puedeAsignar   = esAdmin || esRecepcionista;
+    const puedeVerAcciones = esAdmin || esTecnico;
+
     const [ordenes, setOrdenes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filtroGrupo, setFiltroGrupo] = useState('');
@@ -60,6 +66,13 @@ export default function OrdenesTrabajo() {
         const v = e.target.value;
         setBusqueda(v);
         setTimeout(() => cargar(v, filtroGrupo), 300);
+    };
+
+    // Determina si el usuario actual puede cambiar estado de una orden concreta
+    const puedeCambiarEstado = (orden) => {
+        if (esAdmin) return true;
+        if (esTecnico && orden.tecnico_id === usuario?.id) return true;
+        return false;
     };
 
     const cambiarEstado = async (id, nuevo, extra = {}) => {
@@ -113,10 +126,22 @@ export default function OrdenesTrabajo() {
 
     return (
         <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1500 }}>
-            <style>{`@keyframes fadeIn { from { opacity:0;transform:translateY(6px) } to { opacity:1;transform:none } }`}</style>
+            <style>{`
+                @keyframes fadeIn { from { opacity:0;transform:translateY(6px) } to { opacity:1;transform:none } }
+                @media (max-width: 600px) {
+                    .ot-header { flex-direction: column !important; align-items: flex-start !important; }
+                    .ot-header h1 { font-size: 2rem !important; }
+                    .ot-filtros { gap: 6px !important; }
+                    .ot-filtros button { padding: 8px 12px !important; font-size: .66rem !important; }
+                    .ot-search-row { flex-direction: column !important; }
+                    .ot-card-header { flex-direction: column !important; gap: 6px !important; }
+                    .ot-card-actions { flex-wrap: wrap !important; }
+                    .ot-detail-grid { grid-template-columns: 1fr !important; }
+                }
+            `}</style>
 
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+            <div className="ot-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
                 <div>
                     <div className="sswap-chip" style={{ marginBottom: 8 }}>
                         <span className="dot" />
@@ -127,18 +152,20 @@ export default function OrdenesTrabajo() {
                         Control de reparaciones vinculadas a clientes y vehiculos
                     </p>
                 </div>
-                <button onClick={() => setModal({ open: true, data: null, clientePre: undefined })}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 8,
-                        fontFamily: "'Bebas Neue'", fontSize: '.78rem', letterSpacing: '.14em',
-                        color: '#fff', background: `linear-gradient(135deg, ${SKY_DEEP}, ${SKY})`,
-                        border: 'none', borderRadius: 11, padding: '11px 22px', cursor: 'pointer',
-                        boxShadow: `0 6px 18px -6px ${SKY}` }}>
-                    <IconPlus /> NUEVA ORDEN
-                </button>
+                {(esAdmin || esRecepcionista) && (
+                    <button onClick={() => setModal({ open: true, data: null, clientePre: undefined })}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 8,
+                            fontFamily: "'Bebas Neue'", fontSize: '.78rem', letterSpacing: '.14em',
+                            color: '#fff', background: `linear-gradient(135deg, ${SKY_DEEP}, ${SKY})`,
+                            border: 'none', borderRadius: 11, padding: '11px 22px', cursor: 'pointer',
+                            boxShadow: `0 6px 18px -6px ${SKY}` }}>
+                        <IconPlus /> NUEVA ORDEN
+                    </button>
+                )}
             </div>
 
             {/* Filtros por grupo */}
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+            <div className="ot-filtros" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
                 {FILTROS_ORDEN.map(f => {
                     const activo = filtroGrupo === f.val;
                     return (
@@ -148,70 +175,62 @@ export default function OrdenesTrabajo() {
                                 padding: '10px 18px', borderRadius: 10, cursor: 'pointer', transition: 'all .15s',
                                 background: activo ? `linear-gradient(135deg, ${SKY_DEEP}, ${SKY})` : card,
                                 color: activo ? '#fff' : mut,
-                                border: activo ? 'none' : `1px solid ${bdr}`,
+                                border: `1px solid ${activo ? 'transparent' : bdr}`,
                                 boxShadow: activo ? `0 4px 14px -4px ${SKY}` : 'none',
                             }}>
-                            {f.label.toUpperCase()}
+                            {f.label}
                         </button>
                     );
                 })}
             </div>
 
-            {/* Toolbar */}
-            <div style={{ padding: 16, marginBottom: 16, background: card, border: `1px solid ${bdr}`, borderRadius: 14, boxShadow: cardSh }}>
-                <div style={{ position: 'relative' }}>
-                    <span style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: mut, display: 'flex' }}><IconSearch /></span>
-                    <input placeholder="Buscar cliente, placa o descripcion..."
-                           value={busqueda} onChange={handleBusqueda}
-                           style={{ padding: '10px 12px 10px 32px', background: inputBg, border: `1px solid ${bdr}`, borderRadius: 10, color: txt, fontFamily: "'Outfit'", fontSize: '.85rem', outline: 'none', width: '100%', boxSizing: 'border-box' }} />
+            {/* Buscador */}
+            <div className="ot-search-row" style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
+                <div style={{ flex: 1, position: 'relative' }}>
+                    <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: mut, pointerEvents: 'none' }}><IconSearch /></span>
+                    <input value={busqueda} onChange={handleBusqueda}
+                        placeholder="Buscar por cliente, placa o descripcion..."
+                        style={{ width: '100%', boxSizing: 'border-box', paddingLeft: 34, paddingRight: 12, paddingTop: 10, paddingBottom: 10,
+                            borderRadius: 11, border: `1px solid ${bdr}`, background: inputBg,
+                            color: txt, fontFamily: "'Outfit'", fontSize: '.88rem', outline: 'none' }} />
                 </div>
             </div>
 
-            {/* List */}
+            {/* Lista */}
             {loading ? (
-                <div style={{ padding: 80, textAlign: 'center' }}>
-                    <div style={{ width: 38, height: 38, borderRadius: '50%', border: `2px solid ${bdr}`, borderTopColor: SKY, animation: 'spin 1s linear infinite', margin: '0 auto 14px' }} />
-                    <p style={{ fontFamily: "'Outfit'", fontSize: '.85rem', color: mut }}>Cargando ordenes...</p>
-                </div>
+                <p style={{ textAlign: 'center', color: mut, fontFamily: "'Outfit'", paddingTop: 40 }}>Cargando ordenes...</p>
             ) : ordenes.length === 0 ? (
-                <div style={{ padding: 80, textAlign: 'center', background: card, border: `1px solid ${bdr}`, borderRadius: 14, boxShadow: cardSh }}>
-                    <div style={{ width: 64, height: 64, margin: '0 auto 16px', borderRadius: 18, background: SKY_PALE, border: `1px solid ${SKY_BDR}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: SKY }}><IconCar /></div>
-                    <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.4rem', letterSpacing: '.06em', color: txt }}>Sin ordenes de trabajo</p>
-                    <p style={{ fontFamily: "'Outfit'", fontSize: '.85rem', color: mut, marginTop: 4 }}>Crea la primera orden para empezar a dar seguimiento a las reparaciones.</p>
+                <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                    <IconCar />
+                    <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.1rem', letterSpacing: '.1em', color: mut, marginTop: 14 }}>Sin ordenes</p>
                 </div>
             ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    {ordenes.map((o, i) => {
-                        const est = ESTADO_ORDEN_MAP[o.estado] || ESTADOS_ORDEN[0];
-                        const prog = o.estado_progreso ? ESTADO_PROGRESO_MAP[o.estado_progreso] : null;
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {ordenes.map(o => {
+                        const est  = ESTADO_ORDEN_MAP[o.estado]   || { label: o.estado,   color: '#94a3b8' };
+                        const prog = ESTADO_PROGRESO_MAP[o.estado_progreso];
                         const expanded = expandedId === o.id;
+                        const puedeEste = puedeCambiarEstado(o);
+
                         return (
-                            <div key={o.id} style={{
-                                background: card, border: `1px solid ${bdr}`, borderRadius: 14,
-                                boxShadow: cardSh, overflow: 'hidden', animation: 'fadeIn .3s ease both',
-                                animationDelay: `${i * 30}ms`,
-                            }}>
-                                <div style={{ padding: '16px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14 }}
-                                     onClick={() => setExpandedId(expanded ? null : o.id)}>
-                                    <div style={{ width: 42, height: 42, borderRadius: 10, background: `${est.color}14`, border: `1px solid ${est.color}30`, color: est.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                        <IconCar />
-                                    </div>
-                                    <div style={{ flex: 1, minWidth: 0 }}>
+                            <div key={o.id}
+                                style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14,
+                                    boxShadow: cardSh, overflow: 'hidden', transition: 'box-shadow .15s' }}>
+                                {/* Card header (clickable) */}
+                                <div className="ot-card-header" onClick={() => setExpandedId(expanded ? null : o.id)}
+                                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                        padding: '14px 20px', cursor: 'pointer', gap: 10 }}>
+                                    <div style={{ minWidth: 0 }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                                            <span style={{ fontFamily: "'Bebas Neue'", fontSize: '1.3rem', letterSpacing: '.03em', color: txt }}>#{
-                                                String(o.id).padStart(4, '0')
-                                            }</span>
-                                            <span style={{
-                                                padding: '3px 10px', borderRadius: 999,
-                                                background: `${est.color}14`, border: `1px solid ${est.color}35`,
-                                                color: est.color, fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.16em',
-                                            }}>{est.label.toUpperCase()}</span>
+                                            <span style={{ fontFamily: "'Bebas Neue'", fontSize: '1.3rem', letterSpacing: '.03em', color: txt }}>#{String(o.id).padStart(4, '0')}</span>
+                                            <span style={{ padding: '3px 10px', borderRadius: 999, background: `${est.color}14`, border: `1px solid ${est.color}35`, color: est.color, fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.16em' }}>{est.label.toUpperCase()}</span>
                                             {prog && (
-                                                <span style={{
-                                                    padding: '3px 10px', borderRadius: 999,
-                                                    background: `${prog.color}14`, border: `1px solid ${prog.color}35`,
-                                                    color: prog.color, fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.16em',
-                                                }}>{prog.label.toUpperCase()}</span>
+                                                <span style={{ padding: '3px 10px', borderRadius: 999, background: `${prog.color}14`, border: `1px solid ${prog.color}35`, color: prog.color, fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.16em' }}>{prog.label.toUpperCase()}</span>
+                                            )}
+                                            {o.tecnico_nombre && (
+                                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 999, background: 'rgba(16,185,129,.1)', border: '1px solid rgba(16,185,129,.25)', color: '#10b981', fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.12em' }}>
+                                                    <IconUser /> {o.tecnico_nombre}
+                                                </span>
                                             )}
                                         </div>
                                         <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.85rem', color: txt, marginTop: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -222,15 +241,13 @@ export default function OrdenesTrabajo() {
                                         <p style={{ fontFamily: "'Outfit'", fontSize: '.72rem', color: mut }}>
                                             {new Date(o.fecha_ingreso || o.created_at).toLocaleDateString('es-EC')}
                                         </p>
-                                        <p style={{ fontFamily: "'Outfit'", fontSize: '.68rem', color: mut, marginTop: 1 }}>
-                                            {o.usuario_nombre}
-                                        </p>
+                                        <p style={{ fontFamily: "'Outfit'", fontSize: '.68rem', color: mut, marginTop: 1 }}>{o.usuario_nombre}</p>
                                     </div>
                                 </div>
 
                                 {expanded && (
                                     <div style={{ borderTop: `1px solid ${bdr}`, padding: '16px 20px', background: isDark ? 'rgba(255,255,255,.015)' : 'rgba(14,165,233,.02)' }}>
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+                                        <div className="ot-detail-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
                                             <div>
                                                 <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.2em', color: SKY_DEEP, marginBottom: 4 }}>CLIENTE</p>
                                                 <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.85rem', color: txt }}>{o.cliente_nombre}</p>
@@ -261,7 +278,8 @@ export default function OrdenesTrabajo() {
                                             </div>
                                         )}
 
-                                        {esTecnico && o.estado === 'en_progreso' && (
+                                        {/* Panel progreso: solo si puede cambiar estado y está en progreso */}
+                                        {puedeEste && o.estado === 'en_progreso' && (
                                             <PanelProgreso
                                                 orden={o}
                                                 onGuardar={actualizarProgreso}
@@ -273,23 +291,28 @@ export default function OrdenesTrabajo() {
                                             />
                                         )}
 
-                                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', borderTop: `1px solid ${bdr}`, paddingTop: 12 }}>
-                                            {esTecnico && o.estado === 'pendiente' && (
+                                        <div className="ot-card-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', borderTop: `1px solid ${bdr}`, paddingTop: 12 }}>
+                                            {/* Iniciar: admin siempre, tecnico solo si está asignado */}
+                                            {puedeEste && o.estado === 'pendiente' && (
                                                 <EstBtn color="#0ea5e9" label="Iniciar" onClick={() => cambiarEstado(o.id, 'en_progreso', { estado_progreso: 'en_revision' })} />
                                             )}
-                                            {esTecnico && o.estado === 'en_progreso' && (
+                                            {/* Completar */}
+                                            {puedeEste && o.estado === 'en_progreso' && (
                                                 <EstBtn color="#10b981" label="Completar" onClick={() => cambiarEstado(o.id, 'completado')} />
                                             )}
-                                            {esTecnico && o.estado === 'pendiente' && (
+                                            {/* Cancelar: solo admin */}
+                                            {esAdmin && o.estado === 'pendiente' && (
                                                 <EstBtn color="#ef4444" label="Cancelar" onClick={() => cambiarEstado(o.id, 'cancelado')} />
                                             )}
-                                            {o.estado !== 'completado' && o.estado !== 'cancelado' && (
+                                            {/* Editar: admin y recepcionista pueden editar datos / asignar técnico */}
+                                            {(esAdmin || esRecepcionista) && o.estado !== 'completado' && o.estado !== 'cancelado' && (
                                                 <button onClick={() => setModal({ open: true, data: o })}
                                                     style={{ background: 'none', border: `1px solid ${bdr}`, borderRadius: 8, padding: '7px 12px', cursor: 'pointer', color: SKY_DEEP, display: 'flex', alignItems: 'center', gap: 6, fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.14em' }}>
-                                                    <IconEdit /> EDITAR
+                                                    <IconEdit /> EDITAR / ASIGNAR
                                                 </button>
                                             )}
-                                            {tieneRol('administrador') && (
+                                            {/* Eliminar: solo admin */}
+                                            {esAdmin && (
                                                 <button onClick={() => eliminarOrden(o)}
                                                     style={{ marginLeft: 'auto', background: 'none', border: `1px solid ${bdr}`, borderRadius: 8, padding: '7px 12px', cursor: 'pointer', color: '#ef4444', display: 'flex', alignItems: 'center', gap: 6, fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.14em' }}>
                                                     <IconTrash /> ELIMINAR
@@ -313,6 +336,7 @@ export default function OrdenesTrabajo() {
                     onGuardar={guardarOrden}
                     onNuevoCliente={() => { setModalCliente(true); }}
                     isDark={isDark}
+                    puedeAsignar={puedeAsignar}
                 />
             )}
 
@@ -460,10 +484,11 @@ function ModalCliente({ onClose, onCreado, isDark }) {
 // ═══════════════════════════════════════════════════════════════
 // MODAL: Orden de Trabajo (crear/editar)
 // ═══════════════════════════════════════════════════════════════
-function ModalOrden({ data, clientePre, onClose, onGuardar, onNuevoCliente, isDark }) {
+function ModalOrden({ data, clientePre, onClose, onGuardar, onNuevoCliente, isDark, puedeAsignar }) {
     const esEdicion = Boolean(data);
     const [clientes, setClientes] = useState([]);
     const [vehiculos, setVehiculos] = useState([]);
+    const [tecnicos, setTecnicos] = useState([]);
     const [buscandoCliente, setBuscandoCliente] = useState('');
     const [creandoVehiculo, setCreandoVehiculo] = useState(false);
     const [form, setForm] = useState({
@@ -472,6 +497,7 @@ function ModalOrden({ data, clientePre, onClose, onGuardar, onNuevoCliente, isDa
         descripcion: data?.descripcion || '',
         diagnostico: data?.diagnostico || '',
         kilometraje: data?.kilometraje || '',
+        tecnico_id: data?.tecnico_id || '',
     });
     const [vehForm, setVehForm] = useState({ placa: '', marca: '', modelo: '', anio: '', color: '' });
     const [saving, setSaving] = useState(false);
@@ -485,7 +511,6 @@ function ModalOrden({ data, clientePre, onClose, onGuardar, onNuevoCliente, isDa
     const inputSt = { width: '100%', boxSizing: 'border-box', padding: '10px 13px', borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: txt, fontFamily: "'Outfit'", fontSize: '.88rem', outline: 'none' };
     const labelSt = { display: 'block', marginBottom: 6, fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.22em', color: SKY_DEEP };
 
-    // Cargar clientes
     useEffect(() => {
         api.get('/ordenes/clientes').then(r => {
             setClientes(r.data.clientes);
@@ -493,9 +518,12 @@ function ModalOrden({ data, clientePre, onClose, onGuardar, onNuevoCliente, isDa
                 setForm(f => ({ ...f, cliente_id: clientePre.id }));
             }
         }).catch(() => {});
+        // Cargar tecnicos activos
+        api.get('/users?rol=tecnico&estado=activo').then(r => {
+            setTecnicos(r.data.usuarios || []);
+        }).catch(() => {});
     }, []);
 
-    // Cargar vehiculos del cliente seleccionado
     useEffect(() => {
         if (form.cliente_id) {
             api.get(`/ordenes/vehiculos?cliente_id=${form.cliente_id}`)
@@ -513,7 +541,9 @@ function ModalOrden({ data, clientePre, onClose, onGuardar, onNuevoCliente, isDa
         e.preventDefault();
         if (!form.cliente_id) { toast.error('Selecciona un cliente.'); return; }
         setSaving(true);
-        await onGuardar(form);
+        // Enviar tecnico_id como null si vacío
+        const payload = { ...form, tecnico_id: form.tecnico_id || null };
+        await onGuardar(payload);
         setSaving(false);
     };
 
@@ -569,8 +599,7 @@ function ModalOrden({ data, clientePre, onClose, onGuardar, onNuevoCliente, isDa
                                         + NUEVO
                                     </button>
                                 </div>
-                                <select name="cliente_id" value={form.cliente_id} onChange={onChange} required
-                                    style={{ ...inputSt }}>
+                                <select name="cliente_id" value={form.cliente_id} onChange={onChange} required style={{ ...inputSt }}>
                                     <option value="">Seleccionar cliente...</option>
                                     {filtered.map(c => (
                                         <option key={c.id} value={c.id}>
@@ -582,13 +611,28 @@ function ModalOrden({ data, clientePre, onClose, onGuardar, onNuevoCliente, isDa
                         )}
                     </div>
 
+                    {/* Asignar Tecnico (solo admin y recepcionista) */}
+                    {puedeAsignar && (
+                        <div>
+                            <label style={labelSt}>TECNICO ASIGNADO</label>
+                            <select name="tecnico_id" value={form.tecnico_id} onChange={onChange} style={{ ...inputSt }}>
+                                <option value="">Sin asignar</option>
+                                {tecnicos.map(t => (
+                                    <option key={t.id} value={t.id}>{t.nombre}</option>
+                                ))}
+                            </select>
+                            <p style={{ fontFamily: "'Outfit'", fontSize: '.72rem', color: mut, marginTop: 5 }}>
+                                Solo el tecnico asignado podrá actualizar el estado de esta orden.
+                            </p>
+                        </div>
+                    )}
+
                     {/* Seleccionar / Crear Vehiculo */}
                     <div>
                         <label style={labelSt}>VEHICULO</label>
                         {!creandoVehiculo ? (
                             <div style={{ display: 'flex', gap: 8 }}>
-                                <select name="vehiculo_id" value={form.vehiculo_id} onChange={onChange}
-                                    style={{ ...inputSt, flex: 1 }}>
+                                <select name="vehiculo_id" value={form.vehiculo_id} onChange={onChange} style={{ ...inputSt, flex: 1 }}>
                                     <option value="">Sin vehiculo</option>
                                     {vehiculos.map(v => (
                                         <option key={v.id} value={v.id}>
@@ -613,10 +657,8 @@ function ModalOrden({ data, clientePre, onClose, onGuardar, onNuevoCliente, isDa
                                     <input name="color" value={vehForm.color} onChange={onChangeVeh} placeholder="Color" style={inputSt} />
                                 </div>
                                 <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                                    <button type="button" onClick={() => setCreandoVehiculo(false)}
-                                        style={{ fontFamily: "'Bebas Neue'", fontSize: '.6rem', background: 'none', border: `1px solid ${bdr}`, borderRadius: 8, padding: '6px 14px', cursor: 'pointer', color: mut }}>CANCELAR</button>
-                                    <button type="button" onClick={guardarVehiculo}
-                                        style={{ fontFamily: "'Bebas Neue'", fontSize: '.6rem', color: '#fff', background: 'linear-gradient(135deg, #059669, #10b981)', border: 'none', borderRadius: 8, padding: '6px 16px', cursor: 'pointer' }}>GUARDAR VEHICULO</button>
+                                    <button type="button" onClick={() => setCreandoVehiculo(false)} style={{ fontFamily: "'Bebas Neue'", fontSize: '.6rem', background: 'none', border: `1px solid ${bdr}`, borderRadius: 8, padding: '6px 14px', cursor: 'pointer', color: mut }}>CANCELAR</button>
+                                    <button type="button" onClick={guardarVehiculo} style={{ fontFamily: "'Bebas Neue'", fontSize: '.6rem', color: '#fff', background: 'linear-gradient(135deg, #059669, #10b981)', border: 'none', borderRadius: 8, padding: '6px 16px', cursor: 'pointer' }}>GUARDAR VEHICULO</button>
                                 </div>
                             </div>
                         )}

@@ -5,7 +5,6 @@ const ESTADOS_PROGRESO = [
     'en_revision', 'deteccion_falla', 'en_reparacion',
     'esperando_repuestos', 'pruebas_finales', 'listo_entrega',
 ];
-const PUEDE_ACTUALIZAR_ESTADO = ['administrador', 'tecnico'];
 
 const validarDatosCliente = ({ nombre, email, telefono, cedula }) => {
     if (!nombre?.trim()) return 'El nombre es obligatorio.';
@@ -221,11 +220,13 @@ const listarOrdenes = async (req, res) => {
         SELECT o.*,
                c.nombre AS cliente_nombre, c.telefono AS cliente_telefono,
                v.placa, v.marca, v.modelo, v.anio, v.color,
-               u.nombre AS usuario_nombre
+               u.nombre AS usuario_nombre,
+               t.nombre AS tecnico_nombre
         FROM ordenes_trabajo o
         JOIN clientes  c ON c.id = o.cliente_id
         LEFT JOIN vehiculos v ON v.id = o.vehiculo_id
         JOIN usuarios  u ON u.id = o.usuario_id
+        LEFT JOIN usuarios t ON t.id = o.tecnico_id
         WHERE 1=1`;
     const params = [];
     if (grupo === 'anteriores') {
@@ -258,11 +259,13 @@ const obtenerOrden = async (req, res) => {
                    c.telefono AS cliente_telefono, c.cedula AS cliente_cedula,
                    c.direccion AS cliente_direccion,
                    v.placa, v.marca, v.modelo, v.anio, v.color, v.vin,
-                   u.nombre AS usuario_nombre
+                   u.nombre AS usuario_nombre,
+                   t.nombre AS tecnico_nombre
             FROM ordenes_trabajo o
             JOIN clientes  c ON c.id = o.cliente_id
             LEFT JOIN vehiculos v ON v.id = o.vehiculo_id
             JOIN usuarios  u ON u.id = o.usuario_id
+            LEFT JOIN usuarios t ON t.id = o.tecnico_id
             WHERE o.id = $1`, [id]);
         if (!rows[0]) return res.status(404).json({ error: 'Orden no encontrada.' });
         return res.json(rows[0]);
@@ -273,17 +276,24 @@ const obtenerOrden = async (req, res) => {
 };
 
 const crearOrden = async (req, res) => {
-    const { cliente_id, vehiculo_id, descripcion, diagnostico, kilometraje } = req.body;
+    const { cliente_id, vehiculo_id, descripcion, diagnostico, kilometraje, tecnico_id } = req.body;
     const usuario_id = req.usuario.id;
+    const rol = req.usuario?.rol;
+
     if (!cliente_id || !descripcion) {
         return res.status(400).json({ error: 'cliente_id y descripcion son obligatorios.' });
     }
+
+    // Solo admin y recepcionista pueden asignar tecnico al crear
+    const puedeAsignar = ['administrador', 'recepcionista'].includes(rol);
+    const tecnicoFinal = puedeAsignar ? (tecnico_id || null) : null;
+
     try {
         const { rows } = await pool.query(
-            `INSERT INTO ordenes_trabajo (cliente_id, vehiculo_id, usuario_id, descripcion, diagnostico, kilometraje)
-             VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+            `INSERT INTO ordenes_trabajo (cliente_id, vehiculo_id, usuario_id, descripcion, diagnostico, kilometraje, tecnico_id)
+             VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
             [cliente_id, vehiculo_id || null, usuario_id, descripcion.trim(),
-             diagnostico || null, kilometraje || null]
+             diagnostico || null, kilometraje || null, tecnicoFinal]
         );
         return res.status(201).json({ orden: rows[0] });
     } catch (err) {
@@ -296,9 +306,10 @@ const actualizarOrden = async (req, res) => {
     const { id } = req.params;
     let {
         estado, descripcion, diagnostico, kilometraje, vehiculo_id,
-        fecha_salida, estado_progreso, notas_progreso,
+        fecha_salida, estado_progreso, notas_progreso, tecnico_id,
     } = req.body;
     const rol = req.usuario?.rol;
+    const usuarioId = req.usuario?.id;
 
     if (estado && !ESTADOS_ORDEN.includes(estado)) {
         return res.status(400).json({ error: `Estado invalido. Validos: ${ESTADOS_ORDEN.join(', ')}.` });
@@ -307,10 +318,32 @@ const actualizarOrden = async (req, res) => {
         return res.status(400).json({ error: `Progreso invalido. Validos: ${ESTADOS_PROGRESO.join(', ')}.` });
     }
 
+    // Obtener la orden actual para validar permisos
+    const { rows: ordenRows } = await pool.query('SELECT * FROM ordenes_trabajo WHERE id = $1', [id]);
+    if (!ordenRows[0]) return res.status(404).json({ error: 'Orden no encontrada.' });
+    const ordenActual = ordenRows[0];
+
     const cambiaEstado = estado !== undefined || estado_progreso !== undefined || notas_progreso !== undefined;
-    if (cambiaEstado && !PUEDE_ACTUALIZAR_ESTADO.includes(rol)) {
-        return res.status(403).json({ error: 'Solo el tecnico puede actualizar el estado de reparacion.' });
+
+    if (cambiaEstado) {
+        if (rol === 'administrador') {
+            // El admin puede cambiar cualquier estado sin restriccion
+        } else if (rol === 'tecnico') {
+            // El tecnico solo puede actualizar si es el tecnico asignado
+            if (ordenActual.tecnico_id !== usuarioId) {
+                return res.status(403).json({ error: 'Solo el tecnico asignado puede actualizar el estado de esta orden.' });
+            }
+        } else {
+            // Recepcionista y otros no pueden cambiar estado
+            return res.status(403).json({ error: 'No tienes permiso para cambiar el estado de la orden.' });
+        }
     }
+
+    // Solo admin y recepcionista pueden asignar/cambiar el tecnico
+    const puedeAsignar = ['administrador', 'recepcionista'].includes(rol);
+    const tecnicoFinal = tecnico_id !== undefined
+        ? (puedeAsignar ? (tecnico_id || null) : undefined)
+        : undefined;
 
     // Auto-asignar fecha de salida al completar
     if (estado === 'completado' && !fecha_salida) {
@@ -322,6 +355,7 @@ const actualizarOrden = async (req, res) => {
     }
 
     try {
+        const tecnicoParam = tecnicoFinal !== undefined ? tecnicoFinal : ordenActual.tecnico_id;
         const { rows } = await pool.query(
             `UPDATE ordenes_trabajo SET
                 estado=COALESCE($1, estado),
@@ -331,11 +365,13 @@ const actualizarOrden = async (req, res) => {
                 vehiculo_id=COALESCE($5, vehiculo_id),
                 fecha_salida=COALESCE($6, fecha_salida),
                 estado_progreso=COALESCE($7, estado_progreso),
-                notas_progreso=COALESCE($8, notas_progreso)
-             WHERE id=$9 RETURNING *`,
+                notas_progreso=COALESCE($8, notas_progreso),
+                tecnico_id=$9
+             WHERE id=$10 RETURNING *`,
             [estado || null, descripcion || null, diagnostico || null,
              kilometraje || null, vehiculo_id || null, fecha_salida || null,
-             estado_progreso || null, notas_progreso !== undefined ? notas_progreso : null, id]
+             estado_progreso || null, notas_progreso !== undefined ? notas_progreso : null,
+             tecnicoParam, id]
         );
         if (!rows[0]) return res.status(404).json({ error: 'Orden no encontrada.' });
         return res.json({ orden: rows[0] });
