@@ -13,6 +13,7 @@ const EMPTY = {
     stock_minimo: '5',
     unidad_medida: 'unidad',
     imagen_url: '',
+    en_venta: false,
 };
 
 function IconX() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>; }
@@ -128,6 +129,7 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
                 stock_minimo: repuesto.stock_minimo || '5',
                 unidad_medida: repuesto.unidad_medida || 'unidad',
                 imagen_url: imagen,
+                en_venta: Boolean(repuesto.en_venta),
             };
             setForm(nextForm);
             setPreview(resolveImagenSrc(imagen));
@@ -304,6 +306,23 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
                                 onFocus={onFocus} onBlur={onBlur}
                                 value={form.stock_minimo} onChange={handleChange} style={inputSt} />
                         </div>
+                    </div>
+
+                    <div style={{ gridColumn: '1/-1', padding: '12px 14px', borderRadius: 12, background: SKY_PALE, border: `1px solid ${SKY_BDR}` }}>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
+                            <input
+                                type="checkbox"
+                                checked={Boolean(form.en_venta)}
+                                onChange={(e) => setForm(f => ({ ...f, en_venta: e.target.checked }))}
+                                style={{ width: 16, height: 16, accentColor: SKY, marginTop: 2 }}
+                            />
+                            <span>
+                                <span style={{ display: 'block', fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.22em', color: SKY_DEEP }}>MARCAR PARA VENTA</span>
+                                <span style={{ display: 'block', fontFamily: "'Outfit'", fontSize: '.78rem', color: mut, marginTop: 4 }}>
+                                    Si está activado, el producto aparecerá en el panel del cliente como disponible para compra.
+                                </span>
+                            </span>
+                        </label>
                     </div>
 
                     {/* Margen */}

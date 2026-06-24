@@ -88,12 +88,21 @@ export default function Navbar() {
                         )}
                         {esCliente && (
                             <>
-                                <span style={{ fontFamily: "'Outfit'", fontSize: '.85rem', color: 'rgba(255,255,255,.6)' }}>Hola, {usuario.nombre.split(' ')[0]}</span>
+                                <Link to="/mi-panel" className="nav-btn-outline" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                    Mi Panel
+                                </Link>
                                 <button onClick={handleLogout} className="nav-btn-outline">Salir</button>
                             </>
                         )}
                         {esAdmin && (
-                            <button onClick={handleLogout} className="nav-btn-outline">Salir</button>
+                            <>
+                                <Link to="/dashboard" className="nav-btn-outline" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                                    Admin
+                                </Link>
+                                <button onClick={handleLogout} className="nav-btn-outline">Salir</button>
+                            </>
                         )}
                     </div>
 
@@ -116,7 +125,18 @@ export default function Navbar() {
                                 <Link to="/auth?modo=registro">Registrarse</Link>
                             </>
                         )}
-                        {usuario && <button onClick={handleLogout}>Cerrar Sesion</button>}
+                        {esCliente && (
+                            <>
+                                <Link to="/mi-panel">Mi Panel</Link>
+                                <button onClick={handleLogout}>Cerrar Sesion</button>
+                            </>
+                        )}
+                        {esAdmin && (
+                            <>
+                                <Link to="/dashboard">Panel Admin</Link>
+                                <button onClick={handleLogout}>Cerrar Sesion</button>
+                            </>
+                        )}
                     </div>
                 )}
             </nav>

@@ -7,6 +7,8 @@ const inventoryRoutes  = require('./routes/inventory.routes');
 const usersRoutes      = require('./routes/users.routes');
 const sucursalesRoutes = require('./routes/sucursales.routes');
 const ordenesRoutes    = require('./routes/ordenes.routes');
+const serviciosRoutes  = require('./routes/servicios.routes');
+const panelRoutes      = require('./routes/panel.routes');
 const { runMigrations } = require('./config/initDb');
 
 const app  = express();
@@ -26,6 +28,8 @@ app.use('/api/inventory',  inventoryRoutes);
 app.use('/api/users',      usersRoutes);
 app.use('/api/sucursales', sucursalesRoutes);
 app.use('/api/ordenes',    ordenesRoutes);
+app.use('/api/servicios',  serviciosRoutes);
+app.use('/api/panel',      panelRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => res.json({

@@ -399,6 +399,14 @@ export default function Inventario() {
         catch (err) { toast.error(err.response?.data?.error || 'Error al eliminar.'); }
     };
 
+    const handleToggleVenta = async (id) => {
+        try {
+            const { data } = await api.patch(`/inventory/repuestos/${id}/en-venta`);
+            toast.success(data.en_venta ? '¡Puesto en venta!' : 'Quitado de venta.');
+            cargarRepuestos(busqueda, filtroCateg, soloAlerta, page);
+        } catch (err) { toast.error(err.response?.data?.error || 'Error al cambiar estado.'); }
+    };
+
     // ── KPIs computados ──
     const stats = useMemo(() => {
         const total      = repuestos.length;
@@ -660,6 +668,12 @@ export default function Inventario() {
                                                 ) : (
                                                     <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.14em', padding: '4px 10px', borderRadius: 999, background: 'rgba(148,163,184,.1)', color: mut, border: `1px solid ${bdr}` }}>INACTIVO</span>
                                                 )}
+                                                {r.en_venta && (
+                                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginLeft: 4, fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.12em', padding: '3px 8px', borderRadius: 999, background: 'rgba(201,162,39,.1)', color: '#c9a227', border: '1px solid rgba(201,162,39,.28)' }}>
+                                                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                                                        EN VENTA
+                                                    </span>
+                                                )}
                                             </td>
                                             <td style={{ padding: '13px 18px' }}>
                                                 <div style={{ display: 'flex', gap: 6 }}>
@@ -679,6 +693,16 @@ export default function Inventario() {
                                                         <ActionBtn color="#ef4444" hoverBg="rgba(239,68,68,.1)" bdr={bdr} title="Eliminar"
                                                             onClick={() => handleEliminar(r.id, r.nombre)}>
                                                             <IconTrash />
+                                                        </ActionBtn>
+                                                    )}
+                                                    {esAdmin && (
+                                                        <ActionBtn
+                                                            color={r.en_venta ? '#10b981' : mut}
+                                                            hoverBg={r.en_venta ? 'rgba(16,185,129,.1)' : 'rgba(255,255,255,.06)'}
+                                                            bdr={bdr}
+                                                            title={r.en_venta ? 'Quitar de venta' : 'Poner en venta'}
+                                                            onClick={() => handleToggleVenta(r.id)}>
+                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
                                                         </ActionBtn>
                                                     )}
                                                 </div>

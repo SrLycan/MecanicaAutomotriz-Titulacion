@@ -96,6 +96,7 @@ const crearRepuesto = async (req, res) => {
         stock_minimo,
         unidad_medida,
         imagen_url,
+        en_venta = false,
     } = req.body;
 
     if (!codigo || !nombre) {
@@ -105,8 +106,8 @@ const crearRepuesto = async (req, res) => {
     try {
         const { rows } = await pool.query(
             `INSERT INTO repuestos
-                (codigo, nombre, descripcion, categoria_id, precio_compra, precio_venta, stock_actual, stock_minimo, unidad_medida, imagen_url)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+                (codigo, nombre, descripcion, categoria_id, precio_compra, precio_venta, stock_actual, stock_minimo, unidad_medida, imagen_url, en_venta)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
              RETURNING *`,
             [
                 codigo.trim().toUpperCase(),
@@ -119,6 +120,7 @@ const crearRepuesto = async (req, res) => {
                 stock_minimo === '' || stock_minimo == null ? 5 : stock_minimo,
                 unidad_medida || 'unidad',
                 imagen_url || null,
+                en_venta === true || en_venta === 'true',
             ]
         );
         return res.status(201).json(rows[0]);
@@ -146,6 +148,7 @@ const actualizarRepuesto = async (req, res) => {
         unidad_medida,
         activo,
         imagen_url,
+        en_venta,
     } = req.body;
 
     if (!nombre) {
@@ -164,8 +167,9 @@ const actualizarRepuesto = async (req, res) => {
                  stock_minimo=$7,
                  unidad_medida=$8,
                  activo=COALESCE($9, activo),
-                 imagen_url=$10
-             WHERE id=$11
+                 imagen_url=$10,
+                 en_venta=COALESCE($11, en_venta)
+             WHERE id=$12
              RETURNING *`,
             [
                 codigo ? codigo.trim().toUpperCase() : null,
@@ -178,6 +182,7 @@ const actualizarRepuesto = async (req, res) => {
                 unidad_medida || 'unidad',
                 typeof activo === 'boolean' ? activo : null,
                 imagen_url || null,
+                typeof en_venta === 'boolean' ? en_venta : (en_venta === 'true' ? true : en_venta === 'false' ? false : null),
                 id,
             ]
         );
@@ -353,4 +358,19 @@ const listarCategorias = async (_req, res) => {
     }
 };
 
-module.exports = { listarRepuestos, obtenerRepuesto, crearRepuesto, actualizarRepuesto, eliminarRepuesto, registrarMovimiento, listarMovimientos, listarCategorias };
+const toggleEnVenta = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { rows } = await pool.query(
+            'UPDATE repuestos SET en_venta = NOT en_venta WHERE id = $1 AND activo = TRUE RETURNING id, nombre, en_venta',
+            [id]
+        );
+        if (!rows[0]) return res.status(404).json({ error: 'Repuesto no encontrado.' });
+        return res.json(rows[0]);
+    } catch (err) {
+        console.error('Error toggleEnVenta:', err);
+        return res.status(500).json({ error: 'Error al cambiar estado de venta.' });
+    }
+};
+
+module.exports = { listarRepuestos, obtenerRepuesto, crearRepuesto, actualizarRepuesto, eliminarRepuesto, registrarMovimiento, listarMovimientos, listarCategorias, toggleEnVenta };

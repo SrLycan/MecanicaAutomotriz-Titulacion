@@ -21,6 +21,10 @@ import Sucursales     from './pages/Sucursales';
 import OrdenesTrabajo from './pages/OrdenesTrabajo';
 import Vehiculos      from './pages/Vehiculos';
 import Clientes       from './pages/Clientes';
+import Servicios      from './pages/Servicios';
+
+// Public / cliente
+import PanelCliente   from './pages/PanelCliente';
 
 import './styles/global.css';
 
@@ -52,6 +56,13 @@ export default function App() {
                         <Route path="/productos"   element={<ComingSoon titulo="Productos" />} />
                         <Route path="/servicios"   element={<ComingSoon titulo="Agendar Servicio" />} />
                         <Route path="/nosotros"    element={<ComingSoon titulo="Nosotros" />} />
+
+                        {/* Panel del cliente */}
+                        <Route path="/mi-panel" element={
+                            <ProtectedRoute roles={['cliente']}>
+                                <PanelCliente />
+                            </ProtectedRoute>
+                        } />
 
                         {/* ── Panel de administracion ── */}
                         <Route path="/dashboard" element={
@@ -94,6 +105,11 @@ export default function App() {
                             <Route path="sucursales"    element={
                                 <ProtectedRoute roles={['administrador']}>
                                     <Sucursales />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="servicios"     element={
+                                <ProtectedRoute roles={['administrador']}>
+                                    <Servicios />
                                 </ProtectedRoute>
                             } />
                         </Route>

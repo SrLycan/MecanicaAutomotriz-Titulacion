@@ -173,3 +173,44 @@ END $$;
 -- Columna tecnico asignado a la orden
 ALTER TABLE ordenes_trabajo ADD COLUMN IF NOT EXISTS tecnico_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS idx_ordenes_tecnico ON ordenes_trabajo(tecnico_id);
+
+-- ============================================================
+-- Sprint 6: Tipos de Servicio + en_venta en repuestos + Panel cliente
+-- ============================================================
+
+-- ── Columna en_venta en repuestos ─────────────────────────────
+ALTER TABLE repuestos ADD COLUMN IF NOT EXISTS en_venta BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- ── Tipos de Servicio ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS tipos_servicio (
+    id          SERIAL PRIMARY KEY,
+    nombre      VARCHAR(150) NOT NULL,
+    descripcion TEXT,
+    precio_base NUMERIC(10,2) NOT NULL DEFAULT 0,
+    duracion_estimada_min INTEGER,
+    activo      BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at  TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at  TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_updated_at_tipos_servicio') THEN
+        CREATE TRIGGER set_updated_at_tipos_servicio
+            BEFORE UPDATE ON tipos_servicio FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
+    END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_tipos_servicio_activo ON tipos_servicio(activo);
+
+-- Seed de tipos de servicio (solo si la tabla está vacía)
+INSERT INTO tipos_servicio (nombre, descripcion, precio_base, duracion_estimada_min, activo)
+SELECT nombre, descripcion, precio_base, duracion_estimada_min, TRUE FROM (VALUES
+    ('Cambio de Aceite y Filtro', 'Incluye vaciado, filtro de aceite y aceite de motor (1L adicional con costo)', 25.00, 45),
+    ('Alineacion y Balanceo', 'Alineacion laser y balanceo de las 4 ruedas', 30.00, 60),
+    ('Revision de Frenos', 'Inspeccion de pastillas, discos y liquido de frenos', 20.00, 45),
+    ('Diagnostico Computarizado', 'Lectura de codigos de falla con equipo certificado', 35.00, 30),
+    ('Mantenimiento de 5.000 km', 'Revision general + cambio de aceite y filtros', 60.00, 90),
+    ('Correccion de Carroceria', 'Enderezada y pintura parcial o total segun evaluacion', 150.00, 480)
+) AS t(nombre, descripcion, precio_base, duracion_estimada_min)
+WHERE NOT EXISTS (SELECT 1 FROM tipos_servicio);
