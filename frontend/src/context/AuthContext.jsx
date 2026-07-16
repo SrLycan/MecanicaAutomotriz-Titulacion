@@ -25,6 +25,16 @@ export const AuthProvider = ({ children }) => {
         }
     }, []);
 
+    // Reemplaza token + usuario tras editar perfil, contrasena o foto (el backend
+    // reemite un JWT fresco cada vez que cambian nombre, email o rol).
+    const actualizarSesion = useCallback((token, usuario) => {
+        if (token) localStorage.setItem('sswap_token', token);
+        if (usuario) {
+            localStorage.setItem('sswap_usuario', JSON.stringify(usuario));
+            setUsuario(usuario);
+        }
+    }, []);
+
     const logout = useCallback(() => {
         localStorage.removeItem('sswap_token');
         localStorage.removeItem('sswap_usuario');
@@ -44,7 +54,7 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     return (
-        <AuthContext.Provider value={{ usuario, loading, login, logout, tieneRol, syncFromStorage }}>
+        <AuthContext.Provider value={{ usuario, loading, login, logout, tieneRol, syncFromStorage, actualizarSesion }}>
             {children}
         </AuthContext.Provider>
     );

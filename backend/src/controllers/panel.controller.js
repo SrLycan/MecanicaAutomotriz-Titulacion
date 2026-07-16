@@ -23,7 +23,7 @@ const miActividad = async (req, res) => {
             // 2. Órdenes de trabajo del cliente
             const { rows: ordenRows } = await pool.query(
                 `SELECT o.id, o.estado, o.estado_progreso, o.descripcion, o.diagnostico,
-                        o.kilometraje, o.fecha_ingreso, o.fecha_salida,
+                        o.kilometraje, o.fecha_ingreso, o.fecha_salida, o.updated_at,
                         v.placa, v.marca, v.modelo, v.anio, v.color,
                         u.nombre AS tecnico_nombre
                  FROM ordenes_trabajo o

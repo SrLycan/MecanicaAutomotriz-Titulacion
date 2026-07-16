@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
+import { useConfirm } from '../components/common/ConfirmDialog';
 
 function IconPlus() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>; }
 function IconSearch() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>; }
@@ -92,6 +93,7 @@ function ModalCliente({ open, data, onClose, onGuardar, isDark }) {
 }
 
 export default function Clientes() {
+    const confirm = useConfirm();
     const { isDark } = useTheme();
     const [clientes, setClientes] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -147,7 +149,7 @@ export default function Clientes() {
     };
 
     const eliminarCliente = async (cliente) => {
-        if (!window.confirm(`Eliminar a ${cliente.nombre}?`)) return;
+        if (!(await confirm({ message: `Eliminar a ${cliente.nombre}?` }))) return;
         try {
             await api.delete(`/ordenes/clientes/${cliente.id}`);
             toast.success('Cliente eliminado.');

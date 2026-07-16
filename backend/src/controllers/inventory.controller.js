@@ -358,6 +358,27 @@ const listarCategorias = async (_req, res) => {
     }
 };
 
+// ─────────────────────────────────────────────────────────────
+// GET /api/inventory/publico   (sin autenticacion — catalogo publico)
+// ─────────────────────────────────────────────────────────────
+const listarPublico = async (req, res) => {
+    try {
+        const { rows } = await pool.query(
+            `SELECT r.id, r.codigo, r.nombre, r.descripcion, r.precio_venta,
+                    r.stock_actual, r.unidad_medida, r.imagen_url,
+                    c.nombre AS categoria_nombre
+             FROM repuestos r
+             LEFT JOIN categorias_repuesto c ON c.id = r.categoria_id
+             WHERE r.activo = TRUE AND r.en_venta = TRUE AND r.stock_actual > 0
+             ORDER BY r.nombre ASC`
+        );
+        return res.json({ repuestos: rows });
+    } catch (err) {
+        console.error('Error listarPublico:', err);
+        return res.status(500).json({ error: 'Error al obtener el catalogo.' });
+    }
+};
+
 const toggleEnVenta = async (req, res) => {
     const { id } = req.params;
     try {
@@ -373,4 +394,4 @@ const toggleEnVenta = async (req, res) => {
     }
 };
 
-module.exports = { listarRepuestos, obtenerRepuesto, crearRepuesto, actualizarRepuesto, eliminarRepuesto, registrarMovimiento, listarMovimientos, listarCategorias, toggleEnVenta };
+module.exports = { listarRepuestos, obtenerRepuesto, crearRepuesto, actualizarRepuesto, eliminarRepuesto, registrarMovimiento, listarMovimientos, listarCategorias, toggleEnVenta, listarPublico };

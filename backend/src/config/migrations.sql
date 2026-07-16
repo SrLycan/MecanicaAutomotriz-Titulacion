@@ -214,3 +214,83 @@ SELECT nombre, descripcion, precio_base, duracion_estimada_min, TRUE FROM (VALUE
     ('Correccion de Carroceria', 'Enderezada y pintura parcial o total segun evaluacion', 150.00, 480)
 ) AS t(nombre, descripcion, precio_base, duracion_estimada_min)
 WHERE NOT EXISTS (SELECT 1 FROM tipos_servicio);
+
+-- ============================================================
+-- Sprint 7: Foto de perfil, Citas (agendamiento) y Solicitudes de producto
+-- ============================================================
+
+-- ── Foto de perfil ───────────────────────────────────────────
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS foto_url TEXT;
+
+-- ── Citas (agendamiento de servicios) ────────────────────────
+CREATE TABLE IF NOT EXISTS citas (
+    id              SERIAL PRIMARY KEY,
+    cliente_id      INTEGER NOT NULL REFERENCES clientes(id) ON DELETE CASCADE,
+    usuario_id      INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    vehiculo_id     INTEGER REFERENCES vehiculos(id) ON DELETE SET NULL,
+    servicio_id     INTEGER NOT NULL REFERENCES tipos_servicio(id),
+    sucursal_id     INTEGER NOT NULL REFERENCES sucursales(id),
+    fecha           DATE NOT NULL,
+    hora_inicio     TIME NOT NULL,
+    hora_fin        TIME NOT NULL,
+    estado          VARCHAR(20) NOT NULL DEFAULT 'pendiente'
+                        CHECK (estado IN ('pendiente','confirmada','completada','cancelada')),
+    notas           TEXT,
+    created_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_citas_cliente            ON citas(cliente_id);
+CREATE INDEX IF NOT EXISTS idx_citas_sucursal_fecha      ON citas(sucursal_id, fecha);
+CREATE INDEX IF NOT EXISTS idx_citas_estado              ON citas(estado);
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_updated_at_citas') THEN
+        CREATE TRIGGER set_updated_at_citas
+            BEFORE UPDATE ON citas FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
+    END IF;
+END $$;
+
+-- ── Solicitudes de producto (tienda del cliente) ─────────────
+CREATE TABLE IF NOT EXISTS solicitudes_producto (
+    id              SERIAL PRIMARY KEY,
+    cliente_id      INTEGER NOT NULL REFERENCES clientes(id) ON DELETE CASCADE,
+    usuario_id      INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    repuesto_id     INTEGER NOT NULL REFERENCES repuestos(id),
+    cantidad        INTEGER NOT NULL CHECK (cantidad > 0),
+    precio_unitario NUMERIC(10,2) NOT NULL DEFAULT 0,
+    estado          VARCHAR(20) NOT NULL DEFAULT 'pendiente'
+                        CHECK (estado IN ('pendiente','atendida','cancelada')),
+    notas           TEXT,
+    created_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_solicitudes_cliente  ON solicitudes_producto(cliente_id);
+CREATE INDEX IF NOT EXISTS idx_solicitudes_estado    ON solicitudes_producto(estado);
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_updated_at_solicitudes_producto') THEN
+        CREATE TRIGGER set_updated_at_solicitudes_producto
+            BEFORE UPDATE ON solicitudes_producto FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
+    END IF;
+END $$;
+
+-- ============================================================
+-- Sprint 8: Historial de cambios de ordenes de trabajo
+-- ============================================================
+CREATE TABLE IF NOT EXISTS ordenes_historial (
+    id                  SERIAL PRIMARY KEY,
+    orden_id            INTEGER NOT NULL REFERENCES ordenes_trabajo(id) ON DELETE CASCADE,
+    estado_anterior     VARCHAR(20),
+    estado_nuevo        VARCHAR(20),
+    progreso_anterior   VARCHAR(30),
+    progreso_nuevo      VARCHAR(30),
+    usuario_id          INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+    notas               TEXT,
+    created_at          TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_ordenes_historial_orden ON ordenes_historial(orden_id);

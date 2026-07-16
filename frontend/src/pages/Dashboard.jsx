@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
+import adminImg from '../assets/admin.png';
+import techImg from '../assets/tecnico.png';
 
 const ROL_META = {
     administrador: { label: 'Administracion', sub: 'Inventario, ordenes, clientes y usuarios del taller' },
@@ -40,8 +42,8 @@ export default function Dashboard() {
     const GOLD     = '#c9a227';
     const txt    = isDark ? '#f1f5f9' : '#020617';
     const txtSf  = isDark ? '#cbd5e1' : '#0f172a';
-    const mut    = isDark ? 'rgba(241,245,249,0.55)' : '#475569';
-    const faint  = isDark ? 'rgba(241,245,249,0.38)' : '#64748b';
+    const mut    = isDark ? 'rgba(241,245,249,0.55)' : '#111827';
+    const faint  = isDark ? 'rgba(241,245,249,0.38)' : '#2d3748';
     const bdr    = isDark ? 'rgba(148,163,184,0.16)' : 'rgba(15,23,42,0.07)';
     const card   = isDark ? 'rgba(255,255,255,0.025)' : '#ffffff';
     const cardSh = isDark
@@ -147,10 +149,76 @@ export default function Dashboard() {
                 .car-headlight { animation: headlightGlow 2.2s ease-in-out infinite; }
                 .hero-orb-1 { animation: orbGlow 5s ease-in-out infinite; }
                 .hero-orb-2 { animation: orbGlow 6s ease-in-out infinite 1s; }
+
+                .dash-hero-grid {
+                    display: grid;
+                    grid-template-columns: minmax(260px, 1fr) minmax(280px, 1fr);
+                    gap: 24px;
+                    align-items: center;
+                }
+                .dash-stats-grid {
+                    display: grid;
+                    grid-template-columns: repeat(${CARDS.length}, 1fr);
+                    gap: 18px;
+                    margin-bottom: 32px;
+                }
+                .dash-middle-grid {
+                    display: grid;
+                    grid-template-columns: 2fr 1fr;
+                    gap: 18px;
+                    margin-bottom: 32px;
+                    align-items: stretch;
+                }
+                .dash-bottom-grid {
+                    display: grid;
+                    grid-template-columns: ${alertas.length > 0 ? '1.4fr 1fr' : '1fr'};
+                    gap: 18px;
+                }
+
+                @media (max-width: 768px) {
+                    .dash-hero-grid {
+                        grid-template-columns: 1fr;
+                        gap: 20px;
+                        padding: 24px 20px !important;
+                    }
+                    .dash-hero-car {
+                        min-height: 160px !important;
+                    }
+                    .dash-stats-grid {
+                        grid-template-columns: repeat(2, 1fr);
+                        gap: 12px;
+                        margin-bottom: 24px;
+                    }
+                    .dash-middle-grid {
+                        grid-template-columns: 1fr;
+                        gap: 18px;
+                        margin-bottom: 24px;
+                    }
+                    .dash-bottom-grid {
+                        grid-template-columns: 1fr;
+                        gap: 18px;
+                    }
+                }
+
+                @media (max-width: 480px) {
+                    .dash-stats-grid {
+                        grid-template-columns: 1fr;
+                    }
+                    .dash-section-header {
+                        flex-wrap: wrap !important;
+                        gap: 8px !important;
+                    }
+                    .dash-section-header .separator {
+                        display: none !important;
+                    }
+                    .dash-section-header a {
+                        margin-left: auto;
+                    }
+                }
             `}</style>
 
             {/* ── HERO CARD con auto 3D ── */}
-            <div style={{
+            <div className="dash-hero-grid" style={{
                 position: 'relative', marginBottom: 28,
                 background: isDark
                     ? 'linear-gradient(135deg, #0a0f1c 0%, #0c2237 50%, #0a0f1c 100%)'
@@ -159,8 +227,6 @@ export default function Dashboard() {
                 borderRadius: 22, padding: '32px 36px',
                 overflow: 'hidden', boxShadow: cardSh,
                 minHeight: 220,
-                display: 'grid', gridTemplateColumns: 'minmax(260px, 1fr) minmax(280px, 1fr)',
-                gap: 24, alignItems: 'center',
             }}>
                 {/* Orbes decorativos */}
                 <div className="hero-orb-1" style={{
@@ -191,13 +257,13 @@ export default function Dashboard() {
                         <span className="dot" />
                         <span>SSWAP · {meta.label.toUpperCase()}</span>
                     </div>
-                    <p style={{ fontFamily: "'Outfit'", fontWeight: 500, fontSize: '1rem', color: SKY_DEEP, marginBottom: 4 }}>
+                    <p style={{ fontFamily: "'Outfit'", fontWeight: 500, fontSize: '1.08rem', color: SKY_DEEP, marginBottom: 4 }}>
                         {greet},
                     </p>
-                    <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '3.2rem', letterSpacing: '.02em', color: txt, lineHeight: 1 }}>
+                    <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '3.5rem', letterSpacing: '.02em', color: txt, lineHeight: 1 }}>
                         {usuario?.nombre || 'Usuario'}
                     </h1>
-                    <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.95rem', color: mut, marginTop: 10, maxWidth: 380 }}>
+                    <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '1.02rem', color: mut, marginTop: 10, maxWidth: 380 }}>
                         {meta.sub}. Tu taller en marcha — revisa el estado, atiende alertas y registra movimientos.
                     </p>
                     <div style={{
@@ -208,25 +274,31 @@ export default function Dashboard() {
                         backdropFilter: 'blur(8px)',
                     }}>
                         <IconClock />
-                        <span style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.82rem', color: txtSf, textTransform: 'capitalize' }}>{fechaHoy}</span>
+                        <span style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.9rem', color: txtSf, textTransform: 'capitalize' }}>{fechaHoy}</span>
                     </div>
                 </div>
 
-                {/* Lado derecho: auto 3D */}
-                <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 200 }}>
-                    <Car3D />
+                {/* Lado derecho: Imagen de rol */}
+                <div className="dash-hero-car" style={{ position: 'relative', zIndex: 1, overflow: 'hidden', borderRadius: 16, minHeight: 200 }}>
+                    {esAdmin ? (
+                        <img src={adminImg} alt="Administrador" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', borderRadius: 16 }} />
+                    ) : esTecnico ? (
+                        <img src={techImg} alt="Técnico" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', borderRadius: 16 }} />
+                    ) : (
+                        <RoleIllustration role="recepcionista" isDark={isDark} />
+                    )}
                 </div>
             </div>
 
             {/* ── Stat cards ── */}
             {loading ? (
-                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${CARDS.length}, 1fr)`, gap: 18, marginBottom: 32 }}>
+                <div className="dash-stats-grid">
                     {Array(CARDS.length).fill(0).map((_, i) => (
                         <div key={i} className="sk-pulse" style={{ height: 130, background: card, border: `1px solid ${bdr}`, borderRadius: 16 }} />
                     ))}
                 </div>
             ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${CARDS.length}, 1fr)`, gap: 18, marginBottom: 32 }}>
+                <div className="dash-stats-grid">
                     {CARDS.map((c, i) => (
                         <div key={c.key} className="dash-card"
                             style={{
@@ -245,9 +317,9 @@ export default function Dashboard() {
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     animation: c.alert && c.val > 0 ? 'alertPulse 2s ease-in-out infinite' : 'none',
                                 }}>{c.icon}</div>
-                                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.22em', color: mut }}>{c.label.toUpperCase()}</p>
+                                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.68rem', letterSpacing: '.22em', color: mut }}>{c.label.toUpperCase()}</p>
                             </div>
-                            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '2.8rem', letterSpacing: '.02em', color: c.color, lineHeight: 1 }}>
+                            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '3rem', letterSpacing: '.02em', color: c.color, lineHeight: 1 }}>
                                 {c.val}
                             </p>
                         </div>
@@ -256,20 +328,20 @@ export default function Dashboard() {
             )}
 
             {/* ── Acciones rapidas + Valor inventario ── */}
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 18, marginBottom: 32, alignItems: 'stretch' }}>
+            <div className="dash-middle-grid">
                 <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 16, padding: 22, boxShadow: cardSh }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
                         <div style={{ width: 30, height: 30, borderRadius: 9, background: SKY_PALE, border: `1px solid ${SKY_BDR}`, color: SKY, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <IconBolt />
                         </div>
-                        <h3 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.1rem', letterSpacing: '.05em', color: txt }}>Acciones Rapidas</h3>
+                        <h3 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.2rem', letterSpacing: '.05em', color: txt }}>Acciones Rapidas</h3>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 12 }}>
                         <Link to="/dashboard/inventario" className="quick-action" style={qaStyle(card, bdr, txt, mut)}>
                             <span style={{ color: SKY }}><IconBox /></span>
                             <div style={{ flex: 1 }}>
-                                <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.85rem', color: txt }}>Ver inventario</p>
-                                <p style={{ fontFamily: "'Outfit'", fontSize: '.72rem', color: mut }}>Catalogo completo</p>
+                                <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.94rem', color: txt }}>Ver inventario</p>
+                                <p style={{ fontFamily: "'Outfit'", fontSize: '.82rem', color: mut }}>Catalogo completo</p>
                             </div>
                             <span className="qa-arrow" style={{ color: faint }}><IconArrowR /></span>
                         </Link>
@@ -277,8 +349,8 @@ export default function Dashboard() {
                             <Link to="/dashboard/clientes" className="quick-action" style={qaStyle(card, bdr, txt, mut)}>
                                 <span style={{ color: GOLD }}><IconUsers /></span>
                                 <div style={{ flex: 1 }}>
-                                    <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.85rem', color: txt }}>Gestionar clientes</p>
-                                    <p style={{ fontFamily: "'Outfit'", fontSize: '.72rem', color: mut }}>Registro e historial</p>
+                                    <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.94rem', color: txt }}>Gestionar clientes</p>
+                                    <p style={{ fontFamily: "'Outfit'", fontSize: '.82rem', color: mut }}>Registro e historial</p>
                                 </div>
                                 <span className="qa-arrow" style={{ color: faint }}><IconArrowR /></span>
                             </Link>
@@ -286,8 +358,8 @@ export default function Dashboard() {
                         <Link to="/dashboard/ordenes" className="quick-action" style={qaStyle(card, bdr, txt, mut)}>
                             <span style={{ color: SKY }}><IconOrden /></span>
                             <div style={{ flex: 1 }}>
-                                <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.85rem', color: txt }}>Ordenes de trabajo</p>
-                                <p style={{ fontFamily: "'Outfit'", fontSize: '.72rem', color: mut }}>{taller.pendientes} pendientes</p>
+                                <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.94rem', color: txt }}>Ordenes de trabajo</p>
+                                <p style={{ fontFamily: "'Outfit'", fontSize: '.82rem', color: mut }}>{taller.pendientes} pendientes</p>
                             </div>
                             <span className="qa-arrow" style={{ color: faint }}><IconArrowR /></span>
                         </Link>
@@ -295,8 +367,8 @@ export default function Dashboard() {
                             <Link to="/dashboard/vehiculos" className="quick-action" style={qaStyle(card, bdr, txt, mut)}>
                                 <span style={{ color: '#10b981' }}><IconCar /></span>
                                 <div style={{ flex: 1 }}>
-                                    <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.85rem', color: txt }}>Vehiculos</p>
-                                    <p style={{ fontFamily: "'Outfit'", fontSize: '.72rem', color: mut }}>Asociar y consultar</p>
+                                    <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.94rem', color: txt }}>Vehiculos</p>
+                                    <p style={{ fontFamily: "'Outfit'", fontSize: '.82rem', color: mut }}>Asociar y consultar</p>
                                 </div>
                                 <span className="qa-arrow" style={{ color: faint }}><IconArrowR /></span>
                             </Link>
@@ -305,8 +377,8 @@ export default function Dashboard() {
                             <Link to="/dashboard/movimientos" className="quick-action" style={qaStyle(card, bdr, txt, mut)}>
                                 <span style={{ color: '#10b981' }}><IconIn /></span>
                                 <div style={{ flex: 1 }}>
-                                    <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.85rem', color: txt }}>Movimientos</p>
-                                    <p style={{ fontFamily: "'Outfit'", fontSize: '.72rem', color: mut }}>Trazabilidad</p>
+                                    <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.94rem', color: txt }}>Movimientos</p>
+                                    <p style={{ fontFamily: "'Outfit'", fontSize: '.82rem', color: mut }}>Trazabilidad</p>
                                 </div>
                                 <span className="qa-arrow" style={{ color: faint }}><IconArrowR /></span>
                             </Link>
@@ -315,8 +387,8 @@ export default function Dashboard() {
                             <Link to="/dashboard/inventario" className="quick-action" style={{ ...qaStyle(card, bdr, txt, mut), borderColor: 'rgba(239,68,68,0.2)' }}>
                                 <span style={{ color: '#ef4444' }}><IconAlert /></span>
                                 <div style={{ flex: 1 }}>
-                                    <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.85rem', color: txt }}>Atender alertas</p>
-                                    <p style={{ fontFamily: "'Outfit'", fontSize: '.72rem', color: '#ef4444' }}>{stats.bajo_stock} con bajo stock</p>
+                                    <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.94rem', color: txt }}>Atender alertas</p>
+                                    <p style={{ fontFamily: "'Outfit'", fontSize: '.82rem', color: '#ef4444' }}>{stats.bajo_stock} con bajo stock</p>
                                 </div>
                                 <span className="qa-arrow" style={{ color: faint }}><IconArrowR /></span>
                             </Link>
@@ -325,8 +397,8 @@ export default function Dashboard() {
                             <Link to="/dashboard/inventario" className="quick-action" style={qaStyle(card, bdr, txt, mut)}>
                                 <span style={{ color: SKY_DEEP }}><IconWrench /></span>
                                 <div style={{ flex: 1 }}>
-                                    <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.85rem', color: txt }}>Crear repuesto</p>
-                                    <p style={{ fontFamily: "'Outfit'", fontSize: '.72rem', color: mut }}>Agregar al catalogo</p>
+                                    <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.94rem', color: txt }}>Crear repuesto</p>
+                                    <p style={{ fontFamily: "'Outfit'", fontSize: '.82rem', color: mut }}>Agregar al catalogo</p>
                                 </div>
                                 <span className="qa-arrow" style={{ color: faint }}><IconArrowR /></span>
                             </Link>
@@ -344,35 +416,35 @@ export default function Dashboard() {
                 }}>
                     <div style={{ position: 'absolute', top: -50, right: -50, width: 180, height: 180, borderRadius: '50%', background: 'rgba(255,255,255,0.10)', pointerEvents: 'none' }} />
                     <div style={{ position: 'absolute', bottom: -70, left: -30, width: 160, height: 160, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', pointerEvents: 'none' }} />
-                    <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.24em', color: 'rgba(255,255,255,0.85)', position: 'relative' }}>VALOR DE INVENTARIO</p>
-                    <p style={{ fontFamily: "'Bebas Neue'", fontSize: '2.4rem', letterSpacing: '.02em', color: '#fff', lineHeight: 1, marginTop: 6, position: 'relative' }}>
+                    <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.72rem', letterSpacing: '.24em', color: 'rgba(255,255,255,0.85)', position: 'relative' }}>VALOR DE INVENTARIO</p>
+                    <p style={{ fontFamily: "'Bebas Neue'", fontSize: '2.8rem', letterSpacing: '.02em', color: '#fff', lineHeight: 1, marginTop: 6, position: 'relative' }}>
                         ${stats.valor.toLocaleString('en-US', { maximumFractionDigits: 0 })}
                     </p>
-                    <p style={{ fontFamily: "'Outfit'", fontSize: '.78rem', color: 'rgba(255,255,255,0.78)', marginTop: 8, position: 'relative' }}>
+                    <p style={{ fontFamily: "'Outfit'", fontSize: '.88rem', color: 'rgba(255,255,255,0.78)', marginTop: 8, position: 'relative' }}>
                         Estimado a precio de venta · {stats.total} repuestos
                     </p>
                 </div>
             </div>
 
             {/* ── Bloque inferior: Alertas + Movimientos recientes ── */}
-            <div style={{ display: 'grid', gridTemplateColumns: alertas.length > 0 ? '1.4fr 1fr' : '1fr', gap: 18 }}>
+            <div className="dash-bottom-grid">
                 {alertas.length > 0 && (
                     <div style={{ animation: 'fadeIn .5s ease both', animationDelay: '.2s' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14, gap: 10 }}>
+                        <div className="dash-section-header" style={{ display: 'flex', alignItems: 'center', marginBottom: 14, gap: 10 }}>
                             <span style={{
                                 display: 'inline-flex', alignItems: 'center', gap: 7,
                                 padding: '4px 11px', borderRadius: 999,
                                 background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)',
-                                fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.24em', color: '#ef4444',
+                                fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.24em', color: '#ef4444',
                             }}>
                                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#ef4444', animation: 'alertPulse 1.6s ease-in-out infinite' }} />
                                 ATENCION
                             </span>
-                            <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.4rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>
+                            <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.5rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>
                                 Stock Bajo
                             </h2>
-                            <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(239,68,68,0.25), transparent)' }} />
-                            <Link to="/dashboard/inventario" style={{ fontFamily: "'Bebas Neue'", fontSize: '.65rem', letterSpacing: '.16em', color: SKY, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                            <div className="separator" style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(239,68,68,0.25), transparent)' }} />
+                            <Link to="/dashboard/inventario" style={{ fontFamily: "'Bebas Neue'", fontSize: '.75rem', letterSpacing: '.16em', color: SKY, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                                 VER TODO <IconArrowR />
                             </Link>
                         </div>
@@ -383,7 +455,7 @@ export default function Dashboard() {
                                     <thead>
                                         <tr style={{ borderBottom: `1px solid ${bdr}`, background: 'rgba(239,68,68,0.03)' }}>
                                             {['Codigo', 'Repuesto', 'Stock', 'Min'].map(h => (
-                                                <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.22em', color: '#ef4444', whiteSpace: 'nowrap' }}>{h}</th>
+                                                <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.22em', color: '#ef4444', whiteSpace: 'nowrap' }}>{h}</th>
                                             ))}
                                         </tr>
                                     </thead>
@@ -395,16 +467,16 @@ export default function Dashboard() {
                                                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                                                 <td style={{ padding: '12px 16px' }}>
                                                     <code style={{
-                                                        fontFamily: 'monospace', fontSize: '.74rem', fontWeight: 600,
+                                                        fontFamily: 'monospace', fontSize: '.84rem', fontWeight: 600,
                                                         background: SKY_PALE, padding: '3px 9px', borderRadius: 6,
                                                         color: SKY_DEEP, border: `1px solid ${SKY_BDR}`,
                                                     }}>{r.codigo}</code>
                                                 </td>
-                                                <td style={{ padding: '12px 16px', fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.86rem', color: txt, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.nombre}</td>
+                                                <td style={{ padding: '12px 16px', fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.94rem', color: txt, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.nombre}</td>
                                                 <td style={{ padding: '12px 16px' }}>
-                                                    <span style={{ fontFamily: "'Bebas Neue'", fontSize: '1.2rem', letterSpacing: '.04em', color: '#ef4444' }}>{r.stock_actual}</span>
+                                                    <span style={{ fontFamily: "'Bebas Neue'", fontSize: '1.3rem', letterSpacing: '.04em', color: '#ef4444' }}>{r.stock_actual}</span>
                                                 </td>
-                                                <td style={{ padding: '12px 16px', fontFamily: "'Outfit'", fontWeight: 500, fontSize: '.82rem', color: mut }}>{r.stock_minimo}</td>
+                                                <td style={{ padding: '12px 16px', fontFamily: "'Outfit'", fontWeight: 500, fontSize: '.9rem', color: mut }}>{r.stock_minimo}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -416,11 +488,11 @@ export default function Dashboard() {
 
                 {(esAdmin || esTecnico) && movRecientes.length > 0 && (
                     <div style={{ animation: 'fadeIn .5s ease both', animationDelay: '.3s' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14, gap: 10 }}>
-                            <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.4rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>
+                        <div className="dash-section-header" style={{ display: 'flex', alignItems: 'center', marginBottom: 14, gap: 10 }}>
+                            <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.5rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>
                                 Actividad Reciente
                             </h2>
-                            <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(14,165,233,0.2), transparent)' }} />
+                            <div className="separator" style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(14,165,233,0.2), transparent)' }} />
                         </div>
                         <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, boxShadow: cardSh, padding: 6 }}>
                             {movRecientes.map((m, i) => {
@@ -443,12 +515,12 @@ export default function Dashboard() {
                                             {ent ? <IconIn /> : <IconOut />}
                                         </div>
                                         <div style={{ flex: 1, minWidth: 0 }}>
-                                            <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.82rem', color: txt, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.repuesto_nombre}</p>
-                                            <p style={{ fontFamily: "'Outfit'", fontSize: '.72rem', color: mut, marginTop: 1 }}>
+                                            <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.9rem', color: txt, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.repuesto_nombre}</p>
+                                            <p style={{ fontFamily: "'Outfit'", fontSize: '.8rem', color: mut, marginTop: 1 }}>
                                                 {new Date(m.created_at).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })} · {m.usuario_nombre}
                                             </p>
                                         </div>
-                                        <span style={{ fontFamily: "'Bebas Neue'", fontSize: '1rem', letterSpacing: '.02em', color, whiteSpace: 'nowrap' }}>
+                                        <span style={{ fontFamily: "'Bebas Neue'", fontSize: '1.1rem', letterSpacing: '.02em', color, whiteSpace: 'nowrap' }}>
                                             {ent ? '+' : '−'}{m.cantidad}
                                         </span>
                                     </div>
@@ -457,7 +529,7 @@ export default function Dashboard() {
                             <Link to="/dashboard/movimientos" style={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                                 padding: '10px', marginTop: 4,
-                                fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.16em', color: SKY,
+                                fontFamily: "'Bebas Neue'", fontSize: '.8rem', letterSpacing: '.16em', color: SKY,
                                 textDecoration: 'none', borderTop: `1px solid ${bdr}`,
                             }}>
                                 VER HISTORIAL COMPLETO <IconArrowR />
@@ -477,6 +549,108 @@ function qaStyle(card, bdr, txt, mut) {
         background: card, border: `1px solid ${bdr}`,
         textDecoration: 'none', color: txt,
     };
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Ilustraciones SVG por rol (placeholder hasta que el usuario
+   coloque sus propias imagenes en /src/assets/)
+   ───────────────────────────────────────────────────────────── */
+function RoleIllustration({ role, isDark }) {
+    const bg1 = isDark ? '#0c4a6e' : '#e0f2fe';
+    const bg2 = isDark ? '#0284c7' : '#bae6fd';
+    const accent = '#0ea5e9';
+    const dark = isDark ? '#e2e8f0' : '#0f172a';
+    const mid = isDark ? '#94a3b8' : '#475569';
+
+    if (role === 'admin') {
+        return (
+            <svg viewBox="0 0 240 200" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 300 }}>
+                <circle cx="120" cy="100" r="88" fill={bg1} opacity=".5" />
+                <circle cx="120" cy="100" r="64" fill={bg2} opacity=".4" />
+                {/* Clipboard */}
+                <rect x="85" y="50" width="70" height="95" rx="8" fill={isDark ? '#1e293b' : '#fff'} stroke={accent} strokeWidth="2.5" />
+                <rect x="103" y="42" width="34" height="16" rx="6" fill={accent} />
+                <rect x="97" y="72" width="46" height="4" rx="2" fill={mid} opacity=".6" />
+                <rect x="97" y="84" width="38" height="4" rx="2" fill={mid} opacity=".4" />
+                <rect x="97" y="96" width="42" height="4" rx="2" fill={mid} opacity=".6" />
+                <rect x="97" y="108" width="30" height="4" rx="2" fill={mid} opacity=".4" />
+                {/* Checkmarks */}
+                <circle cx="107" cy="122" r="8" fill={accent} opacity=".15" />
+                <path d="M103 122l3 3 6-6" stroke={accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                {/* Gear */}
+                <g transform="translate(158, 52)">
+                    <circle cx="14" cy="14" r="12" fill={accent} opacity=".18" />
+                    <circle cx="14" cy="14" r="5" stroke={accent} strokeWidth="2" fill="none" />
+                    {[0, 45, 90, 135, 180, 225, 270, 315].map(a => (
+                        <rect key={a} x="12.5" y="0" width="3" height="6" rx="1.5" fill={accent}
+                              transform={`rotate(${a} 14 14)`} />
+                    ))}
+                </g>
+                {/* Badge estrella */}
+                <circle cx="80" cy="60" r="12" fill="#f59e0b" opacity=".2" />
+                <text x="80" y="64" textAnchor="middle" fontSize="14" fill="#f59e0b">★</text>
+            </svg>
+        );
+    }
+
+    if (role === 'tecnico') {
+        return (
+            <svg viewBox="0 0 240 200" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 300 }}>
+                <circle cx="120" cy="100" r="88" fill={bg1} opacity=".5" />
+                <circle cx="120" cy="100" r="64" fill={bg2} opacity=".4" />
+                {/* Wrench */}
+                <g transform="translate(70, 55) rotate(-30, 50, 50)">
+                    <rect x="44" y="20" width="12" height="65" rx="5" fill={mid} />
+                    <path d="M38 18 a16 16 0 0 1 24 0 l-6 14h-12z" fill={accent} />
+                    <circle cx="50" cy="14" r="4" fill={isDark ? '#1e293b' : '#fff'} />
+                </g>
+                {/* Car silhouette */}
+                <g transform="translate(90, 115)">
+                    <path d="M10 30 Q0 30 0 22 L0 16 Q0 12 4 12 L14 4 Q18 0 24 0 L56 0 Q62 0 66 4 L76 12 Q80 12 80 16 L80 22 Q80 30 70 30 Z"
+                          fill={accent} opacity=".3" stroke={accent} strokeWidth="1.5" />
+                    <circle cx="20" cy="30" r="7" fill={dark} opacity=".6" />
+                    <circle cx="20" cy="30" r="3" fill={mid} />
+                    <circle cx="60" cy="30" r="7" fill={dark} opacity=".6" />
+                    <circle cx="60" cy="30" r="3" fill={mid} />
+                </g>
+                {/* Bolt */}
+                <g transform="translate(155, 58)">
+                    <circle cx="12" cy="12" r="14" fill="#f59e0b" opacity=".15" />
+                    <polygon points="14,2 6,14 12,14 10,24 20,10 13,10" fill="#f59e0b" opacity=".7" />
+                </g>
+            </svg>
+        );
+    }
+
+    // Recepcionista
+    return (
+        <svg viewBox="0 0 240 200" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 300 }}>
+            <circle cx="120" cy="100" r="88" fill={bg1} opacity=".5" />
+            <circle cx="120" cy="100" r="64" fill={bg2} opacity=".4" />
+            {/* Person silhouette */}
+            <circle cx="120" cy="68" r="18" fill={accent} opacity=".25" stroke={accent} strokeWidth="2" />
+            <path d="M88 130 Q88 108 120 104 Q152 108 152 130" fill={accent} opacity=".18" stroke={accent} strokeWidth="2" strokeLinecap="round" />
+            {/* Headset */}
+            <path d="M100 62 Q100 44 120 44 Q140 44 140 62" stroke={accent} strokeWidth="3" fill="none" strokeLinecap="round" />
+            <rect x="95" y="58" width="10" height="14" rx="4" fill={accent} opacity=".6" />
+            <rect x="135" y="58" width="10" height="14" rx="4" fill={accent} opacity=".6" />
+            {/* Clipboard small */}
+            <g transform="translate(155, 85)">
+                <rect x="0" y="0" width="36" height="46" rx="5" fill={isDark ? '#1e293b' : '#fff'} stroke={mid} strokeWidth="1.5" />
+                <rect x="10" y="-4" width="16" height="10" rx="4" fill={accent} opacity=".5" />
+                <rect x="7" y="14" width="22" height="3" rx="1.5" fill={mid} opacity=".4" />
+                <rect x="7" y="22" width="18" height="3" rx="1.5" fill={mid} opacity=".3" />
+                <rect x="7" y="30" width="20" height="3" rx="1.5" fill={mid} opacity=".4" />
+            </g>
+            {/* Chat bubble */}
+            <g transform="translate(62, 90)">
+                <rect x="0" y="0" width="38" height="26" rx="8" fill={accent} opacity=".18" stroke={accent} strokeWidth="1.5" />
+                <circle cx="11" cy="13" r="2.5" fill={accent} opacity=".5" />
+                <circle cx="19" cy="13" r="2.5" fill={accent} opacity=".5" />
+                <circle cx="27" cy="13" r="2.5" fill={accent} opacity=".5" />
+            </g>
+        </svg>
+    );
 }
 
 /* ─────────────────────────────────────────────────────────────

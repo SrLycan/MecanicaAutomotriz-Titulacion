@@ -25,8 +25,8 @@ export default function RegistrarMovimiento() {
     const SKY_BDR  = isDark ? 'rgba(56,189,248,0.22)' : 'rgba(14,165,233,0.18)';
     const txt    = isDark ? '#f1f5f9' : '#0f172a';
     const txtSf  = isDark ? '#cbd5e1' : '#334155';
-    const mut    = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
-    const faint  = isDark ? 'rgba(241,245,249,0.38)' : '#94a3b8';
+    const mut    = isDark ? 'rgba(241,245,249,0.55)' : '#111827';
+    const faint  = isDark ? 'rgba(241,245,249,0.38)' : '#2d3748';
     const bdr    = isDark ? 'rgba(148,163,184,0.18)' : 'rgba(15,23,42,0.07)';
     const card   = isDark ? 'rgba(255,255,255,0.025)' : '#ffffff';
     const cardSh = isDark
@@ -105,6 +105,45 @@ export default function RegistrarMovimiento() {
                 .reg-item { animation: regIn .25s ease both; transition: background .15s, border-color .2s, transform .2s; cursor: pointer; }
                 .reg-item:hover { border-color: ${SKY_BDR} !important; background: ${rowHov} !important; transform: translateY(-2px); }
                 .reg-item.selected { border-color: ${SKY} !important; background: ${SKY_PALE} !important; }
+
+                .reg-form-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 1.2fr;
+                    gap: 20px;
+                    align-items: start;
+                }
+                .reg-steps-container {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    margin-bottom: 24px;
+                }
+                .reg-buttons-row {
+                    display: flex;
+                    gap: 10px;
+                    justify-content: flex-end;
+                    padding-top: 12px;
+                    margin-top: 4px;
+                }
+
+                @media (max-width: 768px) {
+                    .reg-form-grid {
+                        grid-template-columns: 1fr;
+                        gap: 16px;
+                    }
+                    .reg-steps-container {
+                        flex-wrap: wrap;
+                        gap: 8px;
+                    }
+                    .reg-buttons-row {
+                        flex-direction: column;
+                        gap: 8px;
+                    }
+                    .reg-buttons-row button {
+                        width: 100%;
+                        justify-content: center;
+                    }
+                }
             `}</style>
 
             {/* Header */}
@@ -113,17 +152,17 @@ export default function RegistrarMovimiento() {
                     <span style={{ width: 6, height: 6, borderRadius: '50%', background: SKY, boxShadow: `0 0 8px ${SKY}` }} />
                     <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.24em', color: SKY_DEEP }}>SSWAP · REGISTRO RAPIDO</p>
                 </div>
-                <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.6rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>
+                <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.8rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>
                     {step === 'select' ? 'Registrar Movimiento' : step === 'form' ? 'Confirmar Movimiento' : 'Movimiento Completado'}
                 </h1>
-                <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.85rem', color: mut, marginTop: 6 }}>
+                <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.92rem', color: mut, marginTop: 6 }}>
                     {step === 'select' ? 'Selecciona un producto del inventario para registrar entrada o salida' :
                      step === 'form' ? `Revisa los datos antes de confirmar` : 'El movimiento se ha registrado correctamente'}
                 </p>
             </div>
 
             {/* Step indicator */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+            <div className="reg-steps-container">
                 {['Seleccionar Producto', 'Registrar Movimiento', 'Confirmacion'].map((l, i) => {
                     const states = ['select', 'form', 'done'];
                     const current = states.indexOf(step);
@@ -141,7 +180,7 @@ export default function RegistrarMovimiento() {
                                     ? <IconCheck />
                                     : <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.72rem', color: active ? '#fff' : mut }}>{i + 1}</span>}
                             </div>
-                            <span style={{ fontFamily: "'Outfit'", fontWeight: active ? 600 : 400, fontSize: '.78rem', color: active ? txt : mut }}>{l}</span>
+                            <span style={{ fontFamily: "'Outfit'", fontWeight: active ? 600 : 400, fontSize: '.88rem', color: active ? txt : mut }}>{l}</span>
                             {i < 2 && <span style={{ color: bdr, fontSize: '.7rem' }}>—</span>}
                         </div>
                     );
@@ -228,7 +267,7 @@ export default function RegistrarMovimiento() {
 
             {/* ── STEP 2: Movement form ── */}
             {step === 'form' && selected && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: 20, alignItems: 'start' }}>
+                <div className="reg-form-grid">
                     {/* Selected product card */}
                     <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, padding: 22, boxShadow: cardSh }}>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '3px 9px', borderRadius: 999, background: SKY_PALE, border: `1px solid ${SKY_BDR}`, marginBottom: 12 }}>
@@ -333,15 +372,15 @@ export default function RegistrarMovimiento() {
                                 </div>
                             )}
 
-                            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', paddingTop: 12, borderTop: `1px solid ${bdr}`, marginTop: 4 }}>
+                            <div className="reg-buttons-row" style={{ borderTop: `1px solid ${bdr}` }}>
                                 <button type="button" onClick={resetAll}
-                                    style={{ fontFamily: "'Bebas Neue'", fontSize: '.72rem', letterSpacing: '.14em', background: 'none', border: `1px solid ${bdr}`, borderRadius: 10, padding: '10px 18px', cursor: 'pointer', color: mut }}>
+                                    style={{ fontFamily: "'Bebas Neue'", fontSize: '.8rem', letterSpacing: '.14em', background: 'none', border: `1px solid ${bdr}`, borderRadius: 10, padding: '10px 18px', cursor: 'pointer', color: mut }}>
                                     CANCELAR
                                 </button>
                                 <button type="submit" disabled={saving}
                                     style={{
                                         display: 'flex', alignItems: 'center', gap: 7,
-                                        fontFamily: "'Bebas Neue'", fontSize: '.78rem', letterSpacing: '.14em',
+                                        fontFamily: "'Bebas Neue'", fontSize: '.86rem', letterSpacing: '.14em',
                                         color: '#fff',
                                         background: `linear-gradient(135deg, ${esEntrada ? '#059669' : '#dc2626'}, ${accentColor})`,
                                         border: 'none', borderRadius: 10, padding: '10px 22px',

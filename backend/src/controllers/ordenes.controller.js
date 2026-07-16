@@ -6,6 +6,24 @@ const ESTADOS_PROGRESO = [
     'esperando_repuestos', 'pruebas_finales', 'listo_entrega',
 ];
 
+// Registra una entrada en el historial de cambios de una orden.
+// No lanza: si falla, solo se loguea, para no romper el flujo principal.
+const registrarHistorial = async (client, {
+    orden_id, estado_anterior = null, estado_nuevo = null,
+    progreso_anterior = null, progreso_nuevo = null, usuario_id = null, notas = null,
+}) => {
+    try {
+        await client.query(
+            `INSERT INTO ordenes_historial
+                (orden_id, estado_anterior, estado_nuevo, progreso_anterior, progreso_nuevo, usuario_id, notas)
+             VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+            [orden_id, estado_anterior, estado_nuevo, progreso_anterior, progreso_nuevo, usuario_id, notas]
+        );
+    } catch (err) {
+        console.error('Error registrarHistorial:', err);
+    }
+};
+
 const validarDatosCliente = ({ nombre, email, telefono, cedula }) => {
     if (!nombre?.trim()) return 'El nombre es obligatorio.';
     if (!cedula?.trim()) return 'La cedula es obligatoria.';
@@ -295,6 +313,12 @@ const crearOrden = async (req, res) => {
             [cliente_id, vehiculo_id || null, usuario_id, descripcion.trim(),
              diagnostico || null, kilometraje || null, tecnicoFinal]
         );
+        await registrarHistorial(pool, {
+            orden_id: rows[0].id,
+            estado_nuevo: rows[0].estado,
+            usuario_id,
+            notas: 'Orden creada.',
+        });
         return res.status(201).json({ orden: rows[0] });
     } catch (err) {
         console.error('Error crearOrden:', err);
@@ -374,10 +398,48 @@ const actualizarOrden = async (req, res) => {
              tecnicoParam, id]
         );
         if (!rows[0]) return res.status(404).json({ error: 'Orden no encontrada.' });
+
+        if (cambiaEstado) {
+            await registrarHistorial(pool, {
+                orden_id: rows[0].id,
+                estado_anterior: ordenActual.estado,
+                estado_nuevo: rows[0].estado,
+                progreso_anterior: ordenActual.estado_progreso,
+                progreso_nuevo: rows[0].estado_progreso,
+                usuario_id: usuarioId,
+                notas: notas_progreso !== undefined ? notas_progreso : null,
+            });
+        }
+
         return res.json({ orden: rows[0] });
     } catch (err) {
         console.error('Error actualizarOrden:', err);
         return res.status(500).json({ error: 'Error al actualizar orden.' });
+    }
+};
+
+// ─────────────────────────────────────────────────────────────
+// GET /api/ordenes/ordenes/:id/historial
+// ─────────────────────────────────────────────────────────────
+const obtenerHistorialOrden = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { rows: ordenRows } = await pool.query('SELECT id FROM ordenes_trabajo WHERE id = $1', [id]);
+        if (!ordenRows[0]) return res.status(404).json({ error: 'Orden no encontrada.' });
+
+        const { rows } = await pool.query(
+            `SELECT h.id, h.estado_anterior, h.estado_nuevo, h.progreso_anterior, h.progreso_nuevo,
+                    h.notas, h.created_at, u.nombre AS usuario_nombre
+             FROM ordenes_historial h
+             LEFT JOIN usuarios u ON u.id = h.usuario_id
+             WHERE h.orden_id = $1
+             ORDER BY h.created_at ASC, h.id ASC`,
+            [id]
+        );
+        return res.json({ historial: rows });
+    } catch (err) {
+        console.error('Error obtenerHistorialOrden:', err);
+        return res.status(500).json({ error: 'Error al obtener el historial de la orden.' });
     }
 };
 
@@ -397,4 +459,5 @@ module.exports = {
     listarClientes, obtenerCliente, crearCliente, actualizarCliente, eliminarCliente,
     listarVehiculos, crearVehiculo, actualizarVehiculo, eliminarVehiculo,
     listarOrdenes, obtenerOrden, crearOrden, actualizarOrden, eliminarOrden,
+    obtenerHistorialOrden,
 };

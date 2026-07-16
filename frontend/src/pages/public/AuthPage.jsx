@@ -4,12 +4,12 @@ import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 
-export default function AuthPage() {
+export default function AuthPage({ staffOnly = false }) {
     const [params]   = useSearchParams();
     const navigate   = useNavigate();
     const { login, syncFromStorage } = useAuth();
 
-    const [modo,    setModo]    = useState(params.get('modo') === 'registro' ? 'registro' : 'login');
+    const [modo,    setModo]    = useState(staffOnly ? 'login' : (params.get('modo') === 'registro' ? 'registro' : 'login'));
     const [loading, setLoading] = useState(false);
     const [showPass,setShowPass]= useState(false);
 
@@ -18,8 +18,15 @@ export default function AuthPage() {
     const [regError,  setRegError]  = useState('');
 
     useEffect(() => {
-        setModo(params.get('modo') === 'registro' ? 'registro' : 'login');
-    }, [params]);
+        setModo(staffOnly ? 'login' : (params.get('modo') === 'registro' ? 'registro' : 'login'));
+    }, [params, staffOnly]);
+
+    useEffect(() => {
+        const sp = new URLSearchParams(window.location.search);
+        if (sp.get('sesion') === 'expirada') {
+            toast.error('Tu sesion expiro. Inicia sesion nuevamente.');
+        }
+    }, []);
 
     /* ── LOGIN ── */
     const handleLogin = async (e) => {
@@ -29,6 +36,10 @@ export default function AuthPage() {
         setLoading(false);
         if (!result.ok) { toast.error(result.error); return; }
         const rol = result.usuario?.rol;
+        if (staffOnly && !['administrador','tecnico','recepcionista'].includes(rol)) {
+            localStorage.removeItem('sswap_token'); localStorage.removeItem('sswap_usuario'); syncFromStorage();
+            toast.error('Este acceso es exclusivo para personal del taller.'); return;
+        }
         if (['administrador','tecnico','recepcionista'].includes(rol)) {
             navigate('/dashboard');
         } else {
@@ -61,7 +72,7 @@ export default function AuthPage() {
     };
 
     const inputBase = {
-        width: '100%', padding: '11px 14px', borderRadius: 7,
+        width: '100%', padding: '12px 14px 12px 42px', borderRadius: 10,
         border: '1px solid rgba(255,255,255,.1)', background: 'rgba(255,255,255,.04)',
         color: '#fff', fontFamily: "'Outfit'", fontSize: '.88rem', outline: 'none',
         transition: 'border-color .2s, background .2s', boxSizing: 'border-box',
@@ -72,27 +83,94 @@ export default function AuthPage() {
         textTransform: 'uppercase', letterSpacing: '.07em',
     };
 
+    const IconMailAuth = ({ className }) => <svg className={className} width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>;
+    const IconLockAuth = ({ className }) => <svg className={className} width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>;
+    const IconCalendarSmall = () => <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
+    const IconCarSmall = () => <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M5 17h14M5 17a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.5l2-3h7l2 3H19a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2"/><circle cx="8" cy="15" r="2"/><circle cx="16" cy="15" r="2"/></svg>;
+    const IconBellSmall = () => <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>;
+
+    const BENEFICIOS = [
+        { icon: <IconCalendarSmall />, t: 'Agenda citas en segundos', d: 'Elige sucursal, fecha y hora disponible.' },
+        { icon: <IconCarSmall />,      t: 'Sigue tus vehiculos',      d: 'Historial completo de mantenimiento.' },
+        { icon: <IconBellSmall />,     t: 'Notificaciones en vivo',   d: 'Entérate cuando tu auto esté listo.' },
+    ];
+
     return (
-        <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, fontFamily: "'Outfit', sans-serif", position: 'relative' }}>
+        <div style={{ minHeight: '100vh', background: '#050505', display: 'flex', fontFamily: "'Outfit', sans-serif", position: 'relative' }}>
             <style>{`
-                @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600&display=swap');
-                .auth-input:focus { border-color: rgba(201,162,39,.5) !important; background: rgba(201,162,39,.03) !important; }
-                .auth-input::placeholder { color: rgba(255,255,255,.2); }
-                .auth-tab { font-family: 'Outfit', sans-serif; font-weight: 500; font-size: .88rem; padding: 12px 0; border: none; background: none; cursor: pointer; transition: color .2s; flex: 1; }
-                .auth-tab.active   { color: #c9a227; border-bottom: 2px solid #c9a227; }
-                .auth-tab.inactive { color: rgba(255,255,255,.3); border-bottom: 2px solid transparent; }
-                .auth-tab.inactive:hover { color: rgba(255,255,255,.55); }
-                .auth-submit { width: 100%; padding: 12px; border-radius: 7px; border: none; background: #c9a227; color: #0d0d0d; font-family: 'Outfit', sans-serif; font-weight: 700; font-size: .9rem; cursor: pointer; transition: background .2s; }
-                .auth-submit:hover:not(:disabled) { background: #e0b830; }
-                .auth-submit:disabled { opacity: .55; cursor: not-allowed; }
+                @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+                * { box-sizing: border-box; }
+                @keyframes authFadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+                @keyframes authOrb { 0%, 100% { opacity: .4; transform: scale(1); } 50% { opacity: .7; transform: scale(1.1); } }
+                .auth-panel-left { display: none; }
+                .auth-input:focus { border-color: rgba(59,123,171,.5) !important; background: rgba(59,123,171,.05) !important; box-shadow: 0 0 0 4px rgba(59,123,171,.1); }
+                .auth-input::placeholder { color: rgba(255,255,255,.22); }
+                .auth-input-wrap { position: relative; }
+                .auth-input-wrap svg.auth-input-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,.32); pointer-events: none; transition: color .2s; }
+                .auth-input-wrap:focus-within svg.auth-input-icon { color: #3b7bab; }
+                .auth-tabs { display: flex; gap: 4px; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); border-radius: 999px; padding: 4px; }
+                .auth-tab { font-family: 'Outfit', sans-serif; font-weight: 600; font-size: .84rem; padding: 10px 0; border: none; background: none; cursor: pointer; transition: all .2s; flex: 1; border-radius: 999px; color: rgba(255,255,255,.4); }
+                .auth-tab.active   { color: #fff; background: linear-gradient(135deg, #2b5c85, #3b7bab); box-shadow: 0 6px 16px -6px rgba(59,123,171,.6); }
+                .auth-tab.inactive:hover { color: rgba(255,255,255,.7); }
+                .auth-submit { width: 100%; padding: 13px; border-radius: 10px; border: none; background: linear-gradient(135deg, #2b5c85, #3b7bab); color: #fff; font-family: 'Outfit', sans-serif; font-weight: 700; font-size: .9rem; cursor: pointer; transition: all .2s; box-shadow: 0 8px 22px -8px rgba(59,123,171,.55); }
+                .auth-submit:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 12px 28px -8px rgba(59,123,171,.7); }
+                .auth-submit:disabled { opacity: .55; cursor: not-allowed; transform: none; }
                 .pass-toggle { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: rgba(255,255,255,.28); cursor: pointer; display: flex; padding: 0; line-height: 0; transition: color .18s; }
                 .pass-toggle:hover { color: rgba(255,255,255,.55); }
-                .text-link { background: none; border: none; color: #c9a227; cursor: pointer; font-family: 'Outfit', sans-serif; font-size: .82rem; font-weight: 500; padding: 0; }
+                .text-link { background: none; border: none; color: #3b7bab; cursor: pointer; font-family: 'Outfit', sans-serif; font-size: .82rem; font-weight: 600; padding: 0; }
+                .text-link:hover { color: #7fabce; }
+                @media (min-width: 980px) {
+                    .auth-panel-left { display: flex; }
+                    .auth-mobile-logo { display: none; }
+                }
             `}</style>
+
+            {/* Panel izquierdo — branding (desktop) */}
+            <div className="auth-panel-left" style={{ flex: 1, position: 'relative', overflow: 'hidden', flexDirection: 'column', justifyContent: 'space-between', padding: '48px 56px', background: 'radial-gradient(ellipse at top left, #12283b 0%, #0a0a0a 55%, #050505 100%)' }}>
+                <div style={{ position: 'absolute', top: '15%', right: '-5%', width: 340, height: 340, borderRadius: '50%', background: 'radial-gradient(closest-side, rgba(59,123,171,.3), transparent)', animation: 'authOrb 8s ease-in-out infinite' }} />
+                <div style={{ position: 'absolute', bottom: '5%', left: '-8%', width: 280, height: 280, borderRadius: '50%', background: 'radial-gradient(closest-side, rgba(74,131,179,.16), transparent)', animation: 'authOrb 9s ease-in-out infinite 1.5s' }} />
+
+                <Link to="/" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 11, position: 'relative', zIndex: 1 }}>
+                    <div style={{ width: 40, height: 40, background: 'linear-gradient(135deg, #1b3a57, #2b5c85 55%, #3b7bab)', borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 18px -6px rgba(43,92,133,.7)' }}>
+                        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                    </div>
+                    <div>
+                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.3rem', letterSpacing: '.08em', color: '#fff', lineHeight: 1 }}>SSWAP</p>
+                        <p style={{ fontSize: '.65rem', fontWeight: 300, color: 'rgba(255,255,255,.4)' }}>Mecanica Automotriz · Quito</p>
+                    </div>
+                </Link>
+
+                <div style={{ position: 'relative', zIndex: 1 }}>
+                    <p className="mono" style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '.7rem', letterSpacing: '.3em', color: '#7fabce', marginBottom: 18, fontWeight: 500 }}>{staffOnly ? '// ACCESO PERSONAL' : '// PANEL DE CLIENTE'}</p>
+                    <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2.2rem, 3.4vw, 3rem)', letterSpacing: '.02em', lineHeight: 1.05, color: '#fff', marginBottom: 40, maxWidth: 380 }}>
+                        {staffOnly ? 'Gestiona el taller desde un solo panel.' : 'Todo tu vehiculo, en un solo panel.'}
+                    </h1>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+                        {BENEFICIOS.map((b, i) => (
+                            <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+                                <div style={{ width: 40, height: 40, minWidth: 40, borderRadius: 11, background: 'rgba(59,123,171,.12)', border: '1px solid rgba(59,123,171,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#7fabce' }}>
+                                    {b.icon}
+                                </div>
+                                <div>
+                                    <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.9rem', color: '#fff', marginBottom: 3 }}>{b.t}</p>
+                                    <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.8rem', color: 'rgba(255,255,255,.45)', lineHeight: 1.5 }}>{b.d}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <p style={{ fontSize: '.75rem', fontWeight: 300, color: 'rgba(255,255,255,.25)', position: 'relative', zIndex: 1 }}>
+                    Mecanica SSWAP · Ponciano Alto, Quito · 2026
+                </p>
+            </div>
+
+            {/* Panel derecho — formulario */}
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, position: 'relative' }}>
 
             {/* Volver */}
             <Link to="/" style={{ position: 'absolute', top: 24, left: 24, display: 'flex', alignItems: 'center', gap: 7, color: 'rgba(255,255,255,.35)', textDecoration: 'none', fontSize: '.82rem', transition: 'color .2s' }}
-                onMouseEnter={e => e.currentTarget.style.color = '#c9a227'}
+                onMouseEnter={e => e.currentTarget.style.color = '#3b7bab'}
                 onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,.35)'}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
                 Volver al inicio
@@ -105,13 +183,13 @@ export default function AuthPage() {
                 Acceso personal del taller
             </Link>
 
-            <div style={{ width: '100%', maxWidth: 440 }}>
+            <div style={{ width: '100%', maxWidth: 440, position: 'relative', zIndex: 1, animation: 'authFadeUp .6s cubic-bezier(.4,0,.2,1)' }}>
 
-                {/* Logo */}
-                <div style={{ textAlign: 'center', marginBottom: 32 }}>
+                {/* Logo — solo visible en mobile (el panel izquierdo lo cubre en desktop) */}
+                <div className="auth-mobile-logo" style={{ textAlign: 'center', marginBottom: 28 }}>
                     <Link to="/" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                        <div style={{ width: 38, height: 38, background: '#c9a227', borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#0d0d0d" strokeWidth="2.5" strokeLinecap="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                        <div style={{ width: 38, height: 38, background: 'linear-gradient(135deg, #1b3a57, #2b5c85 55%, #3b7bab)', borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
                         </div>
                         <div style={{ textAlign: 'left' }}>
                             <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.2rem', letterSpacing: '.1em', color: '#fff', lineHeight: 1 }}>SSWAP</p>
@@ -119,18 +197,22 @@ export default function AuthPage() {
                         </div>
                     </Link>
                     <p style={{ fontSize: '.85rem', fontWeight: 300, color: 'rgba(255,255,255,.38)' }}>
-                        {modo === 'login' ? 'Accede a tu cuenta de cliente' : 'Crea tu cuenta para hacer seguimiento de tu vehiculo'}
+                        {staffOnly ? 'Acceso exclusivo para personal autorizado' : (modo === 'login' ? 'Accede a tu cuenta de cliente' : 'Crea tu cuenta para hacer seguimiento de tu vehiculo')}
                     </p>
                 </div>
 
                 {/* Card */}
-                <div style={{ background: '#141414', border: '1px solid rgba(255,255,255,.07)', borderRadius: 12, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,.4)' }}>
+                <div style={{ position: 'relative', background: 'linear-gradient(180deg, #141414 0%, #0e0e0e 100%)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 20, overflow: 'hidden', boxShadow: '0 24px 70px -20px rgba(0,0,0,.6)' }}>
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, transparent, #3b7bab, transparent)' }} />
 
-                    {/* Tabs */}
-                    <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,.07)' }}>
-                        <button className={`auth-tab ${modo === 'login'    ? 'active' : 'inactive'}`} onClick={() => { setModo('login');    setRegError(''); }}>Iniciar Sesion</button>
-                        <button className={`auth-tab ${modo === 'registro' ? 'active' : 'inactive'}`} onClick={() => { setModo('registro'); setRegError(''); }}>Registrarse</button>
+                    <div style={{ padding: '26px 26px 0' }}>
+                        {/* Tabs */}
+                        {!staffOnly && <div className="auth-tabs">
+                            <button className={`auth-tab ${modo === 'login'    ? 'active' : 'inactive'}`} onClick={() => { setModo('login');    setRegError(''); }}>Iniciar Sesion</button>
+                            <button className={`auth-tab ${modo === 'registro' ? 'active' : 'inactive'}`} onClick={() => { setModo('registro'); setRegError(''); }}>Registrarse</button>
+                        </div>}
                     </div>
+
 
                     <div style={{ padding: '28px 28px 32px' }}>
 
@@ -139,15 +221,19 @@ export default function AuthPage() {
                             <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
                                 <div>
                                     <label style={labelBase}>Correo electronico</label>
-                                    <input className="auth-input" style={inputBase} type="email" required
-                                        placeholder="tucorreo@email.com"
-                                        value={loginForm.email}
-                                        onChange={e => setLoginForm({ ...loginForm, email: e.target.value })} />
+                                    <div className="auth-input-wrap">
+                                        <IconMailAuth className="auth-input-icon" />
+                                        <input className="auth-input" style={inputBase} type="email" required
+                                            placeholder="tucorreo@email.com"
+                                            value={loginForm.email}
+                                            onChange={e => setLoginForm({ ...loginForm, email: e.target.value })} />
+                                    </div>
                                 </div>
 
                                 <div>
                                     <label style={labelBase}>Contrasena</label>
-                                    <div style={{ position: 'relative' }}>
+                                    <div className="auth-input-wrap" style={{ position: 'relative' }}>
+                                        <IconLockAuth className="auth-input-icon" />
                                         <input className="auth-input" style={inputBase} type={showPass ? 'text' : 'password'} required
                                             placeholder="Tu contrasena"
                                             value={loginForm.password}
@@ -165,17 +251,17 @@ export default function AuthPage() {
                                     {loading ? 'Verificando...' : 'Iniciar Sesion'}
                                 </button>
 
-                                <p style={{ textAlign: 'center', fontSize: '.82rem', fontWeight: 300, color: 'rgba(255,255,255,.3)' }}>
+                                {!staffOnly && <p style={{ textAlign: 'center', fontSize: '.82rem', fontWeight: 300, color: 'rgba(255,255,255,.3)' }}>
                                     No tienes cuenta?{' '}
                                     <button type="button" className="text-link" onClick={() => setModo('registro')}>
                                         Registrate gratis
                                     </button>
-                                </p>
+                                </p>}
                             </form>
                         )}
 
                         {/* ── FORMULARIO REGISTRO ── */}
-                        {modo === 'registro' && (
+                        {!staffOnly && modo === 'registro' && (
                             <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
                                 <div>
                                     <label style={labelBase}>Nombre completo *</label>
@@ -262,6 +348,7 @@ export default function AuthPage() {
                 <p style={{ textAlign: 'center', marginTop: 18, fontSize: '.75rem', fontWeight: 300, color: 'rgba(255,255,255,.18)' }}>
                     Mecanica SSWAP · Ponciano Alto, Quito · 2026
                 </p>
+            </div>
             </div>
         </div>
     );

@@ -1,4 +1,7 @@
 const bcrypt = require('bcryptjs');
+const jwt    = require('jsonwebtoken');
+const fs     = require('fs');
+const path   = require('path');
 const pool   = require('../config/db');
 
 const ROLES_VALIDOS   = ['administrador','tecnico','recepcionista','cliente'];
@@ -234,4 +237,147 @@ const crearUsuario = async (req, res) => {
     }
 };
 
-module.exports = { listarUsuarios, cambiarRol, cambiarEstado, eliminarUsuario, crearUsuario, actualizarUsuario, cambiarPassword };
+// ─────────────────────────────────────────────────────────────
+// PERFIL PROPIO (cualquier usuario autenticado: cliente o staff)
+// ─────────────────────────────────────────────────────────────
+
+function reemitirToken(usuarioRow) {
+    const payload = { id: usuarioRow.id, nombre: usuarioRow.nombre, email: usuarioRow.email, rol: usuarioRow.rol };
+    const token   = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '8h' });
+    return { token, usuario: payload };
+}
+
+const PERFIL_CAMPOS = 'id, nombre, email, rol, telefono, cedula, foto_url, estado, created_at';
+
+// GET /api/users/me
+const obtenerMiPerfil = async (req, res) => {
+    try {
+        const { rows } = await pool.query(
+            `SELECT ${PERFIL_CAMPOS} FROM usuarios WHERE id = $1`,
+            [req.usuario.id]
+        );
+        if (!rows[0]) return res.status(404).json({ error: 'Usuario no encontrado.' });
+        return res.json({ usuario: rows[0] });
+    } catch (err) {
+        console.error('Error obtenerMiPerfil:', err);
+        return res.status(500).json({ error: 'Error al obtener tu perfil.' });
+    }
+};
+
+// PUT /api/users/me   body: { nombre, email, telefono?, cedula? }
+const actualizarMiPerfil = async (req, res) => {
+    const { nombre, email, telefono, cedula } = req.body;
+    if (!nombre?.trim()) return res.status(400).json({ error: 'El nombre es obligatorio.' });
+    if (!email?.trim())  return res.status(400).json({ error: 'El correo es obligatorio.' });
+
+    const emailNuevo  = email.toLowerCase().trim();
+    const emailActual = (req.usuario.email || '').toLowerCase().trim();
+    const cedulaLimpia = cedula?.trim() || null;
+
+    try {
+        const { rows: existeEmail } = await pool.query(
+            'SELECT id FROM usuarios WHERE email = $1 AND id != $2', [emailNuevo, req.usuario.id]
+        );
+        if (existeEmail.length > 0) return res.status(409).json({ error: 'Ya existe otro usuario con ese correo.' });
+
+        // clientes.cedula tiene restriccion UNIQUE: se valida antes de escribir para
+        // no dejar "usuarios" actualizado mientras la sincronizacion con "clientes" falla.
+        if (cedulaLimpia) {
+            const { rows: existeCedula } = await pool.query(
+                'SELECT id FROM clientes WHERE cedula = $1 AND LOWER(email) != $2', [cedulaLimpia, emailActual]
+            );
+            if (existeCedula.length > 0) return res.status(409).json({ error: 'Ya existe otro cliente registrado con esa cedula.' });
+        }
+
+        const client = await pool.connect();
+        let usuarioActualizado;
+        try {
+            await client.query('BEGIN');
+            const { rows } = await client.query(
+                `UPDATE usuarios SET nombre = $1, email = $2, telefono = $3, cedula = $4
+                 WHERE id = $5 RETURNING ${PERFIL_CAMPOS}`,
+                [nombre.trim(), emailNuevo, telefono || null, cedulaLimpia, req.usuario.id]
+            );
+            if (!rows[0]) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Usuario no encontrado.' }); }
+            usuarioActualizado = rows[0];
+
+            // Mantiene sincronizado el registro en "clientes" (vinculo usado por ordenes, citas y tienda)
+            await client.query(
+                `UPDATE clientes SET nombre = $1, telefono = $2, cedula = $3, email = $4 WHERE LOWER(email) = $5`,
+                [nombre.trim(), telefono || null, cedulaLimpia, emailNuevo, emailActual]
+            );
+            await client.query('COMMIT');
+        } catch (err) {
+            await client.query('ROLLBACK');
+            throw err;
+        } finally {
+            client.release();
+        }
+
+        const { token, usuario } = reemitirToken(usuarioActualizado);
+        return res.json({ usuario: usuarioActualizado, token, sesion: usuario });
+    } catch (err) {
+        if (err.code === '23505') return res.status(409).json({ error: 'Ese correo o cedula ya esta en uso por otro registro.' });
+        console.error('Error actualizarMiPerfil:', err);
+        return res.status(500).json({ error: 'Error al actualizar tu perfil.' });
+    }
+};
+
+// PUT /api/users/me/password   body: { password_actual, password_nueva }
+// Nota: los errores de validacion usan 400, nunca 401 — un 401 en una peticion
+// autenticada dispara el flujo de "sesion expirada" en el frontend, y equivocar
+// la contrasena actual no es lo mismo que perder la sesion.
+const cambiarMiPassword = async (req, res) => {
+    const { password_actual, password_nueva } = req.body;
+    if (!password_actual || !password_nueva)
+        return res.status(400).json({ error: 'Ingresa tu contrasena actual y la nueva.' });
+    if (password_nueva.length < 6)
+        return res.status(400).json({ error: 'La nueva contrasena debe tener al menos 6 caracteres.' });
+
+    try {
+        const { rows } = await pool.query('SELECT password FROM usuarios WHERE id = $1', [req.usuario.id]);
+        if (!rows[0]) return res.status(404).json({ error: 'Usuario no encontrado.' });
+
+        const ok = await bcrypt.compare(password_actual, rows[0].password);
+        if (!ok) return res.status(400).json({ error: 'Tu contrasena actual no es correcta.' });
+
+        const hash = await bcrypt.hash(password_nueva, 10);
+        await pool.query('UPDATE usuarios SET password = $1 WHERE id = $2', [hash, req.usuario.id]);
+        return res.json({ ok: true, mensaje: 'Contrasena actualizada correctamente.' });
+    } catch (err) {
+        console.error('Error cambiarMiPassword:', err);
+        return res.status(500).json({ error: 'Error al cambiar tu contrasena.' });
+    }
+};
+
+// POST /api/users/me/foto   (multipart, campo "foto" — requiere middleware subirFotoPerfil)
+const subirMiFoto = async (req, res) => {
+    try {
+        const fotoUrl = `/uploads/perfiles/${req.file.filename}`;
+        const { rows: anteriorRows } = await pool.query('SELECT foto_url FROM usuarios WHERE id = $1', [req.usuario.id]);
+
+        const { rows } = await pool.query(
+            `UPDATE usuarios SET foto_url = $1 WHERE id = $2 RETURNING ${PERFIL_CAMPOS}`,
+            [fotoUrl, req.usuario.id]
+        );
+        if (!rows[0]) return res.status(404).json({ error: 'Usuario no encontrado.' });
+
+        // Best-effort: elimina la foto anterior del disco si era una foto local previa
+        const anteriorUrl = anteriorRows[0]?.foto_url;
+        if (anteriorUrl && anteriorUrl.startsWith('/uploads/perfiles/')) {
+            const rutaAnterior = path.join(__dirname, '..', '..', 'uploads', 'perfiles', path.basename(anteriorUrl));
+            fs.unlink(rutaAnterior, () => {});
+        }
+
+        const { token, usuario } = reemitirToken(rows[0]);
+        return res.json({ usuario: rows[0], token, sesion: usuario });
+    } catch (err) {
+        console.error('Error subirMiFoto:', err);
+        return res.status(500).json({ error: 'Error al guardar la foto de perfil.' });
+    }
+};
+
+module.exports = {
+    listarUsuarios, cambiarRol, cambiarEstado, eliminarUsuario, crearUsuario, actualizarUsuario, cambiarPassword,
+    obtenerMiPerfil, actualizarMiPerfil, cambiarMiPassword, subirMiFoto,
+};

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import { useConfirm } from '../components/common/ConfirmDialog';
 
 function IconPlus()  { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>; }
 function IconEdit()  { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>; }
@@ -15,6 +16,7 @@ function IconStar()  { return <svg width="12" height="12" viewBox="0 0 24 24" fi
 const EMPTY = { nombre: '', direccion: '', ciudad: '', telefono: '', email: '', horario: '', descripcion: '', es_principal: false, activa: true };
 
 export default function Sucursales() {
+    const confirm = useConfirm();
     const { isDark } = useTheme();
     const [sucursales, setSucursales] = useState([]);
     const [loading, setLoading]       = useState(true);
@@ -59,7 +61,7 @@ export default function Sucursales() {
     };
 
     const eliminar = async (s) => {
-        if (!window.confirm(`Eliminar la sucursal "${s.nombre}"?`)) return;
+        if (!(await confirm({ message: `Eliminar la sucursal "${s.nombre}"?` }))) return;
         try {
             await api.delete(`/sucursales/${s.id}`);
             toast.success('Sucursal eliminada.');

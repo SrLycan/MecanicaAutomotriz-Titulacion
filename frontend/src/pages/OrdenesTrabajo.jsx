@@ -7,6 +7,7 @@ import {
     ESTADOS_ORDEN, ESTADOS_PROGRESO,
     ESTADO_ORDEN_MAP, ESTADO_PROGRESO_MAP, FILTROS_ORDEN,
 } from '../constants/ordenes';
+import { useConfirm } from '../components/common/ConfirmDialog';
 
 // ── Iconos ────────────────────────────────────────────────────
 function IconPlus()  { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>; }
@@ -16,8 +17,12 @@ function IconEdit()  { return <svg width="13" height="13" viewBox="0 0 24 24" fi
 function IconTrash() { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>; }
 function IconCar()   { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M5 17h14M5 17a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.5l2-3h7l2 3H19a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2"/><circle cx="8" cy="15" r="2"/><circle cx="16" cy="15" r="2"/></svg>; }
 function IconUser()  { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>; }
+function IconChevron({ open }) { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" style={{ transform: open ? 'rotate(90deg)' : 'none', transition: 'transform .18s' }}><polyline points="9 18 15 12 9 6"/></svg>; }
+function IconArrowRight() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>; }
+function IconClock() { return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>; }
 
 export default function OrdenesTrabajo() {
+    const confirm = useConfirm();
     const { tieneRol, usuario } = useAuth();
     const { isDark }  = useTheme();
     const esAdmin        = tieneRol('administrador');
@@ -33,6 +38,9 @@ export default function OrdenesTrabajo() {
     const [modal, setModal] = useState({ open: false, data: null });
     const [modalCliente, setModalCliente] = useState(false);
     const [expandedId, setExpandedId] = useState(null);
+    const [historialAbierto, setHistorialAbierto] = useState({});
+    const [historialData, setHistorialData] = useState({});
+    const [historialCargando, setHistorialCargando] = useState({});
 
     const SKY = '#0ea5e9'; const SKY_DEEP = '#0284c7';
     const SKY_PALE = isDark ? 'rgba(14,165,233,0.10)' : 'rgba(14,165,233,0.05)';
@@ -91,8 +99,24 @@ export default function OrdenesTrabajo() {
         } catch (err) { toast.error(err.response?.data?.error || 'Error.'); }
     };
 
+    const toggleHistorial = async (id) => {
+        const abrir = !historialAbierto[id];
+        setHistorialAbierto(prev => ({ ...prev, [id]: abrir }));
+        if (abrir && !historialData[id]) {
+            setHistorialCargando(prev => ({ ...prev, [id]: true }));
+            try {
+                const { data } = await api.get(`/ordenes/ordenes/${id}/historial`);
+                setHistorialData(prev => ({ ...prev, [id]: data.historial || [] }));
+            } catch {
+                toast.error('No se pudo cargar el historial de la orden.');
+            } finally {
+                setHistorialCargando(prev => ({ ...prev, [id]: false }));
+            }
+        }
+    };
+
     const eliminarOrden = async (o) => {
-        if (!window.confirm(`Eliminar orden #${o.id}?`)) return;
+        if (!(await confirm({ message: `Eliminar orden #${o.id}?` }))) return;
         try {
             await api.delete(`/ordenes/ordenes/${o.id}`);
             toast.success('Orden eliminada.');
@@ -291,6 +315,27 @@ export default function OrdenesTrabajo() {
                                             />
                                         )}
 
+                                        {/* Historial de cambios: sub-seccion expandible con flecha */}
+                                        <div style={{ borderTop: `1px solid ${bdr}`, paddingTop: 12, marginBottom: 12 }}>
+                                            <button onClick={() => toggleHistorial(o.id)}
+                                                style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: SKY_DEEP, fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.18em' }}>
+                                                <IconChevron open={!!historialAbierto[o.id]} />
+                                                HISTORIAL DE CAMBIOS
+                                            </button>
+                                            {historialAbierto[o.id] && (
+                                                <div style={{ marginTop: 12 }}>
+                                                    {historialCargando[o.id] ? (
+                                                        <p style={{ fontFamily: "'Outfit'", fontSize: '.78rem', color: mut }}>Cargando historial…</p>
+                                                    ) : (
+                                                        <HistorialTimeline
+                                                            historial={historialData[o.id] || []}
+                                                            isDark={isDark} txt={txt} mut={mut} bdr={bdr}
+                                                        />
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+
                                         <div className="ot-card-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', borderTop: `1px solid ${bdr}`, paddingTop: 12 }}>
                                             {/* Iniciar: admin siempre, tecnico solo si está asignado */}
                                             {puedeEste && o.estado === 'pendiente' && (
@@ -396,6 +441,66 @@ function EstBtn({ color, label, onClick }) {
 // ═══════════════════════════════════════════════════════════════
 // MODAL: Cliente (crear/editar)
 // ═══════════════════════════════════════════════════════════════
+function HistorialTimeline({ historial, isDark, txt, mut, bdr }) {
+    const [abierto, setAbierto] = useState(null);
+    const SKY_DEEP = '#0284c7';
+
+    if (!historial.length) {
+        return <p style={{ fontFamily: "'Outfit'", fontSize: '.78rem', color: mut }}>Aun no hay cambios registrados para esta orden.</p>;
+    }
+
+    const etiqueta = (map, val, fallback) => (val ? (map[val]?.label || val) : fallback);
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {historial.map((h, i) => {
+                const expandido = abierto === h.id;
+                const pasoAnterior = h.progreso_anterior
+                    ? etiqueta(ESTADO_PROGRESO_MAP, h.progreso_anterior)
+                    : etiqueta(ESTADO_ORDEN_MAP, h.estado_anterior, 'Inicio');
+                const pasoNuevo = h.progreso_nuevo
+                    ? etiqueta(ESTADO_PROGRESO_MAP, h.progreso_nuevo)
+                    : etiqueta(ESTADO_ORDEN_MAP, h.estado_nuevo, '—');
+                const colorNuevo = ESTADO_PROGRESO_MAP[h.progreso_nuevo]?.color || ESTADO_ORDEN_MAP[h.estado_nuevo]?.color || SKY_DEEP;
+                const fecha = h.created_at ? new Date(h.created_at) : null;
+
+                return (
+                    <div key={h.id} style={{ background: isDark ? 'rgba(255,255,255,.02)' : 'rgba(14,165,233,.02)', border: `1px solid ${bdr}`, borderRadius: 10, overflow: 'hidden' }}>
+                        <button onClick={() => setAbierto(expandido ? null : h.id)}
+                            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, background: 'none', border: 'none', cursor: 'pointer', padding: '9px 12px', textAlign: 'left' }}>
+                            <IconChevron open={expandido} />
+                            <span style={{ fontFamily: "'Outfit'", fontSize: '.78rem', color: mut, whiteSpace: 'nowrap' }}>{pasoAnterior}</span>
+                            <span style={{ color: colorNuevo, flexShrink: 0 }}><IconArrowRight /></span>
+                            <span style={{ fontFamily: "'Outfit'", fontWeight: 700, fontSize: '.8rem', color: colorNuevo, whiteSpace: 'nowrap' }}>{pasoNuevo}</span>
+                            <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4, fontFamily: "'Outfit'", fontSize: '.7rem', color: mut, flexShrink: 0 }}>
+                                <IconClock />
+                                {fecha ? fecha.toLocaleString('es-EC', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}
+                            </span>
+                        </button>
+                        {expandido && (
+                            <div style={{ padding: '0 12px 12px 32px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                <p style={{ fontFamily: "'Outfit'", fontSize: '.75rem', color: txt }}>
+                                    Realizado por <strong>{h.usuario_nombre || 'Sistema'}</strong>
+                                </p>
+                                {h.estado_anterior !== h.estado_nuevo && (
+                                    <p style={{ fontFamily: "'Outfit'", fontSize: '.72rem', color: mut }}>
+                                        Estado de orden: {etiqueta(ESTADO_ORDEN_MAP, h.estado_anterior, 'Nueva')} → {etiqueta(ESTADO_ORDEN_MAP, h.estado_nuevo, '—')}
+                                    </p>
+                                )}
+                                {h.notas && (
+                                    <p style={{ fontFamily: "'Outfit'", fontSize: '.75rem', color: txt, background: isDark ? 'rgba(99,102,241,.08)' : 'rgba(99,102,241,.05)', border: '1px solid rgba(99,102,241,.2)', borderRadius: 8, padding: '8px 10px', marginTop: 2 }}>
+                                        {h.notas}
+                                    </p>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
+
 function ModalCliente({ onClose, onCreado, isDark }) {
     const [form, setForm] = useState({ nombre: '', email: '', telefono: '', cedula: '', direccion: '' });
     const [saving, setSaving] = useState(false);

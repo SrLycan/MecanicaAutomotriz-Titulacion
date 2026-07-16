@@ -1,5 +1,14 @@
-const { Pool } = require('pg');
+const { Pool, types } = require('pg');
 require('dotenv').config();
+
+// El driver `pg` por defecto convierte las columnas DATE (oid 1082) en objetos
+// Date de JS a medianoche en la zona horaria del servidor. Al serializarlas a
+// JSON (toISOString) se desplazan a UTC y pueden "saltar" al dia anterior,
+// ademas de venir como datetime completo. El frontend hace `fecha + 'T00:00:00'`
+// esperando un string plano 'YYYY-MM-DD', lo que con ese datetime completo
+// genera "Invalid Date". Forzamos a pg a devolver el valor crudo (string)
+// para las columnas DATE, evitando el problema de raiz en toda la app.
+types.setTypeParser(1082, (val) => val);
 
 const pool = new Pool({
     host:     process.env.DB_HOST     || 'localhost',

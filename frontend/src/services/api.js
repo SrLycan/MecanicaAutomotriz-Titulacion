@@ -1,7 +1,11 @@
 import axios from 'axios';
 
+const API_BASE = process.env.REACT_APP_API_URL || '/api';
+// Origen (sin el sufijo /api) para construir URLs de archivos servidos por el backend (ej. fotos de perfil)
+export const API_ORIGIN = API_BASE.replace(/\/api\/?$/, '');
+
 const api = axios.create({
-    baseURL: process.env.REACT_APP_API_URL || '/api',
+    baseURL: API_BASE,
     headers: { 'Content-Type': 'application/json' },
 });
 
@@ -12,14 +16,23 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
-// Interceptor: redirige al login si el token expira
+// Interceptor: redirige al login SOLO si una peticion autenticada pierde su sesion.
+// Importante: /auth/login y /auth/register tambien responden 401/409 cuando las
+// credenciales son invalidas o el registro falla; eso NO es una sesion expirada,
+// es un simple error de formulario y debe mostrarse en la propia pagina sin recargar.
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401) {
+        const url          = error.config?.url || '';
+        const esAuthPublico = url.includes('/auth/login') || url.includes('/auth/register');
+        const teniaToken    = Boolean(error.config?.headers?.Authorization);
+
+        if (error.response?.status === 401 && teniaToken && !esAuthPublico) {
             localStorage.removeItem('sswap_token');
             localStorage.removeItem('sswap_usuario');
-            window.location.href = '/login';
+            if (!window.location.pathname.startsWith('/auth')) {
+                window.location.href = '/auth?sesion=expirada';
+            }
         }
         return Promise.reject(error);
     }

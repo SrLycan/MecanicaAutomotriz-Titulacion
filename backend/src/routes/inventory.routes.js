@@ -3,10 +3,13 @@ const router  = express.Router();
 const { verificarToken, verificarRol, soloStaff } = require('../middleware/auth.middleware');
 const {
     listarRepuestos, obtenerRepuesto, crearRepuesto, actualizarRepuesto, eliminarRepuesto,
-    registrarMovimiento, listarMovimientos, listarCategorias, toggleEnVenta
+    registrarMovimiento, listarMovimientos, listarCategorias, toggleEnVenta, listarPublico
 } = require('../controllers/inventory.controller');
 
-// Todas las rutas requieren autenticacion
+// Catalogo publico — sin autenticacion (usado por la pagina publica de Productos)
+router.get('/publico', listarPublico);
+
+// El resto de rutas requieren autenticacion
 router.use(verificarToken);
 
 // Categorias — cualquier usuario autenticado (incluyendo clientes para el portal)

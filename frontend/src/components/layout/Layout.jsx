@@ -16,14 +16,15 @@ const NAV_ITEMS = [
     { to: '/dashboard/clientes',    label: 'Clientes',    icon: IconClient, roles: ['administrador','recepcionista'] },
     { to: '/dashboard/vehiculos',   label: 'Vehiculos',   icon: IconCar,    roles: ['administrador','tecnico','recepcionista'] },
     { to: '/dashboard/ordenes',     label: 'Ordenes',     icon: IconOrden,  roles: ['administrador','tecnico','recepcionista'] },
+    { to: '/dashboard/citas',       label: 'Citas',       icon: IconCalendar, roles: ['administrador','tecnico','recepcionista'] },
     { to: '/dashboard/sucursales',  label: 'Sucursales',  icon: IconBranch, roles: ['administrador'] },
     { to: '/dashboard/servicios',   label: 'Servicios',   icon: IconSvc,    roles: ['administrador'] },
 ];
 
-const ROL_COLOR = { administrador: '#c9a227', tecnico: '#10b981', recepcionista: '#f59e0b' };
-const GOLD = '#c9a227';
-const GOLD_LIGHT = '#f4c93a';
-const GOLD_DEEP = '#a87a14';
+const ROL_COLOR = { administrador: '#7fabce', tecnico: '#1a8f5c', recepcionista: '#c9821a' };
+const GOLD = '#3b7bab';
+const GOLD_LIGHT = '#7fabce';
+const GOLD_DEEP = '#1b3a57';
 const ROL_LABEL = { administrador: 'ADMIN', tecnico: 'TECNICO', recepcionista: 'RECEPCION' };
 
 function IconDash() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>; }
@@ -34,6 +35,7 @@ function IconClient(){ return <svg width="16" height="16" viewBox="0 0 24 24" fi
 function IconBranch(){return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>; }
 function IconCar()   { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M5 17h14M5 17a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.5l2-3h7l2 3H19a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2"/><circle cx="8" cy="15" r="2"/><circle cx="16" cy="15" r="2"/></svg>; }
 function IconOrden(){ return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>; }
+function IconCalendar(){ return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>; }
 function IconSvc()  { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>; }
 
 export default function Layout() {
@@ -73,12 +75,12 @@ export default function Layout() {
     const SKY_SOFT = GOLD_LIGHT;
 
     const sbBg    = isDark ? '#050a14' : '#0a0f1c';
-    const sbBdr   = 'rgba(201,162,39,0.20)';
+    const sbBdr   = 'rgba(127,171,206,0.20)';
     const mainBg  = isDark ? '#050a14' : '#ffffff';
     const hdrBg   = isDark ? 'rgba(10,15,28,0.78)' : 'rgba(255,255,255,0.92)';
-    const hdrBdr  = isDark ? 'rgba(201,162,39,0.16)' : 'rgba(15,23,42,0.06)';
+    const hdrBdr  = isDark ? 'rgba(127,171,206,0.16)' : 'rgba(15,23,42,0.06)';
     const txt     = isDark ? '#f1f5f9' : '#020617';
-    const mut     = isDark ? 'rgba(241,245,249,0.55)' : '#475569';
+    const mut     = isDark ? 'rgba(241,245,249,0.55)' : '#111827';
     const navMut  = 'rgba(203,213,225,0.55)';
 
     const handleLogout = () => { logout(); toast.success('Sesion cerrada'); navigate('/login'); };
@@ -91,6 +93,7 @@ export default function Layout() {
         if (location.pathname.endsWith('/usuarios'))     return 'Usuarios';
         if (location.pathname.endsWith('/clientes'))     return 'Clientes';
         if (location.pathname.endsWith('/ordenes'))      return 'Ordenes';
+        if (location.pathname.endsWith('/citas'))        return 'Citas';
         if (location.pathname.endsWith('/vehiculos'))    return 'Vehiculos';
         if (location.pathname.endsWith('/sucursales'))   return 'Sucursales';
         if (location.pathname.endsWith('/servicios'))    return 'Servicios';
@@ -114,7 +117,7 @@ export default function Layout() {
                 .sb-item:hover .sb-icon { transform: scale(1.08); color: ${GOLD_LIGHT}; }
                 .sb-icon { transition: transform .2s, color .2s; }
                 .hdr-pill { transition: border-color .2s, background .2s; }
-                .hdr-pill:hover { border-color: rgba(56,189,248,.45); }
+                .hdr-pill:hover { border-color: rgba(127,171,206,.45); }
                 @media (max-width: 768px) {
                     .main-content-pad { padding: 18px 16px !important; }
                     .hdr-username { display: none; }
@@ -142,7 +145,7 @@ export default function Layout() {
                 transform: isMobile ? (mobileOpen ? 'translateX(0)' : 'translateX(-100%)') : 'none',
             }}>
                 {/* Glow superior */}
-                <div style={{ position: 'absolute', top: -120, left: -40, right: -40, height: 240, background: `radial-gradient(closest-side, rgba(201,162,39,0.18), transparent)`, pointerEvents: 'none' }} />
+                <div style={{ position: 'absolute', top: -120, left: -40, right: -40, height: 240, background: `radial-gradient(closest-side, rgba(43,92,133,0.20), transparent)`, pointerEvents: 'none' }} />
 
                 {/* Logo */}
                 <div style={{
@@ -164,8 +167,8 @@ export default function Layout() {
                     </div>
                     {!collapsed && (
                         <div>
-                            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.2rem', letterSpacing: '.12em', color: '#fff', lineHeight: 1 }}>SSWAP</p>
-                            <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.6rem', color: GOLD_LIGHT, marginTop: 2, letterSpacing: '.18em' }}>ADMIN PANEL</p>
+                            <p style={{ fontFamily: "'Sora'", fontWeight: 700, fontSize: '1.05rem', letterSpacing: '.02em', color: '#fff', lineHeight: 1 }}>SSWAP</p>
+                            <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.7rem', color: GOLD_LIGHT, marginTop: 2, letterSpacing: '.18em' }}>ADMIN PANEL</p>
                         </div>
                     )}
                 </div>
@@ -173,7 +176,7 @@ export default function Layout() {
                 {/* Nav */}
                 <nav style={{ flex: 1, paddingTop: 14, paddingBottom: 12, position: 'relative', zIndex: 1 }}>
                     {!collapsed && (
-                        <p style={{ padding: '0 24px 8px', fontFamily: "'Bebas Neue'", fontSize: '.56rem', letterSpacing: '.26em', color: 'rgba(244,201,58,0.45)' }}>MENU</p>
+                        <p style={{ padding: '0 24px 8px', fontFamily: "'Sora'", fontWeight: 600, fontSize: '.72rem', letterSpacing: '.14em', color: 'rgba(127,171,206,0.5)' }}>MENÚ</p>
                     )}
                     {items.map((item, idx) => (
                         <NavLink key={item.to} to={item.to} end={item.to === '/dashboard'}
@@ -186,9 +189,9 @@ export default function Layout() {
                                 color: isActive ? '#fff' : navMut,
                                 textDecoration: 'none',
                                 position: 'relative',
-                                background: isActive ? 'linear-gradient(90deg, rgba(201,162,39,0.20), rgba(201,162,39,0.02))' : 'transparent',
+                                background: isActive ? 'linear-gradient(90deg, rgba(43,92,133,0.22), rgba(43,92,133,0.02))' : 'transparent',
                                 transition: 'all .2s cubic-bezier(.4,0,.2,1)',
-                                fontSize: '.85rem', fontFamily: "'Outfit'", fontWeight: 500,
+                                fontSize: '.95rem', fontFamily: "'Outfit'", fontWeight: 500,
                                 animationDelay: `${idx * 50}ms`,
                             })}>
                             <span className="sb-icon" style={{ flexShrink: 0, display: 'flex', color: 'inherit', position: 'relative' }}>
@@ -228,13 +231,13 @@ export default function Layout() {
                     style={{
                         margin: '0 14px 16px', padding: '10px',
                         borderRadius: 10, border: `1px solid ${sbBdr}`,
-                        background: 'rgba(201,162,39,0.06)', color: GOLD_LIGHT,
-                        cursor: 'pointer', fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.14em',
+                        background: 'rgba(127,171,206,0.06)', color: GOLD_LIGHT,
+                        cursor: 'pointer', fontFamily: "'Sora'", fontWeight: 600, fontSize: '.66rem', letterSpacing: '.08em',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
                         transition: 'all .2s', position: 'relative', zIndex: 1,
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(201,162,39,0.55)'; e.currentTarget.style.background = 'rgba(201,162,39,0.12)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = sbBdr; e.currentTarget.style.background = 'rgba(201,162,39,0.06)'; }}>
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(127,171,206,0.55)'; e.currentTarget.style.background = 'rgba(127,171,206,0.12)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = sbBdr; e.currentTarget.style.background = 'rgba(127,171,206,0.06)'; }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                         {collapsed ? <polyline points="9 18 15 12 9 6"/> : <polyline points="15 18 9 12 15 6"/>}
                     </svg>
@@ -258,13 +261,13 @@ export default function Layout() {
                         {/* Hamburger — mobile only */}
                         {isMobile && (
                             <button onClick={() => setMobileOpen(o => !o)}
-                                style={{ background: 'none', border: `1px solid ${isDark ? 'rgba(201,162,39,0.20)' : 'rgba(15,23,42,0.10)'}`, borderRadius: 8, padding: '6px 8px', cursor: 'pointer', color: mut, display: 'flex', marginRight: 4 }}>
+                                style={{ background: 'none', border: `1px solid ${isDark ? 'rgba(127,171,206,0.20)' : 'rgba(15,23,42,0.10)'}`, borderRadius: 8, padding: '6px 8px', cursor: 'pointer', color: mut, display: 'flex', marginRight: 4 }}>
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
                             </button>
                         )}
-                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.28em', color: SKY_DEEP }}>ADMIN</p>
+                        <p style={{ fontFamily: "'Sora'", fontWeight: 700, fontSize: '.74rem', letterSpacing: '.14em', color: SKY_DEEP }}>ADMIN</p>
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={mut} strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
-                        <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.85rem', color: txt }}>{crumb}</p>
+                        <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.95rem', color: txt }}>{crumb}</p>
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -280,9 +283,9 @@ export default function Layout() {
                         <div className="hdr-pill" style={{
                             display: 'flex', alignItems: 'center', gap: 10,
                             padding: '6px 12px 6px 6px',
-                            border: `1px solid ${isDark ? 'rgba(201,162,39,0.20)' : 'rgba(15,23,42,0.10)'}`,
+                            border: `1px solid ${isDark ? 'rgba(127,171,206,0.20)' : 'rgba(15,23,42,0.10)'}`,
                             borderRadius: 999,
-                            background: isDark ? 'rgba(201,162,39,0.06)' : '#ffffff',
+                            background: isDark ? 'rgba(127,171,206,0.06)' : '#ffffff',
                         }}>
                             <div style={{
                                 width: 30, height: 30, borderRadius: '50%',
@@ -290,11 +293,11 @@ export default function Layout() {
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 boxShadow: `0 4px 12px -4px ${GOLD}`,
                             }}>
-                                <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.78rem', color: '#fff' }}>{usuario?.nombre?.[0]?.toUpperCase()}</span>
+                                <span style={{ fontFamily: "'Sora'", fontWeight: 700, fontSize: '.78rem', color: '#fff' }}>{usuario?.nombre?.[0]?.toUpperCase()}</span>
                             </div>
                             <div className="hdr-username">
-                                <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.8rem', color: txt, lineHeight: 1 }}>{usuario?.nombre}</p>
-                                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.54rem', letterSpacing: '.16em', color: ROL_COLOR[usuario?.rol] || SKY, lineHeight: 1.5 }}>{ROL_LABEL[usuario?.rol] || usuario?.rol}</p>
+                                <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.9rem', color: txt, lineHeight: 1 }}>{usuario?.nombre}</p>
+                                <p style={{ fontFamily: "'Sora'", fontWeight: 600, fontSize: '.7rem', letterSpacing: '.08em', color: ROL_COLOR[usuario?.rol] || SKY, lineHeight: 1.5 }}>{ROL_LABEL[usuario?.rol] || usuario?.rol}</p>
                             </div>
                         </div>
 

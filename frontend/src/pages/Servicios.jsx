@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import { useConfirm } from '../components/common/ConfirmDialog';
 
 /* ── Icons ── */
 function IconPlus()    { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>; }
@@ -100,6 +101,7 @@ function Modal({ servicio, onClose, onSaved, isDark }) {
 }
 
 export default function Servicios() {
+    const confirm = useConfirm();
     const { isDark } = useTheme();
     const [servicios, setServicios]   = useState([]);
     const [loading, setLoading]       = useState(true);
@@ -125,7 +127,7 @@ export default function Servicios() {
     useEffect(() => { cargar(); }, [cargar]);
 
     const handleDelete = async (id) => {
-        if (!window.confirm('¿Desactivar este servicio?')) return;
+        if (!(await confirm({ message: '¿Desactivar este servicio?', confirmLabel: 'Desactivar' }))) return;
         setDeletingId(id);
         try {
             await api.delete(`/servicios/${id}`);

@@ -5,6 +5,7 @@ import api from '../services/api';
 import toast from 'react-hot-toast';
 import ModalRepuesto from '../components/inventory/ModalRepuesto';
 import ModalMovimiento from '../components/inventory/ModalMovimiento';
+import { useConfirm } from '../components/common/ConfirmDialog';
 
 function IconSearch() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>; }
 function IconPlus()   { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>; }
@@ -150,6 +151,7 @@ function StockAlertModal({ repuestos, onCerrar, onIrAAlertas, isDark }) {
 }
 
 export default function Inventario() {
+    const confirm = useConfirm();
     const { tieneRol }  = useAuth();
     const { isDark }    = useTheme();
 
@@ -370,7 +372,7 @@ export default function Inventario() {
 
     const handleBulkEliminar = async () => {
         if (seleccionadosData.length === 0) return;
-        if (!window.confirm(`Eliminar ${seleccionadosData.length} repuesto${seleccionadosData.length !== 1 ? 's' : ''} seleccionado${seleccionadosData.length !== 1 ? 's' : ''}?`)) return;
+        if (!(await confirm({ message: `Eliminar ${seleccionadosData.length} repuesto${seleccionadosData.length !== 1 ? 's' : ''} seleccionado${seleccionadosData.length !== 1 ? 's' : ''}?` }))) return;
         setBulkBusy(true);
         try {
             await Promise.all(seleccionadosData.map(r => api.delete(`/inventory/repuestos/${r.id}`)));
@@ -394,7 +396,7 @@ export default function Inventario() {
     };
 
     const handleEliminar = async (id, nombre) => {
-        if (!window.confirm(`Eliminar "${nombre}"?`)) return;
+        if (!(await confirm({ message: `Eliminar "${nombre}"?` }))) return;
         try { await api.delete(`/inventory/repuestos/${id}`); toast.success('Repuesto eliminado.'); cargarRepuestos(busqueda, filtroCateg, soloAlerta, page); }
         catch (err) { toast.error(err.response?.data?.error || 'Error al eliminar.'); }
     };

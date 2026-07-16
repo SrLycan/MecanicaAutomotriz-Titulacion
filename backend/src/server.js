@@ -9,7 +9,10 @@ const sucursalesRoutes = require('./routes/sucursales.routes');
 const ordenesRoutes    = require('./routes/ordenes.routes');
 const serviciosRoutes  = require('./routes/servicios.routes');
 const panelRoutes      = require('./routes/panel.routes');
+const citasRoutes      = require('./routes/citas.routes');
+const solicitudesRoutes = require('./routes/solicitudes.routes');
 const { runMigrations } = require('./config/initDb');
+const path = require('path');
 
 const app  = express();
 const PORT = process.env.PORT || 5000;
@@ -22,6 +25,9 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Archivos subidos (fotos de perfil, etc.)
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+
 // ── Rutas ────────────────────────────────────────────────────
 app.use('/api/auth',       authRoutes);
 app.use('/api/inventory',  inventoryRoutes);
@@ -30,6 +36,8 @@ app.use('/api/sucursales', sucursalesRoutes);
 app.use('/api/ordenes',    ordenesRoutes);
 app.use('/api/servicios',  serviciosRoutes);
 app.use('/api/panel',      panelRoutes);
+app.use('/api/citas',      citasRoutes);
+app.use('/api/solicitudes', solicitudesRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => res.json({

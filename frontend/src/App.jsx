@@ -3,11 +3,15 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { ConfirmProvider } from './components/common/ConfirmDialog';
 
 // Public
 import Home       from './pages/public/Home';
 import AuthPage   from './pages/public/AuthPage';
 import AdminLogin from './pages/public/AdminLogin';
+import ServiciosPublic from './pages/public/Servicios';
+import NosotrosPublic  from './pages/public/Nosotros';
+import ProductosPublic from './pages/public/Productos';
 
 // Admin panel
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -22,6 +26,7 @@ import OrdenesTrabajo from './pages/OrdenesTrabajo';
 import Vehiculos      from './pages/Vehiculos';
 import Clientes       from './pages/Clientes';
 import Servicios      from './pages/Servicios';
+import Citas          from './pages/Citas';
 
 // Public / cliente
 import PanelCliente   from './pages/PanelCliente';
@@ -34,16 +39,18 @@ export default function App() {
     return (
         <ThemeProvider>
             <AuthProvider>
+            <ConfirmProvider>
                 <BrowserRouter>
                     <Toaster
-                        position="top-right"
+                        position="top-center"
                         toastOptions={{
-                            duration: 3200,
+                            duration: 3500,
                             style: {
                                 fontFamily: "'Outfit', sans-serif",
                                 fontSize: '.85rem',
                                 borderRadius: '10px',
                             },
+                            error: { duration: 4500 },
                         }}
                     />
                     <Routes>
@@ -53,9 +60,9 @@ export default function App() {
                         <Route path="/admin/login"  element={<AdminLogin />} />
 
                         {/* Placeholders para el navbar (Sprint 2) */}
-                        <Route path="/productos"   element={<ComingSoon titulo="Productos" />} />
-                        <Route path="/servicios"   element={<ComingSoon titulo="Agendar Servicio" />} />
-                        <Route path="/nosotros"    element={<ComingSoon titulo="Nosotros" />} />
+                        <Route path="/productos"   element={<ProductosPublic />} />
+                        <Route path="/servicios"   element={<ServiciosPublic />} />
+                        <Route path="/nosotros"    element={<NosotrosPublic />} />
 
                         {/* Panel del cliente */}
                         <Route path="/mi-panel" element={
@@ -112,11 +119,13 @@ export default function App() {
                                     <Servicios />
                                 </ProtectedRoute>
                             } />
+                            <Route path="citas" element={<ProtectedRoute roles={['administrador','tecnico','recepcionista']}><Citas /></ProtectedRoute>} />
                         </Route>
 
                         <Route path="*" element={<Navigate to="/" replace />} />
                     </Routes>
                 </BrowserRouter>
+            </ConfirmProvider>
             </AuthProvider>
         </ThemeProvider>
     );
