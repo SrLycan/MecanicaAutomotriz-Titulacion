@@ -4,12 +4,12 @@ const ThemeContext = createContext(null);
 
 export const ThemeProvider = ({ children }) => {
     const [isDark, setIsDark] = useState(() => {
-        return localStorage.getItem('sswap_theme') !== 'light';
+        return localStorage.getItem('SS SWAP_theme') !== 'light';
     });
 
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
-        localStorage.setItem('sswap_theme', isDark ? 'dark' : 'light');
+        localStorage.setItem('SS SWAP_theme', isDark ? 'dark' : 'light');
     }, [isDark]);
 
     const toggle = () => setIsDark(d => !d);

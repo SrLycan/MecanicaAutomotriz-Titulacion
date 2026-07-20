@@ -159,7 +159,7 @@ export default function PanelCliente() {
                         <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(1.6rem,4vw,2.4rem)', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>
                             Hola, {usuario?.nombre?.split(' ')[0] || 'Cliente'}
                         </h1>
-                        <p style={{ fontFamily: "'Outfit'", fontSize: '.85rem', color: mut, marginTop: 4 }}>Monitorea tu actividad en SSWAP</p>
+                        <p style={{ fontFamily: "'Outfit'", fontSize: '.85rem', color: mut, marginTop: 4 }}>Monitorea tu actividad en SS SWAP</p>
                     </div>
                 </div>
 

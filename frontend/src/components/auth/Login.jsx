@@ -5,9 +5,9 @@ import { useTheme } from '../../context/ThemeContext';
 import toast from 'react-hot-toast';
 
 const DEMO_USERS = [
-    { rol: 'administrador', email: 'admin@sswap.com',     password: 'Admin@SSWAP2026', label: 'Administrador' },
-    { rol: 'tecnico',       email: 'tecnico@sswap.com',   password: 'Tecnico@2026',    label: 'Tecnico'       },
-    { rol: 'recepcionista', email: 'recepcion@sswap.com', password: 'Recepcion@2026',  label: 'Recepcionista' },
+    { rol: 'administrador', email: 'admin@SS SWAP.com',     password: 'Admin@SS SWAP2026', label: 'Administrador' },
+    { rol: 'tecnico',       email: 'tecnico@SS SWAP.com',   password: 'Tecnico@2026',    label: 'Tecnico'       },
+    { rol: 'recepcionista', email: 'recepcion@SS SWAP.com', password: 'Recepcion@2026',  label: 'Recepcionista' },
 ];
 
 export default function Login() {
@@ -48,17 +48,17 @@ export default function Login() {
                             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
                         </div>
                         <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.28em', color: isDark ? 'rgba(168,85,247,.5)' : 'rgba(124,58,237,.55)', marginBottom: 4 }}>SISTEMA DE GESTION</p>
-                        <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.6rem', letterSpacing: '.08em', color: txt, lineHeight: 1 }}>SSWAP</h1>
+                        <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.6rem', letterSpacing: '.08em', color: txt, lineHeight: 1 }}>SS SWAP</h1>
                         <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.82rem', color: mut, marginTop: 6 }}>Mecanica Automotriz · Quito</p>
                     </div>
                     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                         <div>
-                            <label className="sswap-label">CORREO ELECTRONICO</label>
-                            <input className="sswap-input" type="email" name="email" value={form.email} onChange={handleChange} placeholder="usuario@sswap.com" required style={{ background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(124,58,237,0.04)', border: `1px solid ${bdr}`, color: txt }} />
+                            <label className="SS SWAP-label">CORREO ELECTRONICO</label>
+                            <input className="SS SWAP-input" type="email" name="email" value={form.email} onChange={handleChange} placeholder="usuario@SS SWAP.com" required style={{ background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(124,58,237,0.04)', border: `1px solid ${bdr}`, color: txt }} />
                         </div>
                         <div>
-                            <label className="sswap-label">CONTRASENA</label>
-                            <input className="sswap-input" type="password" name="password" value={form.password} onChange={handleChange} placeholder="••••••••" required style={{ background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(124,58,237,0.04)', border: `1px solid ${bdr}`, color: txt }} />
+                            <label className="SS SWAP-label">CONTRASEÑA</label>
+                            <input className="SS SWAP-input" type="password" name="password" value={form.password} onChange={handleChange} placeholder="••••••••" required style={{ background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(124,58,237,0.04)', border: `1px solid ${bdr}`, color: txt }} />
                         </div>
                         <button type="submit" className="btn-primary" disabled={loading} style={{ width: '100%', justifyContent: 'center', padding: '12px', marginTop: 4, fontSize: '.82rem' }}>
                             <span>{loading ? 'Verificando...' : 'Iniciar Sesion'}</span>

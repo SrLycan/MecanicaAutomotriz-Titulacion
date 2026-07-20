@@ -8,17 +8,26 @@ const GOLD = '#3b7bab';
 
 const VALORES = [
     { titulo: 'Transparencia',   desc: 'Presupuestos claros antes de iniciar cualquier trabajo. Sin cargos ocultos.',        icon: IconEye,    color: '#3b7bab' },
-    { titulo: 'Precision',       desc: 'Diagnostico computarizado en cada revision, sin adivinar la falla.',                 icon: IconTarget, color: '#4a83b3' },
-    { titulo: 'Compromiso',      desc: 'Garantia escrita en mano de obra y repuestos en todos nuestros servicios.',          icon: IconShield, color: '#7fabce' },
-    { titulo: 'Mejora continua', desc: 'Tecnicos en capacitacion constante y equipo actualizado ano tras ano.',              icon: IconTrend,  color: '#6f8ba3' },
+    { titulo: 'Precision',       desc: 'Diagnóstico computarizado en cada revisión, sin adivinar la falla.',                 icon: IconTarget, color: '#4a83b3' },
+    { titulo: 'Compromiso',      desc: 'Garantía escrita en mano de obra y repuestos en todos nuestros servicios.',          icon: IconShield, color: '#7fabce' },
+    { titulo: 'Mejora continua', desc: 'Técnicos en capacitación constante y equipo actualizado año tras año.',              icon: IconTrend,  color: '#6f8ba3' },
+];
+
+const DIFERENCIALES = [
+    { titulo: 'Diagnóstico computarizado', desc: 'Escaneo OBD2 en cada ingreso para ubicar la falla real, no una suposición.', icon: IconScan },
+    { titulo: 'Garantía por escrito',      desc: 'Toda mano de obra y repuesto instalado queda respaldado en tu orden.',       icon: IconCertificate },
+    { titulo: 'Personal certificado',      desc: 'Técnicos con formación continua en electromecánica y sistemas modernos.',    icon: IconWrench },
+    { titulo: 'Tecnología de punta',       desc: 'Equipos de diagnóstico y elevadores actualizados, sin adivinar a martillazos.', icon: IconCpu },
+    { titulo: 'Repuestos certificados',    desc: 'Trabajamos únicamente con proveedores homologados y piezas trazables.',      icon: IconPackage },
+    { titulo: 'Seguimiento en tiempo real', desc: 'Portal digital para ver el estado de tu vehículo sin tener que llamar.',    icon: IconHeadset },
 ];
 
 const HITOS = [
-    { anio: '2015', texto: 'Apertura del primer taller en Ponciano Alto, Quito, con dos elevadores y un equipo pequeno.' },
-    { anio: '2018', texto: 'Incorporacion de diagnostico computarizado (OBD2) y ampliacion del area de electromecanica.' },
+    { anio: '2015', texto: 'Apertura del primer taller en Ponciano Alto, Quito, con dos elevadores y un equipo pequeño.' },
+    { anio: '2018', texto: 'Incorporación de diagnóstico computarizado (OBD2) y ampliación del área de electromecánica.' },
     { anio: '2021', texto: 'Se supera la barrera de los 1000 clientes registrados en el sistema del taller.' },
-    { anio: '2024', texto: 'Digitalizacion completa del historial de vehiculos y ordenes de trabajo.' },
-    { anio: '2026', texto: 'Lanzamiento de SSWAP: portal en linea para clientes con seguimiento de servicios en tiempo real.' },
+    { anio: '2024', texto: 'Digitalización completa del historial de vehículos y órdenes de trabajo.' },
+    { anio: '2026', texto: 'Lanzamiento de SS SWAP: portal en linea para clientes con seguimiento de servicios en tiempo real.' },
 ];
 
 const MECANICOS = [
@@ -45,12 +54,12 @@ const MECANICOS = [
 ];
 
 const GALERIA = [
-    { url: 'https://images.unsplash.com/photo-1632823469850-1b7b1e8b7692?q=80&w=900&auto=format&fit=crop', cap: 'Nuestro taller', tall: true },
-    { url: 'https://images.unsplash.com/photo-1487754180451-c456f719a1fc?q=80&w=700&auto=format&fit=crop', cap: 'Motor en revision' },
-    { url: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?q=80&w=700&auto=format&fit=crop', cap: 'Herramientas de precision' },
+    { url: 'https://images.unsplash.com/photo-1632823469850-1b7b1e8b7692?q=80&w=900&auto=format&fit=crop', cap: 'Nuestro taller', big: true },
+    { url: 'https://images.unsplash.com/photo-1487754180451-c456f719a1fc?q=80&w=700&auto=format&fit=crop', cap: 'Motor en revisión' },
+    { url: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?q=80&w=700&auto=format&fit=crop', cap: 'Herramientas de precisión', tall: true },
     { url: 'https://images.unsplash.com/photo-1600661653561-629509216228?q=80&w=700&auto=format&fit=crop', cap: 'Cabina de pintura' },
-    { url: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?q=80&w=700&auto=format&fit=crop', cap: 'Tecnicos en accion' },
-    { url: 'https://images.unsplash.com/photo-1502877338535-766e1452684a?q=80&w=700&auto=format&fit=crop', cap: 'Vehiculo listo para entrega' },
+    { url: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?q=80&w=700&auto=format&fit=crop', cap: 'Técnicos en acción', tall: true },
+    { url: 'https://images.unsplash.com/photo-1502877338535-766e1452684a?q=80&w=700&auto=format&fit=crop', cap: 'Vehículo listo para entrega' },
 ];
 
 const TESTIMONIOS = [
@@ -84,8 +93,10 @@ export default function Nosotros() {
                 ::-webkit-scrollbar-track { background: #050505; }
                 ::-webkit-scrollbar-thumb { background: rgba(59,123,171,.3); border-radius: 8px; }
 
-                @keyframes nsFadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
-                @keyframes nsOrb    { 0%, 100% { opacity: .4; transform: scale(1); } 50% { opacity: .7; transform: scale(1.1); } }
+                @keyframes nsFadeUp   { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+                @keyframes nsOrb      { 0%, 100% { opacity: .4; transform: scale(1); } 50% { opacity: .7; transform: scale(1.1); } }
+                @keyframes nsKenBurns { 0% { transform: scale(1.08); } 100% { transform: scale(1.18); } }
+                @keyframes nsBounce   { 0%, 100% { transform: translateY(0); opacity: .5; } 50% { transform: translateY(8px); opacity: 1; } }
                 .ns-fade { animation: nsFadeUp .6s cubic-bezier(.4,0,.2,1) both; }
                 .reveal { opacity: 0; transform: translateY(24px); transition: opacity .6s cubic-bezier(.4,0,.2,1), transform .6s cubic-bezier(.4,0,.2,1); }
                 .reveal.in-view { opacity: 1; transform: none; }
@@ -95,21 +106,17 @@ export default function Nosotros() {
                 .grad-text-gold  { background: linear-gradient(135deg, #3b7bab 0%, #7fabce 50%, #3b7bab 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
                 .grad-text-white { background: linear-gradient(180deg, #ffffff 0%, rgba(255,255,255,.65) 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 
-                .ns-card { background: linear-gradient(180deg, #141414 0%, #0e0e0e 100%); border: 1px solid rgba(255,255,255,.07); border-radius: 16px; padding: 28px 24px; transition: all .3s cubic-bezier(.4,0,.2,1); }
-                .ns-card:hover { border-color: rgba(59,123,171,.4); transform: translateY(-5px); }
+                .ns-card { background: linear-gradient(180deg, rgba(255,255,255,.045) 0%, rgba(255,255,255,.015) 100%); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,.08); border-radius: 16px; padding: 28px 24px; transition: all .3s cubic-bezier(.4,0,.2,1); }
+                .ns-card:hover { border-color: rgba(59,123,171,.4); transform: translateY(-5px); box-shadow: 0 20px 40px -18px rgba(0,0,0,.6); }
                 .ns-card:hover .ns-icon { transform: scale(1.08) rotate(-4deg); }
                 .ns-icon { transition: transform .3s; }
-
-                .ns-timeline { position: relative; padding-left: 34px; }
-                .ns-timeline::before { content: ''; position: absolute; left: 7px; top: 6px; bottom: 6px; width: 2px; background: linear-gradient(180deg, rgba(59,123,171,.7), rgba(59,123,171,.05)); }
-                .ns-dot { position: absolute; left: 0; width: 14px; height: 14px; border-radius: 50%; background: #3b7bab; box-shadow: 0 0 0 4px rgba(59,123,171,.15); }
 
                 .ns-mv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
                 .ns-pad { padding: 120px 28px; }
 
                 .ps-btn-primary { display: inline-flex; align-items: center; gap: 10px; font-family: 'Outfit', sans-serif; font-weight: 700; font-size: .92rem; color: #0a0a0a; background: #3b7bab; border: none; border-radius: 999px; padding: 15px 32px; cursor: pointer; text-decoration: none; transition: all .25s cubic-bezier(.4,0,.2,1); box-shadow: 0 8px 24px -6px rgba(59,123,171,.5); }
                 .ps-btn-primary:hover { background: #5a93c4; transform: translateY(-2px); box-shadow: 0 14px 36px -8px rgba(59,123,171,.7); }
-                .ps-btn-outline { display: inline-flex; align-items: center; gap: 10px; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: .92rem; color: #fff; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.18); border-radius: 999px; padding: 14px 32px; cursor: pointer; text-decoration: none; transition: all .25s; }
+                .ps-btn-outline { display: inline-flex; align-items: center; gap: 10px; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: .92rem; color: #fff; background: rgba(255,255,255,.05); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,.2); border-radius: 999px; padding: 14px 32px; cursor: pointer; text-decoration: none; transition: all .25s; }
                 .ps-btn-outline:hover { border-color: #3b7bab; color: #3b7bab; background: rgba(59,123,171,.08); transform: translateY(-2px); }
 
                 @media (max-width: 900px) {
@@ -120,8 +127,15 @@ export default function Nosotros() {
                     .ns-pad { padding: 60px 16px; }
                 }
 
-                /* ── Hero background ── */
-                .ns-hero-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .55; transition: opacity .6s; }
+                /* ── Hero ── */
+                .ns-hero { min-height: 92vh; display: flex; align-items: center; }
+                .ns-hero-bg-wrap { position: absolute; inset: 0; overflow: hidden; }
+                .ns-hero-bg { position: absolute; inset: -4%; width: 108%; height: 108%; object-fit: cover; opacity: .58; animation: nsKenBurns 18s ease-in-out infinite alternate; }
+                .ns-hero-eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; background: rgba(59,123,171,.08); border: 1px solid rgba(59,123,171,.25); backdrop-filter: blur(6px); }
+                .ns-scroll-ind { position: absolute; left: 50%; bottom: 34px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 8px; opacity: .6; }
+                .ns-scroll-ind span { width: 1px; height: 30px; background: linear-gradient(180deg, ${GOLD}, transparent); }
+                .ns-scroll-ind svg { animation: nsBounce 1.8s ease-in-out infinite; }
+                @media (max-width: 700px) { .ns-hero { min-height: 82vh; } }
 
                 /* ── Equipo de mecanicos (tarjetas con foto) ── */
                 .ns-team-card {
@@ -131,7 +145,7 @@ export default function Nosotros() {
                     backdrop-filter: blur(6px);
                     transition: transform .35s cubic-bezier(.4,0,.2,1), border-color .35s, box-shadow .35s;
                 }
-                .ns-team-card:hover { transform: translateY(-8px); border-color: rgba(59,123,171,.4); box-shadow: 0 24px 50px -20px rgba(0,0,0,.7); }
+                .ns-team-card:hover { transform: translateY(-8px); border-color: rgba(59,123,171,.4); box-shadow: 0 24px 50px -20px rgba(0,0,0,.7), 0 0 40px -18px rgba(59,123,171,.5); }
                 .ns-team-photo { position: relative; width: 100%; aspect-ratio: 1 / 1; overflow: hidden; }
                 .ns-team-photo img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s cubic-bezier(.4,0,.2,1); filter: grayscale(.15) contrast(1.02); }
                 .ns-team-card:hover .ns-team-photo img { transform: scale(1.08); filter: grayscale(0) contrast(1.05); }
@@ -142,27 +156,88 @@ export default function Nosotros() {
                     background: rgba(10,12,15,.65); border: 1px solid rgba(59,123,171,.4); backdrop-filter: blur(8px);
                     font-family: 'JetBrains Mono', monospace; font-size: .62rem; letter-spacing: .04em; color: #7fabce;
                 }
+                .ns-team-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 22px; }
                 .ns-team-body { padding: 20px 20px 24px; }
+                .ns-scroll-hint { display: none; align-items: center; gap: 6px; font-family: 'Outfit', sans-serif; font-weight: 500; font-size: .74rem; color: rgba(255,255,255,.4); margin-top: 8px; }
+                .ns-team-tag {
+                    display: inline-block; margin-top: 10px; padding: 4px 10px; border-radius: 999px;
+                    background: rgba(59,123,171,.1); border: 1px solid rgba(59,123,171,.25);
+                    font-family: 'Outfit', sans-serif; font-weight: 500; font-size: .7rem; color: #9ec3e0;
+                }
                 .ns-team-quote {
                     font-family: 'Outfit', sans-serif; font-weight: 300; font-style: italic; font-size: .84rem;
                     color: rgba(255,255,255,.55); line-height: 1.6; margin-top: 12px; padding-top: 12px;
                     border-top: 1px solid rgba(255,255,255,.07);
                 }
 
-                /* ── Galeria ── */
-                .ns-gallery { display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 140px; gap: 12px; }
-                .ns-gallery-item { position: relative; border-radius: 14px; overflow: hidden; cursor: pointer; }
-                .ns-gallery-item.tall { grid-row: span 2; }
-                .ns-gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s cubic-bezier(.4,0,.2,1), filter .4s; display: block; }
-                .ns-gallery-item:hover img { transform: scale(1.12); filter: brightness(.55); }
-                .ns-gallery-caption {
-                    position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 14px; z-index: 2;
-                    background: linear-gradient(0deg, rgba(5,5,5,.85), transparent);
-                    font-family: 'Outfit', sans-serif; font-weight: 500; font-size: .75rem; color: #fff;
-                    opacity: 0; transform: translateY(8px); transition: opacity .35s, transform .35s;
+                /* ── Diferenciales ── */
+                .ns-diff-card { display: flex; gap: 16px; align-items: flex-start; }
+                .ns-diff-icon { flex: none; width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: rgba(59,123,171,.1); border: 1px solid rgba(59,123,171,.3); color: #7fabce; }
+
+                /* ── Linea de tiempo premium ── */
+                .ns-timeline-v2 { position: relative; }
+                .ns-timeline-v2::before { content: ''; position: absolute; left: 20px; top: 8px; bottom: 8px; width: 1px; background: linear-gradient(180deg, rgba(59,123,171,.65), rgba(59,123,171,.05)); }
+                @media (min-width: 720px) { .ns-timeline-v2::before { left: 50%; transform: translateX(-50%); } }
+                .ns-tl-row { position: relative; display: flex; margin-bottom: 22px; }
+                .ns-tl-dot { position: absolute; left: 20px; top: 26px; transform: translate(-50%, -50%); width: 12px; height: 12px; border-radius: 50%; background: ${GOLD}; box-shadow: 0 0 0 5px rgba(59,123,171,.15); z-index: 2; }
+                @media (min-width: 720px) { .ns-tl-dot { left: 50%; } }
+                .ns-tl-card { margin-left: 46px; width: 100%; }
+                @media (min-width: 720px) {
+                    .ns-tl-row { justify-content: flex-start; }
+                    .ns-tl-row.right { justify-content: flex-end; }
+                    .ns-tl-card { width: calc(50% - 46px); margin-left: 46px; }
+                    .ns-tl-row.right .ns-tl-card { margin-left: 0; margin-right: 46px; text-align: right; }
                 }
-                .ns-gallery-item:hover .ns-gallery-caption { opacity: 1; transform: none; }
-                @media (max-width: 900px) { .ns-gallery { grid-template-columns: repeat(2, 1fr); } .ns-gallery-item.tall { grid-row: span 2; } }
+                .ns-tl-year { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: .04em; color: ${GOLD}; }
+
+                /* ── Galeria — carrusel horizontal (desktop y mobile) ── */
+                .ns-gallery {
+                    display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory;
+                    padding-bottom: 16px; -webkit-overflow-scrolling: touch;
+                    scrollbar-width: thin; scrollbar-color: rgba(59,123,171,.4) transparent;
+                }
+                .ns-gallery::-webkit-scrollbar { height: 8px; }
+                .ns-gallery::-webkit-scrollbar-track { background: transparent; }
+                .ns-gallery::-webkit-scrollbar-thumb { background: rgba(59,123,171,.35); border-radius: 8px; }
+                .ns-gallery-item { position: relative; flex: 0 0 auto; width: 320px; height: 400px; border-radius: 14px; overflow: hidden; cursor: pointer; scroll-snap-align: start; }
+                .ns-gallery-item.big  { width: 460px; }
+                .ns-gallery-item.tall { width: 300px; }
+                .ns-gallery-item img { width: 100%; height: 100%; display: block; object-fit: cover; transition: transform .55s cubic-bezier(.4,0,.2,1), filter .4s; }
+                .ns-gallery-item:hover img { transform: scale(1.08); filter: brightness(.5); }
+                .ns-gallery-overlay {
+                    position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; justify-content: flex-end; padding: 16px;
+                    opacity: 0; transition: opacity .35s;
+                }
+                .ns-gallery-item:hover .ns-gallery-overlay { opacity: 1; }
+                .ns-gallery-expand {
+                    position: absolute; top: 14px; right: 14px; width: 30px; height: 30px; border-radius: 50%;
+                    background: rgba(5,5,5,.55); border: 1px solid rgba(255,255,255,.25); backdrop-filter: blur(6px);
+                    display: flex; align-items: center; justify-content: center; color: #fff;
+                    transform: scale(.7); transition: transform .3s;
+                }
+                .ns-gallery-item:hover .ns-gallery-expand { transform: scale(1); }
+                .ns-gallery-caption { font-family: 'Outfit', sans-serif; font-weight: 500; font-size: .8rem; color: #fff; }
+                @media (max-width: 720px) {
+                    .ns-gallery-item        { width: 78vw; height: 300px; }
+                    .ns-gallery-item.big    { width: 82vw; }
+                    .ns-gallery-item.tall   { width: 74vw; }
+                }
+
+                /* ── Carrusel horizontal en mobile (Equipo) ── */
+                @media (max-width: 720px) {
+                    .ns-scroll-hint { display: inline-flex; }
+
+                    .ns-team-grid { display: flex; overflow-x: auto; gap: 16px; padding-bottom: 10px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+                    .ns-team-grid::-webkit-scrollbar { display: none; }
+                    .ns-team-grid .ns-team-card { flex: 0 0 76%; max-width: 300px; scroll-snap-align: start; }
+                }
+
+                .ns-scroll-hint-gallery { display: inline-flex; align-items: center; gap: 6px; font-family: 'Outfit', sans-serif; font-weight: 500; font-size: .74rem; color: rgba(255,255,255,.4); margin-top: 8px; }
+
+                /* ── Lightbox ── */
+                .ns-lightbox { position: fixed; inset: 0; z-index: 200; background: rgba(3,4,6,.92); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; padding: 40px; animation: nsFadeUp .25s ease both; }
+                .ns-lightbox img { max-width: min(92vw, 1100px); max-height: 84vh; border-radius: 14px; box-shadow: 0 40px 90px -20px rgba(0,0,0,.8); }
+                .ns-lightbox-close { position: absolute; top: 26px; right: 26px; width: 42px; height: 42px; border-radius: 50%; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.2); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 
                 /* ── Video institucional ── */
                 .ns-video-frame {
@@ -174,7 +249,7 @@ export default function Nosotros() {
 
                 /* ── Estadisticas animadas ── */
                 .ns-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; border-radius: 20px; overflow: hidden; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.08); }
-                .ns-stat-cell { background: linear-gradient(180deg, #111 0%, #0b0b0b 100%); padding: 40px 20px; text-align: center; }
+                .ns-stat-cell { background: linear-gradient(180deg, rgba(255,255,255,.035) 0%, rgba(255,255,255,.01) 100%); backdrop-filter: blur(8px); padding: 40px 20px; text-align: center; }
                 .ns-stat-num { font-family: 'Bebas Neue', sans-serif; font-size: clamp(2.2rem, 4vw, 3rem); letter-spacing: .02em; color: ${GOLD}; line-height: 1; }
                 .ns-stat-lab { font-family: 'Outfit', sans-serif; font-weight: 400; font-size: .8rem; color: rgba(255,255,255,.55); margin-top: 8px; }
                 @media (max-width: 900px) { .ns-stats-grid { grid-template-columns: repeat(2, 1fr); } }
@@ -187,36 +262,113 @@ export default function Nosotros() {
                 .ns-testi-avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(255,255,255,.15); }
                 .ns-testi-name { font-family: 'Outfit', sans-serif; font-weight: 600; font-size: .86rem; color: #fff; }
                 .ns-testi-role { font-family: 'Outfit', sans-serif; font-weight: 300; font-size: .74rem; color: rgba(255,255,255,.45); }
+
+                /* ── CTA final ── */
+                .ns-cta-box { position: relative; overflow: hidden; background: linear-gradient(135deg, #0d1a24 0%, #0a0a0a 50%, #06141c 100%); border: 1px solid rgba(59,123,171,.22); border-radius: 24px; padding: clamp(40px, 7vw, 70px) clamp(28px, 5vw, 56px); text-align: center; }
             `}</style>
 
             <Navbar />
 
             {/* HERO */}
             <section className="ns-pad ns-hero" style={{ paddingTop: 150, position: 'relative', overflow: 'hidden' }}>
-                <img
-                    className="ns-hero-bg"
-                    src="https://images.unsplash.com/photo-1632823469850-1b7b1e8b7692?q=80&w=1800&auto=format&fit=crop"
-                    alt="Interior del taller SSWAP"
-                    onError={e => { e.currentTarget.style.opacity = 0; }}
-                />
+                <div className="ns-hero-bg-wrap">
+                    <img
+                        className="ns-hero-bg"
+                        src="https://images.unsplash.com/photo-1632823469850-1b7b1e8b7692?q=80&w=2000&auto=format&fit=crop"
+                        alt="Interior panorámico del taller SS SWAP"
+                        onError={e => { e.currentTarget.style.opacity = 0; }}
+                    />
+                </div>
                 <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at top right, rgba(13,26,36,.75) 0%, rgba(10,10,10,.88) 45%, #050505 100%)' }} />
                 <div className="glow-orb" style={{ top: '10%', right: '8%', width: 340, height: 340, background: 'radial-gradient(closest-side, rgba(59,123,171,.3), transparent)', animation: 'nsOrb 8s ease-in-out infinite' }} />
                 <div style={{ maxWidth: 900, margin: '0 auto', position: 'relative', textAlign: 'center' }}>
-                    <div className="ns-fade" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderRadius: 999, background: 'rgba(59,123,171,.08)', border: '1px solid rgba(59,123,171,.25)', marginBottom: 22 }}>
+                    <div className="ns-fade ns-hero-eyebrow" style={{ marginBottom: 22 }}>
                         <span style={{ width: 7, height: 7, borderRadius: '50%', background: GOLD }} />
                         <p className="mono" style={{ fontSize: '.68rem', letterSpacing: '.2em', color: GOLD, fontWeight: 500 }}>NUESTRA HISTORIA</p>
                     </div>
-                    <h1 className="ns-fade" style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2.6rem, 6vw, 4.6rem)', letterSpacing: '.02em', lineHeight: 1, marginBottom: 22, animationDelay: '.05s' }}>
-                        <span className="grad-text-white">Mecanica hecha con </span>
-                        <span className="grad-text-gold">experiencia real.</span>
+                    <h1 className="ns-fade" style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2.4rem, 5.6vw, 4.4rem)', letterSpacing: '.02em', lineHeight: 1.05, marginBottom: 22, animationDelay: '.05s' }}>
+                        <span className="grad-text-white">Más de una década restaurando vehículos </span>
+                        <span className="grad-text-gold">y construyendo confianza.</span>
                     </h1>
                     <p className="ns-fade" style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: 'clamp(.95rem,1.6vw,1.08rem)', color: 'rgba(255,255,255,.6)', maxWidth: 660, margin: '0 auto 34px', lineHeight: 1.8, animationDelay: '.1s' }}>
-                        Mas de una decada cuidando cada vehiculo como si fuera nuestro. SSWAP nacio como un taller de barrio en Ponciano Alto, Quito, y hoy combina experiencia mecanica real con un sistema digital que da seguimiento a cada vehiculo, cada repuesto y cada cita.
+                        SS SWAP nació como un taller de barrio en Ponciano Alto, Quito, y hoy combina experiencia mecánica real con un sistema digital que da seguimiento a cada vehículo, cada repuesto y cada cita.
                     </p>
-                    <div className="ns-fade" style={{ animationDelay: '.15s' }}>
-                        <Link to="/servicios" className="ps-btn-primary">Conoce nuestros servicios
+                    <div className="ns-fade" style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap', animationDelay: '.15s' }}>
+                        <Link to="/servicios" className="ps-btn-primary">Conocer nuestros servicios
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
                         </Link>
+                        <Link to="/servicios" className="ps-btn-outline">Agendar servicio</Link>
+                    </div>
+                </div>
+                <div className="ns-scroll-ind">
+                    <span />
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+            </section>
+
+            {/* ESTADISTICAS */}
+            <section className="ns-pad" style={{ paddingTop: 64, paddingBottom: 64 }}>
+                <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+                    <div className="ns-stats-grid reveal">
+                        {[
+                            { valor: 1500, sufijo: '+', label: 'Vehículos reparados' },
+                            { valor: 15,   sufijo: ' años', label: 'De experiencia' },
+                            { valor: 98,   sufijo: '%', label: 'Clientes satisfechos' },
+                            { valor: 24, sufijo: '/7', label: 'Atención y seguimiento' },
+                        ].map((s, i) => (
+                            <div key={i} className="ns-stat-cell">
+                                <AnimatedStat valor={s.valor} sufijo={s.sufijo} />
+                                <p className="ns-stat-lab">{s.label}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* LINEA DE TIEMPO */}
+            <section className="ns-pad">
+                <div style={{ maxWidth: 880, margin: '0 auto' }}>
+                    <div style={{ textAlign: 'center', marginBottom: 56 }}>
+                        <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: GOLD, marginBottom: 12, fontWeight: 500 }}>// TRAYECTORIA</p>
+                        <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2rem, 4vw, 2.8rem)', letterSpacing: '.03em' }}>
+                            <span className="grad-text-white">Una decada </span>
+                            <span className="grad-text-gold">construyendo confianza.</span>
+                        </h2>
+                    </div>
+                    <div className="ns-timeline-v2">
+                        {HITOS.map((h, i) => (
+                            <div key={h.anio} className={`ns-tl-row reveal${i % 2 === 1 ? ' right' : ''}`} style={{ transitionDelay: `${i * 70}ms` }}>
+                                <span className="ns-tl-dot" />
+                                <div className="ns-tl-card ns-card">
+                                    <p className="mono ns-tl-year" style={{ marginBottom: 8 }}>{h.anio}</p>
+                                    <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.92rem', color: 'rgba(255,255,255,.65)', lineHeight: 1.65 }}>{h.texto}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* DIFERENCIALES */}
+            <section className="ns-pad" style={{ background: 'linear-gradient(180deg, #050505 0%, #0a0a0a 50%, #050505 100%)', borderTop: '1px solid rgba(255,255,255,.04)', borderBottom: '1px solid rgba(255,255,255,.04)' }}>
+                <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+                    <div style={{ textAlign: 'center', marginBottom: 56 }}>
+                        <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: GOLD, marginBottom: 12, fontWeight: 500 }}>// DIFERENCIALES</p>
+                        <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2.2rem, 4.5vw, 3.2rem)', letterSpacing: '.03em' }}>
+                            <span className="grad-text-white">¿Por que elegir </span>
+                            <span className="grad-text-gold">SS SWAP?</span>
+                        </h2>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: 18 }}>
+                        {DIFERENCIALES.map((d, i) => (
+                            <div key={d.titulo} className="ns-card ns-diff-card reveal" style={{ transitionDelay: `${i * 60}ms` }}>
+                                <div className="ns-diff-icon ns-icon"><d.icon /></div>
+                                <div>
+                                    <h3 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.1rem', letterSpacing: '.03em', color: '#fff', marginBottom: 6 }}>{d.titulo}</h3>
+                                    <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.83rem', color: 'rgba(255,255,255,.5)', lineHeight: 1.6 }}>{d.desc}</p>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </section>
@@ -265,30 +417,8 @@ export default function Nosotros() {
                 </div>
             </section>
 
-            {/* LINEA DE TIEMPO */}
-            <section className="ns-pad">
-                <div style={{ maxWidth: 760, margin: '0 auto' }}>
-                    <div style={{ textAlign: 'center', marginBottom: 56 }}>
-                        <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: GOLD, marginBottom: 12, fontWeight: 500 }}>// TRAYECTORIA</p>
-                        <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2rem, 4vw, 2.8rem)', letterSpacing: '.03em' }}>
-                            <span className="grad-text-white">Una decada </span>
-                            <span className="grad-text-gold">construyendo confianza.</span>
-                        </h2>
-                    </div>
-                    <div className="ns-timeline">
-                        {HITOS.map((h, i) => (
-                            <div key={h.anio} className="reveal" style={{ position: 'relative', paddingBottom: i < HITOS.length - 1 ? 36 : 0, transitionDelay: `${i * 70}ms` }}>
-                                <span className="ns-dot" />
-                                <p className="mono" style={{ color: GOLD, fontWeight: 600, fontSize: '.85rem', marginBottom: 6 }}>{h.anio}</p>
-                                <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.92rem', color: 'rgba(255,255,255,.65)', lineHeight: 1.65 }}>{h.texto}</p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
             {/* EQUIPO DE MECANICOS */}
-            <section className="ns-pad" style={{ background: 'linear-gradient(180deg, #050505 0%, #0a0a0a 50%, #050505 100%)', borderTop: '1px solid rgba(255,255,255,.04)', borderBottom: '1px solid rgba(255,255,255,.04)' }}>
+            <section className="ns-pad">
                 <div style={{ maxWidth: 1200, margin: '0 auto' }}>
                     <div style={{ textAlign: 'center', marginBottom: 56 }}>
                         <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: GOLD, marginBottom: 12, fontWeight: 500 }}>// NUESTRO EQUIPO</p>
@@ -296,18 +426,22 @@ export default function Nosotros() {
                             <span className="grad-text-white">Personas detras de </span>
                             <span className="grad-text-gold">cada reparacion.</span>
                         </h2>
+                        <p className="ns-scroll-hint" style={{ justifyContent: 'center', width: '100%' }}>
+                            Desliza para ver al equipo
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                        </p>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))', gap: 22 }}>
+                    <div className="ns-team-grid">
                         {MECANICOS.map((m, i) => (
                             <div key={m.nombre} className="ns-team-card reveal" style={{ transitionDelay: `${i * 80}ms` }}>
                                 <div className="ns-team-photo">
                                     <img src={m.foto} alt={m.nombre} loading="lazy" onError={e => { e.currentTarget.style.opacity = 0; }} />
-                                    <span className="ns-team-exp">{m.anios} anos de experiencia</span>
+                                    <span className="ns-team-exp">{m.anios} años de experiencia</span>
                                 </div>
                                 <div className="ns-team-body">
                                     <h3 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.25rem', letterSpacing: '.03em', color: '#fff', marginBottom: 4 }}>{m.nombre}</h3>
-                                    <p className="mono" style={{ fontSize: '.66rem', letterSpacing: '.08em', color: GOLD, marginBottom: 4 }}>{m.cargo.toUpperCase()}</p>
-                                    <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.78rem', color: 'rgba(255,255,255,.5)' }}>Especialidad: {m.especialidad}</p>
+                                    <p className="mono" style={{ fontSize: '.66rem', letterSpacing: '.08em', color: GOLD }}>{m.cargo.toUpperCase()}</p>
+                                    <span className="ns-team-tag">{m.especialidad}</span>
                                     <p className="ns-team-quote">&ldquo;{m.frase}&rdquo;</p>
                                 </div>
                             </div>
@@ -317,7 +451,7 @@ export default function Nosotros() {
             </section>
 
             {/* GALERIA */}
-            <section className="ns-pad">
+            <section className="ns-pad" style={{ background: 'linear-gradient(180deg, #050505 0%, #0a0a0a 50%, #050505 100%)', borderTop: '1px solid rgba(255,255,255,.04)', borderBottom: '1px solid rgba(255,255,255,.04)' }}>
                 <div style={{ maxWidth: 1200, margin: '0 auto' }}>
                     <div style={{ textAlign: 'center', marginBottom: 48 }}>
                         <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: GOLD, marginBottom: 12, fontWeight: 500 }}>// GALERIA</p>
@@ -325,57 +459,32 @@ export default function Nosotros() {
                             <span className="grad-text-white">Un vistazo a </span>
                             <span className="grad-text-gold">nuestro taller.</span>
                         </h2>
+                        <p className="ns-scroll-hint-gallery" style={{ justifyContent: 'center', width: '100%' }}>
+                            Desliza para ver mas fotos
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                        </p>
                     </div>
-                    <div className="ns-gallery reveal">
-                        {GALERIA.map((g, i) => (
-                            <div key={i} className={`ns-gallery-item${g.tall ? ' tall' : ''}`}>
-                                <img src={g.url} alt={g.cap} loading="lazy" onError={e => { e.currentTarget.style.opacity = 0; }} />
-                                <div className="ns-gallery-caption">{g.cap}</div>
-                            </div>
-                        ))}
-                    </div>
+                    <Galeria items={GALERIA} />
                 </div>
             </section>
 
             {/* VIDEO INSTITUCIONAL */}
-            <section className="ns-pad" style={{ background: 'linear-gradient(180deg, #050505 0%, #0a0a0a 50%, #050505 100%)', borderTop: '1px solid rgba(255,255,255,.04)', borderBottom: '1px solid rgba(255,255,255,.04)' }}>
+            <section className="ns-pad">
                 <div style={{ maxWidth: 1000, margin: '0 auto' }}>
                     <div style={{ textAlign: 'center', marginBottom: 40 }}>
                         <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: GOLD, marginBottom: 12, fontWeight: 500 }}>// CONOCENOS</p>
                         <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2rem, 4vw, 2.8rem)', letterSpacing: '.03em' }}>
                             <span className="grad-text-white">Un recorrido por </span>
-                            <span className="grad-text-gold">SSWAP.</span>
+                            <span className="grad-text-gold">SS SWAP.</span>
                         </h2>
                     </div>
                     <div className="ns-video-frame reveal">
                         <iframe
                             src="https://www.youtube.com/embed/iv4M8trjXrE"
-                            title="Video institucional SSWAP"
+                            title="Video institucional SS SWAP"
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowFullScreen
                         />
-                    </div>
-                    <p style={{ textAlign: 'center', fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.78rem', color: 'rgba(255,255,255,.4)', marginTop: 16 }}>
-                     
-                    </p>
-                </div>
-            </section>
-
-            {/* ESTADISTICAS */}
-            <section className="ns-pad">
-                <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-                    <div className="ns-stats-grid reveal">
-                        {[
-                            { valor: 1500, sufijo: '+', label: 'Vehiculos reparados' },
-                            { valor: 15,   sufijo: ' anos', label: 'De experiencia' },
-                            { valor: 98,   sufijo: '%', label: 'Clientes satisfechos' },
-                            { valor: 24, sufijo: '/7', label: 'Atencion y seguimiento' },
-                        ].map((s, i) => (
-                            <div key={i} className="ns-stat-cell">
-                                <AnimatedStat valor={s.valor} sufijo={s.sufijo} />
-                                <p className="ns-stat-lab">{s.label}</p>
-                            </div>
-                        ))}
                     </div>
                 </div>
             </section>
@@ -437,13 +546,13 @@ export default function Nosotros() {
             {/* CTA */}
             <section className="ns-pad">
                 <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-                    <div className="reveal in-view" style={{ position: 'relative', overflow: 'hidden', background: 'linear-gradient(135deg, #0d1a24 0%, #0a0a0a 50%, #06141c 100%)', border: '1px solid rgba(59,123,171,.22)', borderRadius: 24, padding: 'clamp(40px, 7vw, 70px) clamp(28px, 5vw, 56px)', textAlign: 'center' }}>
+                    <div className="reveal in-view ns-cta-box">
                         <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2rem, 4.5vw, 3.2rem)', letterSpacing: '.03em', marginBottom: 18, lineHeight: 1.05 }}>
-                            <span className="grad-text-white">Listo para darle el mejor cuidado a </span>
-                            <span className="grad-text-gold">tu vehiculo?</span>
+                            <span className="grad-text-white">¿Listo para devolverle la vida a </span>
+                            <span className="grad-text-gold">tu vehículo?</span>
                         </h2>
                         <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '1rem', color: 'rgba(255,255,255,.58)', maxWidth: 560, margin: '0 auto 36px', lineHeight: 1.7 }}>
-                            Revisa nuestro catalogo de servicios o crea tu cuenta para llevar el control de tu historial automotriz.
+                            Revisa nuestro catálogo de servicios o crea tu cuenta para llevar el control de tu historial automotriz.
                         </p>
                         <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
                             <Link to="/servicios" className="ps-btn-primary">Agenda tu cita</Link>
@@ -458,11 +567,61 @@ export default function Nosotros() {
     );
 }
 
+function Galeria({ items }) {
+    const [activo, setActivo] = useState(null);
+
+    useEffect(() => {
+        if (activo === null) return;
+        const onKey = (e) => { if (e.key === 'Escape') setActivo(null); };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [activo]);
+
+    return (
+        <>
+            <div className="ns-gallery reveal">
+                {items.map((g, i) => (
+                    <div
+                        key={i}
+                        className={`ns-gallery-item${g.big ? ' big' : ''}${g.tall ? ' tall' : ''}`}
+                        onClick={() => setActivo(i)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={e => { if (e.key === 'Enter') setActivo(i); }}
+                    >
+                        <img src={g.url} alt={g.cap} loading="lazy" onError={e => { e.currentTarget.style.opacity = 0; }} />
+                        <span className="ns-gallery-expand"><IconExpand /></span>
+                        <div className="ns-gallery-overlay">
+                            <p className="ns-gallery-caption">{g.cap}</p>
+                        </div>
+                    </div>
+                ))}
+            </div>
+            {activo !== null && (
+                <div className="ns-lightbox" onClick={() => setActivo(null)}>
+                    <button className="ns-lightbox-close" onClick={() => setActivo(null)} aria-label="Cerrar">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                    <img src={items[activo].url} alt={items[activo].cap} onClick={e => e.stopPropagation()} />
+                </div>
+            )}
+        </>
+    );
+}
+
 function IconEye()     { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>; }
 function IconTarget()  { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>; }
 function IconShield()  { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>; }
 function IconTrend()   { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>; }
-function IconStar() { return <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>; }
+function IconStar()    { return <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>; }
+
+function IconScan()        { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="4" y1="12" x2="20" y2="12"/></svg>; }
+function IconCertificate() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="6"/><path d="M9 13.5 7 22l5-3 5 3-2-8.5"/></svg>; }
+function IconWrench()      { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L2 19l3 3 7.3-7.3a4 4 0 0 0 5.4-5.4l-2.8 2.8-2-2z"/></svg>; }
+function IconCpu()         { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/></svg>; }
+function IconPackage()     { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21 8-9-5-9 5 9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8M12 13v8"/></svg>; }
+function IconHeadset()     { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>; }
+function IconExpand()      { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>; }
 
 function AnimatedStat({ valor, sufijo = '' }) {
     const [n, setN] = useState(0);

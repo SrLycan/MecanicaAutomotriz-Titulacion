@@ -1,5 +1,5 @@
 /**
- * SSWAP - Aplicar migraciones idempotentes al arrancar el servidor.
+ * SS SWAP - Aplicar migraciones idempotentes al arrancar el servidor.
  * Lee migrations.sql y lo ejecuta. Es seguro correrlo multiples veces
  * (usa IF NOT EXISTS / ADD COLUMN IF NOT EXISTS).
  */

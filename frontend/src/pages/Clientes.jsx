@@ -171,9 +171,9 @@ export default function Clientes() {
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
                 <div>
-                    <div className="sswap-chip" style={{ marginBottom: 8 }}>
+                    <div className="SS SWAP-chip" style={{ marginBottom: 8 }}>
                         <span className="dot" />
-                        <span>SSWAP · TALLER · CLIENTES</span>
+                        <span>SS SWAP · TALLER · CLIENTES</span>
                     </div>
                     <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.6rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>Clientes</h1>
                     <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.85rem', color: mut, marginTop: 6 }}>

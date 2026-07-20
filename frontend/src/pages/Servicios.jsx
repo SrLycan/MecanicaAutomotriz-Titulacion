@@ -11,9 +11,60 @@ function IconTrash()   { return <svg width="13" height="13" viewBox="0 0 24 24" 
 function IconX()       { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>; }
 function IconWrench()  { return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>; }
 function IconClock()   { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>; }
+function IconImage()   { return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>; }
 
 const GOLD = '#c9a227';
-const EMPTY = { nombre: '', descripcion: '', precio_base: '', duracion_estimada_min: '', activo: true };
+const EMPTY = { nombre: '', descripcion: '', precio_base: '', duracion_estimada_min: '', activo: true, imagen_url: '' };
+
+const getApiHost = () => {
+    const base = process.env.REACT_APP_API_URL || '/api';
+    if (/^https?:\/\//i.test(base)) return base.replace(/\/api\/?$/i, '').replace(/\/$/, '');
+    return window.location.origin;
+};
+
+const resolveImagenSrc = (value = '') => {
+    const src = String(value || '').trim();
+    if (!src) return '';
+    if (/^(data:image\/|blob:|https?:\/\/)/i.test(src)) return src;
+    if (src.startsWith('/')) return `${getApiHost()}${src}`;
+    return `${getApiHost()}/${src.replace(/^\/+/, '')}`;
+};
+
+const fileToDataUrl = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result || '');
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+});
+
+const comprimirImagen = (file, maxSize = 900, quality = 0.78) => new Promise((resolve, reject) => {
+    if (file.type === 'image/svg+xml') {
+        fileToDataUrl(file).then(resolve).catch(reject);
+        return;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+
+    img.onload = () => {
+        const ratio = Math.min(1, maxSize / Math.max(img.width, img.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(img.width * ratio));
+        canvas.height = Math.max(1, Math.round(img.height * ratio));
+
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(objectUrl);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+
+    img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('No se pudo procesar la imagen.'));
+    };
+
+    img.src = objectUrl;
+});
 
 function Modal({ servicio, onClose, onSaved, isDark }) {
     const [form, setForm] = useState(servicio ? {
@@ -22,7 +73,9 @@ function Modal({ servicio, onClose, onSaved, isDark }) {
         precio_base: servicio.precio_base ?? '',
         duracion_estimada_min: servicio.duracion_estimada_min ?? '',
         activo: servicio.activo ?? true,
+        imagen_url: servicio.imagen_url || '',
     } : { ...EMPTY });
+    const [preview, setPreview] = useState(resolveImagenSrc(servicio?.imagen_url || ''));
     const [saving, setSaving] = useState(false);
 
     const bg    = isDark ? '#080e1c' : '#ffffff';
@@ -33,6 +86,18 @@ function Modal({ servicio, onClose, onSaved, isDark }) {
     const inpBdr= isDark ? 'rgba(255,255,255,.1)' : 'rgba(15,23,42,.15)';
 
     const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+    const handleImagenFile = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+            const dataUrl = await comprimirImagen(file);
+            set('imagen_url', dataUrl);
+            setPreview(dataUrl);
+        } catch { toast.error('No se pudo procesar la imagen.'); }
+    };
+
+    const quitarImagen = () => { set('imagen_url', ''); setPreview(''); };
 
     const handleSubmit = async () => {
         if (!form.nombre.trim()) { toast.error('El nombre es obligatorio.'); return; }
@@ -71,6 +136,31 @@ function Modal({ servicio, onClose, onSaved, isDark }) {
                             style={{ width: '100%', background: inp, border: `1px solid ${inpBdr}`, borderRadius: 10, padding: '10px 14px', color: txt, fontFamily: "'Outfit'", fontSize: '.9rem', outline: 'none', boxSizing: 'border-box' }} />
                     </div>
                 ))}
+
+                <div style={{ marginBottom: 14 }}>
+                    <label style={{ display: 'block', fontFamily: "'Outfit'", fontSize: '.75rem', fontWeight: 600, color: mut, marginBottom: 6, letterSpacing: '.04em', textTransform: 'uppercase' }}>Foto del servicio</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: '92px 1fr', gap: 12, alignItems: 'stretch' }}>
+                        <div style={{ minHeight: 92, borderRadius: 12, border: `1px dashed ${inpBdr}`, background: isDark ? 'rgba(255,255,255,.03)' : 'rgba(201,162,39,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', color: mut }}>
+                            {preview ? (
+                                <img src={preview} alt="Vista previa del servicio" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={() => setPreview('')} />
+                            ) : (
+                                <IconImage />
+                            )}
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, justifyContent: 'center' }}>
+                            <input type="file" accept="image/*" onChange={handleImagenFile}
+                                style={{ width: '100%', background: inp, border: `1px solid ${inpBdr}`, borderRadius: 10, padding: '9px 12px', color: txt, fontFamily: "'Outfit'", fontSize: '.82rem', boxSizing: 'border-box' }} />
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+                                <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.68rem', color: mut }}>
+                                    Se muestra en la página pública de Servicios.
+                                </p>
+                                {preview && (
+                                    <button type="button" onClick={quitarImagen} style={{ background: 'none', border: 'none', color: '#ef4444', fontFamily: "'Outfit'", fontSize: '.72rem', fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>Quitar</button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <div style={{ marginBottom: 14 }}>
                     <label style={{ display: 'block', fontFamily: "'Outfit'", fontSize: '.75rem', fontWeight: 600, color: mut, marginBottom: 6, letterSpacing: '.04em', textTransform: 'uppercase' }}>Descripción</label>
@@ -219,8 +309,12 @@ export default function Servicios() {
                             </div>
 
                             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 12, paddingRight: 80 }}>
-                                <div style={{ width: 40, height: 40, borderRadius: 10, background: `rgba(201,162,39,.1)`, border: `1px solid rgba(201,162,39,.2)`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: GOLD, flexShrink: 0 }}>
-                                    <IconWrench />
+                                <div style={{ width: 40, height: 40, borderRadius: 10, background: `rgba(201,162,39,.1)`, border: `1px solid rgba(201,162,39,.2)`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: GOLD, flexShrink: 0, overflow: 'hidden' }}>
+                                    {s.imagen_url ? (
+                                        <img src={resolveImagenSrc(s.imagen_url)} alt={s.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.target.style.display = 'none'; }} />
+                                    ) : (
+                                        <IconWrench />
+                                    )}
                                 </div>
                                 <div>
                                     <p style={{ fontFamily: "'Outfit'", fontWeight: 700, fontSize: '.97rem', color: txt, lineHeight: 1.3 }}>{s.nombre}</p>

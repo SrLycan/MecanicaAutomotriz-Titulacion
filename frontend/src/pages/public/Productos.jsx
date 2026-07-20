@@ -146,10 +146,10 @@ export default function Productos() {
                     <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: GOLD, marginBottom: 14, fontWeight: 500 }}>// NUESTROS PRODUCTOS</p>
                     <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2.6rem, 5.5vw, 4.2rem)', letterSpacing: '.02em', lineHeight: 1, marginBottom: 16 }}>
                         <span className="grad-text-white">Repuestos y accesorios </span>
-                        <span className="grad-text-gold">para tu vehiculo.</span>
+                        <span className="grad-text-gold">para tu vehículo.</span>
                     </h1>
                     <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '1rem', color: 'rgba(255,255,255,.55)', maxWidth: 560, margin: '0 auto', lineHeight: 1.7 }}>
-                        Encuentra piezas certificadas para el mantenimiento y reparacion de tu auto.
+                        Encuentra piezas certificadas para el mantenimiento y reparación de tu auto.
                     </p>
                 </div>
 
@@ -182,13 +182,13 @@ export default function Productos() {
                         ) : productos.length === 0 ? (
                             <div className="pr-empty reveal in-view">
                                 <div className="pr-empty-icon"><IconBox /></div>
-                                <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', letterSpacing: '.02em', marginBottom: 12 }}>Aun no tenemos productos publicados</h2>
+                                <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', letterSpacing: '.02em', marginBottom: 12 }}>Aún no tenemos productos publicados</h2>
                                 <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.92rem', color: 'rgba(255,255,255,.5)', maxWidth: 460, margin: '0 auto 28px', lineHeight: 1.7 }}>
-                                    Estamos preparando nuestro catalogo de repuestos y accesorios. Mientras tanto, nuestro equipo puede asesorarte y conseguir la pieza exacta que necesitas.
+                                    Estamos preparando nuestro catálogo de repuestos y accesorios. Mientras tanto, nuestro equipo puede asesorarte y conseguir la pieza exacta que necesitas.
                                 </p>
                                 <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
                                     <a href="/servicios" className="ps-btn-primary">Agendar Servicio</a>
-                                    <a href="/nosotros" className="ps-btn-outline">Hablar con un tecnico</a>
+                                    <a href="/nosotros" className="ps-btn-outline">Hablar con un técnico</a>
                                 </div>
                             </div>
                         ) : productosFiltrados.length === 0 ? (
@@ -196,7 +196,7 @@ export default function Productos() {
                                 <div className="pr-empty-icon"><IconBox /></div>
                                 <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', letterSpacing: '.02em', marginBottom: 12 }}>No encontramos productos con esos filtros</h2>
                                 <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.92rem', color: 'rgba(255,255,255,.5)', maxWidth: 460, margin: '0 auto 28px', lineHeight: 1.7 }}>
-                                    Intenta ajustar tu busqueda o selecciona otra categoria.
+                                    Intenta ajustar tu búsqueda o selecciona otra categoría.
                                 </p>
                                 <button type="button" className="ps-btn-outline" onClick={limpiarFiltros}><IconX /> Limpiar filtros</button>
                             </div>

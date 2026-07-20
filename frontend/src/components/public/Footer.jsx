@@ -16,7 +16,7 @@ const LINKS_RAPIDOS = [
     { label: 'Productos',         to: '/productos'  },
     { label: 'Agendar Servicio',  to: '/servicios'  },
     { label: 'Nosotros',          to: '/nosotros'   },
-    { label: 'Iniciar Sesion',    to: '/auth'       },
+    { label: 'Iniciar Sesión',    to: '/auth'       },
 ];
 
 export default function Footer() {
@@ -25,37 +25,15 @@ export default function Footer() {
     const handleNewsletter = (e) => {
         e.preventDefault();
         if (!email.trim() || !email.includes('@')) {
-            toast.error('Ingresa un correo valido');
+            toast.error('Ingresa un correo válido');
             return;
         }
-        toast.success('Gracias! Te avisaremos de nuestras novedades.');
+        toast.success('¡Gracias! Te avisaremos de nuestras novedades.');
         setEmail('');
     };
 
     return (
         <footer style={{ background: '#0c0f14', borderTop: '1px solid rgba(127,171,206,.14)', color: 'rgba(255,255,255,.65)', fontFamily: "'Outfit', sans-serif" }}>
-
-            {/* Newsletter */}
-            <div style={{ borderBottom: '1px solid rgba(127,171,206,.14)', background: 'linear-gradient(90deg, rgba(27,58,87,.25), rgba(59,123,171,.08))' }}>
-                <div style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 20 }}>
-                    <div>
-                        <p style={{ fontFamily: "'Sora'", fontWeight: 700, fontSize: '1rem', color: '#fff', marginBottom: 4 }}>Mantente al tanto de SSWAP</p>
-                        <p style={{ fontSize: '.82rem', fontWeight: 300, color: 'rgba(255,255,255,.5)' }}>Promociones, mantenimiento estacional y novedades del taller.</p>
-                    </div>
-                    <form onSubmit={handleNewsletter} style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={e => setEmail(e.target.value)}
-                            placeholder="tu@correo.com"
-                            style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.18)', borderRadius: 999, padding: '11px 18px', color: '#fff', fontFamily: "'Outfit'", fontSize: '.85rem', outline: 'none', minWidth: 220 }}
-                        />
-                        <button type="submit" style={{ background: 'linear-gradient(135deg, #1b3a57, #2b5c85 60%, #3b7bab)', border: 'none', borderRadius: 999, padding: '11px 22px', color: '#fff', fontFamily: "'Sora'", fontWeight: 600, fontSize: '.85rem', cursor: 'pointer' }}>
-                            Suscribirme
-                        </button>
-                    </form>
-                </div>
-            </div>
 
 
             {/* Main footer */}
@@ -70,16 +48,16 @@ export default function Footer() {
                             </svg>
                         </div>
                         <div>
-                            <p style={{ fontFamily: "'Sora'", fontWeight: 700, fontSize: '1.05rem', letterSpacing: '.02em', color: '#fff', lineHeight: 1 }}>SSWAP</p>
-                            <p style={{ fontWeight: 300, fontSize: '.65rem', color: 'rgba(255,255,255,.4)', lineHeight: 1.3 }}>Mecanica Automotriz</p>
+                            <p style={{ fontFamily: "'Sora'", fontWeight: 700, fontSize: '1.05rem', letterSpacing: '.02em', color: '#fff', lineHeight: 1 }}>SS SWAP</p>
+                            <p style={{ fontWeight: 300, fontSize: '.65rem', color: 'rgba(255,255,255,.4)', lineHeight: 1.3 }}>Mecánica Automotriz</p>
                         </div>
                     </div>
                     <p style={{ fontWeight: 300, fontSize: '.85rem', lineHeight: 1.7, color: 'rgba(255,255,255,.5)', marginBottom: 20 }}>
-                        Taller automotriz ubicado en Ponciano Alto, Quito. Mas de 10 anos brindando servicio tecnico de calidad con tecnologia de diagnostico avanzada.
+                        Taller automotriz ubicado en Ponciano Alto, Quito. Más de 10 años brindando servicio técnico de calidad con tecnología de diagnóstico avanzada.
                     </p>
                     {/* Horario */}
                     <div style={{ fontSize: '.8rem', color: 'rgba(255,255,255,.4)' }}>
-                        <p style={{ fontWeight: 600, color: 'rgba(255,255,255,.6)', marginBottom: 6 }}>Horario de Atencion</p>
+                        <p style={{ fontWeight: 600, color: 'rgba(255,255,255,.6)', marginBottom: 6 }}>Horario de Atención</p>
                         <p>Lunes - Viernes: 8:00 - 18:00</p>
                         <p>Sabado: 8:00 - 14:00</p>
                         <p>Domingo: Cerrado</p>
@@ -122,7 +100,7 @@ export default function Footer() {
                         {[
                             { icon: <IconPin />,   text: 'Ponciano Alto, Quito, Ecuador', href: 'https://www.google.com/maps/search/?api=1&query=Ponciano+Alto+Quito+Ecuador' },
                             { icon: <IconPhone />, text: '+593 99 XXX XXXX', href: 'tel:+59399XXXXXXX' },
-                            { icon: <IconMail />,  text: 'contacto@sswap.com', href: 'mailto:contacto@sswap.com' },
+                            { icon: <IconMail />,  text: 'contacto@SS SWAP.com', href: 'mailto:contacto@SS SWAP.com' },
                         ].map((item, i) => (
                             <a key={i} href={item.href} target={item.href.startsWith('http') ? '_blank' : undefined} rel="noreferrer"
                                style={{ display: 'flex', alignItems: 'flex-start', gap: 10, textDecoration: 'none', color: 'inherit', transition: 'color .2s' }}
@@ -163,7 +141,7 @@ export default function Footer() {
             <div style={{ borderTop: '1px solid rgba(127,171,206,.14)', padding: '18px 24px' }}>
                 <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                     <p style={{ fontSize: '.78rem', fontWeight: 300, color: 'rgba(255,255,255,.3)' }}>
-                        &copy; {new Date().getFullYear()} Mecanica Automotriz SSWAP. Todos los derechos reservados.
+                        &copy; {new Date().getFullYear()} Mecánica Automotriz SS SWAP. Todos los derechos reservados.
                     </p>
                     <p style={{ fontSize: '.78rem', fontWeight: 300, color: 'rgba(255,255,255,.25)' }}>
                         Sistema desarrollado por Banda J, Sarango R, Vela D · PUCE TEC 2026
