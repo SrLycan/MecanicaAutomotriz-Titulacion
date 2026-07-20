@@ -11,7 +11,7 @@ const api = axios.create({
 
 // Interceptor: adjunta el JWT en cada petición
 api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('sswap_token');
+    const token = localStorage.getItem('SS SWAP_token');
     if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
 });
@@ -28,8 +28,8 @@ api.interceptors.response.use(
         const teniaToken    = Boolean(error.config?.headers?.Authorization);
 
         if (error.response?.status === 401 && teniaToken && !esAuthPublico) {
-            localStorage.removeItem('sswap_token');
-            localStorage.removeItem('sswap_usuario');
+            localStorage.removeItem('SS SWAP_token');
+            localStorage.removeItem('SS SWAP_usuario');
             if (!window.location.pathname.startsWith('/auth')) {
                 window.location.href = '/auth?sesion=expirada';
             }

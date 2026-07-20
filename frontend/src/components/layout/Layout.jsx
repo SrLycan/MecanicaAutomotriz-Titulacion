@@ -167,7 +167,7 @@ export default function Layout() {
                     </div>
                     {!collapsed && (
                         <div>
-                            <p style={{ fontFamily: "'Sora'", fontWeight: 700, fontSize: '1.05rem', letterSpacing: '.02em', color: '#fff', lineHeight: 1 }}>SSWAP</p>
+                            <p style={{ fontFamily: "'Sora'", fontWeight: 700, fontSize: '1.05rem', letterSpacing: '.02em', color: '#fff', lineHeight: 1 }}>SS SWAP</p>
                             <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.7rem', color: GOLD_LIGHT, marginTop: 2, letterSpacing: '.18em' }}>ADMIN PANEL</p>
                         </div>
                     )}

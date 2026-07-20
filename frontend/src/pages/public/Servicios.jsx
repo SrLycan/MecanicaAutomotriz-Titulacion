@@ -21,6 +21,20 @@ function iconoPara(nombre = '') {
     return found || { icon: IconWrench, color: GOLD };
 }
 
+const getApiHost = () => {
+    const base = process.env.REACT_APP_API_URL || '/api';
+    if (/^https?:\/\//i.test(base)) return base.replace(/\/api\/?$/i, '').replace(/\/$/, '');
+    return window.location.origin;
+};
+
+const resolveImagenSrc = (value = '') => {
+    const src = String(value || '').trim();
+    if (!src) return '';
+    if (/^(data:image\/|blob:|https?:\/\/)/i.test(src)) return src;
+    if (src.startsWith('/')) return `${getApiHost()}${src}`;
+    return `${getApiHost()}/${src.replace(/^\/+/, '')}`;
+};
+
 export default function Servicios() {
     const { usuario } = useAuth();
     const [servicios, setServicios] = useState([]);
@@ -68,19 +82,38 @@ export default function Servicios() {
                 .reveal { opacity: 0; transform: translateY(24px); transition: opacity .6s cubic-bezier(.4,0,.2,1), transform .6s cubic-bezier(.4,0,.2,1); }
                 .reveal.in-view { opacity: 1; transform: none; }
 
+                /* ── Despliegue tipo acordeon para "Como funciona" ── */
+                .hiw-card.reveal { opacity: 0; transform: translateY(42px) scale(.9); transition: opacity .65s cubic-bezier(.16,1,.3,1), transform .65s cubic-bezier(.16,1,.3,1); }
+                .hiw-card.reveal.in-view { opacity: 1; transform: none; }
+
                 .mono { font-family: 'JetBrains Mono', monospace; }
                 .grad-text-gold { background: linear-gradient(135deg, #3b7bab 0%, #7fabce 50%, #3b7bab 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
                 .grad-text-white { background: linear-gradient(180deg, #ffffff 0%, rgba(255,255,255,.65) 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+
+                /* ── Glow azul (igual que en el Home) ── */
+                @keyframes shimmerSweep { 0% { background-position: -300% center; } 100% { background-position: 300% center; } }
+                .grad-text-rainbow {
+                    background: linear-gradient(90deg, #3b7bab 0%, #7fabce 18%, #cfe3f3 34%, #7fabce 50%, #3b7bab 66%, #4a83b3 82%, #3b7bab 100%);
+                    background-size: 280% auto;
+                    -webkit-background-clip: text; background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    animation: shimmerSweep 5s linear infinite;
+                    filter: drop-shadow(0 0 18px rgba(59,123,171,.55)) drop-shadow(0 0 36px rgba(127,171,206,.3));
+                }
 
                 .sv-search { width: 100%; max-width: 420px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.12); border-radius: 999px; padding: 13px 22px; font-family: 'Outfit', sans-serif; font-size: .92rem; color: #fff; outline: none; transition: border-color .2s, background .2s; }
                 .sv-search::placeholder { color: rgba(255,255,255,.35); }
                 .sv-search:focus { border-color: ${GOLD}; background: rgba(255,255,255,.06); }
 
-                .sv-card { background: linear-gradient(180deg, #141414 0%, #0e0e0e 100%); border: 1px solid rgba(255,255,255,.07); border-radius: 18px; padding: 28px 26px; transition: all .3s cubic-bezier(.4,0,.2,1); position: relative; overflow: hidden; }
-                .sv-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(59,123,171,.6), transparent); opacity: 0; transition: opacity .3s; }
+                .sv-card { background: linear-gradient(180deg, #141414 0%, #0e0e0e 100%); border: 1px solid rgba(255,255,255,.07); border-radius: 18px; padding: 0; transition: all .3s cubic-bezier(.4,0,.2,1); position: relative; overflow: hidden; }
+                .sv-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(59,123,171,.6), transparent); opacity: 0; transition: opacity .3s; z-index: 2; }
                 .sv-card:hover { border-color: rgba(59,123,171,.4); transform: translateY(-6px); box-shadow: 0 24px 50px -20px rgba(0,0,0,.8); }
                 .sv-card:hover::before { opacity: 1; }
-                .sv-card:hover .sv-icon { transform: scale(1.08) rotate(-4deg); }
+                .sv-card:hover .sv-photo img { transform: scale(1.06); }
+                .sv-card-body { padding: 20px 24px 26px; }
+                .sv-photo { position: relative; width: 100%; height: 160px; overflow: hidden; background: linear-gradient(160deg, rgba(59,123,171,.16), rgba(10,10,10,.5)); }
+                .sv-photo img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .5s cubic-bezier(.4,0,.2,1); }
+                .sv-photo-fallback { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
                 .sv-icon { transition: transform .3s; }
 
                 .ps-btn-primary { display: inline-flex; align-items: center; gap: 10px; font-family: 'Outfit', sans-serif; font-weight: 700; font-size: .92rem; color: #0a0a0a; background: #3b7bab; border: none; border-radius: 999px; padding: 15px 32px; cursor: pointer; text-decoration: none; transition: all .25s cubic-bezier(.4,0,.2,1); box-shadow: 0 8px 24px -6px rgba(59,123,171,.5); }
@@ -167,17 +200,17 @@ export default function Servicios() {
                         <p className="mono" style={{ fontSize: '.68rem', letterSpacing: '.2em', color: GOLD, fontWeight: 500 }}>CATALOGO DE SERVICIOS</p>
                     </div>
                     <h1 className="sv-fade" style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2.6rem, 6vw, 4.6rem)', letterSpacing: '.02em', lineHeight: 1, marginBottom: 20, animationDelay: '.05s' }}>
-                        <span className="grad-text-white">Servicios pensados </span>
-                        <span className="grad-text-gold">para tu vehiculo.</span>
+                        <span className="grad-text-rainbow">Servicios</span><span className="grad-text-white"> pensados </span>
+                        <span className="grad-text-rainbow">para tu vehículo.</span>
                     </h1>
                     <p className="sv-fade" style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: 'clamp(.95rem,1.6vw,1.08rem)', color: 'rgba(255,255,255,.6)', maxWidth: 620, margin: '0 auto 34px', lineHeight: 1.75, animationDelay: '.1s' }}>
-                        Consulta precios referenciales y tiempos estimados. Crea una cuenta para agendar tu cita y dar seguimiento en linea al estado de tu vehiculo.
+                        Consulta precios referenciales y tiempos estimados. Crea una cuenta para agendar tu cita y dar seguimiento en línea al estado de tu vehículo.
                     </p>
                     <div className="sv-fade" style={{ display: 'flex', justifyContent: 'center', animationDelay: '.15s' }}>
                         <input
                             className="sv-search"
                             type="text"
-                            placeholder="Buscar servicio (ej. frenos, aceite, diagnostico)..."
+                            placeholder="Buscar servicio (ej. frenos, aceite, diagnóstico)..."
                             value={q}
                             onChange={e => setQ(e.target.value)}
                         />
@@ -206,7 +239,7 @@ export default function Servicios() {
                     {!loading && !error && filtrados.length === 0 && (
                         <div style={{ textAlign: 'center', padding: '80px 0' }}>
                             <p style={{ fontFamily: "'Outfit'", color: 'rgba(255,255,255,.4)', fontSize: '.95rem' }}>
-                                {servicios.length === 0 ? 'Aun no hay servicios publicados.' : 'No encontramos servicios que coincidan con tu busqueda.'}
+                                {servicios.length === 0 ? 'Aún no hay servicios publicados.' : 'No encontramos servicios que coincidan con tu búsqueda.'}
                             </p>
                         </div>
                     )}
@@ -217,9 +250,16 @@ export default function Servicios() {
                                 const { icon: Icon, color } = iconoPara(s.nombre);
                                 return (
                                     <div key={s.id} className="sv-card reveal" style={{ transitionDelay: `${(i % 6) * 60}ms` }}>
-                                        <div className="sv-icon" style={{ width: 52, height: 52, borderRadius: 12, background: `${color}14`, border: `1px solid ${color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', color, marginBottom: 20 }}>
-                                            <Icon />
+                                        <div className="sv-photo">
+                                            {s.imagen_url ? (
+                                                <img src={resolveImagenSrc(s.imagen_url)} alt={s.nombre} loading="lazy" onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.classList.add('sv-photo-fallback'); }} />
+                                            ) : (
+                                                <div className="sv-photo-fallback" style={{ color }}>
+                                                    <Icon />
+                                                </div>
+                                            )}
                                         </div>
+                                        <div className="sv-card-body">
                                         <h3 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.3rem', letterSpacing: '.03em', color: '#fff', marginBottom: 8, lineHeight: 1.15 }}>{s.nombre}</h3>
                                         {s.descripcion && (
                                             <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.87rem', color: 'rgba(255,255,255,.5)', lineHeight: 1.65, marginBottom: 20, minHeight: 44 }}>
@@ -251,6 +291,7 @@ export default function Servicios() {
                                                 </Link>
                                             )}
                                         </div>
+                                        </div>
                                     </div>
                                 );
                             })}
@@ -265,23 +306,23 @@ export default function Servicios() {
                     <div style={{ textAlign: 'center', marginBottom: 60 }}>
                         <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: GOLD, marginBottom: 12, fontWeight: 500 }}>// COMO FUNCIONA</p>
                         <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2rem, 4vw, 2.8rem)', letterSpacing: '.03em' }}>
-                            <span className="grad-text-white">De la cita a la </span>
-                            <span className="grad-text-gold">entrega, sin sorpresas.</span>
+                            <span className="grad-text-white">De la </span><span className="grad-text-rainbow">cita</span><span className="grad-text-white"> a la entrega, </span>
+                            <span className="grad-text-rainbow">sin sorpresas.</span>
                         </h2>
                     </div>
                     <div className="hiw-track">
-                        <div className="hiw-connector reveal in-view">
+                        <div className="hiw-connector reveal">
                             <div className="hiw-connector-line" />
                             <div className="hiw-connector-fill" />
                         </div>
                         <div className="sv-steps" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20, position: 'relative' }}>
                             {[
                                 { n: '01', t: 'Agenda tu cita', d: 'Crea tu cuenta y solicita el servicio que necesitas.', tag: 'Solo 2 minutos', icon: <IconCalendar /> },
-                                { n: '02', t: 'Diagnostico',    d: 'Revisamos tu vehiculo con equipo computarizado.',     tag: 'Escaner OBD2',   icon: <IconSearchScan /> },
-                                { n: '03', t: 'Reparacion',     d: 'Tecnicos certificados trabajan con repuestos garantizados.', tag: 'Garantia incluida', icon: <IconWrench /> },
-                                { n: '04', t: 'Entrega',        d: 'Retiras tu vehiculo y consultas el historial en tu panel.', tag: 'Seguimiento en linea', icon: <IconCheckCircle /> },
+                                { n: '02', t: 'Diagnóstico',    d: 'Revisamos tu vehículo con equipo computarizado.',     tag: 'Escáner OBD2',   icon: <IconSearchScan /> },
+                                { n: '03', t: 'Reparación',     d: 'Técnicos certificados trabajan con repuestos garantizados.', tag: 'Garantía incluida', icon: <IconWrench /> },
+                                { n: '04', t: 'Entrega',        d: 'Retiras tu vehículo y consultas el historial en tu panel.', tag: 'Seguimiento en línea', icon: <IconCheckCircle /> },
                             ].map((s, i) => (
-                                <div key={s.n} className="hiw-card reveal" style={{ transitionDelay: `${i * 100}ms` }}>
+                                <div key={s.n} className="hiw-card reveal" style={{ transitionDelay: `${i * 160}ms` }}>
                                     <div className="hiw-icon-ring">
                                         {s.icon}
                                         <span className="hiw-num">{s.n}</span>
@@ -302,10 +343,10 @@ export default function Servicios() {
                     <div className="reveal in-view" style={{ position: 'relative', overflow: 'hidden', background: 'linear-gradient(135deg, #0d1a24 0%, #0a0a0a 50%, #06141c 100%)', border: '1px solid rgba(59,123,171,.22)', borderRadius: 24, padding: 'clamp(40px, 7vw, 70px) clamp(28px, 5vw, 56px)', textAlign: 'center' }}>
                         <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: GOLD, marginBottom: 16, fontWeight: 500 }}>// LISTO CUANDO TU LO ESTES</p>
                         <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2rem, 4.5vw, 3.2rem)', letterSpacing: '.03em', marginBottom: 18, lineHeight: 1.05 }}>
-                            <span className="grad-text-white">No sabes que servicio necesitas? </span>
+                            <span className="grad-text-white">¿No sabes qué servicio necesitas? </span>
                         </h2>
                         <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '1rem', color: 'rgba(255,255,255,.58)', maxWidth: 560, margin: '0 auto 36px', lineHeight: 1.7 }}>
-                            Nuestro equipo puede orientarte. Visita cualquiera de nuestras sucursales o contactanos directamente.
+                            Nuestro equipo puede orientarte. Visita cualquiera de nuestras sucursales o contáctanos directamente.
                         </p>
                         <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
                             <Link to={ctaHref} className="ps-btn-primary">Crear cuenta y agendar</Link>

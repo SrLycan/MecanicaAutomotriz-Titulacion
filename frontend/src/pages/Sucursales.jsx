@@ -80,9 +80,9 @@ export default function Sucursales() {
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 22, flexWrap: 'wrap', gap: 12 }}>
                 <div>
-                    <div className="sswap-chip" style={{ marginBottom: 8 }}>
+                    <div className="SS SWAP-chip" style={{ marginBottom: 8 }}>
                         <span className="dot" />
-                        <span>SSWAP · ADMIN · SUCURSALES</span>
+                        <span>SS SWAP · ADMIN · SUCURSALES</span>
                     </div>
                     <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.6rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>Sucursales</h1>
                     <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.85rem', color: mut, marginTop: 6 }}>
@@ -246,7 +246,7 @@ function ModalSucursal({ data, onClose, onGuardar }) {
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 13 }}>
                         <div style={{ gridColumn: '1/-1' }}>
                             <label style={labelSt}>NOMBRE *</label>
-                            <input name="nombre" value={form.nombre} onChange={onChange} required placeholder="Ej: SSWAP Norte" style={inputSt} />
+                            <input name="nombre" value={form.nombre} onChange={onChange} required placeholder="Ej: SS SWAP Norte" style={inputSt} />
                         </div>
                         <div style={{ gridColumn: '1/-1' }}>
                             <label style={labelSt}>DIRECCION</label>
@@ -262,7 +262,7 @@ function ModalSucursal({ data, onClose, onGuardar }) {
                         </div>
                         <div style={{ gridColumn: '1/-1' }}>
                             <label style={labelSt}>EMAIL</label>
-                            <input type="email" name="email" value={form.email || ''} onChange={onChange} placeholder="sucursal@sswap.com" style={inputSt} />
+                            <input type="email" name="email" value={form.email || ''} onChange={onChange} placeholder="sucursal@SS SWAP.com" style={inputSt} />
                         </div>
                         <div style={{ gridColumn: '1/-1' }}>
                             <label style={labelSt}>HORARIO</label>

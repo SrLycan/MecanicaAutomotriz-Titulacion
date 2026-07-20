@@ -5,7 +5,7 @@ const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
     const [usuario, setUsuario] = useState(() => {
-        try { return JSON.parse(localStorage.getItem('sswap_usuario')); }
+        try { return JSON.parse(localStorage.getItem('SS SWAP_usuario')); }
         catch { return null; }
     });
     const [loading, setLoading] = useState(false);
@@ -14,8 +14,8 @@ export const AuthProvider = ({ children }) => {
         setLoading(true);
         try {
             const { data } = await api.post('/auth/login', { email, password });
-            localStorage.setItem('sswap_token',   data.token);
-            localStorage.setItem('sswap_usuario', JSON.stringify(data.usuario));
+            localStorage.setItem('SS SWAP_token',   data.token);
+            localStorage.setItem('SS SWAP_usuario', JSON.stringify(data.usuario));
             setUsuario(data.usuario);
             return { ok: true, usuario: data.usuario };
         } catch (err) {
@@ -28,16 +28,16 @@ export const AuthProvider = ({ children }) => {
     // Reemplaza token + usuario tras editar perfil, contrasena o foto (el backend
     // reemite un JWT fresco cada vez que cambian nombre, email o rol).
     const actualizarSesion = useCallback((token, usuario) => {
-        if (token) localStorage.setItem('sswap_token', token);
+        if (token) localStorage.setItem('SS SWAP_token', token);
         if (usuario) {
-            localStorage.setItem('sswap_usuario', JSON.stringify(usuario));
+            localStorage.setItem('SS SWAP_usuario', JSON.stringify(usuario));
             setUsuario(usuario);
         }
     }, []);
 
     const logout = useCallback(() => {
-        localStorage.removeItem('sswap_token');
-        localStorage.removeItem('sswap_usuario');
+        localStorage.removeItem('SS SWAP_token');
+        localStorage.removeItem('SS SWAP_usuario');
         setUsuario(null);
     }, []);
 
@@ -48,7 +48,7 @@ export const AuthProvider = ({ children }) => {
     // Sincroniza el estado si localStorage cambia (ej: tras registro directo)
     const syncFromStorage = useCallback(() => {
         try {
-            const u = JSON.parse(localStorage.getItem('sswap_usuario'));
+            const u = JSON.parse(localStorage.getItem('SS SWAP_usuario'));
             if (u) setUsuario(u);
         } catch {}
     }, []);
