@@ -11,6 +11,7 @@ const serviciosRoutes  = require('./routes/servicios.routes');
 const panelRoutes      = require('./routes/panel.routes');
 const citasRoutes      = require('./routes/citas.routes');
 const solicitudesRoutes = require('./routes/solicitudes.routes');
+const chatbotRoutes    = require('./routes/chatbot.routes');
 const { runMigrations } = require('./config/initDb');
 const path = require('path');
 
@@ -38,6 +39,7 @@ app.use('/api/servicios',  serviciosRoutes);
 app.use('/api/panel',      panelRoutes);
 app.use('/api/citas',      citasRoutes);
 app.use('/api/solicitudes', solicitudesRoutes);
+app.use('/api/chatbot',    chatbotRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => res.json({
