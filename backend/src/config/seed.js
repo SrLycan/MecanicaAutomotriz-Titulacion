@@ -1,5 +1,5 @@
 /**
- * SSWAP - Seed de base de datos
+ * SS SWAP - Seed de base de datos
  * Ejecutar: npm run seed
  * 
  * Crea el schema completo, usuarios demo, categorias, repuestos y sucursales.
@@ -12,11 +12,11 @@ const path   = require('path');
 async function seed() {
     const client = await pool.connect();
     try {
-        console.log('\n⚙️ SSWAP - Inicializando base de datos...\n');
+        console.log('\n⚙️ SS SWAP - Inicializando base de datos...\n');
 
         // ── 1. Ejecutar schema.sql (tablas + seed basico) ────
         let sql = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf-8');
-        const adminHash = await bcrypt.hash('Admin@SSWAP2026', 10);
+        const adminHash = await bcrypt.hash('Admin@SS SWAP2026', 10);
         sql = sql.replace('$2b$10$PLACEHOLDER_REPLACED_BY_SEED', adminHash);
 
         await client.query(sql);
@@ -30,33 +30,33 @@ async function seed() {
         // ── 3. Sucursales demo ──────────────────────────────
         const sucursales = [
             {
-                nombre: 'SSWAP Ponciano Alto',
+                nombre: 'SS SWAP Ponciano Alto',
                 direccion: 'Av. Real Audiencia y Manuel Cordova Galarza',
                 ciudad: 'Quito',
                 telefono: '+593 99 123 4567',
-                email: 'contacto@sswap.com',
+                email: 'contacto@SS SWAP.com',
                 horario: 'Lun-Vie 8:00-18:00 · Sab 8:00-14:00',
                 descripcion: 'Sucursal principal: diagnostico computarizado, mecanica general, alineacion y balanceo.',
                 es_principal: true,
                 activa: true,
             },
             {
-                nombre: 'SSWAP Norte',
+                nombre: 'SS SWAP Norte',
                 direccion: 'Av. 10 de Agosto y Naciones Unidas',
                 ciudad: 'Quito',
                 telefono: '+593 99 234 5678',
-                email: 'norte@sswap.com',
+                email: 'norte@SS SWAP.com',
                 horario: 'Lun-Vie 8:30-17:30',
                 descripcion: 'Taller especializado en motores diesel y sistemas electronicos.',
                 es_principal: false,
                 activa: true,
             },
             {
-                nombre: 'SSWAP Sur',
+                nombre: 'SS SWAP Sur',
                 direccion: 'Av. Maldonado y Pedro Vicente Maldonado',
                 ciudad: 'Quito',
                 telefono: '+593 99 345 6789',
-                email: 'sur@sswap.com',
+                email: 'sur@SS SWAP.com',
                 horario: 'Lun-Vie 8:00-17:00 · Sab 9:00-13:00',
                 descripcion: 'Servicio rapido: cambios de aceite, filtros, frenos y llantas.',
                 es_principal: false,
@@ -84,9 +84,9 @@ async function seed() {
 
         // ── 4. Usuarios adicionales de prueba ──────────────
         const users = [
-            { nombre: 'Tecnico Demo',      email: 'tecnico@sswap.com',   password: 'Tecnico@2026',   rol: 'tecnico'       },
-            { nombre: 'Recepcionista Demo',email: 'recepcion@sswap.com', password: 'Recepcion@2026', rol: 'recepcionista' },
-            { nombre: 'Cliente Demo',      email: 'cliente@sswap.com',   password: 'Cliente@2026',   rol: 'cliente'       },
+            { nombre: 'Tecnico Demo',      email: 'tecnico@SS SWAP.com',   password: 'Tecnico@2026',   rol: 'tecnico'       },
+            { nombre: 'Recepcionista Demo',email: 'recepcion@SS SWAP.com', password: 'Recepcion@2026', rol: 'recepcionista' },
+            { nombre: 'Cliente Demo',      email: 'cliente@SS SWAP.com',   password: 'Cliente@2026',   rol: 'cliente'       },
         ];
 
         for (const u of users) {
@@ -162,11 +162,11 @@ async function seed() {
         // ── Resumen final ──────────────────────────────────
         console.log('\n✅ Seed completado exitosamente.\n');
         console.log('📋 Usuarios disponibles:');
-        console.log('   admin@sswap.com       | Admin@SSWAP2026    | administrador');
-        console.log('   tecnico@sswap.com     | Tecnico@2026       | tecnico');
-        console.log('   recepcion@sswap.com   | Recepcion@2026     | recepcionista');
-        console.log('   cliente@sswap.com     | Cliente@2026       | cliente');
-        console.log('\n🏪 Sucursales: SSWAP Ponciano Alto, SSWAP Norte, SSWAP Sur');
+        console.log('   admin@SS SWAP.com       | Admin@SS SWAP2026    | administrador');
+        console.log('   tecnico@SS SWAP.com     | Tecnico@2026       | tecnico');
+        console.log('   recepcion@SS SWAP.com   | Recepcion@2026     | recepcionista');
+        console.log('   cliente@SS SWAP.com     | Cliente@2026       | cliente');
+        console.log('\n🏪 Sucursales: SS SWAP Ponciano Alto, SS SWAP Norte, SS SWAP Sur');
         console.log('👥 Clientes demo: Carlos Mendoza, Maria Sanchez, Pedro Jimenez + 2 mas');
         console.log('🚗 Vehiculos demo: Toyota Hilux, Kia Sportage, Chevrolet Aveo + 2 mas');
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import logoImg from '../../assets/logo.png';
 
 const SERVICIOS = [
     'Mantenimiento Preventivo',
@@ -16,7 +17,7 @@ const LINKS_RAPIDOS = [
     { label: 'Productos',         to: '/productos'  },
     { label: 'Agendar Servicio',  to: '/servicios'  },
     { label: 'Nosotros',          to: '/nosotros'   },
-    { label: 'Iniciar Sesion',    to: '/auth'       },
+    { label: 'Iniciar Sesión',    to: '/auth'       },
 ];
 
 export default function Footer() {
@@ -25,63 +26,59 @@ export default function Footer() {
     const handleNewsletter = (e) => {
         e.preventDefault();
         if (!email.trim() || !email.includes('@')) {
-            toast.error('Ingresa un correo valido');
+            toast.error('Ingresa un correo válido');
             return;
         }
-        toast.success('Gracias! Te avisaremos de nuestras novedades.');
+        toast.success('¡Gracias! Te avisaremos de nuestras novedades.');
         setEmail('');
     };
 
     return (
         <footer style={{ background: '#0c0f14', borderTop: '1px solid rgba(127,171,206,.14)', color: 'rgba(255,255,255,.65)', fontFamily: "'Outfit', sans-serif" }}>
+            <style>{`
+                /* ── Logo: halo radial (no cuadrado) solo al pasar el mouse ── */
+                .footer-logo-link { position: relative; }
+                .footer-logo-link::before {
+                    content: '';
+                    position: absolute;
+                    top: 50%; left: 50%;
+                    width: 100px; height: 100px;
+                    background: radial-gradient(circle, rgba(127,171,206,.5) 0%, rgba(59,123,171,.22) 45%, rgba(59,123,171,0) 72%);
+                    transform: translate(-50%, -50%) scale(.8);
+                    opacity: 0;
+                    z-index: 0;
+                    pointer-events: none;
+                    transition: opacity .35s ease, transform .35s ease;
+                }
+                .footer-logo-link:hover::before { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+                .footer-logo-img { position: relative; z-index: 1; filter: drop-shadow(0 0 0px rgba(59,123,171,0)); transition: filter .35s ease; }
+                .footer-logo-link:hover .footer-logo-img { filter: drop-shadow(0 0 5px rgba(127,171,206,.55)); }
 
-            {/* Newsletter */}
-            <div style={{ borderBottom: '1px solid rgba(127,171,206,.14)', background: 'linear-gradient(90deg, rgba(27,58,87,.25), rgba(59,123,171,.08))' }}>
-                <div style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 20 }}>
-                    <div>
-                        <p style={{ fontFamily: "'Sora'", fontWeight: 700, fontSize: '1rem', color: '#fff', marginBottom: 4 }}>Mantente al tanto de SSWAP</p>
-                        <p style={{ fontSize: '.82rem', fontWeight: 300, color: 'rgba(255,255,255,.5)' }}>Promociones, mantenimiento estacional y novedades del taller.</p>
-                    </div>
-                    <form onSubmit={handleNewsletter} style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={e => setEmail(e.target.value)}
-                            placeholder="tu@correo.com"
-                            style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.18)', borderRadius: 999, padding: '11px 18px', color: '#fff', fontFamily: "'Outfit'", fontSize: '.85rem', outline: 'none', minWidth: 220 }}
-                        />
-                        <button type="submit" style={{ background: 'linear-gradient(135deg, #1b3a57, #2b5c85 60%, #3b7bab)', border: 'none', borderRadius: 999, padding: '11px 22px', color: '#fff', fontFamily: "'Sora'", fontWeight: 600, fontSize: '.85rem', cursor: 'pointer' }}>
-                            Suscribirme
-                        </button>
-                    </form>
-                </div>
-            </div>
-
+                /* ── Navegacion: rayita que se despliega hacia la derecha y se ilumina (igual que el Navbar) ── */
+                .footer-nav-link { position: relative; display: inline-block; font-size: .85rem; font-weight: 300; color: rgba(255,255,255,.55); text-decoration: none; padding-bottom: 3px; transition: color .2s; }
+                .footer-nav-link::after { content: ''; position: absolute; left: 0; right: 100%; bottom: 0; height: 1.5px; background: linear-gradient(90deg, #7fabce, #3b7bab); transition: right .25s cubic-bezier(.4,0,.2,1); border-radius: 2px; }
+                .footer-nav-link:hover { color: #cfe3f3; text-shadow: 0 0 10px rgba(127,171,206,.65); }
+                .footer-nav-link:hover::after { right: 0; }
+            `}</style>
 
             {/* Main footer */}
             <div style={{ maxWidth: 1200, margin: '0 auto', padding: '60px 24px 40px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 40 }}>
 
                 {/* Marca */}
                 <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                        <div style={{ width: 36, height: 36, background: 'linear-gradient(135deg, #1b3a57, #2b5c85 55%, #3b7bab)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 4px 14px -4px rgba(43,92,133,.7)' }}>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
-                            </svg>
+                    <Link to="/" className="footer-logo-link" style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none', marginBottom: 16 }}>
+                        <div style={{ width: 120, height: 50, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', overflow: 'hidden' }}>
+                            <img className="footer-logo-img" src={logoImg} alt="SS SWAP" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                         </div>
-                        <div>
-                            <p style={{ fontFamily: "'Sora'", fontWeight: 700, fontSize: '1.05rem', letterSpacing: '.02em', color: '#fff', lineHeight: 1 }}>SSWAP</p>
-                            <p style={{ fontWeight: 300, fontSize: '.65rem', color: 'rgba(255,255,255,.4)', lineHeight: 1.3 }}>Mecanica Automotriz</p>
-                        </div>
-                    </div>
+                    </Link>
                     <p style={{ fontWeight: 300, fontSize: '.85rem', lineHeight: 1.7, color: 'rgba(255,255,255,.5)', marginBottom: 20 }}>
-                        Taller automotriz ubicado en Ponciano Alto, Quito. Mas de 10 anos brindando servicio tecnico de calidad con tecnologia de diagnostico avanzada.
+                        Taller automotriz ubicado en Ponciano Alto, Quito. Más de 10 años brindando servicio técnico de calidad con tecnología de diagnóstico avanzada.
                     </p>
                     {/* Horario */}
                     <div style={{ fontSize: '.8rem', color: 'rgba(255,255,255,.4)' }}>
-                        <p style={{ fontWeight: 600, color: 'rgba(255,255,255,.6)', marginBottom: 6 }}>Horario de Atencion</p>
-                        <p>Lunes - Viernes: 8:00 - 18:00</p>
-                        <p>Sabado: 8:00 - 14:00</p>
+                        <p style={{ fontWeight: 600, color: 'rgba(255,255,255,.6)', marginBottom: 6 }}>Horario de Atención</p>
+                        <p>Lunes - Viernes: 8:00am - 5:00pm</p>
+                        <p>Sabado: 8:00am - 1:00pm</p>
                         <p>Domingo: Cerrado</p>
                     </div>
                 </div>
@@ -105,9 +102,7 @@ export default function Footer() {
                     <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
                         {LINKS_RAPIDOS.map(l => (
                             <li key={l.to}>
-                                <Link to={l.to} style={{ fontSize: '.85rem', fontWeight: 300, color: 'rgba(255,255,255,.55)', textDecoration: 'none', transition: 'color .2s' }}
-                                    onMouseEnter={e => e.currentTarget.style.color = '#7fabce'}
-                                    onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,.55)'}>
+                                <Link to={l.to} className="footer-nav-link">
                                     {l.label}
                                 </Link>
                             </li>
@@ -120,9 +115,9 @@ export default function Footer() {
                     <p style={{ fontFamily: "'Sora'", fontWeight: 700, fontSize: '.68rem', letterSpacing: '.1em', textTransform: 'uppercase', color: '#7fabce', marginBottom: 16 }}>CONTACTO</p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                         {[
-                            { icon: <IconPin />,   text: 'Ponciano Alto, Quito, Ecuador', href: 'https://www.google.com/maps/search/?api=1&query=Ponciano+Alto+Quito+Ecuador' },
-                            { icon: <IconPhone />, text: '+593 99 XXX XXXX', href: 'tel:+59399XXXXXXX' },
-                            { icon: <IconMail />,  text: 'contacto@sswap.com', href: 'mailto:contacto@sswap.com' },
+                            { icon: <IconPin />,   text: 'Pasaje San Pedro S/N y, Av. Universitaria, 170184 Quito', href: 'https://www.google.com/maps/search/?api=1&query=Pasaje+San+Pedro+S%2FN+Av.+Universitaria+170184+Quito' },
+                            { icon: <IconPhone />, text: '0963863847', href: 'tel:+593963863847' },
+                            { icon: <IconMail />,  text: 'contacto@SS SWAP.com', href: 'mailto:contacto@SS SWAP.com' },
                         ].map((item, i) => (
                             <a key={i} href={item.href} target={item.href.startsWith('http') ? '_blank' : undefined} rel="noreferrer"
                                style={{ display: 'flex', alignItems: 'flex-start', gap: 10, textDecoration: 'none', color: 'inherit', transition: 'color .2s' }}
@@ -139,7 +134,7 @@ export default function Footer() {
                         {[
                             { icon: <IconFacebook />, href: 'https://facebook.com', label: 'Facebook' },
                             { icon: <IconInstagram />, href: 'https://instagram.com', label: 'Instagram' },
-                            { icon: <IconWhatsapp />, href: 'https://wa.me/593999999999', label: 'WhatsApp' },
+                            { icon: <IconWhatsapp />, href: 'https://wa.me/593963863847', label: 'WhatsApp' },
                         ].map((s, i) => (
                             <a key={i} href={s.href} target="_blank" rel="noreferrer" aria-label={s.label}
                                style={{ width: 36, height: 36, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.14)', color: 'rgba(255,255,255,.65)', transition: 'all .2s' }}
@@ -163,7 +158,7 @@ export default function Footer() {
             <div style={{ borderTop: '1px solid rgba(127,171,206,.14)', padding: '18px 24px' }}>
                 <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                     <p style={{ fontSize: '.78rem', fontWeight: 300, color: 'rgba(255,255,255,.3)' }}>
-                        &copy; {new Date().getFullYear()} Mecanica Automotriz SSWAP. Todos los derechos reservados.
+                        &copy; {new Date().getFullYear()} Mecánica Automotriz SS SWAP. Todos los derechos reservados.
                     </p>
                     <p style={{ fontSize: '.78rem', fontWeight: 300, color: 'rgba(255,255,255,.25)' }}>
                         Sistema desarrollado por Banda J, Sarango R, Vela D · PUCE TEC 2026

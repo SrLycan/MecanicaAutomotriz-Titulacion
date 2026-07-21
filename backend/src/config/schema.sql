@@ -1,5 +1,5 @@
 -- ============================================================
--- SSWAP — Schema PostgreSQL
+-- SS SWAP — Schema PostgreSQL
 -- Sprint 1: Usuarios, Inventario + Portal Publico
 -- ============================================================
 
@@ -101,7 +101,7 @@ ON CONFLICT DO NOTHING;
 
 -- ── Seed: usuario admin (password en seed.js) ───────────────
 INSERT INTO usuarios (nombre, email, password, rol) VALUES
-    ('Administrador SSWAP', 'admin@sswap.com',
+    ('Administrador SS SWAP', 'admin@SS SWAP.com',
      '$2b$10$PLACEHOLDER_REPLACED_BY_SEED', 'administrador')
 ON CONFLICT (email) DO NOTHING;
 

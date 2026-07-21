@@ -253,9 +253,9 @@ export default function Dashboard() {
 
                 {/* Lado izquierdo: texto */}
                 <div style={{ position: 'relative', zIndex: 1 }}>
-                    <div className="sswap-chip" style={{ marginBottom: 12 }}>
+                    <div className="SS SWAP-chip" style={{ marginBottom: 12 }}>
                         <span className="dot" />
-                        <span>SSWAP · {meta.label.toUpperCase()}</span>
+                        <span>SS SWAP · {meta.label.toUpperCase()}</span>
                     </div>
                     <p style={{ fontFamily: "'Outfit'", fontWeight: 500, fontSize: '1.08rem', color: SKY_DEEP, marginBottom: 4 }}>
                         {greet},
@@ -661,7 +661,7 @@ function RoleIllustration({ role, isDark }) {
    - Ruedas multicapa (neumático + sidewall + rin + 6 rayos + hub)
    - Faros con cristal, luces antiniebla, grille frontal
    - Sombra dinámica + carretera con líneas en movimiento
-   - Logo SSWAP, espejo lateral, manijas, parachoques
+   - Logo SS SWAP, espejo lateral, manijas, parachoques
    ───────────────────────────────────────────────────────────── */
 function Car3D() {
     const stageRef = useRef(null);
@@ -893,10 +893,10 @@ function CarSVG() {
             <rect x="20" y="168" width="20" height="16" rx="3.5" fill="#0c4a6e" />
             <rect x="458" y="164" width="22" height="18" rx="3.5" fill="#0c4a6e" />
 
-            {/* Logo SSWAP en la puerta */}
+            {/* Logo SS SWAP en la puerta */}
             <text x="195" y="168" textAnchor="middle"
                   fontFamily="'Bebas Neue', sans-serif" fontSize="11" letterSpacing="3"
-                  fill="rgba(255,255,255,0.92)">SSWAP</text>
+                  fill="rgba(255,255,255,0.92)">SS SWAP</text>
 
             {/* BANDA DE BRILLO ESPECULAR ANIMADA (recorre la carrocería) */}
             <use href="#carBodyPath" fill="url(#specStrip)" pointerEvents="none" />

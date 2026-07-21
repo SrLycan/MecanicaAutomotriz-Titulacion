@@ -38,14 +38,14 @@ const obtenerServicio = async (req, res) => {
 
 /** POST /api/servicios — solo admin */
 const crearServicio = async (req, res) => {
-    const { nombre, descripcion, precio_base = 0, duracion_estimada_min, activo = true } = req.body;
+    const { nombre, descripcion, precio_base = 0, duracion_estimada_min, activo = true, imagen_url } = req.body;
     if (!nombre?.trim()) return res.status(400).json({ error: 'El nombre es obligatorio.' });
 
     try {
         const { rows } = await pool.query(
-            `INSERT INTO tipos_servicio (nombre, descripcion, precio_base, duracion_estimada_min, activo)
-             VALUES ($1,$2,$3,$4,$5) RETURNING *`,
-            [nombre.trim(), descripcion?.trim() || null, precio_base, duracion_estimada_min || null, activo]
+            `INSERT INTO tipos_servicio (nombre, descripcion, precio_base, duracion_estimada_min, activo, imagen_url)
+             VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+            [nombre.trim(), descripcion?.trim() || null, precio_base, duracion_estimada_min || null, activo, imagen_url?.trim() || null]
         );
         return res.status(201).json(rows[0]);
     } catch (err) {
@@ -56,14 +56,14 @@ const crearServicio = async (req, res) => {
 
 /** PUT /api/servicios/:id — solo admin */
 const actualizarServicio = async (req, res) => {
-    const { nombre, descripcion, precio_base, duracion_estimada_min, activo } = req.body;
+    const { nombre, descripcion, precio_base, duracion_estimada_min, activo, imagen_url } = req.body;
     if (!nombre?.trim()) return res.status(400).json({ error: 'El nombre es obligatorio.' });
 
     try {
         const { rows } = await pool.query(
             `UPDATE tipos_servicio SET nombre=$1, descripcion=$2, precio_base=$3,
-             duracion_estimada_min=$4, activo=$5 WHERE id=$6 RETURNING *`,
-            [nombre.trim(), descripcion?.trim() || null, precio_base, duracion_estimada_min || null, activo, req.params.id]
+             duracion_estimada_min=$4, activo=$5, imagen_url=$6 WHERE id=$7 RETURNING *`,
+            [nombre.trim(), descripcion?.trim() || null, precio_base, duracion_estimada_min || null, activo, imagen_url?.trim() || null, req.params.id]
         );
         if (!rows[0]) return res.status(404).json({ error: 'Servicio no encontrado.' });
         return res.json(rows[0]);

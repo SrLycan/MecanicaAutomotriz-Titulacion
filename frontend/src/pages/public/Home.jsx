@@ -3,32 +3,26 @@ import { Link } from 'react-router-dom';
 import Navbar from '../../components/public/Navbar';
 import Footer from '../../components/public/Footer';
 import api from '../../services/api';
-
-const SERVICIOS = [
-    { titulo: 'Mantenimiento Preventivo', desc: 'Cambio de aceite, filtros, bujias y revision general de fluidos.',                  icon: <IconWrench />, color: '#3b7bab' },
-    { titulo: 'Frenos y Suspension',      desc: 'Pastillas, discos, amortiguadores y rotulas. Tu seguridad es lo primero.',          icon: <IconShield />, color: '#4a83b3' },
-    { titulo: 'Diagnostico Computarizado',desc: 'Lectura de codigos de falla con equipo certificado. Sin suposiciones.',             icon: <IconCpu />,    color: '#6f8ba3' },
-    { titulo: 'Sistema Electrico',        desc: 'Bateria, alternador, arranque, cableado y sensores. Fallas complejas resueltas.',   icon: <IconZap />,    color: '#57708a' },
-    { titulo: 'Alineacion y Balanceo',    desc: 'Alineacion laser de precision y balanceo de ruedas.',                                icon: <IconTarget />, color: '#7fabce' },
-    { titulo: 'Correccion de Carroceria', desc: 'Enderezada, masilla y pintura con acabados de calidad.',                             icon: <IconTool />,   color: '#3a4149' },
-];
+import colisionesImg from "../../assets/colisiones.png";
+import bannerGrandeImg from "../../assets/bannergrande.png";
+const MAPA_EMBED_SRC = "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d953.2894989157679!2d-78.37253773829565!3d-0.21855914339467258!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x91d5931de96a4297%3A0x456635055317eed8!2sInsignia%20Automotriz!5e1!3m2!1sen!2sec!4v1784479118759!5m2!1sen!2sec";
 
 const STATS = [
-    { valor: '10+',   label: 'Anos de experiencia' },
-    { valor: '80+',   label: 'Vehiculos al mes' },
+    { valor: '10+',   label: 'Años de experiencia' },
+    { valor: '80+',   label: 'Vehículos al mes' },
     { valor: '1000+', label: 'Clientes registrados' },
-    { valor: '24h',   label: 'Diagnostico rapido' },
+    { valor: '24h',   label: 'Diagnóstico rápido' },
 ];
 
 const ESPECIALIDADES = [
-    { titulo: 'Motor y Distribucion',      desc: 'Reconstruccion, cambio de correas y diagnostico de fallas complejas del motor.', img: 'https://images.unsplash.com/photo-1487754180451-c456f719a1fc?q=80&w=900&auto=format&fit=crop', color: '#3b7bab' },
-    { titulo: 'Frenos y Discos',           desc: 'Pastillas, discos y sistema hidraulico revisados con precision milimetrica.',    img: 'https://images.unsplash.com/photo-1600661653561-629509216228?q=80&w=900&auto=format&fit=crop', color: '#4a83b3' },
-    { titulo: 'Diagnostico Computarizado', desc: 'Escaner OBD2 de ultima generacion para leer cada codigo de falla sin adivinar.',  img: 'https://images.unsplash.com/photo-1580773306688-9930b3d3f5c1?q=80&w=900&auto=format&fit=crop', color: '#6f8ba3' },
-    { titulo: 'Colisiones',                desc: 'Enderezada de carroceria, masilla y pintura con acabado de fabrica.',              img: 'https://images.unsplash.com/photo-1518987048-93e29699e79a?q=80&w=900&auto=format&fit=crop', color: '#57708a' },
-    { titulo: 'Cambio de Aceite',          desc: 'Aceite, filtros y fluidos con productos certificados por el fabricante.',          img: 'https://images.unsplash.com/photo-1550355191-aa8a80b41353?q=80&w=900&auto=format&fit=crop', color: '#7fabce' },
-    { titulo: 'Suspension',                desc: 'Amortiguadores, rotulas y terminales para un manejo suave y seguro.',              img: 'https://images.unsplash.com/photo-1517524008697-84bbe3c3fd98?q=80&w=900&auto=format&fit=crop', color: '#3a4149' },
-    { titulo: 'Electricidad Automotriz',   desc: 'Bateria, alternador, arranque y cableado. Fallas electricas resueltas a fondo.',    img: 'https://images.unsplash.com/photo-1620891549027-942fdc95d3f5?q=80&w=900&auto=format&fit=crop', color: '#3b7bab' },
-    { titulo: 'Alineacion y Balanceo',     desc: 'Alineacion laser y balanceo de ruedas para un desgaste uniforme del neumatico.',    img: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?q=80&w=900&auto=format&fit=crop', color: '#4a83b3' },
+    { titulo: 'Motor y Distribución',      desc: 'Reconstrucción, cambio de correas y diagnóstico de fallas complejas del motor.', img: '/servicios/motor.png', color: '#3b7bab' },
+    { titulo: 'Frenos y Discos',           desc: 'Pastillas, discos y sistema hidráulico revisados con precisión milimétrica.',    img: '/servicios/frenos.png', color: '#4a83b3' },
+    { titulo: 'Diagnóstico Computarizado', desc: 'Escáner OBD2 de última generación para leer cada código de falla sin adivinar.',  img: '/servicios/diagnostico.png', color: '#6f8ba3' },
+    { titulo: 'Colisiones',                desc: 'Enderezada de carrocería, masilla y pintura con acabado de fábrica.',              img: '/servicios/colisiones.png', color: '#57708a' },
+    { titulo: 'Cambio de Aceite',          desc: 'Aceite, filtros y fluidos con productos certificados por el fabricante.',          img: '/servicios/aceite.png', color: '#7fabce' },
+    { titulo: 'Suspensión',                desc: 'Amortiguadores, rótulas y terminales para un manejo suave y seguro.',              img: '/servicios/suspension.png', color: '#3a4149' },
+    { titulo: 'Electricidad Automotriz',   desc: 'Batería, alternador, arranque y cableado. Fallas eléctricas resueltas a fondo.',    img: '/servicios/electronica.png', color: '#3b7bab' },
+    { titulo: 'Alineación y Balanceo',     desc: 'Alineación láser y balanceo de ruedas para un desgaste uniforme del neumático.',    img: '/servicios/alineacion.png', color: '#4a83b3' },
 ];
 
 export default function Home() {
@@ -76,17 +70,17 @@ export default function Home() {
                     color: #fff; background: linear-gradient(135deg, #2b5c85, #3b7bab); border: none; border-radius: 999px;
                     padding: 15px 32px; cursor: pointer; text-decoration: none;
                     transition: all .25s cubic-bezier(.4,0,.2,1);
-                    position: relative; overflow: hidden;
+                    position: relative; overflow: hidden; isolation: isolate;
                     box-shadow: 0 8px 24px -6px rgba(59,123,171,.5);
                 }
                 .ps-btn-primary::before {
-                    content: ''; position: absolute; inset: 0;
+                    content: ''; position: absolute; inset: 0; z-index: -1;
                     background: linear-gradient(135deg, #5a93c4, #7fabce);
                     opacity: 0; transition: opacity .25s;
                 }
                 .ps-btn-primary > * { position: relative; z-index: 1; }
                 .ps-btn-primary:hover::before { opacity: 1; }
-                .ps-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 14px 36px -8px rgba(59,123,171,.7); }
+                .ps-btn-primary:hover { color: #fff; transform: translateY(-2px); box-shadow: 0 14px 36px -8px rgba(59,123,171,.7); }
                 .ps-btn-outline {
                     display: inline-flex; align-items: center; gap: 10px;
                     font-family: 'Outfit', sans-serif; font-weight: 600; font-size: .92rem;
@@ -127,6 +121,47 @@ export default function Home() {
                     -webkit-text-fill-color: transparent;
                 }
 
+                /* ── Rainbow shimmer (destello que recorre el texto) ── */
+                @keyframes shimmerSweep {
+                    0%   { background-position: -300% center; }
+                    100% { background-position:  300% center; }
+                }
+                .grad-text-rainbow {
+                    background: linear-gradient(
+                        90deg,
+                        #3b7bab 0%, #7fabce 18%, #cfe3f3 34%, #7fabce 50%,
+                        #3b7bab 66%, #4a83b3 82%, #3b7bab 100%
+                    );
+                    background-size: 280% auto;
+                    -webkit-background-clip: text; background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    animation: shimmerSweep 5s linear infinite;
+                    filter: drop-shadow(0 0 18px rgba(59,123,171,.55)) drop-shadow(0 0 36px rgba(127,171,206,.3));
+                }
+
+                /* ── Particulas flotantes ambientales ── */
+                @keyframes floatParticle {
+                    0%   { transform: translateY(0) translateX(0); opacity: 0; }
+                    10%  { opacity: 1; }
+                    90%  { opacity: 1; }
+                    100% { transform: translateY(-140px) translateX(18px); opacity: 0; }
+                }
+                @keyframes particleDrift {
+                    0%, 100% { transform: translateY(0) translateX(0); }
+                    50%      { transform: translateY(-14px) translateX(6px); }
+                }
+                .particles-field { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+                .particle-dot {
+                    position: absolute; border-radius: 50%;
+                    background: radial-gradient(circle, rgba(127,171,206,.95) 0%, rgba(59,123,171,.15) 70%, transparent 100%);
+                    animation: floatParticle linear infinite;
+                }
+                .particle-ring {
+                    position: absolute; border-radius: 50%;
+                    border: 1.5px solid rgba(127,171,206,.28);
+                    animation: particleDrift ease-in-out infinite;
+                }
+
                 /* ── Helpers ── */
                 .pub-section { animation: pubFadeUp .7s cubic-bezier(.4,0,.2,1) both; }
                 .glow-orb { position: absolute; border-radius: 50%; pointer-events: none; filter: blur(60px); }
@@ -136,10 +171,17 @@ export default function Home() {
                         linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
                     background-size: 48px 48px;
                 }
-                .scan-line {
-                    position: absolute; left: 0; right: 0; height: 2px;
-                    background: linear-gradient(90deg, transparent, rgba(74,131,179,.55), transparent);
-                    animation: pubScan 4s linear infinite;
+                /* (Se retiró el separador ".scan-line" de UBICACIONES: su animación por porcentaje
+                   quedaba limitada a los 2px de su propia altura, por eso se veía "atascada"
+                   y se reiniciaba de forma abrupta en vez de recorrer la sección). */
+                /* Separador azul inferior — se renderiza SIEMPRE detrás/debajo del texto que acompaña */
+                .section-tag-underline { z-index: 2; }
+                .section-tag-underline::after {
+                    content: ''; position: absolute; left: 50%; bottom: 0;
+                    transform: translateX(-50%);
+                    width: 46px; height: 2px; border-radius: 2px;
+                    background: linear-gradient(90deg, transparent, #3b7bab, transparent);
+                    z-index: -1;
                 }
                 .mech-card { transition: transform .35s, border-color .35s, box-shadow .35s; }
                 .mech-card:hover { transform: translateY(-5px); border-color: rgba(255,255,255,.18); }
@@ -327,6 +369,7 @@ export default function Home() {
                 HERO — estilo PlayStation: gradiente dramático + auto 3D
             ════════════════════════════════════════════════════════ */}
             <section style={{ minHeight: '100vh', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center' }}>
+                <Particles count={20} />
                 {/* Fondo dramático */}
                 <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at top right, #1a1408 0%, #0a0a0a 45%, #050505 100%)' }} />
                 <div className="grid-pattern" style={{ position: 'absolute', inset: 0, opacity: .5, maskImage: 'radial-gradient(ellipse 80% 50% at 50% 40%, black, transparent 75%)', WebkitMaskImage: 'radial-gradient(ellipse 80% 50% at 50% 40%, black, transparent 75%)' }} />
@@ -349,13 +392,13 @@ export default function Home() {
                             </div>
 
                             <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(3.2rem, 7.5vw, 6.2rem)', letterSpacing: '.02em', lineHeight: .92, marginBottom: 22 }}>
-                                <span className="grad-text-white">TU VEHICULO</span><br />
-                                <span className="grad-text-gold">EN MANOS</span><br />
-                                <span className="grad-text-white">EXPERTAS.</span>
+                                <span className="grad-text-rainbow">RESTAURAMOS</span><span className="grad-text-white"> VEHÍCULOS</span><br />
+                                <span className="grad-text-rainbow">REFORZAMOS</span><br />
+                                <span className="grad-text-white">CONFIANZA.</span>
                             </h1>
 
                             <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: 'clamp(.95rem, 1.6vw, 1.1rem)', color: 'rgba(255,255,255,.62)', lineHeight: 1.75, marginBottom: 36, maxWidth: 540 }}>
-                                Taller automotriz especializado con mas de <strong style={{ color: '#fff', fontWeight: 600 }}>10 anos de experiencia</strong>. Diagnostico computarizado, repuestos certificados y tecnicos en constante capacitacion.
+                                Taller automotriz especializado con más de <strong style={{ color: '#fff', fontWeight: 600 }}>10 años de experiencia</strong>. Diagnóstico computarizado, repuestos certificados y técnicos en constante capacitación.
                             </p>
 
                             <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
@@ -364,13 +407,13 @@ export default function Home() {
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
                                 </Link>
                                 <Link to="/nosotros" className="ps-btn-outline">
-                                    Conocer Mas
+                                    Conocer Más
                                 </Link>
                             </div>
 
                             {/* Mini chips */}
                             <div style={{ display: 'flex', gap: 10, marginTop: 36, flexWrap: 'wrap' }}>
-                                {['Diagnostico OBD2', 'Repuestos OEM', 'Garantia escrita'].map(t => (
+                                {['Diagnóstico OBD2', 'Repuestos OEM', 'Garantía escrita'].map(t => (
                                     <span key={t} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 999, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.08)', fontFamily: "'Outfit'", fontSize: '.78rem', color: 'rgba(255,255,255,.75)' }}>
                                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#3b7bab" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
                                         {t}
@@ -399,7 +442,7 @@ export default function Home() {
                                 <div className="hero-glass-badge hero-glass-badge--top">
                                     <span className="hero-glass-dot" />
                                     <div>
-                                        <p className="hero-glass-badge-title">Diagnostico en vivo</p>
+                                        <p className="hero-glass-badge-title">Diagnóstico en vivo</p>
                                         <p className="hero-glass-badge-sub">Equipo OBD2 certificado</p>
                                     </div>
                                 </div>
@@ -410,12 +453,12 @@ export default function Home() {
                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></svg>
                                     </div>
                                     <div>
-                                        <p className="hero-glass-badge-title">Tecnicos certificados</p>
+                                        <p className="hero-glass-badge-title">Técnicos certificados</p>
                                         <p className="hero-glass-badge-sub">Trabajando ahora mismo</p>
                                     </div>
                                 </div>
                             </div>
-                            {/* Halo decorativo detras del panel */}
+                            {/* Halo decorativo detrás del panel */}
                             <div className="hero-video-halo" />
                         </div>
                     </div>
@@ -423,10 +466,10 @@ export default function Home() {
                     {/* Badges de confianza */}
                     <div className="hero-trust-bar reveal in-view">
                         {[
-                            { icon: <IconAward />, k: '10+ anos', v: 'de experiencia' },
-                            { icon: <IconShieldCheck />, k: 'Tecnicos', v: 'certificados' },
+                            { icon: <IconAward />, k: '10+ años', v: 'de experiencia' },
+                            { icon: <IconShieldCheck />, k: 'Técnicos', v: 'certificados' },
                             { icon: <IconPackage />, k: 'Repuestos', v: 'garantizados' },
-                            { icon: <IconGauge />, k: 'Equipos', v: 'ultima generacion' },
+                            { icon: <IconGauge />, k: 'Equipos', v: 'última generación' },
                         ].map((b, i) => (
                             <div key={i} className="hero-trust-item">
                                 <div className="hero-trust-icon">{b.icon}</div>
@@ -457,7 +500,7 @@ export default function Home() {
                 <div style={{ position: 'absolute', inset: 0, opacity: .12, backgroundImage: 'repeating-linear-gradient(-45deg, transparent 0 12px, rgba(255,255,255,.35) 12px 14px)' }} />
                 <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, position: 'relative' }}>
                     <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.92rem', color: '#fff' }}>
-                        Lun-Vie 8:00 - 18:00 · Sab 8:00 - 14:00 · Ponciano Alto, Quito
+                        Lun-Vie 8:00 - 17:00 · Sab 8:00 - 13:00 · Ponciano Alto, Quito
                     </p>
                     <Link to="/servicios" style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontFamily: "'Outfit'", fontWeight: 700, fontSize: '.88rem', color: '#fff', textDecoration: 'none', borderBottom: '2px solid rgba(255,255,255,.4)' }}>
                         Agenda tu cita ahora
@@ -475,32 +518,31 @@ export default function Home() {
                     <div className="col-media reveal">
                         <div className="col-badge">
                             <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4ade80', boxShadow: '0 0 8px #4ade80' }} />
-                            SERVICIO MAS POPULAR
+                            SERVICIO MÁS POPULAR
                         </div>
-                        <img
-                            src="https://images.unsplash.com/photo-1518987048-93e29699e79a?q=80&w=1200&auto=format&fit=crop"
-                            alt="Reparacion de colisiones y carroceria"
+                            <img
+                            src={colisionesImg}
+                            alt="Reparación de colisiones y carrocería"
                             loading="lazy"
                             onError={e => { e.currentTarget.style.opacity = 0; }}
-                        />
+                            />
+
                         <div className="col-media-overlay" />
                     </div>
 
                     <div className="reveal" style={{ transitionDelay: '80ms' }}>
                         <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: '#3b7bab', marginBottom: 14, fontWeight: 500 }}>// COLISIONES</p>
                         <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2.2rem, 4.5vw, 3.4rem)', letterSpacing: '.02em', marginBottom: 18, lineHeight: 1.05 }}>
-                            <span className="grad-text-white">Tu auto, </span>
-                            <span className="grad-text-gold">como si nunca hubiera pasado.</span>
+                            <span className="grad-text-white">Tu auto, </span><span className="grad-text-rainbow">como si fuera NUEVO.</span>
                         </h2>
                         <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '1rem', color: 'rgba(255,255,255,.6)', lineHeight: 1.75, marginBottom: 28, maxWidth: 480 }}>
-                            Enderezada de carroceria, masilla y pintura con acabado de fabrica. Trabajamos con tu aseguradora
-                            y te entregamos un vehiculo que luce y se conduce como nuevo.
+                            Enderezada de carrocería, masilla y pintura con acabado de fábrica. Te entregamos un vehículo que luce y se conduce como nuevo.
                         </p>
                         <div style={{ marginBottom: 32 }}>
                             {[
-                                { t: 'Evaluacion sin costo', d: 'Inspeccionamos el dano y te damos un presupuesto claro.' },
-                                { t: 'Pintura de fabrica', d: 'Cabina de pintura y mezcla exacta de color por computadora.' },
-                                { t: 'Gestion con aseguradoras', d: 'Te ayudamos con el papeleo del siniestro paso a paso.' },
+                                { t: 'Evaluación sin costo', d: 'Inspeccionamos el daño y te damos un presupuesto claro.' },
+                                { t: 'Pintura de fábrica', d: 'Cabina de pintura y mezcla exacta de color por computadora.' },
+                                { t: 'Gestión con aseguradoras', d: 'Te ayudamos con el papeleo del siniestro paso a paso.' },
                             ].map((b, i) => (
                                 <div key={i} className="col-benefit">
                                     <div className="col-benefit-icon"><IconCheckSmall /></div>
@@ -519,7 +561,7 @@ export default function Home() {
             </section>
 
             {/* ════════════════════════════════════════════════════════
-                ESPECIALIDADES — tarjetas con fotografias reales
+                ESPECIALIDADES — tarjetas con fotografías reales
             ════════════════════════════════════════════════════════ */}
             <section className="pub-section-pad" style={{ maxWidth: 1280, margin: '0 auto', position: 'relative', overflow: 'hidden' }}>
                 <div className="glow-orb" style={{ top: '20%', left: '-10%', width: 400, height: 400, background: 'radial-gradient(closest-side, rgba(74,131,179,.12), transparent)', animation: 'pubOrb 10s ease-in-out infinite' }} />
@@ -527,12 +569,10 @@ export default function Home() {
                 <div style={{ textAlign: 'center', marginBottom: 60, position: 'relative' }}>
                     <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: '#3b7bab', marginBottom: 14, fontWeight: 500 }}>// ESPECIALIDADES</p>
                     <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2.4rem, 5vw, 4rem)', letterSpacing: '.02em', marginBottom: 16, lineHeight: 1 }}>
-                        <span className="grad-text-white">Trabajamos cada </span>
-                        <span className="grad-text-gold">pieza</span>
-                        <span className="grad-text-white"> con precision.</span>
+                        <span className="grad-text-rainbow">Trabajamos</span><span className="grad-text-white"> cada pieza </span><span className="grad-text-rainbow">con precisión.</span>
                     </h2>
                     <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '1rem', color: 'rgba(255,255,255,.55)', maxWidth: 580, margin: '0 auto', lineHeight: 1.7 }}>
-                        Desde el motor hasta los frenos, cada componente recibe atencion experta con herramientas certificadas.
+                        Desde el motor hasta los frenos, cada componente recibe atención experta con herramientas certificadas.
                     </p>
                 </div>
 
@@ -561,67 +601,25 @@ export default function Home() {
             </section>
 
             {/* ════════════════════════════════════════════════════════
-                SERVICIOS — grid completo
-            ════════════════════════════════════════════════════════ */}
-            <section className="pub-section-pad" style={{ background: 'linear-gradient(180deg, #050505 0%, #0a0a0a 50%, #050505 100%)', borderTop: '1px solid rgba(255,255,255,.04)', borderBottom: '1px solid rgba(255,255,255,.04)', position: 'relative', overflow: 'hidden' }}>
-                <div className="grid-pattern" style={{ position: 'absolute', inset: 0, opacity: .25, maskImage: 'radial-gradient(ellipse at center, black 30%, transparent 70%)', WebkitMaskImage: 'radial-gradient(ellipse at center, black 30%, transparent 70%)' }} />
-
-                <div style={{ maxWidth: 1280, margin: '0 auto', position: 'relative' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 20, marginBottom: 60 }}>
-                        <div>
-                            <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: '#3b7bab', marginBottom: 12, fontWeight: 500 }}>// SERVICIOS</p>
-                            <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2.4rem, 4.5vw, 3.4rem)', letterSpacing: '.04em', lineHeight: 1, maxWidth: 600 }}>
-                                <span className="grad-text-white">Todo lo que tu </span>
-                                <span className="grad-text-gold">auto necesita.</span>
-                            </h2>
-                        </div>
-                        <Link to="/servicios" style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.88rem', color: 'rgba(255,255,255,.6)', textDecoration: 'none', transition: 'color .2s' }}
-                              onMouseEnter={e => e.currentTarget.style.color = '#3b7bab'}
-                              onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,.6)'}>
-                            Ver todos
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
-                        </Link>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: 18 }}>
-                        {SERVICIOS.map((s, i) => (
-                            <div key={i} className="gh-card reveal" style={{ animationDelay: `${i * 60}ms`, transitionDelay: `${i * 60}ms` }}>
-                                <div className="icon-wrap" style={{ width: 52, height: 52, borderRadius: 12, background: `${s.color}14`, border: `1px solid ${s.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: s.color, marginBottom: 22 }}>
-                                    {s.icon}
-                                </div>
-                                <h3 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.25rem', letterSpacing: '.04em', color: '#fff', marginBottom: 10 }}>{s.titulo}</h3>
-                                <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.88rem', color: 'rgba(255,255,255,.5)', lineHeight: 1.7, marginBottom: 18 }}>{s.desc}</p>
-                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: "'Outfit'", fontWeight: 500, fontSize: '.78rem', color: s.color }}>
-                                    Saber mas
-                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* ════════════════════════════════════════════════════════
                 POR QUE ELEGIRNOS — asimétrico estilo Spotify
             ════════════════════════════════════════════════════════ */}
             <section className="pub-section-pad" style={{ maxWidth: 1280, margin: '0 auto', position: 'relative', overflow: 'hidden' }}>
                 <div className="why-grid">
                     <div>
-                        <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: '#3b7bab', marginBottom: 14, fontWeight: 500 }}>// POR QUE SSWAP</p>
+                        <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: '#3b7bab', marginBottom: 14, fontWeight: 500 }}>// POR QUÉ SS SWAP</p>
                         <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2rem, 3.6vw, 3.2rem)', letterSpacing: '.03em', lineHeight: 1.02, marginBottom: 24 }}>
-                            <span className="grad-text-white">Servicio Tecnico con<br />Estandares </span>
-                            <span className="grad-text-gold">Profesionales.</span>
+                            <span className="grad-text-white">Servicio Técnico con<br/></span><span className="grad-text-rainbow">Estándares Profesionales.</span>
                         </h2>
                         <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.98rem', color: 'rgba(255,255,255,.55)', lineHeight: 1.85, marginBottom: 36 }}>
-                            En SSWAP combinamos experiencia humana con tecnologia de punta. Cada vehiculo que entra a nuestro taller recibe un diagnostico riguroso y un trabajo con garantia escrita.
+                            En SS SWAP combinamos experiencia humana con tecnología de punta. Cada vehículo que entra a nuestro taller recibe un diagnóstico riguroso y un trabajo con garantía escrita.
                         </p>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                             {[
-                                'Diagnostico computarizado en cada revision',
+                                'Diagnóstico computarizado en cada revisión',
                                 'Repuestos originales o equivalentes certificados',
-                                'Garantia en mano de obra y materiales',
-                                'Historial digital de tu vehiculo',
+                                'Garantía en mano de obra y materiales',
+                                'Historial digital de tu vehículo',
                                 'Transparencia total en presupuestos',
                             ].map((item, i) => (
                                 <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 14, padding: 12, borderRadius: 10, transition: 'background .2s' }}
@@ -643,10 +641,10 @@ export default function Home() {
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, position: 'relative' }}>
                             {[
-                                { val: '10+',  lab: 'Anos en el mercado',    color: '#3b7bab' },
-                                { val: '80+',  lab: 'Vehiculos al mes',      color: '#4a83b3' },
+                                { val: '10+',  lab: 'Años en el mercado',    color: '#3b7bab' },
+                                { val: '80+',  lab: 'Vehículos al mes',      color: '#4a83b3' },
                                 { val: '1000+',lab: 'Clientes en base',      color: '#3b7bab' },
-                                { val: '100%', lab: 'Diagnostico digital',   color: '#fff'    },
+                                { val: '100%', lab: 'Diagnóstico digital',   color: '#fff'    },
                             ].map((item, i) => (
                                 <div key={i} style={{ background: 'linear-gradient(180deg, #141414 0%, #0c0c0c 100%)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 14, padding: '28px 22px', position: 'relative', overflow: 'hidden', transition: 'all .3s' }}
                                      onMouseEnter={e => { e.currentTarget.style.borderColor = item.color + '60'; e.currentTarget.style.transform = 'translateY(-3px)'; }}
@@ -666,48 +664,92 @@ export default function Home() {
             ════════════════════════════════════════════════════════ */}
             {sucursales.length > 0 && (
                 <section className="pub-section-pad" style={{ background: 'linear-gradient(180deg, #050505 0%, #0a0a0a 100%)', borderTop: '1px solid rgba(255,255,255,.04)', position: 'relative', overflow: 'hidden' }}>
-                    <div className="scan-line" />
-                    <div style={{ maxWidth: 1280, margin: '0 auto', position: 'relative' }}>
+                    <Particles count={14} />
+                    <div style={{ maxWidth: 1280, margin: '0 auto', position: 'relative', zIndex: 2 }}>
                         <div style={{ textAlign: 'center', marginBottom: 60 }}>
-                            <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: '#3b7bab', marginBottom: 14, fontWeight: 500 }}>// UBICACIONES</p>
+                            <p className="mono section-tag-underline" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: '#3b7bab', marginBottom: 14, fontWeight: 500, position: 'relative', display: 'inline-block', paddingBottom: 10 }}>// UBICACIÓN</p>
                             <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2.2rem, 4.5vw, 3.4rem)', letterSpacing: '.04em', lineHeight: 1, marginBottom: 18 }}>
-                                <span className="grad-text-white">Visitanos en </span>
-                                <span className="grad-text-gold">Nuestra Matriz.</span>
+                                <span className="grad-text-white">Visítanos en </span>
+                                <span className="grad-text-rainbow">Nuestra Matriz.</span>
                             </h2>
                             <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '1rem', color: 'rgba(255,255,255,.55)', maxWidth: 580, margin: '0 auto', lineHeight: 1.7 }}>
-                                Equipo tecnico, infraestructura y atencion profesional en cada ubicacion.
+                                Equipo técnico, infraestructura y atención profesional en cada ubicación.
                             </p>
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(340px, 100%), 1fr))', gap: 20 }}>
-                            {sucursales.map((s, i) => (
-                                <div key={s.id} className="gh-card reveal" style={{ paddingTop: 36, transitionDelay: `${i * 70}ms` }}>
-                                    {s.es_principal && (
-                                        <span style={{ position: 'absolute', top: 16, right: 16, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 11px', borderRadius: 999, background: 'rgba(59,123,171,.12)', border: '1px solid rgba(59,123,171,.32)', color: '#3b7bab', fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.22em' }}>
-                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                                            PRINCIPAL
-                                        </span>
-                                    )}
-                                    <div className="icon-wrap" style={{ width: 48, height: 48, borderRadius: 12, background: 'rgba(59,123,171,.12)', border: '1px solid rgba(59,123,171,.28)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b7bab', marginBottom: 18 }}>
-                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                                    </div>
-                                    <h3 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.35rem', letterSpacing: '.04em', color: '#fff', marginBottom: 4 }}>{s.nombre}</h3>
-                                    {s.ciudad && <p className="mono" style={{ fontWeight: 400, fontSize: '.74rem', color: '#3b7bab', letterSpacing: '.08em', marginBottom: 16 }}>{s.ciudad.toUpperCase()}</p>}
+                        {/* Tarjeta unificada: el mapa y los datos de la sucursal PRINCIPAL viven dentro del mismo cuadro */}
+                        {sucursales.filter(s => s.es_principal).map(principal => (
+                            <div key={principal.id} className="gh-card reveal" style={{ padding: 0, overflow: 'hidden', marginBottom: 40 }}>
+                                {/* Mapa interactivo — ubicación provisional. Ver comentario // MODIFICAR DIRECCIÓN AQUÍ junto a MAPA_EMBED_SRC al inicio de este archivo. */}
+                                <div style={{ position: 'relative' }}>
+                                    <iframe
+                                        title="Ubicación de SS SWAP"
+                                        src={MAPA_EMBED_SRC}
+                                        width="100%"
+                                        height="360"
+                                        style={{ border: 0, display: 'block', filter: 'grayscale(.15) contrast(1.05)' }}
+                                        allowFullScreen=""
+                                        loading="lazy"
+                                        referrerPolicy="no-referrer-when-downgrade"
+                                    />
+                                    <span style={{ position: 'absolute', top: 16, right: 16, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 11px', borderRadius: 999, background: 'rgba(10,12,15,.72)', border: '1px solid rgba(59,123,171,.4)', color: '#3b7bab', fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.22em', backdropFilter: 'blur(8px)' }}>
+                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                        PRINCIPAL
+                                    </span>
+                                </div>
 
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                        {s.direccion && <SucLine icon={<IconPin />} text={s.direccion} />}
-                                        {s.telefono && <SucLine icon={<IconPhone />} text={<a href={`tel:${s.telefono}`} style={{ color: 'inherit', textDecoration: 'none' }}>{s.telefono}</a>} />}
-                                        {s.horario  && <SucLine icon={<IconClock />} text={s.horario} />}
+                                <div style={{ padding: '30px 30px 34px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
+                                        <div className="icon-wrap" style={{ width: 48, height: 48, borderRadius: 12, background: 'rgba(59,123,171,.12)', border: '1px solid rgba(59,123,171,.28)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b7bab', flexShrink: 0 }}>
+                                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                        </div>
+                                        <div>
+                                            <h3 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.5rem', letterSpacing: '.04em', color: '#fff' }}>{principal.nombre}</h3>
+                                            {principal.ciudad && <p className="mono" style={{ fontWeight: 400, fontSize: '.74rem', color: '#3b7bab', letterSpacing: '.08em', marginTop: 2 }}>{principal.ciudad.toUpperCase()}</p>}
+                                        </div>
                                     </div>
 
-                                    {s.descripcion && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                        {principal.direccion && <SucLine icon={<IconPin />} text={principal.direccion} />}
+                                        {principal.telefono && <SucLine icon={<IconPhone />} text={<a href={`tel:${principal.telefono}`} style={{ color: 'inherit', textDecoration: 'none' }}>{principal.telefono}</a>} />}
+                                        {principal.horario  && <SucLine icon={<IconClock />} text={principal.horario} />}
+                                    </div>
+
+                                    {principal.descripcion && (
                                         <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.82rem', color: 'rgba(255,255,255,.5)', lineHeight: 1.7, marginTop: 18, paddingTop: 18, borderTop: '1px solid rgba(255,255,255,.06)' }}>
-                                            {s.descripcion}
+                                            {principal.descripcion}
                                         </p>
                                     )}
                                 </div>
-                            ))}
-                        </div>
+                            </div>
+                        ))}
+
+                        {/* Resto de sucursales (no principales) como tarjetas independientes */}
+                        {sucursales.filter(s => !s.es_principal).length > 0 && (
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(340px, 100%), 1fr))', gap: 20 }}>
+                                {sucursales.filter(s => !s.es_principal).map((s, i) => (
+                                    <div key={s.id} className="gh-card reveal" style={{ paddingTop: 36, transitionDelay: `${i * 70}ms` }}>
+                                        <div className="icon-wrap" style={{ width: 48, height: 48, borderRadius: 12, background: 'rgba(59,123,171,.12)', border: '1px solid rgba(59,123,171,.28)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b7bab', marginBottom: 18 }}>
+                                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                        </div>
+                                        <h3 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.35rem', letterSpacing: '.04em', color: '#fff', marginBottom: 4 }}>{s.nombre}</h3>
+                                        {s.ciudad && <p className="mono" style={{ fontWeight: 400, fontSize: '.74rem', color: '#3b7bab', letterSpacing: '.08em', marginBottom: 16 }}>{s.ciudad.toUpperCase()}</p>}
+
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                            {s.direccion && <SucLine icon={<IconPin />} text={s.direccion} />}
+                                            {s.telefono && <SucLine icon={<IconPhone />} text={<a href={`tel:${s.telefono}`} style={{ color: 'inherit', textDecoration: 'none' }}>{s.telefono}</a>} />}
+                                            {s.horario  && <SucLine icon={<IconClock />} text={s.horario} />}
+                                        </div>
+
+                                        {s.descripcion && (
+                                            <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.82rem', color: 'rgba(255,255,255,.5)', lineHeight: 1.7, marginTop: 18, paddingTop: 18, borderTop: '1px solid rgba(255,255,255,.06)' }}>
+                                                {s.descripcion}
+                                            </p>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </section>
             )}
@@ -717,9 +759,10 @@ export default function Home() {
             ════════════════════════════════════════════════════════ */}
             <section className="pub-section-pad" style={{ position: 'relative', overflow: 'hidden' }}>
                 <div style={{ maxWidth: 1280, margin: '0 auto', position: 'relative' }}>
-                    <div style={{
+                    <div className="cta-account-card" style={{
                         position: 'relative', overflow: 'hidden',
-                        background: 'linear-gradient(135deg, #0d1a24 0%, #0a0a0a 50%, #06141c 100%)',
+                        backgroundImage: `linear-gradient(135deg, rgba(13,26,36,.88) 0%, rgba(10,10,10,.86) 50%, rgba(6,20,28,.9) 100%), url(${bannerGrandeImg})`,
+                        backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat',
                         border: '1px solid rgba(59,123,171,.22)',
                         borderRadius: 24, padding: 'clamp(40px, 8vw, 80px) clamp(28px, 5vw, 60px)',
                         textAlign: 'center',
@@ -730,11 +773,10 @@ export default function Home() {
                         <div style={{ position: 'relative' }}>
                             <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: '#3b7bab', marginBottom: 18, fontWeight: 500 }}>// PORTAL DE CLIENTES</p>
                             <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2.2rem, 5vw, 3.8rem)', letterSpacing: '.03em', marginBottom: 20, lineHeight: 1.02 }}>
-                                <span className="grad-text-white">Crea tu cuenta y </span>
-                                <span className="grad-text-gold">controla todo.</span>
+                                <span className="grad-text-rainbow">Crea tu cuenta</span><span className="grad-text-white"> y controla todo.</span>
                             </h2>
                             <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '1.02rem', color: 'rgba(255,255,255,.58)', maxWidth: 580, margin: '0 auto 40px', lineHeight: 1.7 }}>
-                                Consulta el estado de tu reparacion, agenda citas y revisa el historial completo de servicios de tu vehiculo.
+                                Consulta el estado de tu reparación, agenda citas y revisa el historial completo de servicios de tu vehículo.
                             </p>
                             <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
                                 <Link to="/auth?modo=registro" className="ps-btn-primary">Crear cuenta gratis</Link>
@@ -887,7 +929,7 @@ function CarSVGGold() {
             <rect x="36" y="148" width="4" height="10" rx="1" fill="rgba(255,255,255,0.5)" />
             <rect x="20" y="168" width="20" height="16" rx="3.5" fill="#12283b" />
             <rect x="458" y="164" width="22" height="18" rx="3.5" fill="#12283b" />
-            <text x="195" y="168" textAnchor="middle" fontFamily="'Bebas Neue', sans-serif" fontSize="11" letterSpacing="3" fill="rgba(0,0,0,0.65)">SSWAP</text>
+            <text x="195" y="168" textAnchor="middle" fontFamily="'Bebas Neue', sans-serif" fontSize="11" letterSpacing="3" fill="rgba(0,0,0,0.65)">SS SWAP</text>
             <use href="#bodyG" fill="url(#goldSpec)" pointerEvents="none" />
 
             {/* Alerón trasero (duck-tail) */}
@@ -984,12 +1026,26 @@ function Gear3D({ color = '#3b7bab' }) {
     );
 }
 
-function IconWrench() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>; }
-function IconShield() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>; }
-function IconCpu()    { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>; }
-function IconZap()    { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>; }
-function IconTarget() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>; }
-function IconTool()   { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>; }
+/* ═══════════════════════════════════════════════════════════════
+   PARTICULAS — campo de particulas flotantes ambientales
+   ═══════════════════════════════════════════════════════════════ */
+function Particles({ count = 16 }) {
+    const dots = Array.from({ length: count }).map((_, i) => {
+        const size    = 2 + Math.random() * 3;
+        const left    = Math.random() * 100;
+        const bottom  = Math.random() * 20;
+        const duration= 6 + Math.random() * 8;
+        const delay   = Math.random() * 8;
+        return (
+            <span key={i} className="particle-dot" style={{
+                width: size, height: size, left: `${left}%`, bottom: `${bottom}%`,
+                animationDuration: `${duration}s`, animationDelay: `${delay}s`,
+            }} />
+        );
+    });
+    return <div className="particles-field">{dots}</div>;
+}
+
 function IconAward()      { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="8" r="6"/><path d="M8.21 13.89 7 23l5-3 5 3-1.21-9.12"/></svg>; }
 function IconShieldCheck(){ return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>; }
 function IconPackage()    { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>; }

@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ConfirmProvider } from './components/common/ConfirmDialog';
+import ScrollToTop from './components/common/ScrollToTop';
 
 // Public
 import Home       from './pages/public/Home';
@@ -41,6 +42,7 @@ export default function App() {
             <AuthProvider>
             <ConfirmProvider>
                 <BrowserRouter>
+                    <ScrollToTop />
                     <Toaster
                         position="top-center"
                         toastOptions={{

@@ -1,5 +1,5 @@
 /* ============================================================
-   SSWAP — Design System
+   SS SWAP — Design System
    Paleta: Azul metálico / Blanco / Negro / Gris — taller premium
    Rojo reservado únicamente para acciones críticas
    ============================================================ */
@@ -222,7 +222,7 @@ img, svg, video { max-width: 100%; }
 }
 
 /* ── Input base ── */
-.sswap-input {
+.SS SWAP-input {
   width: 100%; box-sizing: border-box;
   padding: 11px 14px; border-radius: 10px;
   border: 1px solid var(--border);
@@ -233,15 +233,15 @@ img, svg, video { max-width: 100%; }
   outline: none;
   transition: border-color .2s, box-shadow .2s, background .2s;
 }
-.sswap-input:focus {
+.SS SWAP-input:focus {
   border-color: var(--accent-2);
   background: var(--bg);
   box-shadow: 0 0 0 4px rgba(43,92,133,0.12);
 }
-.sswap-input::placeholder { color: var(--text-faint); }
+.SS SWAP-input::placeholder { color: var(--text-faint); }
 
 /* ── Label ── */
-.sswap-label {
+.SS SWAP-label {
   display: block; margin-bottom: 6px;
   font-family: 'Sora', sans-serif;
   font-weight: 600;
@@ -253,21 +253,21 @@ img, svg, video { max-width: 100%; }
 }
 
 /* ── Card genérica ── */
-.sswap-card {
+.SS SWAP-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 16px;
   box-shadow: var(--shadow);
   transition: border-color .25s, transform .25s, box-shadow .25s;
 }
-.sswap-card.is-hoverable:hover {
+.SS SWAP-card.is-hoverable:hover {
   border-color: var(--accent-bdr);
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
 }
 
 /* ── Chip ── */
-.sswap-chip {
+.SS SWAP-chip {
   display: inline-flex; align-items: center; gap: 7px;
   padding: 4px 11px; border-radius: 999px;
   background: var(--accent-pale);
@@ -278,7 +278,7 @@ img, svg, video { max-width: 100%; }
   text-transform: uppercase;
   color: var(--accent);
 }
-.sswap-chip > .dot {
+.SS SWAP-chip > .dot {
   width: 6px; height: 6px; border-radius: 50%;
   background: var(--accent-2);
   box-shadow: 0 0 8px var(--accent-2);
@@ -320,7 +320,7 @@ img, svg, video { max-width: 100%; }
 }
 
 /* ── Divisor decorativo ── */
-.sswap-divider {
+.SS SWAP-divider {
   height: 1px;
   background: linear-gradient(90deg, var(--border), transparent);
 }

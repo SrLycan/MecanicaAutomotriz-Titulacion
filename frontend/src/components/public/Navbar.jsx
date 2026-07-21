@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import logoImg from '../../assets/logo.png';
 
 const NAV_LINKS = [
     { label: 'Inicio',            href: '/'          },
@@ -68,23 +69,47 @@ export default function Navbar() {
                 .nav-menu-overlay { position: fixed; inset: 0; z-index: 99; background: rgba(0,0,0,.42); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); animation: navOverlayIn .2s ease both; }
                 @keyframes navMenuIn { from { opacity: 0; transform: translateY(-10px) scale(.98); } to { opacity: 1; transform: none; } }
                 @keyframes navOverlayIn { from { opacity: 0; } to { opacity: 1; } }
+
+                /* ── Logo con destello (titilando, difuminado, sin marcar el borde) ── */
+                .nav-logo-wrap { position: relative; }
+                .nav-logo-wrap::before {
+                    content: '';
+                    position: absolute;
+                    inset: 10px;
+                    border-radius: 16px;
+                    filter: blur(18px);
+                    z-index: 0;
+                    animation: logoGlowPulse 2.6s ease-in-out infinite;
+                }
+                @keyframes logoGlowPulse {
+                    0%, 100% { background: rgba(59,123,171,.16); }
+                    50%      { background: rgba(127,171,206,.5); }
+                }
+                .nav-logo-img { position: relative; z-index: 1; }
+                .nav-tagline {
+                    font-family: 'Outfit', sans-serif; font-weight: 600; font-size: .62rem;
+                    letter-spacing: .1em; line-height: 1.35; color: rgba(255,255,255,.55);
+                    text-transform: uppercase; white-space: nowrap;
+                    background: linear-gradient(90deg, #7fabce 0%, #cfe3f3 25%, #7fabce 50%, #3b7bab 75%, #7fabce 100%);
+                    background-size: 260% auto;
+                    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+                    animation: shimmerSweepNav 6s linear infinite;
+                }
+                @keyframes shimmerSweepNav { 0% { background-position: -260% center; } 100% { background-position: 260% center; } }
+                @media (max-width: 1100px) {
+                    .nav-tagline { display: none !important; }
+                }
             `}</style>
 
             {menuOpen && <div className="nav-menu-overlay" onClick={() => setMenuOpen(false)} aria-hidden="true" />}
             <nav className={`pub-nav ${scrolled ? 'scrolled' : 'top'}`}>
                 <div className="pub-nav-inner" style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px', height: 68, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-
                     {/* Logo */}
-                    <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 11 }}>
-                        <div style={{ width: 38, height: 38, background: 'linear-gradient(135deg, #1b3a57, #2b5c85 55%, #3b7bab)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px -4px rgba(43,92,133,.7)' }}>
-                            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
-                            </svg>
+                    <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 14 }}>
+                        <div className="nav-logo-wrap" style={{ width: 138, height: 58, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <img className="nav-logo-img" src={logoImg} alt="SS SWAP" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                         </div>
-                        <div>
-                            <p style={{ fontFamily: "'Sora'", fontWeight: 700, fontSize: '1.05rem', letterSpacing: '.02em', color: '#fff', lineHeight: 1 }}>SSWAP</p>
-                            <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.6rem', color: 'rgba(255,255,255,.5)', lineHeight: 1.2, letterSpacing: '.06em', textTransform: 'uppercase' }}>Mecánica Automotriz</p>
-                        </div>
+                        <p className="nav-tagline">RESTAURAMOS VEHÍCULOS<br />REFORZAMOS CONFIANZA.</p>
                     </Link>
 
                     {/* Links desktop */}
@@ -100,7 +125,7 @@ export default function Navbar() {
                     <div className="nav-links-desktop" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         {!usuario && (
                             <>
-                                <Link to="/auth" className="nav-btn-outline">Iniciar Sesion</Link>
+                                <Link to="/auth" className="nav-btn-outline">Iniciar Sesión</Link>
                                 <Link to="/auth?modo=registro" className="nav-btn-gold">Registrarse</Link>
                             </>
                         )}
@@ -139,20 +164,20 @@ export default function Navbar() {
                         <div style={{ height: 1, background: 'rgba(255,255,255,.08)', margin: '8px 0' }} />
                         {!usuario && (
                             <>
-                                <Link to="/auth">Iniciar Sesion</Link>
+                                <Link to="/auth">Iniciar Sesión</Link>
                                 <Link to="/auth?modo=registro" className="nav-mobile-primary">Registrarse</Link>
                             </>
                         )}
                         {esCliente && (
                             <>
                                 <Link to="/mi-panel">Mi Panel</Link>
-                                <button onClick={handleLogout}>Cerrar Sesion</button>
+                                <button onClick={handleLogout}>Cerrar Sesión</button>
                             </>
                         )}
                         {esAdmin && (
                             <>
                                 <Link to="/dashboard">Panel Admin</Link>
-                                <button onClick={handleLogout}>Cerrar Sesion</button>
+                                <button onClick={handleLogout}>Cerrar Sesión</button>
                             </>
                         )}
                     </div>

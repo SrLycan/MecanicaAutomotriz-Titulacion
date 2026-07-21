@@ -42,7 +42,7 @@ app.use('/api/solicitudes', solicitudesRoutes);
 // Health check
 app.get('/api/health', (_req, res) => res.json({
     status: 'ok',
-    sistema: 'SSWAP',
+    sistema: 'SS SWAP',
     version: '1.0.0',
     timestamp: new Date().toISOString(),
 }));
@@ -58,7 +58,7 @@ app.use((err, _req, res, _next) => {
 
 // ── Arranque ─────────────────────────────────────────────────
 app.listen(PORT, async () => {
-    console.log(`\n SSWAP Backend corriendo en http://localhost:${PORT}`);
+    console.log(`\n SS SWAP Backend corriendo en http://localhost:${PORT}`);
     console.log(`  Entorno : ${process.env.NODE_ENV || 'development'}`);
     console.log(`  Base de datos: ${process.env.DB_NAME}@${process.env.DB_HOST}`);
     await runMigrations();

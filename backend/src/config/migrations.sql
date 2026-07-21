@@ -1,5 +1,5 @@
 -- ============================================================
--- SSWAP — Migraciones idempotentes (corren en cada arranque)
+-- SS SWAP — Migraciones idempotentes (corren en cada arranque)
 -- Sprint 2: Gestion de usuarios + Sucursales
 -- ============================================================
 
@@ -63,11 +63,11 @@ END $$;
 
 -- ── Seed: sucursal principal (solo si no hay ninguna) ────────
 INSERT INTO sucursales (nombre, direccion, ciudad, telefono, email, horario, descripcion, es_principal, activa)
-SELECT 'SSWAP Ponciano Alto',
+SELECT 'SS SWAP Ponciano Alto',
        'Av. Real Audiencia y Manuel Cordova Galarza',
        'Quito',
        '+593 99 123 4567',
-       'contacto@sswap.com',
+       'contacto@SS SWAP.com',
        'Lun-Vie 8:00-18:00 · Sab 8:00-14:00',
        'Sucursal principal: diagnostico computarizado, mecanica general, alineacion y balanceo.',
        TRUE, TRUE
@@ -294,3 +294,8 @@ CREATE TABLE IF NOT EXISTS ordenes_historial (
 );
 
 CREATE INDEX IF NOT EXISTS idx_ordenes_historial_orden ON ordenes_historial(orden_id);
+
+-- ============================================================
+-- Sprint 9: Foto para tipos de servicio (pagina publica de Servicios)
+-- ============================================================
+ALTER TABLE tipos_servicio ADD COLUMN IF NOT EXISTS imagen_url TEXT;
