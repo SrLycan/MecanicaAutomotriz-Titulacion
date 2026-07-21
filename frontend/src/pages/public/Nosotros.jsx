@@ -53,8 +53,8 @@ const GALERIA = [
 ];
 
 const TESTIMONIOS = [
-    { nombre: 'Maria Fernanda Lopez', rol: 'Cliente de SS SWAP Garage', texto: 'Me explicaron con claridad qué necesitaba mi auto y cuánto iba a costar antes de tocarlo. Se siente honesto.', foto: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200&auto=format&fit=crop' },
-    { nombre: 'Juan Pablo Rios',      rol: 'Cliente de SS SWAP Garage', texto: 'Respondieron mi WhatsApp en minutos y me mandaron fotos del avance. Se nota que quieren hacer las cosas bien.',        foto: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=200&auto=format&fit=crop' },
+    { nombre: 'María Fernanda López', rol: 'Cliente de SS SWAP Garage', texto: 'Me explicaron con claridad qué necesitaba mi auto y cuánto iba a costar antes de tocarlo. Se siente honesto.', foto: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200&auto=format&fit=crop' },
+    { nombre: 'Juan Pablo Ríos',      rol: 'Cliente de SS SWAP Garage', texto: 'Respondieron mi WhatsApp en minutos y me mandaron fotos del avance. Se nota que quieren hacer las cosas bien.',        foto: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=200&auto=format&fit=crop' },
     { nombre: 'Gabriela Torres',      rol: 'Cliente de SS SWAP Garage', texto: 'Llevé mi auto por un golpe y me dieron garantía por escrito. El trabajo quedó como esperaba.',          foto: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=200&auto=format&fit=crop' },
 ];
 
@@ -74,6 +74,47 @@ export default function Nosotros() {
         els.forEach(el => io.observe(el));
         return () => io.disconnect();
     }, [sucursales]);
+
+    /* Linea de tiempo "Un crecimiento planificado, paso a paso." — despliegue en tiempo real
+       ligado al scroll (igual mecanismo que "Como funciona" en Servicios): reversible, no es
+       un disparo unico como el resto de .reveal de esta pagina. */
+    useEffect(() => {
+        let raf = null;
+        const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+
+        const actualizar = () => {
+            raf = null;
+            const rows = document.querySelectorAll('.ns-tl-row');
+            if (!rows.length) return;
+
+            const vh = window.innerHeight;
+            const startZone = vh * 0.85;
+            const endZone   = vh * 0.55;
+
+            let suma = 0;
+            rows.forEach((row, i) => {
+                const rect = row.getBoundingClientRect();
+                const top = rect.top + i * 26;
+                const p = clamp((startZone - top) / (startZone - endZone), 0, 1);
+                row.style.setProperty('--p', p.toFixed(3));
+                suma += p;
+            });
+
+            const track = document.querySelector('.ns-timeline-v2');
+            if (track) track.style.setProperty('--p', (suma / rows.length).toFixed(3));
+        };
+
+        const onScroll = () => { if (raf === null) raf = requestAnimationFrame(actualizar); };
+
+        actualizar();
+        window.addEventListener('scroll', onScroll, { passive: true });
+        window.addEventListener('resize', onScroll);
+        return () => {
+            window.removeEventListener('scroll', onScroll);
+            window.removeEventListener('resize', onScroll);
+            if (raf !== null) cancelAnimationFrame(raf);
+        };
+    }, []);
 
     return (
         <div style={{ background: '#050505', minHeight: '100vh', color: '#fff' }}>
@@ -98,6 +139,16 @@ export default function Nosotros() {
                 .grad-text-gold  { background: linear-gradient(135deg, #3b7bab 0%, #7fabce 50%, #3b7bab 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
                 .grad-text-white { background: linear-gradient(180deg, #ffffff 0%, rgba(255,255,255,.65) 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 
+                /* ── Glow azul (mismo efecto que en Home/Servicios) — aplicado a todo texto azul de titulos ── */
+                @keyframes nsShimmerSweep { 0% { background-position: -300% center; } 100% { background-position: 300% center; } }
+                .grad-text-rainbow {
+                    background: linear-gradient(90deg, #3b7bab 0%, #7fabce 18%, #cfe3f3 34%, #7fabce 50%, #3b7bab 66%, #4a83b3 82%, #3b7bab 100%);
+                    background-size: 280% auto;
+                    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+                    animation: nsShimmerSweep 5s linear infinite;
+                    filter: drop-shadow(0 0 18px rgba(59,123,171,.55)) drop-shadow(0 0 36px rgba(127,171,206,.3));
+                }
+
                 .ns-card { background: linear-gradient(180deg, rgba(255,255,255,.045) 0%, rgba(255,255,255,.015) 100%); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,.08); border-radius: 16px; padding: 28px 24px; transition: all .3s cubic-bezier(.4,0,.2,1); }
                 .ns-card:hover { border-color: rgba(59,123,171,.4); transform: translateY(-5px); box-shadow: 0 20px 40px -18px rgba(0,0,0,.6); }
                 .ns-card:hover .ns-icon { transform: scale(1.08) rotate(-4deg); }
@@ -106,8 +157,10 @@ export default function Nosotros() {
                 .ns-mv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
                 .ns-pad { padding: 120px 28px; }
 
-                .ps-btn-primary { display: inline-flex; align-items: center; gap: 10px; font-family: 'Outfit', sans-serif; font-weight: 700; font-size: .92rem; color: #0a0a0a; background: #3b7bab; border: none; border-radius: 999px; padding: 15px 32px; cursor: pointer; text-decoration: none; transition: all .25s cubic-bezier(.4,0,.2,1); box-shadow: 0 8px 24px -6px rgba(59,123,171,.5); }
-                .ps-btn-primary:hover { background: #5a93c4; transform: translateY(-2px); box-shadow: 0 14px 36px -8px rgba(59,123,171,.7); }
+                .ps-btn-primary { display: inline-flex; align-items: center; gap: 10px; font-family: 'Outfit', sans-serif; font-weight: 700; font-size: .92rem; color: #fff; background: linear-gradient(135deg, #2b5c85, #3b7bab); border: none; border-radius: 999px; padding: 15px 32px; cursor: pointer; text-decoration: none; transition: all .25s cubic-bezier(.4,0,.2,1); position: relative; overflow: hidden; isolation: isolate; box-shadow: 0 8px 24px -6px rgba(59,123,171,.5); }
+                .ps-btn-primary::before { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(135deg, #5a93c4, #7fabce); opacity: 0; transition: opacity .25s; }
+                .ps-btn-primary:hover::before { opacity: 1; }
+                .ps-btn-primary:hover { color: #fff; transform: translateY(-2px); box-shadow: 0 14px 36px -8px rgba(59,123,171,.7); }
                 .ps-btn-outline { display: inline-flex; align-items: center; gap: 10px; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: .92rem; color: #fff; background: rgba(255,255,255,.05); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,.2); border-radius: 999px; padding: 14px 32px; cursor: pointer; text-decoration: none; transition: all .25s; }
                 .ps-btn-outline:hover { border-color: #3b7bab; color: #3b7bab; background: rgba(59,123,171,.08); transform: translateY(-2px); }
 
@@ -188,14 +241,39 @@ export default function Nosotros() {
                     .ns-spec-photo-main { order: -1; aspect-ratio: 16 / 10; }
                 }
 
-                /* ── Linea de tiempo premium ── */
+                /* ── Linea de tiempo premium — despliegue en tiempo real ligado al scroll ── */
                 .ns-timeline-v2 { position: relative; }
-                .ns-timeline-v2::before { content: ''; position: absolute; left: 20px; top: 8px; bottom: 8px; width: 1px; background: linear-gradient(180deg, rgba(59,123,171,.65), rgba(59,123,171,.05)); }
+                .ns-timeline-v2::before { content: ''; position: absolute; left: 20px; top: 8px; bottom: 8px; width: 1px; background: rgba(255,255,255,.08); }
                 @media (min-width: 720px) { .ns-timeline-v2::before { left: 50%; transform: translateX(-50%); } }
-                .ns-tl-row { position: relative; display: flex; margin-bottom: 22px; }
-                .ns-tl-dot { position: absolute; left: 20px; top: 26px; transform: translate(-50%, -50%); width: 12px; height: 12px; border-radius: 50%; background: ${GOLD}; box-shadow: 0 0 0 5px rgba(59,123,171,.15); z-index: 2; }
+                .ns-tl-fill {
+                    position: absolute; left: 20px; top: 8px; width: 1px;
+                    height: calc(var(--p, 0) * 100%);
+                    background: linear-gradient(180deg, ${GOLD}, #7fabce);
+                    box-shadow: 0 0 10px rgba(59,123,171,.5);
+                    transition: height .15s linear;
+                    z-index: 1;
+                }
+                @media (min-width: 720px) { .ns-tl-fill { left: 50%; transform: translateX(-50%); } }
+                .ns-tl-row { position: relative; display: flex; margin-bottom: 22px; --p: 0; }
+                .ns-tl-dot {
+                    position: absolute; left: 20px; top: 26px; z-index: 2;
+                    width: 12px; height: 12px; border-radius: 50%; background: ${GOLD};
+                    box-shadow: 0 0 0 5px rgba(59,123,171,.15);
+                    opacity: var(--p, 0);
+                    transform: translate(-50%, -50%) scale(calc(.4 + var(--p, 0) * .6));
+                    transition: opacity .12s linear, transform .2s cubic-bezier(.4,0,.2,1);
+                }
                 @media (min-width: 720px) { .ns-tl-dot { left: 50%; } }
-                .ns-tl-card { margin-left: 46px; width: 100%; }
+                .ns-tl-card {
+                    margin-left: 46px; width: 100%;
+                    opacity: var(--p, 0);
+                    transform: translateX(calc((1 - var(--p, 0)) * -60px)) scale(calc(.94 + var(--p, 0) * .06));
+                    transition: opacity .12s linear, transform .2s cubic-bezier(.4,0,.2,1);
+                    will-change: opacity, transform;
+                }
+                .ns-tl-row.right .ns-tl-card {
+                    transform: translateX(calc((1 - var(--p, 0)) * 60px)) scale(calc(.94 + var(--p, 0) * .06));
+                }
                 @media (min-width: 720px) {
                     .ns-tl-row { justify-content: flex-start; }
                     .ns-tl-row.right { justify-content: flex-end; }
@@ -203,15 +281,6 @@ export default function Nosotros() {
                     .ns-tl-row.right .ns-tl-card { margin-left: 0; margin-right: 46px; text-align: right; }
                 }
                 .ns-tl-year { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: .04em; color: ${GOLD}; }
-
-                /* Animacion lateral (solo linea de tiempo): las tarjetas entran desde los lados al hacer scroll */
-                .ns-timeline-v2 .ns-tl-row.reveal { opacity: 0; transform: translateX(-90px); transition: opacity .8s cubic-bezier(.4,0,.2,1), transform .8s cubic-bezier(.4,0,.2,1); }
-                .ns-timeline-v2 .ns-tl-row.reveal.right { transform: translateX(90px); }
-                .ns-timeline-v2 .ns-tl-row.reveal.in-view { opacity: 1; transform: translateX(0); }
-                @media (max-width: 719px) {
-                    .ns-timeline-v2 .ns-tl-row.reveal,
-                    .ns-timeline-v2 .ns-tl-row.reveal.right { transform: translateX(-60px); }
-                }
 
                 /* ── Galeria — carrusel horizontal (desktop y mobile) ── */
                 .ns-gallery {
@@ -304,13 +373,13 @@ export default function Nosotros() {
                         </div>
                         <h1 className="ns-fade" style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2.3rem, 4.6vw, 3.8rem)', letterSpacing: '.02em', lineHeight: 1.08, marginBottom: 22, animationDelay: '.05s' }}>
                             <span className="grad-text-white">Un taller pensado para durar, </span>
-                            <span className="grad-text-gold">construido con calidad y confianza.</span>
+                            <span className="grad-text-rainbow">construido con calidad y confianza.</span>
                         </h1>
                         <p className="ns-fade" style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: 'clamp(.95rem,1.3vw,1.05rem)', color: 'rgba(255,255,255,.6)', maxWidth: 520, marginBottom: 34, lineHeight: 1.8, animationDelay: '.1s' }}>
                             SS SWAP Garage nace en Tola Chica – La Morita combinando mecánica general y colisiones bajo un mismo techo, con diagnóstico claro, garantía por escrito y atención directa por WhatsApp.
                         </p>
                         <div className="ns-fade" style={{ display: 'flex', gap: 14, flexWrap: 'wrap', animationDelay: '.15s' }}>
-                            <Link to="/servicios" className="ps-btn-primary">Conocer nuestros servicios
+                            <Link to="/servicios" className="ps-btn-primary"><span>Conocer nuestros servicios</span>
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
                             </Link>
                             <Link to="/servicios" className="ps-btn-outline">Agendar servicio</Link>
@@ -358,13 +427,13 @@ export default function Nosotros() {
                 <div style={{ maxWidth: 1100, margin: '0 auto' }}>
                     <div className="ns-mv-grid">
                         <div className="reveal ns-card" style={{ borderColor: 'rgba(59,123,171,.25)' }}>
-                            <p className="mono" style={{ fontSize: '.68rem', letterSpacing: '.25em', color: GOLD, marginBottom: 14 }}>MISION</p>
+                            <p className="mono" style={{ fontSize: '.68rem', letterSpacing: '.25em', color: GOLD, marginBottom: 14 }}>MISIÓN</p>
                             <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '1rem', color: 'rgba(255,255,255,.75)', lineHeight: 1.8 }}>
                                 Brindar servicios confiables, rápidos y garantizados para vehículos livianos — mecánica general y colisiones — generando fidelización real y un crecimiento sostenible del taller.
                             </p>
                         </div>
                         <div className="reveal ns-card" style={{ transitionDelay: '90ms', borderColor: 'rgba(74,131,179,.2)' }}>
-                            <p className="mono" style={{ fontSize: '.68rem', letterSpacing: '.25em', color: '#4a83b3', marginBottom: 14 }}>VISION</p>
+                            <p className="mono" style={{ fontSize: '.68rem', letterSpacing: '.25em', color: '#4a83b3', marginBottom: 14 }}>VISIÓN</p>
                             <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '1rem', color: 'rgba(255,255,255,.75)', lineHeight: 1.8 }}>
                                 Convertirnos en uno de los talleres de referencia en Tola Chica – La Morita por calidad, honestidad y tecnología.
                             </p>
@@ -377,15 +446,16 @@ export default function Nosotros() {
             <section className="ns-pad">
                 <div style={{ maxWidth: 880, margin: '0 auto' }}>
                     <div style={{ textAlign: 'center', marginBottom: 56 }}>
-                        <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: GOLD, marginBottom: 12, fontWeight: 500 }}>// HACIA DONDE VAMOS</p>
+                        <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: GOLD, marginBottom: 12, fontWeight: 500 }}>// HACIA DÓNDE VAMOS</p>
                         <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2rem, 4vw, 2.8rem)', letterSpacing: '.03em' }}>
                             <span className="grad-text-white">Un crecimiento </span>
-                            <span className="grad-text-gold">planificado, paso a paso.</span>
+                            <span className="grad-text-rainbow">planificado, paso a paso.</span>
                         </h2>
                     </div>
                     <div className="ns-timeline-v2">
+                        <div className="ns-tl-fill" />
                         {HITOS.map((h, i) => (
-                            <div key={h.anio} className={`ns-tl-row reveal${i % 2 === 1 ? ' right' : ''}`} style={{ transitionDelay: `${i * 70}ms` }}>
+                            <div key={h.anio} className={`ns-tl-row${i % 2 === 1 ? ' right' : ''}`}>
                                 <span className="ns-tl-dot" />
                                 <div className="ns-tl-card ns-card">
                                     <p className="mono ns-tl-year" style={{ marginBottom: 8 }}>{h.anio}</p>
@@ -403,8 +473,8 @@ export default function Nosotros() {
                     <div style={{ textAlign: 'center', marginBottom: 56 }}>
                         <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: GOLD, marginBottom: 12, fontWeight: 500 }}>// DIFERENCIALES</p>
                         <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2.2rem, 4.5vw, 3.2rem)', letterSpacing: '.03em' }}>
-                            <span className="grad-text-white">¿Por que elegir </span>
-                            <span className="grad-text-gold">SS SWAP?</span>
+                            <span className="grad-text-white">¿Por qué elegir </span>
+                            <span className="grad-text-rainbow">SS SWAP?</span>
                         </h2>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: 18 }}>
@@ -427,8 +497,8 @@ export default function Nosotros() {
                     <div style={{ textAlign: 'center', marginBottom: 56 }}>
                         <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: GOLD, marginBottom: 12, fontWeight: 500 }}>// NUESTROS VALORES</p>
                         <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2.2rem, 4.5vw, 3.2rem)', letterSpacing: '.03em' }}>
-                            <span className="grad-text-white">Lo que guia cada </span>
-                            <span className="grad-text-gold">trabajo que hacemos.</span>
+                            <span className="grad-text-white">Lo que guía cada </span>
+                            <span className="grad-text-rainbow">trabajo que hacemos.</span>
                         </h2>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))', gap: 18 }}>
@@ -451,8 +521,8 @@ export default function Nosotros() {
                     <div style={{ textAlign: 'center', marginBottom: 56 }}>
                         <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: GOLD, marginBottom: 12, fontWeight: 500 }}>// NUESTRO EQUIPO</p>
                         <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2.2rem, 4.5vw, 3.2rem)', letterSpacing: '.03em' }}>
-                            <span className="grad-text-white">Personas detras de </span>
-                            <span className="grad-text-gold">cada reparacion.</span>
+                            <span className="grad-text-white">Personas detrás de </span>
+                            <span className="grad-text-rainbow">cada reparación.</span>
                         </h2>
                         <p className="ns-scroll-hint" style={{ justifyContent: 'center', width: '100%' }}>
                             Desliza para ver al equipo
@@ -485,7 +555,7 @@ export default function Nosotros() {
                         <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: GOLD, marginBottom: 12, fontWeight: 500 }}>// NUESTRA ESPECIALIDAD</p>
                         <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2.2rem, 4.5vw, 3.2rem)', letterSpacing: '.03em' }}>
                             <span className="grad-text-white">Enderezada y pintura: </span>
-                            <span className="grad-text-gold">el fuerte de SS SWAP.</span>
+                            <span className="grad-text-rainbow">el fuerte de SS SWAP.</span>
                         </h2>
                     </div>
 
@@ -532,13 +602,13 @@ export default function Nosotros() {
             <section className="ns-pad" style={{ background: 'linear-gradient(180deg, #050505 0%, #0a0a0a 50%, #050505 100%)', borderTop: '1px solid rgba(255,255,255,.04)', borderBottom: '1px solid rgba(255,255,255,.04)' }}>
                 <div style={{ maxWidth: 1200, margin: '0 auto' }}>
                     <div style={{ textAlign: 'center', marginBottom: 48 }}>
-                        <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: GOLD, marginBottom: 12, fontWeight: 500 }}>// GALERIA</p>
+                        <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: GOLD, marginBottom: 12, fontWeight: 500 }}>// GALERÍA</p>
                         <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2.2rem, 4.5vw, 3.2rem)', letterSpacing: '.03em' }}>
                             <span className="grad-text-white">Un vistazo a </span>
-                            <span className="grad-text-gold">nuestro taller.</span>
+                            <span className="grad-text-rainbow">nuestro taller.</span>
                         </h2>
                         <p className="ns-scroll-hint-gallery" style={{ justifyContent: 'center', width: '100%' }}>
-                            Desliza para ver mas fotos
+                            Desliza para ver más fotos
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
                         </p>
                     </div>
@@ -550,10 +620,10 @@ export default function Nosotros() {
             <section className="ns-pad">
                 <div style={{ maxWidth: 1000, margin: '0 auto' }}>
                     <div style={{ textAlign: 'center', marginBottom: 40 }}>
-                        <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: GOLD, marginBottom: 12, fontWeight: 500 }}>// CONOCENOS</p>
+                        <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: GOLD, marginBottom: 12, fontWeight: 500 }}>// CONÓCENOS</p>
                         <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2rem, 4vw, 2.8rem)', letterSpacing: '.03em' }}>
                             <span className="grad-text-white">Un recorrido por </span>
-                            <span className="grad-text-gold">SS SWAP.</span>
+                            <span className="grad-text-rainbow">SS SWAP.</span>
                         </h2>
                     </div>
                     <div className="ns-video-frame reveal">
@@ -574,7 +644,7 @@ export default function Nosotros() {
                         <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: GOLD, marginBottom: 12, fontWeight: 500 }}>// TESTIMONIOS</p>
                         <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2.2rem, 4.5vw, 3.2rem)', letterSpacing: '.03em' }}>
                             <span className="grad-text-white">Lo que dicen </span>
-                            <span className="grad-text-gold">nuestros clientes.</span>
+                            <span className="grad-text-rainbow">nuestros clientes.</span>
                         </h2>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: 20 }}>
@@ -602,10 +672,10 @@ export default function Nosotros() {
                 <section className="ns-pad">
                     <div style={{ maxWidth: 1100, margin: '0 auto' }}>
                         <div style={{ textAlign: 'center', marginBottom: 44 }}>
-                            <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: GOLD, marginBottom: 12, fontWeight: 500 }}>// DONDE ESTAMOS</p>
+                            <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: GOLD, marginBottom: 12, fontWeight: 500 }}>// DÓNDE ESTAMOS</p>
                             <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2rem, 4vw, 2.8rem)', letterSpacing: '.03em' }}>
-                                <span className="grad-text-white">Visitanos en </span>
-                                <span className="grad-text-gold">Nuestra Matriz.</span>
+                                <span className="grad-text-white">Visítanos en </span>
+                                <span className="grad-text-rainbow">Nuestra Matriz.</span>
                             </h2>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))', gap: 16 }}>
@@ -627,13 +697,13 @@ export default function Nosotros() {
                     <div className="reveal in-view ns-cta-box">
                         <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2rem, 4.5vw, 3.2rem)', letterSpacing: '.03em', marginBottom: 18, lineHeight: 1.05 }}>
                             <span className="grad-text-white">¿Listo para devolverle la vida a </span>
-                            <span className="grad-text-gold">tu vehículo?</span>
+                            <span className="grad-text-rainbow">tu vehículo?</span>
                         </h2>
                         <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '1rem', color: 'rgba(255,255,255,.58)', maxWidth: 560, margin: '0 auto 36px', lineHeight: 1.7 }}>
                             Revisa nuestro catálogo de servicios o crea tu cuenta para llevar el control de tu historial automotriz.
                         </p>
                         <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
-                            <Link to="/servicios" className="ps-btn-primary">Agenda tu cita</Link>
+                            <Link to="/servicios" className="ps-btn-primary"><span>Agenda tu cita</span></Link>
                             <Link to="/auth?modo=registro" className="ps-btn-outline">Crear cuenta gratis</Link>
                         </div>
                     </div>

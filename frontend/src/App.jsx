@@ -5,6 +5,7 @@ import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ConfirmProvider } from './components/common/ConfirmDialog';
 import ScrollToTop from './components/common/ScrollToTop';
+import SwapBot from './components/chatbot/SwapBot';
 
 // Public
 import Home       from './pages/public/Home';
@@ -126,6 +127,7 @@ export default function App() {
 
                         <Route path="*" element={<Navigate to="/" replace />} />
                     </Routes>
+                    <SwapBot />
                 </BrowserRouter>
             </ConfirmProvider>
             </AuthProvider>
