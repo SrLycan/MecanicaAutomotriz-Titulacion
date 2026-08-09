@@ -34,15 +34,14 @@ export default function AuthPage({ staffOnly = false }) {
     const handleLogin = async (e) => {
         e.preventDefault();
         setLoading(true);
-        const result = await login(loginForm.email, loginForm.password);
+        const result = await login(loginForm.email, loginForm.password, staffOnly ? 'staff' : 'cliente');
         setLoading(false);
         if (!result.ok) { toast.error(result.error); return; }
-        const rol = result.usuario?.rol;
-        if (staffOnly && !['administrador','tecnico','recepcionista'].includes(rol)) {
-            localStorage.removeItem('SS SWAP_token'); localStorage.removeItem('SS SWAP_usuario'); syncFromStorage();
-            toast.error('Este acceso es exclusivo para personal del taller.'); return;
-        }
-        if (['administrador','tecnico','recepcionista'].includes(rol)) {
+
+        // El backend ya valido que el rol coincide con el panel usado (staff vs
+        // cliente) antes de emitir el token — aqui solo queda navegar.
+        if (staffOnly) {
+            toast.success('Sesión iniciada');
             navigate('/dashboard');
         } else {
             toast.success('Sesión iniciada');
@@ -56,6 +55,10 @@ export default function AuthPage({ staffOnly = false }) {
         setRegError('');
         if (regForm.password.length < 6) {
             setRegError('La contraseña debe tener al menos 6 caracteres.');
+            return;
+        }
+        if (regForm.password.length > 72) {
+            setRegError('La contraseña no puede tener más de 72 caracteres.');
             return;
         }
         setLoading(true);
@@ -252,6 +255,7 @@ export default function AuthPage({ staffOnly = false }) {
                                     <div className="auth-input-wrap">
                                         <IconMailAuth className="auth-input-icon" />
                                         <input className="auth-input" style={inputBase} type="email" required
+                                            maxLength={254}
                                             placeholder="tucorreo@email.com"
                                             value={loginForm.email}
                                             onChange={e => setLoginForm({ ...loginForm, email: e.target.value })} />
@@ -263,6 +267,7 @@ export default function AuthPage({ staffOnly = false }) {
                                     <div className="auth-input-wrap" style={{ position: 'relative' }}>
                                         <IconLockAuth className="auth-input-icon" />
                                         <input className="auth-input" style={inputBase} type={showPass ? 'text' : 'password'} required
+                                            maxLength={72}
                                             placeholder="Tu contraseña"
                                             value={loginForm.password}
                                             onChange={e => setLoginForm({ ...loginForm, password: e.target.value })} />
@@ -294,6 +299,7 @@ export default function AuthPage({ staffOnly = false }) {
                                 <div>
                                     <label style={labelBase}>Nombre completo *</label>
                                     <input className="auth-input" style={inputBase} type="text" required
+                                        maxLength={120}
                                         placeholder="Ingresa tu nombre"
                                         value={regForm.nombre}
                                         onChange={e => setRegForm({ ...regForm, nombre: e.target.value })} />
@@ -302,6 +308,7 @@ export default function AuthPage({ staffOnly = false }) {
                                 <div>
                                     <label style={labelBase}>Correo electrónico *</label>
                                     <input className="auth-input" style={inputBase} type="email" required
+                                        maxLength={254}
                                         placeholder="tucorreo@email.com"
                                         value={regForm.email}
                                         onChange={e => setRegForm({ ...regForm, email: e.target.value })} />
@@ -333,9 +340,10 @@ export default function AuthPage({ staffOnly = false }) {
                                 </div>
 
                                 <div>
-                                    <label style={labelBase}>Contraseña * (min. 6 caracteres)</label>
+                                    <label style={labelBase}>Contraseña * (6 a 72 caracteres)</label>
                                     <div style={{ position: 'relative' }}>
                                         <input className="auth-input" style={inputBase} type={showPass ? 'text' : 'password'} required
+                                            maxLength={72}
                                             placeholder="Mínimo 6 caracteres"
                                             value={regForm.password}
                                             onChange={e => setRegForm({ ...regForm, password: e.target.value })} />

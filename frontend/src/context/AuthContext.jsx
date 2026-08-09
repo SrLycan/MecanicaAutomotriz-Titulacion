@@ -10,10 +10,10 @@ export const AuthProvider = ({ children }) => {
     });
     const [loading, setLoading] = useState(false);
 
-    const login = useCallback(async (email, password) => {
+    const login = useCallback(async (email, password, panel) => {
         setLoading(true);
         try {
-            const { data } = await api.post('/auth/login', { email, password });
+            const { data } = await api.post('/auth/login', { email, password, panel });
             localStorage.setItem('SS SWAP_token',   data.token);
             localStorage.setItem('SS SWAP_usuario', JSON.stringify(data.usuario));
             setUsuario(data.usuario);

@@ -1,13 +1,13 @@
 name: CI
 
-# Se ejecuta en cada push/PR a main o master (cubre los dos nombres mas
-# comunes de rama principal), y tambien se puede lanzar a mano desde la
-# pestaña "Actions" de GitHub con "Run workflow".
+# Se ejecuta en cada push/PR a main, master o develop (asi corre tanto en
+# la rama principal como en la de desarrollo), y tambien se puede lanzar a
+# mano desde la pestaña "Actions" de GitHub con "Run workflow".
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, develop ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main, master, develop ]
   workflow_dispatch:
 
 jobs:
