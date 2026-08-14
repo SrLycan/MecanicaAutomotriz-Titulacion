@@ -1,0 +1,14 @@
+@keyframes invRowIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: none; }
+}
+@keyframes invPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,.4); }
+    50% { box-shadow: 0 0 0 6px rgba(239,68,68,0); }
+}
+.inv-row { animation: invRowIn .28s ease both; }
+.inv-kpi { transition: transform .25s cubic-bezier(.4,0,.2,1), box-shadow .25s, border-color .25s; }
+.inv-kpi:hover { transform: translateY(-3px); border-color: var(--sky-bdr); }
+.inv-input:focus { border-color: #0ea5e9 !important; box-shadow: 0 0 0 3px rgba(14,165,233,.14); }
+.inv-stock-bar { transition: width .5s cubic-bezier(.4,0,.2,1); }
+.inv-alert-dot { animation: invPulse 1.8s ease-in-out infinite; }

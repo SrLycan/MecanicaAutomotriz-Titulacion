@@ -347,6 +347,8 @@ select { cursor: pointer; }
 .appointments-status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; box-shadow: 0 0 9px currentColor; }
 .appointments-action { transition: transform .18s ease, filter .18s ease, box-shadow .18s ease !important; }
 .appointments-action:hover { transform: translateY(-2px); filter: brightness(1.08); box-shadow: 0 8px 18px -8px currentColor; }
+.appointments-kpi { font-family: inherit; transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+.appointments-kpi:hover { transform: translateY(-2px); box-shadow: 0 10px 22px -14px rgba(15,23,42,.4); }
 
 /* ── Responsive global ── */
 @media (max-width: 720px) {

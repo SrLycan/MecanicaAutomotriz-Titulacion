@@ -3,6 +3,7 @@ import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { useConfirm } from '../components/common/ConfirmDialog';
+import './Sucursales.css';
 
 function IconPlus()  { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>; }
 function IconEdit()  { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>; }
@@ -70,13 +71,7 @@ export default function Sucursales() {
     };
 
     return (
-        <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1500 }}>
-            <style>{`
-                @keyframes sCardIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-                .s-card { animation: sCardIn .35s ease both; transition: transform .25s, border-color .25s, box-shadow .25s; }
-                .s-card:hover { transform: translateY(-3px); border-color: ${SKY_BDR}; box-shadow: 0 12px 36px -12px rgba(15,23,42,0.12); }
-            `}</style>
-
+        <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1500, '--sky-bdr': SKY_BDR }}>
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 22, flexWrap: 'wrap', gap: 12 }}>
                 <div>

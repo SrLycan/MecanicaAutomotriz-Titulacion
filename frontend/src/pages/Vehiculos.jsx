@@ -5,6 +5,7 @@ import api from '../services/api';
 import toast from 'react-hot-toast';
 import { ESTADO_ORDEN_MAP, ESTADO_PROGRESO_MAP } from '../constants/ordenes';
 import { useConfirm } from '../components/common/ConfirmDialog';
+import './Vehiculos.css';
 
 function IconSearch() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>; }
 function IconPlus()  { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>; }
@@ -95,13 +96,7 @@ export default function Vehiculos() {
     const clientesUnicos = [...new Set(vehiculos.map(v => v.cliente_nombre).filter(Boolean))];
 
     return (
-        <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1500 }}>
-            <style>{`
-                @keyframes vRowIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:none; } }
-                .v-row { animation: vRowIn .28s ease both; }
-                .v-row:hover { background: ${SKY_PALE}; }
-            `}</style>
-
+        <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1500, '--sky-pale': SKY_PALE }}>
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
                 <div>

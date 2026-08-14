@@ -1,0 +1,63 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #050505; }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #050505; }
+::-webkit-scrollbar-thumb { background: rgba(59,123,171,.3); border-radius: 8px; }
+@keyframes fadeUp { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform:none; } }
+.pc-fade { animation: fadeUp .4s ease both; }
+.pc-tab { transition: color .2s, border-color .2s, background .2s; }
+.pc-tab:hover { color: #fff !important; }
+.pc-card { transition: border-color .25s, transform .25s; }
+.pc-card:hover { border-color: rgba(59,123,171,.35) !important; transform: translateY(-2px); }
+.pc-input { width: 100%; padding: 11px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.03); color: #fff; font-family: 'Outfit', sans-serif; font-size: .87rem; outline: none; transition: border-color .2s; box-sizing: border-box; }
+.pc-input:focus { border-color: rgba(59,123,171,.5); }
+.pc-input::placeholder { color: rgba(255,255,255,.25); }
+.pc-label { display: block; margin-bottom: 6px; font-family: 'Outfit', sans-serif; font-weight: 500; font-size: .72rem; color: rgba(255,255,255,.45); text-transform: uppercase; letter-spacing: .06em; }
+.pc-btn-primary { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: .85rem; color: #0a0a0a; background: #3b7bab; border: none; border-radius: 999px; padding: 11px 24px; cursor: pointer; transition: all .2s; }
+.pc-btn-primary:hover:not(:disabled) { background: #4a8bc2; }
+.pc-btn-primary:disabled { opacity: .45; cursor: not-allowed; }
+.pc-btn-outline { font-family: 'Outfit', sans-serif; font-weight: 600; font-size: .82rem; color: rgba(255,255,255,.7); background: none; border: 1px solid rgba(255,255,255,.16); border-radius: 999px; padding: 10px 20px; cursor: pointer; transition: all .2s; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+.pc-btn-outline:hover { color: #fff; border-color: rgba(59,123,171,.5); }
+.pc-btn-danger { font-family: 'Outfit', sans-serif; font-weight: 600; font-size: .78rem; color: #f87171; background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.2); border-radius: 999px; padding: 7px 16px; cursor: pointer; transition: all .2s; }
+.pc-btn-danger:hover { background: rgba(239,68,68,.16); }
+.pc-chip { font-family: 'Outfit', sans-serif; font-size: .78rem; font-weight: 600; padding: 7px 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.03); color: rgba(255,255,255,.55); cursor: pointer; transition: all .2s; white-space: nowrap; }
+.pc-chip:hover { color: #fff; }
+.pc-chip.active { background: rgba(59,123,171,.14); border-color: rgba(59,123,171,.4); color: #3b7bab; }
+.pc-avatar-edit { position: absolute; bottom: -2px; right: -2px; width: 26px; height: 26px; border-radius: 50%; background: #3b7bab; color: #0a0a0a; border: 2px solid #050505; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background .2s; }
+.pc-avatar-edit:hover { background: #4a8bc2; }
+
+/* ── Ambiente: orbes de fondo (mismo lenguaje visual que el resto del sitio) ── */
+@keyframes pcOrb { 0%, 100% { opacity: .35; transform: scale(1); } 50% { opacity: .6; transform: scale(1.1); } }
+.glow-orb { position: fixed; border-radius: 50%; pointer-events: none; filter: blur(70px); z-index: 0; }
+
+/* ── Stats: pequeno lift al pasar el mouse ── */
+.pc-stat { transition: transform .25s, border-color .25s; }
+.pc-stat:hover { transform: translateY(-3px); border-color: rgba(59,123,171,.35) !important; }
+
+/* ── EN EL TALLER AHORA: punto en vivo + resplandor ambiental de la tarjeta ── */
+@keyframes pcLiveDot { 0%, 100% { box-shadow: 0 0 0 0 rgba(56,189,248,.55); } 70% { box-shadow: 0 0 0 7px rgba(56,189,248,0); } }
+.pc-live-dot { width: 8px; height: 8px; border-radius: 50%; background: #38bdf8; flex-shrink: 0; animation: pcLiveDot 1.8s ease-out infinite; }
+.pc-taller-glow { position: absolute; top: -60%; right: -10%; width: 320px; height: 320px; background: radial-gradient(closest-side, rgba(59,123,171,.16), transparent); pointer-events: none; z-index: 0; animation: pcOrb 6s ease-in-out infinite; }
+
+/* ── Paso actual: anillo pulsante para que se sienta "en progreso" de verdad ── */
+@keyframes pcEtapaPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(59,123,171,.45); } 70% { box-shadow: 0 0 0 8px rgba(59,123,171,0); } }
+.pc-etapa-actual { animation: pcEtapaPulse 1.7s ease-out infinite; }
+@keyframes pcDots { 0%, 20% { opacity: 0; } 50% { opacity: 1; } 100% { opacity: 0; } }
+.pc-dots span { opacity: 0; animation: pcDots 1.4s infinite; }
+.pc-dots span:nth-child(2) { animation-delay: .25s; }
+.pc-dots span:nth-child(3) { animation-delay: .5s; }
+
+/* ── Boton "ver progresion completa" + timeline de historial ── */
+.pc-hist-toggle { display: inline-flex; align-items: center; gap: 6px; background: none; border: none; color: #7fabce; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: .78rem; cursor: pointer; padding: 4px 2px; transition: color .2s; }
+.pc-hist-toggle:hover { color: #fff; }
+@keyframes pcPanelIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.pc-hist-panel { animation: pcPanelIn .3s ease both; margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,.08); }
+.pc-timeline { position: relative; display: flex; flex-direction: column; gap: 16px; padding-left: 4px; }
+.pc-timeline::before { content: ''; position: absolute; left: 7px; top: 4px; bottom: 4px; width: 1.5px; background: linear-gradient(180deg, rgba(59,123,171,.5), rgba(59,123,171,.05)); }
+.pc-timeline-item { position: relative; display: flex; gap: 14px; padding-left: 22px; animation: fadeUp .35s ease both; }
+.pc-timeline-dot { position: absolute; left: 0; top: 3px; width: 15px; height: 15px; border-radius: 50%; background: #0a0e14; border: 2px solid #3b7bab; flex-shrink: 0; }
+@media (max-width: 720px) {
+    .pc-perfil-grid { grid-template-columns: 1fr !important; }
+    .pc-form-2col { grid-template-columns: 1fr !important; }
+}

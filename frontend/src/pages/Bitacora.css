@@ -1,0 +1,6 @@
+@keyframes bitRowIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: none; }
+}
+.bit-row { animation: bitRowIn .28s ease both; }
+.bit-tab { transition: all .18s; cursor: pointer; }

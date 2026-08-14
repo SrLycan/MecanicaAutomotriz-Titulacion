@@ -1,0 +1,27 @@
+# SS SWAP Frontend — react-router usa rutas del lado del cliente
+# (ej. /dashboard/ordenes). Sin esto, recargar la pagina en cualquier
+# ruta que no sea la raiz devuelve 404 en el hosting de Hostinger
+# (Apache/LiteSpeed), porque esos archivos no existen fisicamente.
+# Esta regla redirige cualquier ruta que no sea un archivo/carpeta real
+# hacia index.html, y ahi react-router toma el control.
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Deja pasar archivos y carpetas que si existen (JS, CSS, imagenes, etc.)
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Todo lo demas va a index.html
+  RewriteRule ^ index.html [L]
+</IfModule>
+
+# Evita que el navegador cachee agresivamente el index.html (para que los
+# usuarios reciban el build mas reciente despues de cada despliegue).
+<IfModule mod_headers.c>
+  <FilesMatch "index\.html$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+  </FilesMatch>
+</IfModule>

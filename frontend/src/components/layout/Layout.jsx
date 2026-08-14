@@ -4,8 +4,10 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
+import './Layout.css';
 
 function IconRegMov() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/><polyline points="5 12 12 5 19 12"/></svg>; }
+function IconBitacora() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>; }
 
 const NAV_ITEMS = [
     { to: '/dashboard',             label: 'Dashboard',   icon: IconDash,   roles: ['administrador','tecnico','recepcionista'] },
@@ -19,6 +21,7 @@ const NAV_ITEMS = [
     { to: '/dashboard/citas',       label: 'Citas',       icon: IconCalendar, roles: ['administrador','tecnico','recepcionista'] },
     { to: '/dashboard/sucursales',  label: 'Sucursales',  icon: IconBranch, roles: ['administrador'] },
     { to: '/dashboard/servicios',   label: 'Servicios',   icon: IconSvc,    roles: ['administrador'] },
+    { to: '/dashboard/bitacora',    label: 'Bitácora',    icon: IconBitacora, roles: ['administrador'] },
 ];
 
 const ROL_COLOR = { administrador: '#7fabce', tecnico: '#1a8f5c', recepcionista: '#c9821a' };
@@ -83,7 +86,7 @@ export default function Layout() {
     const mut     = isDark ? 'rgba(241,245,249,0.55)' : '#111827';
     const navMut  = 'rgba(203,213,225,0.55)';
 
-    const handleLogout = () => { logout(); toast.success('Sesion cerrada'); navigate('/login'); };
+    const handleLogout = () => { logout(); toast.success('Sesion cerrada'); navigate('/admin/login'); };
     const items = NAV_ITEMS.filter(item => tieneRol(...item.roles));
 
     // Breadcrumb dinámico
@@ -97,6 +100,7 @@ export default function Layout() {
         if (location.pathname.endsWith('/vehiculos'))    return 'Vehiculos';
         if (location.pathname.endsWith('/sucursales'))   return 'Sucursales';
         if (location.pathname.endsWith('/servicios'))    return 'Servicios';
+        if (location.pathname.endsWith('/bitacora'))     return 'Bitácora';
         return 'Dashboard';
     })();
 
@@ -105,24 +109,6 @@ export default function Layout() {
 
     return (
         <div style={{ display: 'flex', height: '100vh', background: mainBg, overflow: 'hidden' }}>
-            <style>{`
-                @keyframes sbItemIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: none; } }
-                .sb-item { animation: sbItemIn .3s ease both; position: relative; }
-                .sb-item::after {
-                    content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
-                    width: 3px; height: 0; background: linear-gradient(180deg, ${GOLD_LIGHT}, ${GOLD});
-                    border-radius: 0 3px 3px 0; transition: height .25s cubic-bezier(.4,0,.2,1);
-                }
-                .sb-item.is-active::after { height: 22px; box-shadow: 0 0 12px ${GOLD}; }
-                .sb-item:hover .sb-icon { transform: scale(1.08); color: ${GOLD_LIGHT}; }
-                .sb-icon { transition: transform .2s, color .2s; }
-                .hdr-pill { transition: border-color .2s, background .2s; }
-                .hdr-pill:hover { border-color: rgba(127,171,206,.45); }
-                @media (max-width: 768px) {
-                    .main-content-pad { padding: 18px 16px !important; }
-                    .hdr-username { display: none; }
-                }
-            `}</style>
 
             {/* ── Mobile overlay ── */}
             {isMobile && mobileOpen && (

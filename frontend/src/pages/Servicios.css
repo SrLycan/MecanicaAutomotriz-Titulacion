@@ -1,0 +1,16 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap');
+
+* { box-sizing: border-box; }
+
+.svc-card { transition: transform .25s, box-shadow .25s, border-color .25s; }
+.svc-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(201,162,39,.4) !important;
+    box-shadow: 0 12px 36px -12px rgba(0,0,0,.45);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+}
+.svc-row { animation: fadeIn .3s ease both; }
