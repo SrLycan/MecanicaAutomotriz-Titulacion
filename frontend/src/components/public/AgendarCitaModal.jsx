@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
+import './AgendarCitaModal.css';
 
 const GOLD = '#3b7bab';
 const DIAS_SEMANA = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
@@ -135,43 +136,6 @@ export default function AgendarCitaModal({ servicio, onClose }) {
     return (
         <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
              onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-            <style>{`
-                @keyframes acmIn { from { opacity: 0; transform: scale(.97) translateY(8px); } to { opacity: 1; transform: none; } }
-                @keyframes acmBackdrop { from { opacity: 0; } to { opacity: 1; } }
-                @keyframes acmCheck { from { stroke-dashoffset: 40; } to { stroke-dashoffset: 0; } }
-                .acm-backdrop { position: absolute; inset: 0; background: rgba(4,4,4,.78); backdrop-filter: blur(6px); animation: acmBackdrop .25s ease both; }
-                .acm-panel { position: relative; width: 100%; max-width: 560px; max-height: 88vh; overflow-y: auto; background: linear-gradient(180deg, #141414 0%, #0c0c0c 100%); border: 1px solid rgba(201,162,39,.2); border-radius: 20px; animation: acmIn .3s cubic-bezier(.4,0,.2,1) both; }
-                .acm-panel::-webkit-scrollbar { width: 6px; }
-                .acm-panel::-webkit-scrollbar-thumb { background: rgba(201,162,39,.3); border-radius: 8px; }
-                .acm-close { position: absolute; top: 18px; right: 18px; width: 34px; height: 34px; border-radius: 10px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.04); color: rgba(255,255,255,.6); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .2s; z-index: 2; }
-                .acm-close:hover { color: #fff; border-color: rgba(239,68,68,.4); background: rgba(239,68,68,.1); }
-                .acm-step { display: flex; align-items: center; gap: 6px; font-family: 'Outfit', sans-serif; font-size: .72rem; font-weight: 600; color: rgba(255,255,255,.3); }
-                .acm-step.active { color: ${GOLD}; }
-                .acm-step.done { color: rgba(255,255,255,.55); }
-                .acm-dot { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .65rem; border: 1.5px solid currentColor; flex-shrink: 0; }
-                .acm-daybtn { aspect-ratio: 1; border-radius: 10px; border: 1px solid transparent; background: rgba(255,255,255,.03); color: #fff; font-family: 'Outfit', sans-serif; font-size: .82rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .18s; }
-                .acm-daybtn:hover:not(:disabled) { background: rgba(201,162,39,.12); border-color: rgba(201,162,39,.3); }
-                .acm-daybtn:disabled { opacity: .18; cursor: not-allowed; }
-                .acm-daybtn.selected { background: ${GOLD}; color: #0a0a0a; font-weight: 700; }
-                .acm-daybtn.today { border-color: rgba(201,162,39,.5); }
-                .acm-navbtn { width: 30px; height: 30px; border-radius: 8px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.03); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .18s; }
-                .acm-navbtn:hover:not(:disabled) { border-color: ${GOLD}; color: ${GOLD}; }
-                .acm-navbtn:disabled { opacity: .2; cursor: not-allowed; }
-                .acm-slot { padding: 10px 6px; border-radius: 10px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.03); color: #fff; font-family: 'Outfit', sans-serif; font-size: .8rem; font-weight: 600; cursor: pointer; transition: all .18s; text-align: center; }
-                .acm-slot:hover:not(:disabled) { border-color: rgba(201,162,39,.4); background: rgba(201,162,39,.08); }
-                .acm-slot:disabled { opacity: .22; cursor: not-allowed; text-decoration: line-through; }
-                .acm-slot.selected { background: ${GOLD}; color: #0a0a0a; border-color: ${GOLD}; }
-                .acm-radio { display: flex; align-items: center; gap: 12px; padding: 13px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.03); cursor: pointer; transition: all .18s; }
-                .acm-radio:hover { border-color: rgba(201,162,39,.3); }
-                .acm-radio.selected { border-color: ${GOLD}; background: rgba(201,162,39,.08); }
-                .acm-textarea { width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.03); color: #fff; font-family: 'Outfit', sans-serif; font-size: .87rem; resize: vertical; min-height: 70px; outline: none; }
-                .acm-textarea:focus { border-color: rgba(201,162,39,.4); }
-                .acm-btn-primary { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: .88rem; color: #0a0a0a; background: ${GOLD}; border: none; border-radius: 999px; padding: 13px 26px; cursor: pointer; transition: all .2s; }
-                .acm-btn-primary:hover:not(:disabled) { background: #5a93c4; }
-                .acm-btn-primary:disabled { opacity: .4; cursor: not-allowed; }
-                .acm-btn-ghost { font-family: 'Outfit', sans-serif; font-weight: 600; font-size: .85rem; color: rgba(255,255,255,.6); background: none; border: 1px solid rgba(255,255,255,.14); border-radius: 999px; padding: 12px 22px; cursor: pointer; transition: all .2s; }
-                .acm-btn-ghost:hover { color: #fff; border-color: rgba(255,255,255,.3); }
-            `}</style>
 
             <div className="acm-backdrop" />
             <div className="acm-panel" onMouseDown={(e) => e.stopPropagation()}>
@@ -183,7 +147,7 @@ export default function AgendarCitaModal({ servicio, onClose }) {
                     <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.7rem', letterSpacing: '.02em', color: '#fff', marginBottom: 18, lineHeight: 1.1 }}>{servicio.nombre}</h2>
 
                     {citaCreada ? (
-                        <PantallaExito servicio={servicio} sucursal={sucursalElegida} fecha={fecha} hora={horaElegida}
+                        <PantallaExito sucursal={sucursalElegida} fecha={fecha} hora={horaElegida}
                             onCerrar={onClose} onVerCitas={() => navigate('/mi-panel', { state: { tab: 'citas' } })} />
                     ) : cargandoInicial ? (
                         <div style={{ padding: '50px 0', textAlign: 'center', color: 'rgba(255,255,255,.4)', fontFamily: "'Outfit'" }}>Cargando…</div>

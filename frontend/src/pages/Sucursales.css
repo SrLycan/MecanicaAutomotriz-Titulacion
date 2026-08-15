@@ -1,0 +1,13 @@
+@keyframes sCardIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: none; }
+}
+.s-card {
+    animation: sCardIn .35s ease both;
+    transition: transform .25s, border-color .25s, box-shadow .25s;
+}
+.s-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--sky-bdr);
+    box-shadow: 0 12px 36px -12px rgba(15,23,42,0.12);
+}

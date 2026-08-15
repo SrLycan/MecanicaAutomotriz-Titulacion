@@ -1,0 +1,8 @@
+@keyframes uRowIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: none; }
+}
+.u-row { animation: uRowIn .28s ease both; }
+.u-input:focus { border-color: #0ea5e9 !important; box-shadow: 0 0 0 3px rgba(14,165,233,.14); }
+.u-kpi { transition: transform .25s, border-color .25s; }
+.u-kpi:hover { transform: translateY(-3px); border-color: var(--sky-bdr); }

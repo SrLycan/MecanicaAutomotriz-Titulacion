@@ -1,0 +1,6 @@
+@keyframes vRowIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: none; }
+}
+.v-row { animation: vRowIn .28s ease both; }
+.v-row:hover { background: var(--sky-pale); }

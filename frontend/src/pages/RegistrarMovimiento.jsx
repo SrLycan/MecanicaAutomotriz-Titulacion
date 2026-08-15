@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import './RegistrarMovimiento.css';
 
 function IconSearch() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>; }
 function IconIn()    { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>; }
@@ -99,52 +100,7 @@ export default function RegistrarMovimiento() {
     };
 
     return (
-        <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1200 }}>
-            <style>{`
-                @keyframes regIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-                .reg-item { animation: regIn .25s ease both; transition: background .15s, border-color .2s, transform .2s; cursor: pointer; }
-                .reg-item:hover { border-color: ${SKY_BDR} !important; background: ${rowHov} !important; transform: translateY(-2px); }
-                .reg-item.selected { border-color: ${SKY} !important; background: ${SKY_PALE} !important; }
-
-                .reg-form-grid {
-                    display: grid;
-                    grid-template-columns: 1fr 1.2fr;
-                    gap: 20px;
-                    align-items: start;
-                }
-                .reg-steps-container {
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                    margin-bottom: 24px;
-                }
-                .reg-buttons-row {
-                    display: flex;
-                    gap: 10px;
-                    justify-content: flex-end;
-                    padding-top: 12px;
-                    margin-top: 4px;
-                }
-
-                @media (max-width: 768px) {
-                    .reg-form-grid {
-                        grid-template-columns: 1fr;
-                        gap: 16px;
-                    }
-                    .reg-steps-container {
-                        flex-wrap: wrap;
-                        gap: 8px;
-                    }
-                    .reg-buttons-row {
-                        flex-direction: column;
-                        gap: 8px;
-                    }
-                    .reg-buttons-row button {
-                        width: 100%;
-                        justify-content: center;
-                    }
-                }
-            `}</style>
+        <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1200, '--sky-bdr': SKY_BDR, '--sky-pale': SKY_PALE, '--row-hov': rowHov }}>
 
             {/* Header */}
             <div style={{ marginBottom: 22 }}>

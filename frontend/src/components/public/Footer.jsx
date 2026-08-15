@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import toast from 'react-hot-toast';
 import logoImg from '../../assets/logo.png';
+import './Footer.css';
 
 const SERVICIOS = [
     'Mantenimiento Preventivo',
@@ -21,45 +21,8 @@ const LINKS_RAPIDOS = [
 ];
 
 export default function Footer() {
-    const [email, setEmail] = useState('');
-
-    const handleNewsletter = (e) => {
-        e.preventDefault();
-        if (!email.trim() || !email.includes('@')) {
-            toast.error('Ingresa un correo válido');
-            return;
-        }
-        toast.success('¡Gracias! Te avisaremos de nuestras novedades.');
-        setEmail('');
-    };
-
     return (
         <footer style={{ background: '#0c0f14', borderTop: '1px solid rgba(127,171,206,.14)', color: 'rgba(255,255,255,.65)', fontFamily: "'Outfit', sans-serif" }}>
-            <style>{`
-                /* ── Logo: halo radial (no cuadrado) solo al pasar el mouse ── */
-                .footer-logo-link { position: relative; }
-                .footer-logo-link::before {
-                    content: '';
-                    position: absolute;
-                    top: 50%; left: 50%;
-                    width: 100px; height: 100px;
-                    background: radial-gradient(circle, rgba(127,171,206,.5) 0%, rgba(59,123,171,.22) 45%, rgba(59,123,171,0) 72%);
-                    transform: translate(-50%, -50%) scale(.8);
-                    opacity: 0;
-                    z-index: 0;
-                    pointer-events: none;
-                    transition: opacity .35s ease, transform .35s ease;
-                }
-                .footer-logo-link:hover::before { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-                .footer-logo-img { position: relative; z-index: 1; filter: drop-shadow(0 0 0px rgba(59,123,171,0)); transition: filter .35s ease; }
-                .footer-logo-link:hover .footer-logo-img { filter: drop-shadow(0 0 5px rgba(127,171,206,.55)); }
-
-                /* ── Navegacion: rayita que se despliega hacia la derecha y se ilumina (igual que el Navbar) ── */
-                .footer-nav-link { position: relative; display: inline-block; font-size: .85rem; font-weight: 300; color: rgba(255,255,255,.55); text-decoration: none; padding-bottom: 3px; transition: color .2s; }
-                .footer-nav-link::after { content: ''; position: absolute; left: 0; right: 100%; bottom: 0; height: 1.5px; background: linear-gradient(90deg, #7fabce, #3b7bab); transition: right .25s cubic-bezier(.4,0,.2,1); border-radius: 2px; }
-                .footer-nav-link:hover { color: #cfe3f3; text-shadow: 0 0 10px rgba(127,171,206,.65); }
-                .footer-nav-link:hover::after { right: 0; }
-            `}</style>
 
             {/* Main footer */}
             <div style={{ maxWidth: 1200, margin: '0 auto', padding: '60px 24px 40px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 40 }}>
