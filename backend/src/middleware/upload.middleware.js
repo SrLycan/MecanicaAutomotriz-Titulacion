@@ -43,4 +43,4 @@ const subirFotoPerfil = (req, res, next) => {
     });
 };
 
-module.exports = { subirFotoPerfil, DIR_PERFILES };
+module.exports = { subirFotoPerfil };

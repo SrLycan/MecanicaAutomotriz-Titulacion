@@ -3,6 +3,8 @@ import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { useConfirm } from '../components/common/ConfirmDialog';
+import { resolveImagenSrc, fileToDataUrl, comprimirImagen } from '../utils/imagen';
+import './Servicios.css';
 
 /* ── Icons ── */
 function IconPlus()    { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>; }
@@ -15,56 +17,6 @@ function IconImage()   { return <svg width="26" height="26" viewBox="0 0 24 24" 
 
 const GOLD = '#c9a227';
 const EMPTY = { nombre: '', descripcion: '', precio_base: '', duracion_estimada_min: '', activo: true, imagen_url: '' };
-
-const getApiHost = () => {
-    const base = process.env.REACT_APP_API_URL || '/api';
-    if (/^https?:\/\//i.test(base)) return base.replace(/\/api\/?$/i, '').replace(/\/$/, '');
-    return window.location.origin;
-};
-
-const resolveImagenSrc = (value = '') => {
-    const src = String(value || '').trim();
-    if (!src) return '';
-    if (/^(data:image\/|blob:|https?:\/\/)/i.test(src)) return src;
-    if (src.startsWith('/')) return `${getApiHost()}${src}`;
-    return `${getApiHost()}/${src.replace(/^\/+/, '')}`;
-};
-
-const fileToDataUrl = (file) => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result || '');
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-});
-
-const comprimirImagen = (file, maxSize = 900, quality = 0.78) => new Promise((resolve, reject) => {
-    if (file.type === 'image/svg+xml') {
-        fileToDataUrl(file).then(resolve).catch(reject);
-        return;
-    }
-
-    const objectUrl = URL.createObjectURL(file);
-    const img = new Image();
-
-    img.onload = () => {
-        const ratio = Math.min(1, maxSize / Math.max(img.width, img.height));
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.max(1, Math.round(img.width * ratio));
-        canvas.height = Math.max(1, Math.round(img.height * ratio));
-
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        URL.revokeObjectURL(objectUrl);
-        resolve(canvas.toDataURL('image/jpeg', quality));
-    };
-
-    img.onerror = () => {
-        URL.revokeObjectURL(objectUrl);
-        reject(new Error('No se pudo procesar la imagen.'));
-    };
-
-    img.src = objectUrl;
-});
 
 function Modal({ servicio, onClose, onSaved, isDark }) {
     const [form, setForm] = useState(servicio ? {
@@ -241,14 +193,6 @@ export default function Servicios() {
 
     return (
         <div style={{ minHeight: '100%', background: bg, padding: '28px 24px', boxSizing: 'border-box' }}>
-            <style>{`
-                @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap');
-                * { box-sizing: border-box; }
-                .svc-card { transition: transform .25s, box-shadow .25s, border-color .25s; }
-                .svc-card:hover { transform: translateY(-3px); border-color: rgba(201,162,39,.4) !important; box-shadow: 0 12px 36px -12px rgba(0,0,0,.45); }
-                @keyframes fadeIn { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: none; } }
-                .svc-row { animation: fadeIn .3s ease both; }
-            `}</style>
 
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14, marginBottom: 28 }}>

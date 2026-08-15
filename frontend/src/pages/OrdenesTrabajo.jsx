@@ -4,10 +4,11 @@ import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import {
-    ESTADOS_ORDEN, ESTADOS_PROGRESO,
+    ESTADOS_PROGRESO,
     ESTADO_ORDEN_MAP, ESTADO_PROGRESO_MAP, FILTROS_ORDEN,
 } from '../constants/ordenes';
 import { useConfirm } from '../components/common/ConfirmDialog';
+import './OrdenesTrabajo.css';
 
 // ── Iconos ────────────────────────────────────────────────────
 function IconPlus()  { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>; }
@@ -150,19 +151,6 @@ export default function OrdenesTrabajo() {
 
     return (
         <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1500 }}>
-            <style>{`
-                @keyframes fadeIn { from { opacity:0;transform:translateY(6px) } to { opacity:1;transform:none } }
-                @media (max-width: 600px) {
-                    .ot-header { flex-direction: column !important; align-items: flex-start !important; }
-                    .ot-header h1 { font-size: 2rem !important; }
-                    .ot-filtros { gap: 6px !important; }
-                    .ot-filtros button { padding: 8px 12px !important; font-size: .66rem !important; }
-                    .ot-search-row { flex-direction: column !important; }
-                    .ot-card-header { flex-direction: column !important; gap: 6px !important; }
-                    .ot-card-actions { flex-wrap: wrap !important; }
-                    .ot-detail-grid { grid-template-columns: 1fr !important; }
-                }
-            `}</style>
 
             {/* Header */}
             <div className="ot-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
@@ -341,9 +329,9 @@ export default function OrdenesTrabajo() {
                                             {puedeEste && o.estado === 'pendiente' && (
                                                 <EstBtn color="#0ea5e9" label="Iniciar" onClick={() => cambiarEstado(o.id, 'en_progreso', { estado_progreso: 'en_revision' })} />
                                             )}
-                                            {/* Completar */}
+                                            {/* Marcar entregado (estado final; independiente del progreso de reparacion) */}
                                             {puedeEste && o.estado === 'en_progreso' && (
-                                                <EstBtn color="#10b981" label="Completar" onClick={() => cambiarEstado(o.id, 'completado')} />
+                                                <EstBtn color="#10b981" label="Marcar entregado" onClick={() => cambiarEstado(o.id, 'completado')} />
                                             )}
                                             {/* Cancelar: solo admin */}
                                             {esAdmin && o.estado === 'pendiente' && (
@@ -438,9 +426,6 @@ function EstBtn({ color, label, onClick }) {
     );
 }
 
-// ═══════════════════════════════════════════════════════════════
-// MODAL: Cliente (crear/editar)
-// ═══════════════════════════════════════════════════════════════
 function HistorialTimeline({ historial, isDark, txt, mut, bdr }) {
     const [abierto, setAbierto] = useState(null);
     const SKY_DEEP = '#0284c7';
@@ -501,6 +486,9 @@ function HistorialTimeline({ historial, isDark, txt, mut, bdr }) {
     );
 }
 
+// ═══════════════════════════════════════════════════════════════
+// MODAL: Cliente (crear/editar)
+// ═══════════════════════════════════════════════════════════════
 function ModalCliente({ onClose, onCreado, isDark }) {
     const [form, setForm] = useState({ nombre: '', email: '', telefono: '', cedula: '', direccion: '' });
     const [saving, setSaving] = useState(false);

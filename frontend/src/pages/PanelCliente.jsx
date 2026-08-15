@@ -5,6 +5,7 @@ import Navbar from '../components/public/Navbar';
 import Footer from '../components/public/Footer';
 import api, { API_ORIGIN } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import './PanelCliente.css';
 
 /* ── Icons ── */
 function IconOrden()    { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>; }
@@ -16,19 +17,14 @@ function IconCalendar() { return <svg width="18" height="18" viewBox="0 0 24 24"
 function IconCheck()    { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>; }
 function IconCamera()   { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>; }
 function IconLock()     { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>; }
-function IconSearch()   { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>; }
-function IconBack()     { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>; }
-function IconMinus()    { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>; }
-function IconPlus()     { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>; }
 
 const ACCENT       = '#3b7bab';
 const ACCENT_LIGHT = '#7fabce';
-const ACCENT_HOVER  = '#4a8bc2';
 
 const ESTADO_LABELS = {
     pendiente:    { label: 'Pendiente',    color: '#f59e0b', bg: 'rgba(245,158,11,.12)', bdr: 'rgba(245,158,11,.25)' },
     en_progreso:  { label: 'En progreso',  color: '#38bdf8', bg: 'rgba(56,189,248,.12)', bdr: 'rgba(56,189,248,.25)' },
-    completado:   { label: 'Completado',   color: '#10b981', bg: 'rgba(16,185,129,.12)', bdr: 'rgba(16,185,129,.25)' },
+    completado:   { label: 'Entregado',    color: '#10b981', bg: 'rgba(16,185,129,.12)', bdr: 'rgba(16,185,129,.25)' },
     cancelado:    { label: 'Cancelado',    color: '#ef4444', bg: 'rgba(239,68,68,.12)',  bdr: 'rgba(239,68,68,.25)'  },
 };
 const PROGRESO_LABELS = {
@@ -106,75 +102,6 @@ export default function PanelCliente() {
 
     return (
         <div style={{ background: '#050505', minHeight: '100vh', color: '#fff' }}>
-            <style>{`
-                @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700;800&display=swap');
-                * { box-sizing: border-box; margin: 0; padding: 0; }
-                body { background: #050505; }
-                ::-webkit-scrollbar { width: 6px; }
-                ::-webkit-scrollbar-track { background: #050505; }
-                ::-webkit-scrollbar-thumb { background: rgba(59,123,171,.3); border-radius: 8px; }
-                @keyframes fadeUp { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform:none; } }
-                .pc-fade { animation: fadeUp .4s ease both; }
-                .pc-tab { transition: color .2s, border-color .2s, background .2s; }
-                .pc-tab:hover { color: #fff !important; }
-                .pc-card { transition: border-color .25s, transform .25s; }
-                .pc-card:hover { border-color: rgba(59,123,171,.35) !important; transform: translateY(-2px); }
-                .pc-input { width: 100%; padding: 11px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.03); color: #fff; font-family: 'Outfit', sans-serif; font-size: .87rem; outline: none; transition: border-color .2s; box-sizing: border-box; }
-                .pc-input:focus { border-color: rgba(59,123,171,.5); }
-                .pc-input::placeholder { color: rgba(255,255,255,.25); }
-                .pc-label { display: block; margin-bottom: 6px; font-family: 'Outfit', sans-serif; font-weight: 500; font-size: .72rem; color: rgba(255,255,255,.45); text-transform: uppercase; letter-spacing: .06em; }
-                .pc-btn-primary { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: .85rem; color: #0a0a0a; background: ${ACCENT}; border: none; border-radius: 999px; padding: 11px 24px; cursor: pointer; transition: all .2s; }
-                .pc-btn-primary:hover:not(:disabled) { background: #4a8bc2; }
-                .pc-btn-primary:disabled { opacity: .45; cursor: not-allowed; }
-                .pc-btn-outline { font-family: 'Outfit', sans-serif; font-weight: 600; font-size: .82rem; color: rgba(255,255,255,.7); background: none; border: 1px solid rgba(255,255,255,.16); border-radius: 999px; padding: 10px 20px; cursor: pointer; transition: all .2s; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
-                .pc-btn-outline:hover { color: #fff; border-color: rgba(59,123,171,.5); }
-                .pc-btn-danger { font-family: 'Outfit', sans-serif; font-weight: 600; font-size: .78rem; color: #f87171; background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.2); border-radius: 999px; padding: 7px 16px; cursor: pointer; transition: all .2s; }
-                .pc-btn-danger:hover { background: rgba(239,68,68,.16); }
-                .pc-chip { font-family: 'Outfit', sans-serif; font-size: .78rem; font-weight: 600; padding: 7px 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.03); color: rgba(255,255,255,.55); cursor: pointer; transition: all .2s; white-space: nowrap; }
-                .pc-chip:hover { color: #fff; }
-                .pc-chip.active { background: rgba(59,123,171,.14); border-color: rgba(59,123,171,.4); color: ${ACCENT}; }
-                .pc-avatar-edit { position: absolute; bottom: -2px; right: -2px; width: 26px; height: 26px; border-radius: 50%; background: ${ACCENT}; color: #0a0a0a; border: 2px solid #050505; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background .2s; }
-                .pc-avatar-edit:hover { background: #4a8bc2; }
-                .pc-qty-btn { width: 30px; height: 30px; border-radius: 8px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.03); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .18s; }
-                .pc-qty-btn:hover:not(:disabled) { border-color: ${ACCENT}; color: ${ACCENT}; }
-                .pc-qty-btn:disabled { opacity: .3; cursor: not-allowed; }
-
-                /* ── Ambiente: orbes de fondo (mismo lenguaje visual que el resto del sitio) ── */
-                @keyframes pcOrb { 0%, 100% { opacity: .35; transform: scale(1); } 50% { opacity: .6; transform: scale(1.1); } }
-                .glow-orb { position: fixed; border-radius: 50%; pointer-events: none; filter: blur(70px); z-index: 0; }
-
-                /* ── Stats: pequeno lift al pasar el mouse ── */
-                .pc-stat { transition: transform .25s, border-color .25s; }
-                .pc-stat:hover { transform: translateY(-3px); border-color: rgba(59,123,171,.35) !important; }
-
-                /* ── EN EL TALLER AHORA: punto en vivo + resplandor ambiental de la tarjeta ── */
-                @keyframes pcLiveDot { 0%, 100% { box-shadow: 0 0 0 0 rgba(56,189,248,.55); } 70% { box-shadow: 0 0 0 7px rgba(56,189,248,0); } }
-                .pc-live-dot { width: 8px; height: 8px; border-radius: 50%; background: #38bdf8; flex-shrink: 0; animation: pcLiveDot 1.8s ease-out infinite; }
-                .pc-taller-glow { position: absolute; top: -60%; right: -10%; width: 320px; height: 320px; background: radial-gradient(closest-side, rgba(59,123,171,.16), transparent); pointer-events: none; z-index: 0; animation: pcOrb 6s ease-in-out infinite; }
-
-                /* ── Paso actual: anillo pulsante para que se sienta "en progreso" de verdad ── */
-                @keyframes pcEtapaPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(59,123,171,.45); } 70% { box-shadow: 0 0 0 8px rgba(59,123,171,0); } }
-                .pc-etapa-actual { animation: pcEtapaPulse 1.7s ease-out infinite; }
-                @keyframes pcDots { 0%, 20% { opacity: 0; } 50% { opacity: 1; } 100% { opacity: 0; } }
-                .pc-dots span { opacity: 0; animation: pcDots 1.4s infinite; }
-                .pc-dots span:nth-child(2) { animation-delay: .25s; }
-                .pc-dots span:nth-child(3) { animation-delay: .5s; }
-
-                /* ── Boton "ver progresion completa" + timeline de historial ── */
-                .pc-hist-toggle { display: inline-flex; align-items: center; gap: 6px; background: none; border: none; color: ${ACCENT_LIGHT}; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: .78rem; cursor: pointer; padding: 4px 2px; transition: color .2s; }
-                .pc-hist-toggle:hover { color: #fff; }
-                @keyframes pcPanelIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
-                .pc-hist-panel { animation: pcPanelIn .3s ease both; margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,.08); }
-                .pc-timeline { position: relative; display: flex; flex-direction: column; gap: 16px; padding-left: 4px; }
-                .pc-timeline::before { content: ''; position: absolute; left: 7px; top: 4px; bottom: 4px; width: 1.5px; background: linear-gradient(180deg, rgba(59,123,171,.5), rgba(59,123,171,.05)); }
-                .pc-timeline-item { position: relative; display: flex; gap: 14px; padding-left: 22px; animation: fadeUp .35s ease both; }
-                .pc-timeline-dot { position: absolute; left: 0; top: 3px; width: 15px; height: 15px; border-radius: 50%; background: #0a0e14; border: 2px solid ${ACCENT}; flex-shrink: 0; }
-                @media (max-width: 720px) {
-                    .pc-perfil-grid { grid-template-columns: 1fr !important; }
-                    .pc-form-2col { grid-template-columns: 1fr !important; }
-                    .pc-producto-grid { grid-template-columns: 1fr !important; }
-                }
-            `}</style>
 
             <Navbar />
 
@@ -203,7 +130,7 @@ export default function PanelCliente() {
                             { label: 'Órdenes',    val: data.ordenes?.length || 0, color: '#38bdf8' },
                             { label: 'Vehículos',  val: data.vehiculos?.length || 0, color: ACCENT },
                             { label: 'Citas',      val: citas.filter(c => c.estado !== 'cancelada').length, color: '#a78bfa' },
-                            { label: 'Completadas',val: data.ordenes?.filter(o => o.estado === 'completado').length || 0, color: '#10b981' },
+                            { label: 'Entregadas', val: data.ordenes?.filter(o => o.estado === 'completado').length || 0, color: '#10b981' },
                         ].map(s => (
                             <div key={s.label} style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, padding: '16px 22px', flex: '1 1 140px' }}>
                                 <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.8rem', color: s.color, lineHeight: 1 }}>{s.val}</p>
@@ -370,6 +297,7 @@ export default function PanelCliente() {
                 {tab === 'perfil' && (
                     <div className="pc-fade" style={{ animationDelay: '.2s' }}>
                         <PerfilForm perfil={perfil} onActualizado={setPerfil} txt={txt} mut={mut} card={card} bdr={bdr} />
+                        <HistorialChatCard txt={txt} mut={mut} card={card} bdr={bdr} />
                     </div>
                 )}
             </main>
@@ -677,6 +605,72 @@ function PerfilForm({ perfil, onActualizado, txt, mut, card, bdr }) {
                     <button className="pc-btn-primary" type="submit" disabled={cambiandoPwd}>{cambiandoPwd ? 'Actualizando…' : 'Actualizar contraseña'}</button>
                 </form>
             </div>
+        </div>
+    );
+}
+
+/* ── Historial de conversaciones con SWAPBot (mismo patron de toggle que EstadoVehiculoCard) ── */
+function HistorialChatCard({ txt, mut, card, bdr }) {
+    const [abierto, setAbierto]               = useState(false);
+    const [conversaciones, setConversaciones] = useState(null);
+    const [cargando, setCargando]             = useState(false);
+
+    const toggle = async () => {
+        if (abierto) { setAbierto(false); return; }
+        setAbierto(true);
+        if (conversaciones) return;
+        setCargando(true);
+        try {
+            const { data } = await api.get('/panel/chatbot-historial');
+            setConversaciones(data.conversaciones || []);
+        } catch {
+            setConversaciones([]);
+        } finally {
+            setCargando(false);
+        }
+    };
+
+    return (
+        <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 16, padding: '22px 24px', marginTop: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <div>
+                    <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.85rem', letterSpacing: '.18em', color: ACCENT_LIGHT }}>MIS CONVERSACIONES CON SWAPBOT</p>
+                    <p style={{ fontFamily: "'Outfit'", fontSize: '.82rem', color: mut, marginTop: 4 }}>Revisa lo último que hablaste con el asistente virtual.</p>
+                </div>
+                <button type="button" className="pc-hist-toggle" onClick={toggle}>
+                    {abierto ? 'Ocultar' : 'Ver historial'}
+                </button>
+            </div>
+
+            {abierto && (
+                <div className="pc-hist-panel">
+                    {cargando && (
+                        <p style={{ fontFamily: "'Outfit'", fontSize: '.82rem', color: mut }}>
+                            Cargando<span className="pc-dots"><span>.</span><span>.</span><span>.</span></span>
+                        </p>
+                    )}
+                    {!cargando && conversaciones?.length === 0 && (
+                        <p style={{ fontFamily: "'Outfit'", fontSize: '.82rem', color: mut }}>
+                            Todavía no tienes conversaciones guardadas con SWAPBot.
+                        </p>
+                    )}
+                    {!cargando && conversaciones?.map(c => (
+                        <div key={c.id} style={{ marginBottom: 16, paddingBottom: 16, borderBottom: `1px solid ${bdr}` }}>
+                            <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.78rem', color: txt, marginBottom: 8 }}>
+                                {new Date(c.actualizado_en).toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            </p>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                {c.mensajes.slice(-4).map((m, i) => (
+                                    <p key={i} style={{ fontFamily: "'Outfit'", fontSize: '.8rem', color: m.rol === 'user' ? txt : mut }}>
+                                        <strong style={{ color: m.rol === 'user' ? ACCENT_LIGHT : ACCENT }}>{m.rol === 'user' ? 'Tú: ' : 'SWAPBot: '}</strong>
+                                        {m.texto}
+                                    </p>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }

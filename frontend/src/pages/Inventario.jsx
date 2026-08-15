@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import ModalRepuesto from '../components/inventory/ModalRepuesto';
 import ModalMovimiento from '../components/inventory/ModalMovimiento';
 import { useConfirm } from '../components/common/ConfirmDialog';
+import './Inventario.css';
 
 function IconSearch() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>; }
 function IconPlus()   { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>; }
@@ -155,7 +156,7 @@ export default function Inventario() {
     const { tieneRol }  = useAuth();
     const { isDark }    = useTheme();
 
-    // Helpers locales que faltaban
+    // Helpers de formato y normalización de texto/imagen
     const normalizarTexto = (s) => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
     const numero = (v) => parseFloat(v) || 0;
     const getImagenSrc = (r = {}) => {
@@ -422,19 +423,7 @@ export default function Inventario() {
     const selStyle   = { padding: '9px 12px', background: inputBg, border: `1px solid ${bdr}`, borderRadius: 10, color: txt, fontFamily: "'Outfit'", fontSize: '.85rem', outline: 'none', transition: 'border-color .18s, box-shadow .18s' };
 
     return (
-        <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1500 }}>
-            {/* Animaciones locales */}
-            <style>{`
-                @keyframes invRowIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
-                @keyframes invPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,.4); } 50% { box-shadow: 0 0 0 6px rgba(239,68,68,0); } }
-                .inv-row { animation: invRowIn .28s ease both; }
-                .inv-kpi { transition: transform .25s cubic-bezier(.4,0,.2,1), box-shadow .25s, border-color .25s; }
-                .inv-kpi:hover { transform: translateY(-3px); border-color: ${SKY_BDR}; }
-                .inv-input:focus { border-color: ${SKY} !important; box-shadow: 0 0 0 3px rgba(14,165,233,.14); }
-                .inv-stock-bar { transition: width .5s cubic-bezier(.4,0,.2,1); }
-                .inv-alert-dot { animation: invPulse 1.8s ease-in-out infinite; }
-            `}</style>
-
+        <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1500, '--sky-bdr': SKY_BDR }}>
             {/* ── Header ── */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
                 <div>
@@ -463,10 +452,10 @@ export default function Inventario() {
 
             {/* ── KPI Cards ── */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 14, marginBottom: 20 }}>
-                <KpiCard label="Total Repuestos" value={stats.total} icon={<IconBox />}      color={SKY}      bg={card} bdr={bdr} mut={mut} txt={txt} shadow={cardSh} skyBdr={SKY_BDR} />
-                <KpiCard label="Bajo Stock"      value={stats.bajo}  icon={<IconAlert />}    color={stats.bajo > 0 ? '#ef4444' : '#10b981'} bg={card} bdr={bdr} mut={mut} txt={txt} shadow={cardSh} skyBdr={SKY_BDR} sub={stats.bajo > 0 ? 'Requiere atencion' : 'Todo en orden'} />
-                <KpiCard label="Unidades Totales" value={stats.unidades.toLocaleString()} icon={<IconTag />} color={SKY_DEEP} bg={card} bdr={bdr} mut={mut} txt={txt} shadow={cardSh} skyBdr={SKY_BDR} />
-                <KpiCard label="Valor Inventario" value={`$${stats.valor.toLocaleString('en-US', { maximumFractionDigits: 0 })}`} icon={<IconCash />} color={SKY} bg={card} bdr={bdr} mut={mut} txt={txt} shadow={cardSh} skyBdr={SKY_BDR} sub="Precio de venta" />
+                <KpiCard label="Total Repuestos" value={stats.total} icon={<IconBox />}      color={SKY}      bg={card} bdr={bdr} mut={mut} txt={txt} shadow={cardSh} />
+                <KpiCard label="Bajo Stock"      value={stats.bajo}  icon={<IconAlert />}    color={stats.bajo > 0 ? '#ef4444' : '#10b981'} bg={card} bdr={bdr} mut={mut} txt={txt} shadow={cardSh} sub={stats.bajo > 0 ? 'Requiere atencion' : 'Todo en orden'} />
+                <KpiCard label="Unidades Totales" value={stats.unidades.toLocaleString()} icon={<IconTag />} color={SKY_DEEP} bg={card} bdr={bdr} mut={mut} txt={txt} shadow={cardSh} />
+                <KpiCard label="Valor Inventario" value={`$${stats.valor.toLocaleString('en-US', { maximumFractionDigits: 0 })}`} icon={<IconCash />} color={SKY} bg={card} bdr={bdr} mut={mut} txt={txt} shadow={cardSh} sub="Precio de venta" />
             </div>
 
             {/* ── Toolbar ── */}
@@ -777,7 +766,7 @@ export default function Inventario() {
 }
 
 // ── Subcomponentes ──
-function KpiCard({ label, value, icon, color, bg, bdr, mut, txt, sub, shadow, skyBdr }) {
+function KpiCard({ label, value, icon, color, bg, bdr, mut, txt, sub, shadow }) {
     return (
         <div className="inv-kpi" style={{
             padding: 18, background: bg, border: `1px solid ${bdr}`, borderRadius: 14,

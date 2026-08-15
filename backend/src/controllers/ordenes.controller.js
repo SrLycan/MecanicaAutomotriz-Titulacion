@@ -1,28 +1,17 @@
 const pool = require('../config/db');
+// El historial de cambios de las ordenes ahora se persiste en MongoDB Atlas
+// (antes era la tabla Postgres `ordenes_historial`; ver migrations.sql,
+// Sprint 8, y backend/src/services/ordenesHistorial.service.js para el detalle).
+const {
+    registrarHistorial, obtenerHistorialPorOrden,
+    listarHistorialGeneral: listarHistorialGeneralService,
+} = require('../services/ordenesHistorial.service');
 
 const ESTADOS_ORDEN = ['pendiente', 'en_progreso', 'completado', 'cancelado'];
 const ESTADOS_PROGRESO = [
     'en_revision', 'deteccion_falla', 'en_reparacion',
     'esperando_repuestos', 'pruebas_finales', 'listo_entrega',
 ];
-
-// Registra una entrada en el historial de cambios de una orden.
-// No lanza: si falla, solo se loguea, para no romper el flujo principal.
-const registrarHistorial = async (client, {
-    orden_id, estado_anterior = null, estado_nuevo = null,
-    progreso_anterior = null, progreso_nuevo = null, usuario_id = null, notas = null,
-}) => {
-    try {
-        await client.query(
-            `INSERT INTO ordenes_historial
-                (orden_id, estado_anterior, estado_nuevo, progreso_anterior, progreso_nuevo, usuario_id, notas)
-             VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-            [orden_id, estado_anterior, estado_nuevo, progreso_anterior, progreso_nuevo, usuario_id, notas]
-        );
-    } catch (err) {
-        console.error('Error registrarHistorial:', err);
-    }
-};
 
 const validarDatosCliente = ({ nombre, email, telefono, cedula }) => {
     if (!nombre?.trim()) return 'El nombre es obligatorio.';
@@ -313,12 +302,13 @@ const crearOrden = async (req, res) => {
             [cliente_id, vehiculo_id || null, usuario_id, descripcion.trim(),
              diagnostico || null, kilometraje || null, tecnicoFinal]
         );
-        await registrarHistorial(pool, {
+        registrarHistorial({
             orden_id: rows[0].id,
             estado_nuevo: rows[0].estado,
             usuario_id,
+            usuario_nombre: req.usuario?.nombre || null,
             notas: 'Orden creada.',
-        });
+        }); // fire-and-forget: no bloquea la respuesta si Mongo falla
         return res.status(201).json({ orden: rows[0] });
     } catch (err) {
         console.error('Error crearOrden:', err);
@@ -347,6 +337,13 @@ const actualizarOrden = async (req, res) => {
     if (!ordenRows[0]) return res.status(404).json({ error: 'Orden no encontrada.' });
     const ordenActual = ordenRows[0];
 
+    // IMPORTANTE: 'estado' (pendiente/en_progreso/completado/cancelado) y
+    // 'estado_progreso' (en_revision...listo_entrega) son independientes.
+    // Aunque el progreso llegue a 'listo_entrega', el estado de la orden NO
+    // cambia aqui — solo cambia si el body trae "estado" explicitamente
+    // (accion "Marcar entregado" en el frontend). El UPDATE de abajo usa
+    // COALESCE precisamente para respetar esto: si "estado" no viene en el
+    // body, la columna se queda como estaba, sin importar el progreso.
     const cambiaEstado = estado !== undefined || estado_progreso !== undefined || notas_progreso !== undefined;
 
     if (cambiaEstado) {
@@ -400,15 +397,16 @@ const actualizarOrden = async (req, res) => {
         if (!rows[0]) return res.status(404).json({ error: 'Orden no encontrada.' });
 
         if (cambiaEstado) {
-            await registrarHistorial(pool, {
+            registrarHistorial({
                 orden_id: rows[0].id,
                 estado_anterior: ordenActual.estado,
                 estado_nuevo: rows[0].estado,
                 progreso_anterior: ordenActual.estado_progreso,
                 progreso_nuevo: rows[0].estado_progreso,
                 usuario_id: usuarioId,
+                usuario_nombre: req.usuario?.nombre || null,
                 notas: notas_progreso !== undefined ? notas_progreso : null,
-            });
+            }); // fire-and-forget: no bloquea la respuesta si Mongo falla
         }
 
         return res.json({ orden: rows[0] });
@@ -427,20 +425,23 @@ const obtenerHistorialOrden = async (req, res) => {
         const { rows: ordenRows } = await pool.query('SELECT id FROM ordenes_trabajo WHERE id = $1', [id]);
         if (!ordenRows[0]) return res.status(404).json({ error: 'Orden no encontrada.' });
 
-        const { rows } = await pool.query(
-            `SELECT h.id, h.estado_anterior, h.estado_nuevo, h.progreso_anterior, h.progreso_nuevo,
-                    h.notas, h.created_at, u.nombre AS usuario_nombre
-             FROM ordenes_historial h
-             LEFT JOIN usuarios u ON u.id = h.usuario_id
-             WHERE h.orden_id = $1
-             ORDER BY h.created_at ASC, h.id ASC`,
-            [id]
-        );
-        return res.json({ historial: rows });
+        const historial = await obtenerHistorialPorOrden(id);
+        return res.json({ historial });
     } catch (err) {
         console.error('Error obtenerHistorialOrden:', err);
         return res.status(500).json({ error: 'Error al obtener el historial de la orden.' });
     }
+};
+
+// ─────────────────────────────────────────────────────────────
+// GET /api/ordenes/historial/general  (solo administrador)
+// Bitacora paginada de cambios de TODAS las ordenes (MongoDB Atlas).
+// ─────────────────────────────────────────────────────────────
+const listarHistorialGeneral = async (req, res) => {
+    const pagina    = parseInt(req.query.pagina, 10) || 1;
+    const porPagina = Math.min(parseInt(req.query.porPagina, 10) || 20, 100);
+    const resultado = await listarHistorialGeneralService({ pagina, porPagina });
+    return res.json(resultado);
 };
 
 const eliminarOrden = async (req, res) => {
@@ -459,5 +460,5 @@ module.exports = {
     listarClientes, obtenerCliente, crearCliente, actualizarCliente, eliminarCliente,
     listarVehiculos, crearVehiculo, actualizarVehiculo, eliminarVehiculo,
     listarOrdenes, obtenerOrden, crearOrden, actualizarOrden, eliminarOrden,
-    obtenerHistorialOrden,
+    obtenerHistorialOrden, listarHistorialGeneral,
 };

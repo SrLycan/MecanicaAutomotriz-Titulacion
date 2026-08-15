@@ -1,0 +1,15 @@
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+}
+
+@media (max-width: 600px) {
+    .ot-header { flex-direction: column !important; align-items: flex-start !important; }
+    .ot-header h1 { font-size: 2rem !important; }
+    .ot-filtros { gap: 6px !important; }
+    .ot-filtros button { padding: 8px 12px !important; font-size: .66rem !important; }
+    .ot-search-row { flex-direction: column !important; }
+    .ot-card-header { flex-direction: column !important; gap: 6px !important; }
+    .ot-card-actions { flex-wrap: wrap !important; }
+    .ot-detail-grid { grid-template-columns: 1fr !important; }
+}

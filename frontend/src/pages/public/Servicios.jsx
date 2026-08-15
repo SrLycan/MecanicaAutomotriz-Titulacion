@@ -5,6 +5,8 @@ import Footer from '../../components/public/Footer';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import AgendarCitaModal from '../../components/public/AgendarCitaModal';
+import { resolveImagenSrc } from '../../utils/imagen';
+import './Servicios.css';
 
 const GOLD = '#3b7bab';
 
@@ -20,20 +22,6 @@ function iconoPara(nombre = '') {
     const found = ICONOS.find(i => i.match.test(nombre));
     return found || { icon: IconWrench, color: GOLD };
 }
-
-const getApiHost = () => {
-    const base = process.env.REACT_APP_API_URL || '/api';
-    if (/^https?:\/\//i.test(base)) return base.replace(/\/api\/?$/i, '').replace(/\/$/, '');
-    return window.location.origin;
-};
-
-const resolveImagenSrc = (value = '') => {
-    const src = String(value || '').trim();
-    if (!src) return '';
-    if (/^(data:image\/|blob:|https?:\/\/)/i.test(src)) return src;
-    if (src.startsWith('/')) return `${getApiHost()}${src}`;
-    return `${getApiHost()}/${src.replace(/^\/+/, '')}`;
-};
 
 export default function Servicios() {
     const { usuario } = useAuth();
@@ -111,125 +99,6 @@ export default function Servicios() {
 
     return (
         <div style={{ background: '#050505', minHeight: '100vh', color: '#fff' }}>
-            <style>{`
-                @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
-                * { box-sizing: border-box; }
-                body { background: #050505; }
-                ::-webkit-scrollbar { width: 8px; }
-                ::-webkit-scrollbar-track { background: #050505; }
-                ::-webkit-scrollbar-thumb { background: rgba(59,123,171,.3); border-radius: 8px; }
-
-                @keyframes svFadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
-                .sv-fade { animation: svFadeUp .6s cubic-bezier(.4,0,.2,1) both; }
-                .reveal { opacity: 0; transform: translateY(24px); transition: opacity .6s cubic-bezier(.4,0,.2,1), transform .6s cubic-bezier(.4,0,.2,1); }
-                .reveal.in-view { opacity: 1; transform: none; }
-
-                /* ── Despliegue tipo acordeon para "Como funciona" (controlado por scroll, ver JS) ── */
-                .hiw-card { --p: 0; opacity: var(--p); transform: translateY(calc((1 - var(--p)) * 42px)) scale(calc(.9 + var(--p) * .1)); will-change: opacity, transform; }
-                .hiw-connector { --p: 0; }
-                .hiw-connector-fill { width: calc(var(--p) * 100%) !important; }
-
-                .mono { font-family: 'JetBrains Mono', monospace; }
-                .grad-text-gold { background: linear-gradient(135deg, #3b7bab 0%, #7fabce 50%, #3b7bab 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-                .grad-text-white { background: linear-gradient(180deg, #ffffff 0%, rgba(255,255,255,.65) 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-
-                /* ── Glow azul (igual que en el Home) ── */
-                @keyframes shimmerSweep { 0% { background-position: -300% center; } 100% { background-position: 300% center; } }
-                .grad-text-rainbow {
-                    background: linear-gradient(90deg, #3b7bab 0%, #7fabce 18%, #cfe3f3 34%, #7fabce 50%, #3b7bab 66%, #4a83b3 82%, #3b7bab 100%);
-                    background-size: 280% auto;
-                    -webkit-background-clip: text; background-clip: text;
-                    -webkit-text-fill-color: transparent;
-                    animation: shimmerSweep 5s linear infinite;
-                    filter: drop-shadow(0 0 18px rgba(59,123,171,.55)) drop-shadow(0 0 36px rgba(127,171,206,.3));
-                }
-
-                .sv-search { width: 100%; max-width: 420px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.12); border-radius: 999px; padding: 13px 22px; font-family: 'Outfit', sans-serif; font-size: .92rem; color: #fff; outline: none; transition: border-color .2s, background .2s; }
-                .sv-search::placeholder { color: rgba(255,255,255,.35); }
-                .sv-search:focus { border-color: ${GOLD}; background: rgba(255,255,255,.06); }
-
-                .sv-card { background: linear-gradient(180deg, #141414 0%, #0e0e0e 100%); border: 1px solid rgba(255,255,255,.07); border-radius: 18px; padding: 0; transition: all .3s cubic-bezier(.4,0,.2,1); position: relative; overflow: hidden; }
-                .sv-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(59,123,171,.6), transparent); opacity: 0; transition: opacity .3s; z-index: 2; }
-                .sv-card:hover { border-color: rgba(59,123,171,.4); transform: translateY(-6px); box-shadow: 0 24px 50px -20px rgba(0,0,0,.8); }
-                .sv-card:hover::before { opacity: 1; }
-                .sv-card:hover .sv-photo img { transform: scale(1.06); }
-                .sv-card-body { padding: 20px 24px 26px; }
-                .sv-photo { position: relative; width: 100%; height: 160px; overflow: hidden; background: linear-gradient(160deg, rgba(59,123,171,.16), rgba(10,10,10,.5)); }
-                .sv-photo img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .5s cubic-bezier(.4,0,.2,1); }
-                .sv-photo-fallback { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
-                .sv-icon { transition: transform .3s; }
-
-                .ps-btn-primary { display: inline-flex; align-items: center; gap: 10px; font-family: 'Outfit', sans-serif; font-weight: 700; font-size: .92rem; color: #0a0a0a; background: #3b7bab; border: none; border-radius: 999px; padding: 15px 32px; cursor: pointer; text-decoration: none; transition: all .25s cubic-bezier(.4,0,.2,1); box-shadow: 0 8px 24px -6px rgba(59,123,171,.5); }
-                .ps-btn-primary:hover { background: #5a93c4; transform: translateY(-2px); box-shadow: 0 14px 36px -8px rgba(59,123,171,.7); }
-                .ps-btn-outline { display: inline-flex; align-items: center; gap: 10px; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: .92rem; color: #fff; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.18); border-radius: 999px; padding: 14px 32px; cursor: pointer; text-decoration: none; transition: all .25s; }
-                .ps-btn-outline:hover { border-color: #3b7bab; color: #3b7bab; background: rgba(59,123,171,.08); transform: translateY(-2px); }
-
-                .step-line { position: absolute; top: 26px; left: calc(50% + 26px); right: calc(-50% + 26px); height: 1px; background: linear-gradient(90deg, rgba(59,123,171,.5), rgba(59,123,171,0)); }
-
-                /* ── Como funciona (premium) ── */
-                @keyframes stepDash { from { stroke-dashoffset: 24; } to { stroke-dashoffset: 0; } }
-                .hiw-track { position: relative; }
-                .hiw-connector { position: absolute; top: 68px; left: 0; right: 0; height: 2px; z-index: 0; }
-                .hiw-connector-line { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(255,255,255,.06), rgba(255,255,255,.06)); border-radius: 2px; }
-                .hiw-connector-fill { position: absolute; inset: 0; width: 0%; background: linear-gradient(90deg, ${GOLD}, #7fabce); border-radius: 2px; transition: width .15s linear; }
-                .hiw-card {
-                    position: relative; z-index: 1; text-align: center;
-                    padding: 34px 22px 28px;
-                    background: linear-gradient(180deg, #131a24 0%, #0b0f16 100%);
-                    border: 1px solid rgba(255,255,255,.08);
-                    border-radius: 20px;
-                    transition: opacity .12s linear, transform .2s cubic-bezier(.4,0,.2,1), border-color .35s, box-shadow .35s, background .35s;
-                    overflow: hidden;
-                }
-                .hiw-card::after {
-                    content: ''; position: absolute; inset: 0; border-radius: 20px; padding: 1px;
-                    background: linear-gradient(160deg, rgba(59,123,171,0), rgba(59,123,171,0));
-                    opacity: 0; transition: opacity .35s;
-                }
-                .hiw-card:hover {
-                    transform: translateY(-8px);
-                    border-color: rgba(59,123,171,.45);
-                    background: linear-gradient(180deg, #182430 0%, #0c1219 100%);
-                    box-shadow: 0 20px 46px -18px rgba(59,123,171,.35), 0 8px 20px -10px rgba(0,0,0,.5);
-                }
-                .hiw-icon-ring {
-                    width: 76px; height: 76px; border-radius: 50%; margin: 0 auto 20px;
-                    display: flex; align-items: center; justify-content: center; position: relative;
-                    background: radial-gradient(closest-side, rgba(59,123,171,.14), rgba(10,10,10,.4));
-                    border: 1px solid rgba(59,123,171,.35);
-                    box-shadow: 0 0 0 6px rgba(59,123,171,.05);
-                    transition: box-shadow .3s, border-color .3s, transform .3s;
-                    color: ${GOLD};
-                }
-                .hiw-card:hover .hiw-icon-ring { box-shadow: 0 0 0 10px rgba(59,123,171,.09), 0 12px 26px -10px rgba(59,123,171,.5); border-color: rgba(59,123,171,.6); transform: scale(1.05); }
-                .hiw-num {
-                    position: absolute; top: -6px; right: -6px; width: 26px; height: 26px; border-radius: 50%;
-                    background: #0a0a0a; border: 1px solid rgba(59,123,171,.5);
-                    display: flex; align-items: center; justify-content: center;
-                    font-family: 'JetBrains Mono', monospace; font-size: .65rem; font-weight: 600; color: ${GOLD};
-                }
-                .hiw-title { font-family: 'Bebas Neue'; font-size: 1.2rem; letter-spacing: .03em; color: #fff; margin-bottom: 8px; }
-                .hiw-desc { font-family: 'Outfit', sans-serif; font-weight: 300; font-size: .85rem; color: rgba(255,255,255,.5); line-height: 1.65; max-width: 220px; margin: 0 auto 18px; }
-                .hiw-tag {
-                    display: inline-flex; align-items: center; gap: 6px;
-                    padding: 5px 12px; border-radius: 999px;
-                    background: rgba(59,123,171,.1); border: 1px solid rgba(59,123,171,.28);
-                    font-family: 'JetBrains Mono', monospace; font-size: .64rem; letter-spacing: .06em;
-                    color: ${GOLD}; text-transform: uppercase; white-space: nowrap;
-                }
-
-                @media (max-width: 900px) {
-                    .sv-hero-pad { padding: 120px 20px 56px !important; }
-                    .sv-pad { padding: 70px 20px !important; }
-                    .step-line { display: none; }
-                    .sv-steps { grid-template-columns: repeat(2, 1fr) !important; }
-                    .hiw-connector { display: none; }
-                }
-                @media (max-width: 520px) {
-                    .sv-steps { grid-template-columns: 1fr !important; }
-                }
-            `}</style>
-
             <Navbar />
 
             {/* HERO */}
@@ -258,7 +127,6 @@ export default function Servicios() {
                             {Array.from({ length: 6 }).map((_, i) => (
                                 <div key={i} style={{ height: 210, borderRadius: 18, background: 'linear-gradient(90deg, #111 0%, #161616 50%, #111 100%)', backgroundSize: '200% 100%', animation: 'svShimmer 1.4s ease-in-out infinite' }} />
                             ))}
-                            <style>{`@keyframes svShimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
                         </div>
                     )}
 

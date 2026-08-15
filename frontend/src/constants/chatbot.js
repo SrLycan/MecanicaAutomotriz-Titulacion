@@ -13,4 +13,11 @@ export const SWAPBOT_OPCIONES = [
 export const SWAPBOT_SALUDO =
     'Hola, soy SWAPBot, el asistente virtual de SSWAP. Elige una opción o escríbeme tu pregunta.';
 
+// Cuando el visitante es un cliente logueado, se lo saluda por su nombre en
+// vez del saludo generico (antes salia igual para todos, como si nunca
+// reconociera que ya habia una sesion iniciada).
+export const swapbotSaludo = (nombre) => nombre
+    ? `Hola ${nombre}, soy SWAPBot, el asistente virtual de SSWAP. Elige una opción o escríbeme tu pregunta.`
+    : SWAPBOT_SALUDO;
+
 export const SWAPBOT_MAX_CHARS = 500;

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
+import './Movimientos.css';
 
 function IconDownload() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>; }
 function IconSearch()   { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>; }
@@ -99,13 +100,6 @@ export default function Movimientos() {
 
     return (
         <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1500 }}>
-            <style>{`
-                @keyframes movRowIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
-                .mov-row { animation: movRowIn .28s ease both; }
-                .mov-input:focus { border-color: ${SKY} !important; box-shadow: 0 0 0 3px rgba(14,165,233,.14); }
-                .mov-pill { transition: transform .15s; }
-                .mov-row:hover .mov-pill { transform: scale(1.04); }
-            `}</style>
 
             {/* ── Header ── */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 18, flexWrap: 'wrap', gap: 12 }}>

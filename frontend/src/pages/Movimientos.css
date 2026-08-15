@@ -1,0 +1,8 @@
+@keyframes movRowIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: none; }
+}
+.mov-row { animation: movRowIn .28s ease both; }
+.mov-input:focus { border-color: #0ea5e9 !important; box-shadow: 0 0 0 3px rgba(14,165,233,.14); }
+.mov-pill { transition: transform .15s; }
+.mov-row:hover .mov-pill { transform: scale(1.04); }

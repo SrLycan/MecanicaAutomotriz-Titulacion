@@ -1,4 +1,6 @@
 const pool = require('../config/db');
+const { obtenerHistorialPorOrden }   = require('../services/ordenesHistorial.service');
+const { obtenerHistorialPorCliente } = require('../services/chatbotConversacion.service');
 
 /**
  * GET /api/panel/mi-actividad
@@ -67,4 +69,58 @@ const miActividad = async (req, res) => {
     }
 };
 
-module.exports = { miActividad };
+/**
+ * GET /api/panel/ordenes/:id/historial
+ * Historial de progreso de UNA orden del cliente autenticado (Mongo Atlas).
+ * Verifica que la orden pertenezca al cliente antes de devolver nada.
+ *
+ * Nota: esta ruta la usa PanelCliente.jsx ("Ver progresion completa") desde
+ * antes, pero el endpoint nunca habia sido implementado en el backend
+ * (siempre devolvia 404 y el frontend lo capturaba en silencio). Se agrega
+ * ahora, aprovechando la migracion del historial a MongoDB.
+ */
+const miHistorialOrden = async (req, res) => {
+    const { id } = req.params;
+    const { email } = req.usuario;
+
+    try {
+        const { rows: clienteRows } = await pool.query('SELECT id FROM clientes WHERE email = $1 LIMIT 1', [email]);
+        const cliente = clienteRows[0];
+        if (!cliente) return res.status(404).json({ error: 'No se encontro un cliente vinculado a esta cuenta.' });
+
+        const { rows: ordenRows } = await pool.query(
+            'SELECT id FROM ordenes_trabajo WHERE id = $1 AND cliente_id = $2',
+            [id, cliente.id]
+        );
+        if (!ordenRows[0]) return res.status(404).json({ error: 'Orden no encontrada.' });
+
+        const historial = await obtenerHistorialPorOrden(id);
+        return res.json({ historial });
+    } catch (err) {
+        console.error('Error miHistorialOrden:', err);
+        return res.status(500).json({ error: 'Error al obtener el historial de la orden.' });
+    }
+};
+
+/**
+ * GET /api/panel/chatbot-historial
+ * Historial de conversaciones previas del cliente autenticado con SWAPBot
+ * (Mongo Atlas). Vincula usuario -> cliente por email, igual que miActividad.
+ */
+const miHistorialChat = async (req, res) => {
+    const { email } = req.usuario;
+
+    try {
+        const { rows: clienteRows } = await pool.query('SELECT id FROM clientes WHERE email = $1 LIMIT 1', [email]);
+        const cliente = clienteRows[0];
+        if (!cliente) return res.json({ conversaciones: [] });
+
+        const conversaciones = await obtenerHistorialPorCliente(cliente.id);
+        return res.json({ conversaciones });
+    } catch (err) {
+        console.error('Error miHistorialChat:', err);
+        return res.status(500).json({ error: 'Error al obtener el historial de conversaciones.' });
+    }
+};
+
+module.exports = { miActividad, miHistorialOrden, miHistorialChat };

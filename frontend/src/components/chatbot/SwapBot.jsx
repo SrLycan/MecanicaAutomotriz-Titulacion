@@ -3,11 +3,12 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import { ESTADO_ORDEN_MAP, ESTADO_PROGRESO_MAP } from '../../constants/ordenes';
-import { SWAPBOT_OPCIONES, SWAPBOT_SALUDO, SWAPBOT_MAX_CHARS } from '../../constants/chatbot';
+import { SWAPBOT_OPCIONES, swapbotSaludo, SWAPBOT_MAX_CHARS } from '../../constants/chatbot';
 import AgendarCitaModal from '../public/AgendarCitaModal';
 // Coloca aqui tu imagen (la del robot mascota) con este nombre exacto:
 // frontend/src/assets/swapbot-mascot.png
 import mascotaImg from '../../assets/swapbot-mascot.png';
+import './SwapBot.css';
 
 // Si el mensaje libre del cliente ya suena a que quiere agendar, lo mandamos
 // directo al flujo de citas (gratis) en vez de gastar una llamada a Gemini.
@@ -54,16 +55,40 @@ export default function SwapBot() {
     const sucursalCache     = useRef(null); // cache simple de la sucursal principal
     const finRef            = useRef(null);
 
+    // sesion_id: identifica esta conversacion en MongoDB Atlas (coleccion
+    // chatbot_conversaciones). Se genera una vez por pestaña/sesion del
+    // navegador y se reutiliza en cada mensaje para que todos los turnos
+    // queden agrupados en el mismo documento.
+    const sesionIdRef = useRef(null);
+    if (!sesionIdRef.current) {
+        const guardado = sessionStorage.getItem('SS SWAP_chat_sesion');
+        if (guardado) {
+            sesionIdRef.current = guardado;
+        } else {
+            sesionIdRef.current = (crypto.randomUUID ? crypto.randomUUID() : `sb-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+            sessionStorage.setItem('SS SWAP_chat_sesion', sesionIdRef.current);
+        }
+    }
+
     // Este widget es para clientes/visitantes; en el panel interno del
     // taller (staff) y en el login de administracion no aplica.
     const ocultoEnEstaRuta = pathname.startsWith('/dashboard') || pathname === '/admin/login';
 
     useEffect(() => {
         if (abierto && mensajes.length === 0) {
-            agregarBot({ tipo: 'texto', texto: SWAPBOT_SALUDO });
+            const nombreCliente = tieneRol('cliente') ? usuario?.nombre?.trim().split(' ')[0] : null;
+            agregarBot({ tipo: 'texto', texto: swapbotSaludo(nombreCliente) });
         }
         // eslint-disable-next-line
     }, [abierto]);
+
+    // Permite abrir el widget desde un boton en cualquier pagina:
+    // window.dispatchEvent(new Event('swapbot:abrir'))
+    useEffect(() => {
+        const abrir = () => setAbierto(true);
+        window.addEventListener('swapbot:abrir', abrir);
+        return () => window.removeEventListener('swapbot:abrir', abrir);
+    }, []);
 
     useEffect(() => {
         finRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
@@ -253,7 +278,13 @@ export default function SwapBot() {
             const { data } = await api.post('/chatbot/mensaje', {
                 mensaje,
                 historial: historialIA.current,
+                sesion_id: sesionIdRef.current,
+                email: tieneRol('cliente') ? (usuario?.email || undefined) : undefined,
             });
+            if (data.sesion_id && data.sesion_id !== sesionIdRef.current) {
+                sesionIdRef.current = data.sesion_id;
+                sessionStorage.setItem('SS SWAP_chat_sesion', data.sesion_id);
+            }
             historialIA.current = [
                 ...historialIA.current,
                 { rol: 'user', texto: mensaje },
@@ -345,172 +376,6 @@ export default function SwapBot() {
             {servicioAgendando && (
                 <AgendarCitaModal servicio={servicioAgendando} onClose={cerrarAgendar} />
             )}
-
-            <style>{`
-                .swapbot-launcher {
-                    position: fixed; right: 24px; bottom: 24px; z-index: 900;
-                    width: 58px; height: 58px; border-radius: 50%; border: none;
-                    display: flex; align-items: center; justify-content: center;
-                    color: #fff; cursor: pointer;
-                    background: linear-gradient(135deg, #1b3a57, #2b5c85 55%, #3b7bab);
-                    box-shadow: var(--shadow-glow);
-                    animation: swapbotPulse 2.6s ease-in-out infinite;
-                    transition: transform .2s cubic-bezier(.4,0,.2,1), box-shadow .2s ease;
-                }
-                .swapbot-launcher:hover { transform: translateY(-2px) scale(1.05); }
-                .swapbot-launcher:active { transform: translateY(0) scale(1); }
-                .swapbot-launcher-img {
-                    width: 100%; height: 100%; border-radius: 50%;
-                    object-fit: cover; object-position: 50% 22%;
-                }
-
-                @keyframes swapbotPulse {
-                    0%, 100% { box-shadow: var(--shadow-glow), 0 0 0 0 rgba(43,92,133,.35); }
-                    50%      { box-shadow: var(--shadow-glow), 0 0 0 9px rgba(43,92,133,0); }
-                }
-
-                .swapbot-panel {
-                    position: fixed; right: 24px; bottom: 94px; z-index: 900;
-                    width: 376px; max-width: calc(100vw - 32px);
-                    height: min(560px, 74vh);
-                    display: flex; flex-direction: column;
-                    background: var(--bg-deep);
-                    border: 1px solid var(--border);
-                    border-radius: 20px;
-                    box-shadow: var(--shadow-lg);
-                    overflow: hidden;
-                    animation: fadeUp .26s cubic-bezier(.4,0,.2,1);
-                }
-
-                .swapbot-header {
-                    display: flex; align-items: center; justify-content: space-between;
-                    padding: 15px 16px;
-                    background: linear-gradient(135deg, #1b3a57, #2b5c85 55%, #3b7bab);
-                    flex-shrink: 0;
-                }
-                .swapbot-titulo {
-                    font-family: 'Sora', sans-serif; font-weight: 700;
-                    font-size: .95rem; color: #fff; letter-spacing: .01em;
-                }
-                .swapbot-subtitulo {
-                    font-family: 'Outfit', sans-serif; font-size: .74rem;
-                    color: rgba(255,255,255,.75); margin-top: 2px;
-                }
-                .swapbot-cerrar {
-                    background: rgba(255,255,255,.12); border: none; border-radius: 8px;
-                    width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
-                    color: #fff; cursor: pointer; transition: background .18s;
-                }
-                .swapbot-cerrar:hover { background: rgba(255,255,255,.22); }
-
-                .swapbot-mensajes {
-                    flex: 1; overflow-y: auto; padding: 16px;
-                    display: flex; flex-direction: column; gap: 10px;
-                    background: var(--bg-soft);
-                }
-
-                .swapbot-burbuja {
-                    max-width: 86%; padding: 10px 13px; border-radius: 14px;
-                    font-family: 'Outfit', sans-serif; font-size: .87rem; line-height: 1.45;
-                    animation: slideInUp .2s ease both;
-                }
-                .swapbot-burbuja p { margin: 0; }
-                .swapbot-bot {
-                    align-self: flex-start; border-bottom-left-radius: 4px;
-                    background: var(--bg-card); border: 1px solid var(--border);
-                    color: var(--text); box-shadow: var(--shadow-xs);
-                }
-                .swapbot-user {
-                    align-self: flex-end; border-bottom-right-radius: 4px;
-                    background: linear-gradient(135deg, var(--accent), var(--accent-2));
-                    color: #fff;
-                }
-
-                .swapbot-typing { display: flex; gap: 4px; padding: 4px 0; }
-                .swapbot-typing span {
-                    width: 6px; height: 6px; border-radius: 50%; background: var(--text-faint);
-                    animation: pulse 1s ease-in-out infinite;
-                }
-                .swapbot-typing span:nth-child(2) { animation-delay: .15s; }
-                .swapbot-typing span:nth-child(3) { animation-delay: .3s; }
-
-                .swapbot-lista { display: flex; flex-direction: column; gap: 8px; }
-                .swapbot-lista-titulo { font-weight: 600; margin-bottom: 2px; }
-                .swapbot-item {
-                    display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
-                    padding-bottom: 7px; border-bottom: 1px solid var(--border-soft);
-                }
-                .swapbot-item:last-child { border-bottom: none; padding-bottom: 0; }
-                .swapbot-item strong { color: var(--accent); white-space: nowrap; font-weight: 700; }
-                .swapbot-item-col { display: flex; flex-direction: column; gap: 2px; }
-                .swapbot-item-col strong { color: var(--text); }
-                .swapbot-item-col span { font-size: .8rem; color: var(--text-muted); }
-
-                .swapbot-item-btn {
-                    display: flex; justify-content: space-between; align-items: center; gap: 10px;
-                    width: 100%; text-align: left; cursor: pointer;
-                    padding: 9px 11px; border-radius: 10px;
-                    border: 1px solid var(--border); background: var(--bg-soft);
-                    font-family: 'Outfit', sans-serif; font-size: .85rem; color: var(--text);
-                    transition: all .18s ease;
-                }
-                .swapbot-item-btn:hover { border-color: var(--accent-2); background: var(--accent-pale); }
-                .swapbot-item-btn strong { color: var(--accent); white-space: nowrap; font-weight: 700; font-size: .8rem; }
-
-                .swapbot-accion {
-                    display: inline-block; margin-top: 9px;
-                    font-family: 'Sora', sans-serif; font-weight: 600; font-size: .78rem;
-                    color: var(--accent); background: var(--accent-pale);
-                    border: 1px solid var(--accent-bdr); border-radius: 999px;
-                    padding: 7px 14px; cursor: pointer; transition: all .18s ease;
-                }
-                .swapbot-accion:hover { background: var(--accent-bdr); transform: translateY(-1px); }
-
-                .swapbot-opciones {
-                    display: flex; flex-wrap: wrap; gap: 7px;
-                    padding: 11px 14px; border-top: 1px solid var(--border);
-                    background: var(--bg-card); flex-shrink: 0;
-                }
-                .swapbot-chip {
-                    font-family: 'Sora', sans-serif; font-weight: 600; font-size: .74rem;
-                    color: var(--accent); background: var(--accent-pale);
-                    border: 1px solid var(--accent-bdr); border-radius: 999px;
-                    padding: 6px 12px; cursor: pointer; transition: all .18s ease; white-space: nowrap;
-                }
-                .swapbot-chip:hover:not(:disabled) { background: var(--accent-bdr); transform: translateY(-1px); }
-                .swapbot-chip:disabled { opacity: .5; cursor: not-allowed; }
-                .swapbot-chip.is-activa { background: var(--accent); color: #fff; border-color: var(--accent); }
-
-                .swapbot-input-row {
-                    display: flex; gap: 8px; padding: 12px 14px;
-                    border-top: 1px solid var(--border); background: var(--bg-card); flex-shrink: 0;
-                }
-                .swapbot-input-row input {
-                    flex: 1; min-width: 0; padding: 10px 13px; border-radius: 10px;
-                    border: 1px solid var(--border); background: var(--bg-input); color: var(--text);
-                    font-family: 'Outfit', sans-serif; font-size: .87rem; outline: none;
-                    transition: border-color .2s, box-shadow .2s;
-                }
-                .swapbot-input-row input:focus {
-                    border-color: var(--accent-2); box-shadow: 0 0 0 3px var(--accent-pale);
-                }
-                .swapbot-input-row button {
-                    width: 38px; height: 38px; border-radius: 10px; border: none; flex-shrink: 0;
-                    display: flex; align-items: center; justify-content: center; cursor: pointer;
-                    background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff;
-                    transition: opacity .18s, transform .18s;
-                }
-                .swapbot-input-row button:disabled { opacity: .5; cursor: not-allowed; }
-                .swapbot-input-row button:hover:not(:disabled) { transform: translateY(-1px); }
-
-                @media (max-width: 480px) {
-                    .swapbot-panel {
-                        right: 12px; left: 12px; bottom: 90px;
-                        width: auto; max-width: none; height: min(66vh, 520px);
-                    }
-                    .swapbot-launcher { right: 16px; bottom: 16px; width: 52px; height: 52px; }
-                }
-            `}</style>
         </>
     );
 }

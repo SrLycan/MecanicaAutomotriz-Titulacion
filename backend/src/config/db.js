@@ -10,12 +10,17 @@ require('dotenv').config();
 // para las columnas DATE, evitando el problema de raiz en toda la app.
 types.setTypeParser(1082, (val) => val);
 
+// Supabase (y la mayoria de Postgres administrados) exigen SSL. En local
+// (DB_SSL=false o sin definir) se conecta sin SSL como antes.
+const usarSSL = process.env.DB_SSL === 'true';
+
 const pool = new Pool({
     host:     process.env.DB_HOST     || 'localhost',
     port:     parseInt(process.env.DB_PORT) || 5432,
     database: process.env.DB_NAME     || 'SS SWAP_db',
     user:     process.env.DB_USER     || 'postgres',
     password: process.env.DB_PASSWORD,
+    ssl:      usarSSL ? { rejectUnauthorized: false } : false,
     max: 10,              // Máximo de conexiones en el pool
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 2000,

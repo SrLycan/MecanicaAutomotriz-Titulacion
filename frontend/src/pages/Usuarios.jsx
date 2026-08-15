@@ -4,6 +4,7 @@ import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { useConfirm } from '../components/common/ConfirmDialog';
+import './Usuarios.css';
 
 const ROLES = [
     { val: 'administrador', label: 'Administrador', color: '#0ea5e9' },
@@ -117,15 +118,7 @@ export default function Usuarios() {
     const limpiar = () => { setQ(''); setFiltroRol(''); setFiltroEst(''); cargar('', '', ''); };
 
     return (
-        <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1500 }}>
-            <style>{`
-                @keyframes uRowIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
-                .u-row { animation: uRowIn .28s ease both; }
-                .u-input:focus { border-color: ${SKY} !important; box-shadow: 0 0 0 3px rgba(14,165,233,.14); }
-                .u-kpi { transition: transform .25s, border-color .25s; }
-                .u-kpi:hover { transform: translateY(-3px); border-color: ${SKY_BDR}; }
-            `}</style>
-
+        <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1500, '--sky-bdr': SKY_BDR }}>
             {/* ── Header ── */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
                 <div>

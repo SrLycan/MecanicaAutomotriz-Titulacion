@@ -1,11 +1,11 @@
 const express = require('express');
 const router  = express.Router();
-const { verificarToken, soloStaff } = require('../middleware/auth.middleware');
+const { verificarToken, soloStaff, verificarRol } = require('../middleware/auth.middleware');
 const {
     listarClientes, obtenerCliente, crearCliente, actualizarCliente, eliminarCliente,
     listarVehiculos, crearVehiculo, actualizarVehiculo, eliminarVehiculo,
     listarOrdenes, obtenerOrden, crearOrden, actualizarOrden, eliminarOrden,
-    obtenerHistorialOrden,
+    obtenerHistorialOrden, listarHistorialGeneral,
 } = require('../controllers/ordenes.controller');
 
 // Todas las rutas requieren autenticacion como staff
@@ -25,9 +25,10 @@ router.put('/vehiculos/:id',    actualizarVehiculo);
 router.delete('/vehiculos/:id', eliminarVehiculo);
 
 // ── Ordenes de Trabajo ────────────────────────────────────
-router.get('/ordenes',                listarOrdenes);
-router.get('/ordenes/:id/historial',  obtenerHistorialOrden);
-router.get('/ordenes/:id',            obtenerOrden);
+router.get('/ordenes',                    listarOrdenes);
+router.get('/ordenes/historial/general',  verificarRol('administrador'), listarHistorialGeneral);
+router.get('/ordenes/:id/historial',      obtenerHistorialOrden);
+router.get('/ordenes/:id',                obtenerOrden);
 router.post('/ordenes',       crearOrden);
 router.put('/ordenes/:id',    actualizarOrden);
 router.delete('/ordenes/:id', eliminarOrden);
