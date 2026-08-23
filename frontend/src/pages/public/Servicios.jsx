@@ -6,6 +6,7 @@ import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import AgendarCitaModal from '../../components/public/AgendarCitaModal';
 import { resolveImagenSrc } from '../../utils/imagen';
+import mascotaImg from '../../assets/swapbot-mascot.png';
 import './Servicios.css';
 
 const GOLD = '#3b7bab';
@@ -240,16 +241,24 @@ export default function Servicios() {
             {/* CTA */}
             <section className="sv-pad" style={{ padding: '100px 28px' }}>
                 <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-                    <div className="reveal in-view" style={{ position: 'relative', overflow: 'hidden', background: 'linear-gradient(135deg, #0d1a24 0%, #0a0a0a 50%, #06141c 100%)', border: '1px solid rgba(59,123,171,.22)', borderRadius: 24, padding: 'clamp(40px, 7vw, 70px) clamp(28px, 5vw, 56px)', textAlign: 'center' }}>
+                    <div className="reveal in-view" style={{
+                        position: 'relative', overflow: 'hidden',
+                        backgroundImage: `linear-gradient(135deg, rgba(13,26,36,.9) 0%, rgba(10,10,10,.88) 50%, rgba(6,20,28,.92) 100%), url(${mascotaImg})`,
+                        backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat',
+                        border: '1px solid rgba(59,123,171,.22)', borderRadius: 24,
+                        padding: 'clamp(40px, 7vw, 70px) clamp(28px, 5vw, 56px)', textAlign: 'center',
+                    }}>
                         <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: GOLD, marginBottom: 16, fontWeight: 500 }}>// LISTO CUANDO TU LO ESTES</p>
                         <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2rem, 4.5vw, 3.2rem)', letterSpacing: '.03em', marginBottom: 18, lineHeight: 1.05 }}>
-                            <span className="grad-text-white">¿No sabes qué servicio necesitas? </span>
+                            <span className="grad-text-white">¿No sabes </span><span className="grad-text-rainbow">qué servicio necesitas?</span>
                         </h2>
                         <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '1rem', color: 'rgba(255,255,255,.58)', maxWidth: 560, margin: '0 auto 36px', lineHeight: 1.7 }}>
                             Chatea con nuestro ChatBot y te ayudaremos a identificar el servicio que tu vehículo necesita. Luego podrás agendar tu cita en línea y dar seguimiento al estado de tu vehículo desde tu panel.
                         </p>
                         <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
-                            <Link to={ctaHref} className="ps-btn-primary">Crear cuenta y agendar</Link>
+                            <button type="button" onClick={() => window.dispatchEvent(new Event('swapbot:abrir'))} className="ps-btn-primary" style={{ border: 'none', cursor: 'pointer' }}>
+                                Chatear con SWAPbot
+                            </button>
                             <Link to="/nosotros" className="ps-btn-outline">Conocer el taller</Link>
                         </div>
                     </div>

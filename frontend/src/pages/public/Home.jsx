@@ -11,10 +11,10 @@ import './Home.css';
 const MAPA_EMBED_SRC = "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d953.2894989157679!2d-78.37253773829565!3d-0.21855914339467258!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x91d5931de96a4297%3A0x456635055317eed8!2sInsignia%20Automotriz!5e1!3m2!1sen!2sec!4v1784479118759!5m2!1sen!2sec";
 
 const STATS = [
-    { valor: '10+',   label: 'Años de experiencia' },
-    { valor: '80+',   label: 'Vehículos al mes' },
-    { valor: '1000+', label: 'Clientes registrados' },
-    { valor: '24h',   label: 'Diagnóstico rápido' },
+    { valor: '30 min',   label: 'Respuesta por WhatsApp' },
+    { valor: '5%',   label: 'Retrabajos(Máximo)' },
+    { valor: '100%', label: 'Garantía por escrito' },
+    { valor: '24/7',   label: 'Atención y servicio' },
 ];
 
 const ESPECIALIDADES = [
@@ -329,10 +329,10 @@ export default function Home() {
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, position: 'relative' }}>
                             {[
-                                { val: '10+',  lab: 'Años en el mercado',    color: '#3b7bab' },
-                                { val: '80+',  lab: 'Vehículos al mes',      color: '#4a83b3' },
-                                { val: '1000+',lab: 'Clientes en base',      color: '#3b7bab' },
-                                { val: '100%', lab: 'Diagnóstico digital',   color: '#fff'    },
+                                { val: '30 MIN',  lab: 'Respuesta por WhatsApp',    color: '#3b7bab' },
+                                { val: '5%',  lab: 'Retrabajos (Máximo)',      color: '#4a83b3' },
+                                { val: '100%',lab: 'Garantía por escrito',      color: '#3b7bab' },
+                                { val: '24/7', lab: 'Atención y seguimiento',   color: '#fff'    },
                             ].map((item, i) => (
                                 <div key={i} style={{ background: 'linear-gradient(180deg, #141414 0%, #0c0c0c 100%)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 14, padding: '28px 22px', position: 'relative', overflow: 'hidden', transition: 'all .3s' }}
                                      onMouseEnter={e => { e.currentTarget.style.borderColor = item.color + '60'; e.currentTarget.style.transform = 'translateY(-3px)'; }}
