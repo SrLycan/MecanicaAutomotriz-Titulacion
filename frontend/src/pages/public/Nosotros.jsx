@@ -35,22 +35,22 @@ const MECANICOS = [
     {
         nombre: 'Técnico Principal', cargo: 'Fundador y responsable técnico', badge: 'Responsable técnico',
         especialidad: 'Diagnóstico y reparaciones críticas', frase: 'Reviso personalmente cada vehículo antes de que salga del taller.',
-        foto: 'https://images.unsplash.com/photo-1602233158242-3ba0ac4d2167?q=80&w=600&auto=format&fit=crop',
+        foto: '/nosotros/giovanny1.jpeg',
     },
     {
         nombre: 'Ayudante de Taller', cargo: 'Apoyo mecánico y de pintura', badge: 'Equipo de apoyo',
         especialidad: 'Preparación de vehículos y orden del taller', frase: 'Aprendiendo cada día para crecer junto al taller.',
-        foto: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?q=80&w=600&auto=format&fit=crop',
+        foto: '/nosotros/llantas-pintura.jpeg',
     },
 ];
 
 const GALERIA = [
-    { url: 'https://images.unsplash.com/photo-1632823469850-1b7b1e8b7692?q=80&w=900&auto=format&fit=crop', cap: 'Nuestro taller', big: true },
-    { url: 'https://images.unsplash.com/photo-1487754180451-c456f719a1fc?q=80&w=700&auto=format&fit=crop', cap: 'Motor en revisión' },
-    { url: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?q=80&w=700&auto=format&fit=crop', cap: 'Herramientas de precisión', tall: true },
-    { url: 'https://images.unsplash.com/photo-1600661653561-629509216228?q=80&w=700&auto=format&fit=crop', cap: 'Cabina de pintura' },
-    { url: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?q=80&w=700&auto=format&fit=crop', cap: 'Técnicos en acción', tall: true },
-    { url: 'https://images.unsplash.com/photo-1502877338535-766e1452684a?q=80&w=700&auto=format&fit=crop', cap: 'Vehículo listo para entrega' },
+    { url: '/nosotros/pintura1.jpeg', cap: 'Nuestro taller', big: true },
+    { url: '/nosotros/pintura2.jpeg', cap: 'Aplicando pintura' },
+    { url: '/nosotros/pintura3.jpeg', cap: 'Detalle en llantas', tall: true },
+    { url: '/nosotros/pintura4.jpeg', cap: 'Cabina de pintura' },
+    { url: '/nosotros/pintura5.jpeg', cap: 'Equipo en acción', tall: true },
+    { url: '/nosotros/pintura6.jpeg', cap: 'Preparación de carrocería' },
 ];
 
 const TESTIMONIOS = [
@@ -148,7 +148,7 @@ export default function Nosotros() {
                     </div>
                     <div className="ns-hero-photo-wrap reveal">
                         <img
-                            src="https://images.unsplash.com/photo-1517524008697-84bbe3c3fd98?q=80&w=1200&auto=format&fit=crop"
+                            src="/nosotros/hero-taller.jpeg"
                             alt="Mecánico de SS SWAP reparando un vehículo en el taller"
                             onError={e => { e.currentTarget.style.opacity = 0; }}
                         />
@@ -323,7 +323,7 @@ export default function Nosotros() {
                     <div className="ns-spec-grid reveal">
                         <div className="ns-spec-photo-main">
                             <img
-                                src="https://images.unsplash.com/photo-1632823469850-1b7b1e8b7692?q=80&w=1200&auto=format&fit=crop"
+                                src="/nosotros/pintura4.jpeg"
                                 alt="Área de enderezada y pintura de SS SWAP"
                                 onError={e => { e.currentTarget.style.opacity = 0; }}
                             />
@@ -343,13 +343,19 @@ export default function Nosotros() {
 
                     <div className="ns-spec-steps">
                         {[
-                            { titulo: 'Lijado y preparación', desc: 'Superficie lista y sin defectos antes de aplicar una sola gota de pintura.', foto: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?q=80&w=700&auto=format&fit=crop' },
-                            { titulo: 'Pintura por capas',    desc: 'Color uniforme, sin burbujas ni rayas visibles, capa por capa en cabina.',   foto: 'https://images.unsplash.com/photo-1600661653561-629509216228?q=80&w=700&auto=format&fit=crop' },
-                            { titulo: 'Pulido y acabado',     desc: 'Terminación limpia y brillo parejo antes de la entrega del vehículo.',        foto: 'https://images.unsplash.com/photo-1502877338535-766e1452684a?q=80&w=700&auto=format&fit=crop' },
+                            { titulo: 'Aplicación de pintura', desc: 'Pintura aplicada por capas, de forma uniforme y sin defectos, dentro de la cabina.', foto: '/nosotros/pintura2.jpeg' },
+                            { titulo: 'Control de calidad',    desc: 'Revisamos cada detalle antes de la entrega: acabado, brillo y funcionamiento.',      video: '/nosotros/video2.mp4' },
+                            { titulo: 'Detalle en llantas',    desc: 'También pintamos y renovamos llantas para que combinen con la carrocería.',          foto: '/nosotros/pintura3.jpeg' },
                         ].map((s, i) => (
                             <div key={s.titulo} className="ns-card ns-spec-step reveal" style={{ transitionDelay: `${i * 80}ms` }}>
                                 <div className="ns-spec-step-photo">
-                                    <img src={s.foto} alt={s.titulo} loading="lazy" onError={e => { e.currentTarget.style.opacity = 0; }} />
+                                    {s.video ? (
+                                        <video muted loop playsInline autoPlay>
+                                            <source src={s.video} type="video/mp4" />
+                                        </video>
+                                    ) : (
+                                        <img src={s.foto} alt={s.titulo} loading="lazy" onError={e => { e.currentTarget.style.opacity = 0; }} />
+                                    )}
                                 </div>
                                 <h3 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.1rem', letterSpacing: '.03em', color: '#fff', marginBottom: 6 }}>{s.titulo}</h3>
                                 <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.83rem', color: 'rgba(255,255,255,.5)', lineHeight: 1.6 }}>{s.desc}</p>
@@ -388,12 +394,10 @@ export default function Nosotros() {
                         </h2>
                     </div>
                     <div className="ns-video-frame reveal">
-                        <iframe
-                            src="https://www.youtube.com/embed/iv4M8trjXrE"
-                            title="Video institucional SS SWAP"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                        />
+                        <video controls poster="/nosotros/pintura1.jpeg">
+                            <source src="/nosotros/video1.mp4" type="video/mp4" />
+                            Tu navegador no soporta reproducción de video.
+                        </video>
                     </div>
                 </div>
             </section>

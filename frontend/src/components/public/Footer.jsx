@@ -79,7 +79,7 @@ export default function Footer() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                         {[
                             { icon: <IconPin />,   text: 'Pasaje San Pedro S/N y, Av. Universitaria, 170184 Quito', href: 'https://www.google.com/maps/search/?api=1&query=Pasaje+San+Pedro+S%2FN+Av.+Universitaria+170184+Quito' },
-                            { icon: <IconPhone />, text: '0963863847', href: 'tel:+593963863847' },
+                            { icon: <IconPhone />, text: '0963863847', href: 'https://wa.me/593963863847' },
                             { icon: <IconMail />,  text: 'contacto@SS SWAP.com', href: 'mailto:contacto@SS SWAP.com' },
                         ].map((item, i) => (
                             <a key={i} href={item.href} target={item.href.startsWith('http') ? '_blank' : undefined} rel="noreferrer"

@@ -113,8 +113,8 @@ body { background: #050505; }
 .ns-spec-chip { display: inline-block; padding: 7px 14px; border-radius: 999px; background: rgba(59,123,171,.1); border: 1px solid rgba(59,123,171,.28); font-family: 'Outfit', sans-serif; font-weight: 500; font-size: .78rem; color: #9ec3e0; }
 .ns-spec-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr)); gap: 20px; }
 .ns-spec-step-photo { border-radius: 14px; overflow: hidden; aspect-ratio: 16 / 10; margin-bottom: 14px; }
-.ns-spec-step-photo img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s cubic-bezier(.4,0,.2,1); }
-.ns-spec-step:hover .ns-spec-step-photo img { transform: scale(1.06); }
+.ns-spec-step-photo img, .ns-spec-step-photo video { width: 100%; height: 100%; object-fit: cover; transition: transform .5s cubic-bezier(.4,0,.2,1); }
+.ns-spec-step:hover .ns-spec-step-photo img, .ns-spec-step:hover .ns-spec-step-photo video { transform: scale(1.06); }
 @media (max-width: 860px) {
     .ns-spec-grid { grid-template-columns: 1fr; gap: 28px; }
     .ns-spec-photo-main { order: -1; aspect-ratio: 16 / 10; }
@@ -216,7 +216,7 @@ body { background: #050505; }
     border: 1px solid rgba(255,255,255,.1); box-shadow: 0 30px 70px -24px rgba(0,0,0,.7);
     background: #000;
 }
-.ns-video-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; }
+.ns-video-frame video { position: absolute; inset: 0; width: 100%; height: 100%; border: none; object-fit: cover; background: #000; }
 
 /* ── Estadisticas animadas ── */
 .ns-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; border-radius: 20px; overflow: hidden; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.08); }
