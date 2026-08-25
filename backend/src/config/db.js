@@ -1,3 +1,8 @@
+/**
+ * SS SWAP - Conexión Principal a Base de Datos Relacional (PostgreSQL)
+ * Gestiona el pool de conexiones para todas las entidades transaccionales
+ * del sistema (usuarios, citas, inventario, órdenes de trabajo, sucursales).
+ */
 const { Pool, types } = require('pg');
 require('dotenv').config();
 

@@ -1,3 +1,12 @@
+/**
+ * SS SWAP - Controlador de Gestión y Agendamiento de Citas
+ *
+ * Gestiona el calendario de atención por sucursal:
+ * - Cálculo dinámico de turnos disponibles según duración del servicio y horario operativo.
+ * - Control de concurrencia mediante cerrojos a nivel de transacción en PostgreSQL
+ *   (`pg_advisory_xact_lock`) para evitar sobreventa de turnos (doble reserva simultánea).
+ * - Restricciones de negocio: días hábiles, validación de franjas horarias y capacidad por turno.
+ */
 const pool = require('../config/db');
 
 // Vehiculos que el taller puede atender en simultaneo por sucursal (simula bahias/elevadores)
@@ -6,7 +15,10 @@ const CAPACIDAD_POR_TURNO  = 1;
 const DURACION_DEFECTO_MIN = 60;
 const INTERVALO_SLOT_MIN   = 30;
 
-/** Horario de atencion por dia de la semana (0=domingo ... 6=sabado) */
+/**
+ * Retorna el horario operativo según el día de la semana
+ * (0=Domingo cerrado, 6=Sábado media jornada).
+ */
 function horarioDelDia(diaSemana) {
     if (diaSemana === 0) return null; // domingo: cerrado
     if (diaSemana === 6) return { apertura: '08:00', cierre: '14:00' };
@@ -28,9 +40,12 @@ function parseFechaLocal(fecha) {
     return Number.isNaN(d.getTime()) ? null : d;
 }
 
-// ─────────────────────────────────────────────────────────────
-// GET /api/citas/disponibilidad?sucursal_id=&servicio_id=&fecha=YYYY-MM-DD
-// ─────────────────────────────────────────────────────────────
+/**
+ * GET /api/citas/disponibilidad?sucursal_id=&servicio_id=&fecha=YYYY-MM-DD
+ * Calcula los turnos y cupos disponibles para una sucursal, servicio y fecha
+ * determinados. Filtra citas preexistentes no canceladas y descarta las
+ * franjas que ya pasaron.
+ */
 const disponibilidad = async (req, res) => {
     const { sucursal_id, servicio_id, fecha } = req.query;
     if (!sucursal_id || !servicio_id || !fecha)
@@ -91,10 +106,14 @@ const disponibilidad = async (req, res) => {
     }
 };
 
-// ─────────────────────────────────────────────────────────────
-// POST /api/citas   (cliente)
-// body: { servicio_id, sucursal_id, vehiculo_id?, fecha, hora_inicio, notas? }
-// ─────────────────────────────────────────────────────────────
+/**
+ * POST /api/citas   (cliente)
+ * body: { servicio_id, sucursal_id, vehiculo_id?, fecha, hora_inicio, notas? }
+ *
+ * Agenda una nueva cita para el cliente autenticado. Aplica cerrojos advisory
+ * a nivel de transacción para asegurar exclusión mutua ante peticiones
+ * concurrentes sobre la misma sucursal y fecha.
+ */
 const crearCita = async (req, res) => {
     const { email, id: usuario_id } = req.usuario;
     const { servicio_id, sucursal_id, vehiculo_id, fecha, hora_inicio, notas } = req.body;
@@ -183,9 +202,11 @@ const crearCita = async (req, res) => {
     }
 };
 
-// ─────────────────────────────────────────────────────────────
-// GET /api/citas/mias   (cliente)
-// ─────────────────────────────────────────────────────────────
+/**
+ * GET /api/citas/mias   (cliente)
+ * Consulta las citas registradas por el cliente autenticado,
+ * con ordenamiento configurable por fecha o registro.
+ */
 const misCitas = async (req, res) => {
     const { email } = req.usuario;
     const orden = req.query.orden === 'registro_asc' ? 'c.created_at ASC' :
@@ -217,6 +238,9 @@ const misCitas = async (req, res) => {
     }
 };
 
+/**
+ * Lista general de citas para el personal administrativo y de recepción del taller.
+ */
 const listarCitas = async (req, res) => {
     const { estado, orden = 'fecha_asc' } = req.query;
     const ordenes = { fecha_asc: 'c.fecha ASC, c.hora_inicio ASC', fecha_desc: 'c.fecha DESC, c.hora_inicio DESC', registro_asc: 'c.created_at ASC', registro_desc: 'c.created_at DESC' };
@@ -234,6 +258,9 @@ const listarCitas = async (req, res) => {
     } catch (err) { console.error('Error listarCitas:', err); return res.status(500).json({ error: 'Error al obtener las citas.' }); }
 };
 
+/**
+ * Actualiza el estado administrativo de una cita (confirmada, completada, cancelada).
+ */
 const actualizarEstado = async (req, res) => {
     const { estado } = req.body;
     if (!['confirmada', 'cancelada', 'completada'].includes(estado)) return res.status(400).json({ error: 'Estado de cita invalido.' });
@@ -244,9 +271,10 @@ const actualizarEstado = async (req, res) => {
     } catch (err) { console.error('Error actualizar estado de cita:', err); return res.status(500).json({ error: 'Error al actualizar la cita.' }); }
 };
 
-// ─────────────────────────────────────────────────────────────
-// PATCH /api/citas/:id/cancelar   (cliente, solo propias)
-// ─────────────────────────────────────────────────────────────
+/**
+ * PATCH /api/citas/:id/cancelar   (cliente, solo propias)
+ * Permite a un cliente cancelar una de sus citas pendientes o confirmadas.
+ */
 const cancelarCita = async (req, res) => {
     const { id } = req.params;
     const { email } = req.usuario;

@@ -1,3 +1,13 @@
+/**
+ * SS SWAP - Controlador de Administración de Usuarios y Perfil de Cuenta
+ *
+ * Gestiona el ciclo de vida de usuarios (administradores, técnicos,
+ * recepcionistas y clientes):
+ * - Altas, edición, suspensión/bloqueo y gestión de credenciales.
+ * - Perfil personal (actualización de datos de contacto, contraseña y foto).
+ * - Sincronización bidireccional de datos con la tabla 'clientes' ante
+ *   modificaciones de perfil.
+ */
 const bcrypt = require('bcryptjs');
 const jwt    = require('jsonwebtoken');
 const fs     = require('fs');
@@ -241,6 +251,7 @@ const crearUsuario = async (req, res) => {
 // PERFIL PROPIO (cualquier usuario autenticado: cliente o staff)
 // ─────────────────────────────────────────────────────────────
 
+/** Genera y firma un nuevo JWT con los datos actualizados del usuario. */
 function reemitirToken(usuarioRow) {
     const payload = { id: usuarioRow.id, nombre: usuarioRow.nombre, email: usuarioRow.email, rol: usuarioRow.rol };
     const token   = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '8h' });

@@ -1,3 +1,8 @@
+/**
+ * SS SWAP - Servicio de Contexto Dinámico para Chatbot (Grounding)
+ * Extrae y formatea en tiempo real servicios, tarifas y sucursales vigentes
+ * desde PostgreSQL para inyectarlos en el prompt del modelo de IA.
+ */
 const pool = require('../config/db');
 
 // 15 minutos: suficiente para que precios/horarios se sientan "al dia" sin

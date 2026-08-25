@@ -1,3 +1,9 @@
+/**
+ * SS SWAP - Administración de Servicios Mecánicos (Panel Interno)
+ * CRUD del catálogo de servicios: crea, edita y elimina servicios con nombre,
+ * descripción, precio base, duración estimada e imagen. Los servicios marcados como
+ * activos son visibles en el catálogo público y disponibles para reserva de citas.
+ */
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';

@@ -1,3 +1,10 @@
+/**
+ * SS SWAP - Servidor Principal de API REST (Node.js / Express)
+ * Configura middlewares globales, enrutamiento modular de la API,
+ * servicio de archivos estáticos y la conexión a MongoDB (conversaciones
+ * del chatbot). Las migraciones de Postgres se aplican manualmente en
+ * Supabase, no en el arranque.
+ */
 require('dotenv').config();
 const express = require('express');
 const cors    = require('cors');

@@ -1,3 +1,6 @@
+/**
+ * SS SWAP - Enrutador de Inventario y Repuestos (/api/inventory)
+ */
 const express = require('express');
 const router  = express.Router();
 const { verificarToken, verificarRol, soloStaff } = require('../middleware/auth.middleware');

@@ -1,6 +1,13 @@
+/**
+ * SS SWAP - Controlador del Catálogo de Tipos de Servicio
+ *
+ * Permite la administración de servicios del taller automotriz (precios base,
+ * duración estimada, activación e imágenes) y su consulta pública para
+ * agendamiento y grounding del chatbot.
+ */
 const pool = require('../config/db');
 
-/** GET /api/servicios — público y autenticado */
+/** GET /api/servicios — Lista tipos de servicio con filtros opcionales por estado y búsqueda por nombre */
 const listarServicios = async (req, res) => {
     const { q, activo = 'true' } = req.query;
     let where = 'WHERE 1=1';

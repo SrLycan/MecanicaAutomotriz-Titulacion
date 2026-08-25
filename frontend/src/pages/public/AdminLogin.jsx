@@ -1,3 +1,7 @@
+/**
+ * SS SWAP - Acceso Exclusivo del Personal del Taller (AdminLogin)
+ * Reutiliza la página de autenticación restringiéndola al staff.
+ */
 import React from 'react';
 import AuthPage from './AuthPage';
 

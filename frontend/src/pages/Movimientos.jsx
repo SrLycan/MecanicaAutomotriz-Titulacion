@@ -1,3 +1,9 @@
+/**
+ * SS SWAP - Historial de Movimientos de Inventario
+ * Registro auditado de todas las entradas y salidas de stock del taller.
+ * Soporta filtros por tipo, búsqueda por repuesto o usuario, exportación a CSV
+ * y paginación del historial completo para trazabilidad administrativa.
+ */
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';

@@ -2,16 +2,24 @@
 # (ej. /dashboard/ordenes). Sin esto, recargar la pagina en cualquier
 # ruta que no sea la raiz devuelve 404 en el hosting de Hostinger
 # (Apache/LiteSpeed), porque esos archivos no existen fisicamente.
-# Esta regla redirige cualquier ruta que no sea un archivo/carpeta real
+# Esta regla redirige cualquier ruta que no sea un archivo real
 # hacia index.html, y ahi react-router toma el control.
+#
+# IMPORTANTE: aqui NO se excluyen las carpetas (-d). El build copia
+# public/servicios/ y public/nosotros/ (imagenes y videos) tal cual al
+# servidor, y si una ruta de react-router coincide con una carpeta fisica
+# (ej. /servicios), Apache/LiteSpeed redirige a /servicios/ (por eso la
+# barra final en la URL) y, al no existir un index.html dentro, responde
+# 403 Forbidden al recargar con F5. Reescribiendo tambien las carpetas,
+# la peticion cae en index.html y react-router renderiza la pagina;
+# las imagenes siguen sirviendose bien porque son archivos (-f).
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
 
-  # Deja pasar archivos y carpetas que si existen (JS, CSS, imagenes, etc.)
-  RewriteCond %{REQUEST_FILENAME} -f [OR]
-  RewriteCond %{REQUEST_FILENAME} -d
+  # Deja pasar archivos que si existen (JS, CSS, imagenes, etc.)
+  RewriteCond %{REQUEST_FILENAME} -f
   RewriteRule ^ - [L]
 
   # Todo lo demas va a index.html

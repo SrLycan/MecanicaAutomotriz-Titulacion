@@ -1,6 +1,10 @@
 /**
- * Persistencia de conversaciones de SWAPBot en MongoDB Atlas.
- * Un documento = una sesion de chat (varios turnos usuario/bot).
+ * SS SWAP - Servicio de Persistencia de Conversaciones de SWAPBot
+ *
+ * Guarda en MongoDB Atlas cada conversación del chatbot. Un documento =
+ * una sesión de chat (varios turnos usuario/bot). Al igual que la bitácora
+ * de órdenes, es un flujo append-only sin JOINs transaccionales, ideal para
+ * un almacén de documentos en lugar de sobrecargar PostgreSQL.
  */
 const { getMongoDb } = require('../config/mongo');
 

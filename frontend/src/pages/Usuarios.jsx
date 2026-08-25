@@ -1,3 +1,9 @@
+/**
+ * SS SWAP - Administración de Usuarios del Sistema
+ * Gestión del personal del taller: creación, edición de rol/estado y desactivación
+ * de cuentas de administradores, técnicos, recepcionistas y clientes.
+ * Incluye subida de foto de perfil con compresión y filtros por rol y estado.
+ */
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';

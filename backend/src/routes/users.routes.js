@@ -1,3 +1,6 @@
+/**
+ * SS SWAP - Enrutador de Usuarios y Gestión de Cuentas (/api/users)
+ */
 const express = require('express');
 const router  = express.Router();
 const {

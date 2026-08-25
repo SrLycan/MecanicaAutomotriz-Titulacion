@@ -1,3 +1,9 @@
+/**
+ * SS SWAP - Formulario de Registro de Movimiento de Stock
+ * Permite al técnico o administrador registrar una entrada o salida de inventario
+ * seleccionando el repuesto con búsqueda en tiempo real, indicando cantidad,
+ * tipo de movimiento y motivo. El stock resultante se recalcula y valida antes de guardar.
+ */
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';

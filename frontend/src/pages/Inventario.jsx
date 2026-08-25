@@ -1,3 +1,9 @@
+/**
+ * SS SWAP - Módulo de Inventario de Repuestos
+ * Gestión completa del catálogo de repuestos: búsqueda multi-criterio, filtros por categoría
+ * y nivel de stock, exportación a CSV, creación/edición de repuestos con foto comprimida
+ * y registro de movimientos de entrada/salida directamente desde la ficha del repuesto.
+ */
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';

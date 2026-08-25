@@ -1,3 +1,9 @@
+/**
+ * SS SWAP - Gestión de Vehículos del Taller
+ * Registro y consulta de vehículos vinculados a clientes. Permite buscar por placa,
+ * marca o cliente; crear y editar datos del vehículo (placa, VIN, año, color)
+ * y consultar el historial de órdenes asociadas a cada unidad.
+ */
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';

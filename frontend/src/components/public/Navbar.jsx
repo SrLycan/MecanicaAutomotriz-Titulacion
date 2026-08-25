@@ -1,9 +1,16 @@
+/**
+ * SS SWAP - Barra de Navegación Principal (Navbar)
+ * Incluye navegación responsive, menú móvil, control de scroll con efecto glassmorphism
+ * y accesos dinámicos según estado de autenticación (visitante, cliente o staff administrativo).
+ * Los estilos (pub-nav, nav-link, hamburger, etc.) viven en Navbar.css.
+ */
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import logoImg from '../../assets/logo.png';
 import './Navbar.css';
 
+// Secciones del sitio público mostradas en desktop y móvil.
 const NAV_LINKS = [
     { label: 'Inicio',            href: '/'          },
     { label: 'Productos',         href: '/productos'  },

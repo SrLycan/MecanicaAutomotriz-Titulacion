@@ -1,4 +1,5 @@
 /**
+ * SS SWAP - Protección Anti Fuerza Bruta para el Login (/api/auth/login)
  * Proteccion anti fuerza bruta para POST /auth/login.
  *
  * Dos capas, ambas en memoria (mismo enfoque que chatbotThrottle.middleware.js
