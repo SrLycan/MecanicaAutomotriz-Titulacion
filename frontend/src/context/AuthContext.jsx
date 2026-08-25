@@ -1,3 +1,9 @@
+/**
+ * SS SWAP - Contexto Global de Autenticación (AuthContext)
+ * Administra el estado de sesión, persistencia de tokens JWT en localStorage,
+ * control de roles y sincronización ante actualizaciones de perfil.
+ * El login exige indicar el panel ('cliente' o 'staff'), igual que el backend.
+ */
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import api from '../services/api';
 
@@ -10,6 +16,8 @@ export const AuthProvider = ({ children }) => {
     });
     const [loading, setLoading] = useState(false);
 
+    // 'panel' se envia al backend para que valide si el rol corresponde
+    // al portal desde el que se inicia sesion (cliente vs personal).
     const login = useCallback(async (email, password, panel) => {
         setLoading(true);
         try {

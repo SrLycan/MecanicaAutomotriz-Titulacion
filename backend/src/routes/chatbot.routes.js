@@ -1,3 +1,6 @@
+/**
+ * SS SWAP - Enrutador del Asistente Virtual (/api/chatbot)
+ */
 const express = require('express');
 const router  = express.Router();
 const { responderMensaje, listarConversacionesAdmin } = require('../controllers/chatbot.controller');

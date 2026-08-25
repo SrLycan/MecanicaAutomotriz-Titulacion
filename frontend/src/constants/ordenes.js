@@ -1,3 +1,8 @@
+/**
+ * SS SWAP - Constantes de Órdenes de Trabajo
+ * Estados, etapas de progreso, colores y filtros compartidos entre
+ * el panel administrativo y el portal de clientes.
+ */
 export const ESTADOS_ORDEN = [
     { val: 'pendiente',    label: 'Pendiente',    color: '#f59e0b' },
     { val: 'en_progreso',  label: 'En Progreso',  color: '#0ea5e9' },

@@ -1,3 +1,9 @@
+/**
+ * SS SWAP - Pie de Página Institucional (Footer)
+ * Presenta horarios de atención, accesos rápidos, enlaces a servicios,
+ * canales de contacto, redes sociales y llamada a la acción de registro.
+ * Los estilos (footer-logo-link, footer-nav-link) viven en Footer.css.
+ */
 import React from 'react';
 import { Link } from 'react-router-dom';
 import logoImg from '../../assets/logo.png';
@@ -78,9 +84,9 @@ export default function Footer() {
                     <p style={{ fontFamily: "'Sora'", fontWeight: 700, fontSize: '.68rem', letterSpacing: '.1em', textTransform: 'uppercase', color: '#7fabce', marginBottom: 16 }}>CONTACTO</p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                         {[
-                            { icon: <IconPin />,   text: 'Pasaje San Pedro S/N y, Av. Universitaria, 170184 Quito', href: 'https://www.google.com/maps/search/?api=1&query=Pasaje+San+Pedro+S%2FN+Av.+Universitaria+170184+Quito' },
+                            { icon: <IconPin />,   text: 'Pasaje San Pedro S/N y, Av. Universitaria, 170184 Quito', href: 'https://maps.app.goo.gl/HfAkfW6noNjwu5vP9' },
                             { icon: <IconPhone />, text: '0963863847', href: 'https://wa.me/593963863847' },
-                            { icon: <IconMail />,  text: 'contacto@SS SWAP.com', href: 'mailto:contacto@SS SWAP.com' },
+                            { icon: <IconMail />,  text: 'contacto@ssswapcolisiones.com', href: 'mailto:contacto@ssswapcolisiones.com' },
                         ].map((item, i) => (
                             <a key={i} href={item.href} target={item.href.startsWith('http') ? '_blank' : undefined} rel="noreferrer"
                                style={{ display: 'flex', alignItems: 'flex-start', gap: 10, textDecoration: 'none', color: 'inherit', transition: 'color .2s' }}
@@ -95,8 +101,9 @@ export default function Footer() {
                     {/* Redes sociales */}
                     <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
                         {[
-                            { icon: <IconFacebook />, href: 'https://facebook.com', label: 'Facebook' },
-                            { icon: <IconInstagram />, href: 'https://instagram.com', label: 'Instagram' },
+                            { icon: <IconFacebook />, href: 'https://www.facebook.com/profile.php?id=61592819312325', label: 'Facebook' },
+                            { icon: <IconInstagram />, href: 'https://www.instagram.com/ss_swap_01/', label: 'Instagram' },
+                            { icon: <IconTikTok />, href: 'https://www.tiktok.com/@mecanica_ss_swap', label: 'TikTok' },
                             { icon: <IconWhatsapp />, href: 'https://wa.me/593963863847', label: 'WhatsApp' },
                         ].map((s, i) => (
                             <a key={i} href={s.href} target="_blank" rel="noreferrer" aria-label={s.label}
@@ -138,3 +145,4 @@ function IconMail()  { return <svg width="14" height="14" viewBox="0 0 24 24" fi
 function IconFacebook()  { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>; }
 function IconInstagram() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>; }
 function IconWhatsapp()  { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>; }
+function IconTikTok() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 3v11.5a3.5 3.5 0 1 1-3.5-3.5"/><path d="M9 3c.4 3.2 2.2 5.2 5.5 5.5V5.5c-1.5-.1-2.7-1-3.3-2.5H9z"/><path d="M14.5 5.5c.8.8 1.8 1.3 3 1.4V10c-1.2-.1-2.2-.4-3-1"/></svg>; }

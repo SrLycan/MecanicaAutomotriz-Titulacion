@@ -1,4 +1,5 @@
 /**
+ * SS SWAP - Utilidades de Imágenes (Resolución y Compresión)
  * Utilidades para resolver y comprimir imágenes subidas por el usuario
  * (repuestos, servicios, perfil). Antes estaban duplicadas en
  * ModalRepuesto.jsx, pages/Servicios.jsx y pages/public/Servicios.jsx.

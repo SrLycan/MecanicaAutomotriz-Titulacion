@@ -1,5 +1,13 @@
+/**
+ * SS SWAP - Controlador de Sucursales y Sedes del Taller
+ *
+ * Administra las locaciones físicas, horarios de atención y teléfonos de
+ * contacto, y mantiene la regla de negocio de tener una única sede marcada
+ * como principal.
+ */
 const pool = require('../config/db');
 
+/** Lista sucursales activas para visualización en páginas públicas y chatbot */
 // ─────────────────────────────────────────────────────────────
 // LISTAR PUBLICAS (solo activas, sin auth)
 // GET /api/sucursales/public

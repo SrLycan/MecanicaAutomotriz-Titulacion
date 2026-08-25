@@ -1,3 +1,9 @@
+/**
+ * SS SWAP - Gestión de Órdenes de Trabajo
+ * Módulo central del taller: crea, asigna, actualiza el estado de avance técnico
+ * y elimina órdenes. Segrega permisos por rol (administrador, técnico, recepcionista)
+ * e incluye historial de cambios con timeline expandible por orden.
+ */
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';

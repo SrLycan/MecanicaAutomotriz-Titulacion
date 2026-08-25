@@ -1,4 +1,5 @@
 /**
+ * SS SWAP - Limitador de Mensajes por IP para SWAPBot (Throttle)
  * Limite simple por IP para el fallback de IA de SWAPBot.
  *
  * No sustituye el limite diario global (ver geminiQuota.service.js): es una

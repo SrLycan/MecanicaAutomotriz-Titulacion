@@ -1,3 +1,9 @@
+/**
+ * SS SWAP - Gestión de Citas del Taller (Panel Administrativo)
+ * Lista y gestiona las solicitudes de cita recibidas desde el portal público.
+ * Permite confirmar, completar o cancelar citas, con filtros por estado y orden.
+ * El panel hace polling cada 30 segundos para detectar nuevas solicitudes en tiempo real.
+ */
 import React, { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import api from '../services/api';

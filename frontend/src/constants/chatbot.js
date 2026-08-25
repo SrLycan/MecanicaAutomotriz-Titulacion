@@ -1,3 +1,7 @@
+/**
+ * SS SWAP - Constantes del Chatbot SWAPBot
+ * Datos puros del menú de opciones, saludos y límites del widget.
+ */
 // Datos puros del menu de SWAPBot. La logica de que hace cada opcion
 // (pedir datos, revisar sesion, navegar) vive en el componente; aqui solo
 // van etiquetas y textos, igual que en constants/ordenes.js.

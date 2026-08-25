@@ -1,3 +1,9 @@
+/**
+ * SS SWAP - Administración de Sucursales
+ * Gestiona las sedes del taller: nombre, dirección, ciudad, teléfono, horario
+ * y estado activo/inactivo. La sucursal marcada como principal aparece destacada
+ * en el catálogo de citas y en la sección de contacto del portal público.
+ */
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';

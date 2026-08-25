@@ -1,3 +1,8 @@
+/**
+ * SS SWAP - Enrutador Principal de la Aplicación (React Router)
+ * Configura proveedores globales (Tema, Autenticación, Confirmación),
+ * rutas públicas, portal de clientes y panel administrativo con control por roles.
+ */
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
@@ -7,7 +12,7 @@ import { ConfirmProvider } from './components/common/ConfirmDialog';
 import ScrollToTop from './components/common/ScrollToTop';
 import SwapBot from './components/chatbot/SwapBot';
 
-// Public
+// ── Rutas Públicas ───────────────────────────────────────────
 import Home       from './pages/public/Home';
 import AuthPage   from './pages/public/AuthPage';
 import AdminLogin from './pages/public/AdminLogin';
@@ -15,7 +20,7 @@ import ServiciosPublic from './pages/public/Servicios';
 import NosotrosPublic  from './pages/public/Nosotros';
 import ProductosPublic from './pages/public/Productos';
 
-// Admin panel
+// ── Rutas del Panel Administrativo (Staff) ───────────────
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import Layout         from './components/layout/Layout';
 import Dashboard      from './pages/Dashboard';
@@ -29,10 +34,11 @@ import Vehiculos      from './pages/Vehiculos';
 import Clientes       from './pages/Clientes';
 import Servicios      from './pages/Servicios';
 import Citas          from './pages/Citas';
-import Bitacora       from './pages/Bitacora';
-
 // Public / cliente
 import PanelCliente   from './pages/PanelCliente';
+
+// Bitacora de actividad — solo administradores
+import Bitacora       from './pages/Bitacora';
 
 import './styles/global.css';
 

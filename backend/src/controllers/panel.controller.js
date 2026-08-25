@@ -1,11 +1,19 @@
+/**
+ * SS SWAP - Controlador del Portal / Panel de Clientes
+ *
+ * Consolida en una sola carga optimizada el perfil del cliente, sus vehículos
+ * registrados, el historial de órdenes y el catálogo de repuestos en venta.
+ * Expone además los historiales personales del cliente que viven en
+ * MongoDB Atlas (progresión de órdenes y conversaciones con SWAPBot).
+ */
 const pool = require('../config/db');
 const { obtenerHistorialPorOrden }   = require('../services/ordenesHistorial.service');
 const { obtenerHistorialPorCliente } = require('../services/chatbotConversacion.service');
 
 /**
  * GET /api/panel/mi-actividad
- * Devuelve órdenes, movimientos de inventario relacionados y repuestos en venta
- * del cliente autenticado. Vincula usuario → cliente por email.
+ * Consulta agregada de actividad del cliente autenticado: órdenes, vehículos
+ * y repuestos en venta. Vincula usuario → cliente por email.
  */
 const miActividad = async (req, res) => {
     const { id: usuario_id, email } = req.usuario;
@@ -71,13 +79,9 @@ const miActividad = async (req, res) => {
 
 /**
  * GET /api/panel/ordenes/:id/historial
- * Historial de progreso de UNA orden del cliente autenticado (Mongo Atlas).
- * Verifica que la orden pertenezca al cliente antes de devolver nada.
- *
- * Nota: esta ruta la usa PanelCliente.jsx ("Ver progresion completa") desde
- * antes, pero el endpoint nunca habia sido implementado en el backend
- * (siempre devolvia 404 y el frontend lo capturaba en silencio). Se agrega
- * ahora, aprovechando la migracion del historial a MongoDB.
+ * Historial de progreso de UNA orden del cliente autenticado (MongoDB Atlas).
+ * Verifica que la orden pertenezca al cliente antes de devolver nada:
+ * nunca se expone la bitácora de una orden ajena.
  */
 const miHistorialOrden = async (req, res) => {
     const { id } = req.params;

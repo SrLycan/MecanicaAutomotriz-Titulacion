@@ -1,12 +1,12 @@
 /**
- * Bitacora de cambios de estado de las ordenes de trabajo, persistida en
- * MongoDB Atlas (antes era la tabla Postgres `ordenes_historial`; ver
- * migrations.sql, Sprint 8, para el detalle de la migracion).
+ * SS SWAP - Servicio de Bitácora de Órdenes de Trabajo (Auditoría)
  *
- * Es un caso natural para Mongo: solo se inserta (nunca se actualiza ni
- * se hace JOIN sobre esta bitacora desde otra tabla), y el propio
- * controller ya trataba estos registros como "best-effort" — no forman
- * parte de la transaccion que cambia el estado real de la orden.
+ * Persiste en MongoDB Atlas el historial de cambios de estado y progreso de
+ * las órdenes de trabajo. Es un caso natural para Mongo: solo se inserta
+ * (nunca se actualiza ni se hace JOIN sobre esta bitácora desde otra tabla),
+ * mientras que PostgreSQL conserva las entidades transaccionales del negocio.
+ * El propio controller trata estos registros como "best-effort": no forman
+ * parte de la transacción que cambia el estado real de la orden.
  */
 const pool = require('../config/db');
 const { getMongoDb } = require('../config/mongo');
@@ -14,8 +14,7 @@ const { getMongoDb } = require('../config/mongo');
 /**
  * Registra una entrada en el historial de cambios de una orden.
  * Nunca lanza: si Mongo no esta disponible o falla, solo se loguea, para
- * no romper el flujo principal de creacion/actualizacion de la orden
- * (mismo comportamiento que tenia la version en Postgres).
+ * no romper el flujo principal de creacion/actualizacion de la orden.
  */
 const registrarHistorial = async ({
     orden_id, estado_anterior = null, estado_nuevo = null,

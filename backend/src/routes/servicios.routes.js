@@ -1,3 +1,6 @@
+/**
+ * SS SWAP - Enrutador de Catálogo de Servicios (/api/servicios)
+ */
 const express = require('express');
 const router  = express.Router();
 const { verificarToken, verificarRol } = require('../middleware/auth.middleware');

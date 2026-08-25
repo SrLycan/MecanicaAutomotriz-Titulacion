@@ -1,3 +1,12 @@
+/**
+ * SS SWAP - Controlador del Chatbot de Asistencia Virtual (SWAPBot)
+ *
+ * Expone el endpoint de consulta libre para SWAPBot, validando tamaño de
+ * mensaje, consumo de cuota diaria de Gemini y delegando al servicio de IA.
+ * Cada turno conversacional se persiste en MongoDB Atlas asociado a una
+ * sesión, lo que permite al cliente revisar su historial y al administrador
+ * auditar qué consulta la gente.
+ */
 const crypto = require('crypto');
 const pool = require('../config/db');
 const { hayCuotaDisponible, registrarConsumo, estadoCuota } = require('../services/geminiQuota.service');

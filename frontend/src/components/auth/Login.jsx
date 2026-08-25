@@ -1,3 +1,9 @@
+/**
+ * SS SWAP - Formulario de Inicio de Sesión del Personal (Login)
+ * Provee interfaz para inicio de sesión del staff administrativo/técnico
+ * con soporte de tema oscuro/claro y accesos de prueba.
+ * Los estilos visuales viven en la hoja de estilos global (SS SWAP-label, etc.).
+ */
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';

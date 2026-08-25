@@ -1,3 +1,6 @@
+/**
+ * SS SWAP - Enrutador de Citas y Agendamiento (/api/citas)
+ */
 const express = require('express');
 const router  = express.Router();
 const { verificarToken, verificarRol } = require('../middleware/auth.middleware');

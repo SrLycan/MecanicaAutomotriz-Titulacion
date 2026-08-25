@@ -1,3 +1,8 @@
+/**
+ * SS SWAP - Página de Inicio Institucional (Home)
+ * Presenta la propuesta de valor del taller: video hero en vivo, servicios destacados,
+ * reparación de colisiones, especialidades mecánicas, testimonios e integración de mapa.
+ */
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../../components/public/Navbar';
@@ -130,7 +135,7 @@ export default function Home() {
                                 <div className="hero-glass-badge hero-glass-badge--top">
                                     <span className="hero-glass-dot" />
                                     <div>
-                                        <p className="hero-glass-badge-title">Diagnóstico en vivo</p>
+                                        <p className="hero-glass-badge-title">Diagnóstico en Tiempo Real</p>
                                         <p className="hero-glass-badge-sub">Equipo OBD2 certificado</p>
                                     </div>
                                 </div>
@@ -142,7 +147,6 @@ export default function Home() {
                                     </div>
                                     <div>
                                         <p className="hero-glass-badge-title">Técnicos certificados</p>
-                                        <p className="hero-glass-badge-sub">Trabajando ahora mismo</p>
                                     </div>
                                 </div>
                             </div>

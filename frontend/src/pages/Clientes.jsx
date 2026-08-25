@@ -1,3 +1,9 @@
+/**
+ * SS SWAP - Gestión de Clientes del Taller
+ * CRUD completo de clientes: búsqueda en tiempo real, creación, edición y baja.
+ * Muestra KPIs de totales y permite filtrar por cédula, nombre o email.
+ * Accesible para administradores y recepcionistas.
+ */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useTheme } from '../context/ThemeContext';

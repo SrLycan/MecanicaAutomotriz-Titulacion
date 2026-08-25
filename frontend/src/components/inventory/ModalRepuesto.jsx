@@ -1,3 +1,8 @@
+/**
+ * SS SWAP - Modal de Creación y Edición de Repuestos
+ * Gestiona ficha técnica, imágenes comprimidas en cliente, precios de compra/venta y margen de utilidad.
+ * La lógica de imágenes (compresión, resolución de URLs) vive en utils/imagen.js.
+ */
 import React, { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { useTheme } from '../../context/ThemeContext';
