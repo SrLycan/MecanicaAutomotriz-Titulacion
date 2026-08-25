@@ -1,3 +1,8 @@
+/**
+ * SS SWAP - Diálogo de Confirmación Reutilizable (ConfirmDialog)
+ * Proveedor + hook useConfirm que reemplazan window.confirm nativo
+ * por un modal premium consistente en toda la aplicación.
+ */
 import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
 
 const ConfirmContext = createContext(null);

@@ -1,3 +1,8 @@
+/**
+ * SS SWAP - Portal de Autenticación Unificado (Login / Registro)
+ * Maneja el inicio de sesión y registro de clientes, así como el acceso administrativo (staffOnly),
+ * gestionando tokens JWT y sincronización de sesión en el navegador.
+ */
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';

@@ -1,3 +1,6 @@
+/**
+ * SS SWAP - Enrutador de Clientes, Vehículos y Órdenes de Trabajo (/api/ordenes)
+ */
 const express = require('express');
 const router  = express.Router();
 const { verificarToken, soloStaff, verificarRol } = require('../middleware/auth.middleware');

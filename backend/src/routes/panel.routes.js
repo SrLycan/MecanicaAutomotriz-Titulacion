@@ -1,3 +1,6 @@
+/**
+ * SS SWAP - Enrutador del Portal de Clientes (/api/panel)
+ */
 const express = require('express');
 const router  = express.Router();
 const { verificarToken, verificarRol } = require('../middleware/auth.middleware');

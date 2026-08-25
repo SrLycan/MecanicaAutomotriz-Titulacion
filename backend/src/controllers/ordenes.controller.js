@@ -1,7 +1,17 @@
+/**
+ * SS SWAP - Controlador de Gestión de Órdenes de Trabajo, Clientes y Vehículos
+ *
+ * Modela el ciclo operativo del taller automotriz:
+ * - Registro y vinculación relacional de Clientes y Vehículos.
+ * - Ciclo de vida de Órdenes con doble dimensionamiento de estado:
+ *   1. 'estado' (Administrativo): pendiente, en_progreso, completado, cancelado.
+ *   2. 'estado_progreso' (Técnico/Mecánico): en_revision, deteccion_falla,
+ *      en_reparacion, esperando_repuestos, pruebas_finales, listo_entrega.
+ * - Control de acceso basado en roles (el técnico solo edita órdenes asignadas).
+ * - Trazabilidad y auditoría de cambios persistida en MongoDB Atlas
+ *   (ver services/ordenesHistorial.service.js).
+ */
 const pool = require('../config/db');
-// El historial de cambios de las ordenes ahora se persiste en MongoDB Atlas
-// (antes era la tabla Postgres `ordenes_historial`; ver migrations.sql,
-// Sprint 8, y backend/src/services/ordenesHistorial.service.js para el detalle).
 const {
     registrarHistorial, obtenerHistorialPorOrden,
     listarHistorialGeneral: listarHistorialGeneralService,
@@ -24,6 +34,10 @@ const validarDatosCliente = ({ nombre, email, telefono, cedula }) => {
 // CLIENTES
 // ═══════════════════════════════════════════════════════════════
 
+/**
+ * Lista clientes con opción de búsqueda por texto (nombre, cédula, teléfono, email)
+ * e indica si el cliente posee una cuenta de acceso al portal web vinculada.
+ */
 const listarClientes = async (req, res) => {
     const { q } = req.query;
     let query = `SELECT c.*,
@@ -46,6 +60,10 @@ const listarClientes = async (req, res) => {
     }
 };
 
+/**
+ * Obtiene el detalle de un cliente específico junto a sus vehículos registrados
+ * y sus órdenes de trabajo.
+ */
 const obtenerCliente = async (req, res) => {
     const { id } = req.params;
     try {
@@ -85,6 +103,9 @@ const obtenerCliente = async (req, res) => {
     }
 };
 
+/**
+ * Registra un nuevo cliente en el taller validando unicidad de cédula.
+ */
 const crearCliente = async (req, res) => {
     const { nombre, email, telefono, cedula, direccion } = req.body;
     const errVal = validarDatosCliente({ nombre, email, telefono, cedula });
@@ -106,6 +127,9 @@ const crearCliente = async (req, res) => {
     }
 };
 
+/**
+ * Elimina un cliente y sus registros relacionados en cascada.
+ */
 const eliminarCliente = async (req, res) => {
     const { id } = req.params;
     try {
@@ -118,6 +142,9 @@ const eliminarCliente = async (req, res) => {
     }
 };
 
+/**
+ * Actualiza los datos de contacto y filiación de un cliente.
+ */
 const actualizarCliente = async (req, res) => {
     const { id } = req.params;
     const { nombre, email, telefono, cedula, direccion } = req.body;
@@ -146,6 +173,10 @@ const actualizarCliente = async (req, res) => {
 // VEHICULOS
 // ═══════════════════════════════════════════════════════════════
 
+/**
+ * Consulta vehículos registrados, permitiendo filtrar por cliente específico
+ * o búsqueda por placa/marca.
+ */
 const listarVehiculos = async (req, res) => {
     const { cliente_id, q } = req.query;
     let query = `SELECT v.*, c.nombre AS cliente_nombre
@@ -168,6 +199,9 @@ const listarVehiculos = async (req, res) => {
     }
 };
 
+/**
+ * Registra un nuevo vehículo asociado a la ficha de un cliente.
+ */
 const crearVehiculo = async (req, res) => {
     const { cliente_id, placa, marca, modelo, anio, color, vin } = req.body;
     if (!cliente_id || !placa || !marca) {
@@ -187,6 +221,9 @@ const crearVehiculo = async (req, res) => {
     }
 };
 
+/**
+ * Actualiza la información técnica de un vehículo existente.
+ */
 const actualizarVehiculo = async (req, res) => {
     const { id } = req.params;
     const { placa, marca, modelo, anio, color, vin } = req.body;
@@ -205,6 +242,9 @@ const actualizarVehiculo = async (req, res) => {
     }
 };
 
+/**
+ * Elimina un vehículo registrado del sistema.
+ */
 const eliminarVehiculo = async (req, res) => {
     const { id } = req.params;
     try {
@@ -221,6 +261,10 @@ const eliminarVehiculo = async (req, res) => {
 // ORDENES DE TRABAJO
 // ═══════════════════════════════════════════════════════════════
 
+/**
+ * Lista órdenes de trabajo con filtros por estado administrativo, grupo
+ * (activas/anteriores), cliente o búsqueda por texto.
+ */
 const listarOrdenes = async (req, res) => {
     const { estado, grupo, cliente_id, q } = req.query;
     let query = `
@@ -257,6 +301,10 @@ const listarOrdenes = async (req, res) => {
     }
 };
 
+/**
+ * Obtiene el detalle completo de una orden de trabajo
+ * (cliente, vehículo, técnico asignado y recepción).
+ */
 const obtenerOrden = async (req, res) => {
     const { id } = req.params;
     try {
@@ -282,6 +330,10 @@ const obtenerOrden = async (req, res) => {
     }
 };
 
+/**
+ * Crea una orden de trabajo y registra la primera entrada en la bitácora de auditoría.
+ * Solo administradores y recepcionistas pueden asignar técnico en el momento de creación.
+ */
 const crearOrden = async (req, res) => {
     const { cliente_id, vehiculo_id, descripcion, diagnostico, kilometraje, tecnico_id } = req.body;
     const usuario_id = req.usuario.id;
@@ -316,6 +368,14 @@ const crearOrden = async (req, res) => {
     }
 };
 
+/**
+ * Actualiza los datos o el estado de una orden.
+ * Aplica reglas de negocio y control de acceso:
+ * - Técnicos solo pueden modificar órdenes que tengan asignadas.
+ * - Administradores poseen control total.
+ * - Recepción no puede cambiar estados técnicos/mecánicos.
+ * - Registra cambios de estado y notas en el historial de auditoría (MongoDB).
+ */
 const actualizarOrden = async (req, res) => {
     const { id } = req.params;
     let {
@@ -416,9 +476,11 @@ const actualizarOrden = async (req, res) => {
     }
 };
 
-// ─────────────────────────────────────────────────────────────
-// GET /api/ordenes/ordenes/:id/historial
-// ─────────────────────────────────────────────────────────────
+/**
+ * GET /api/ordenes/ordenes/:id/historial
+ * Obtiene la secuencia cronológica completa de cambios de estado,
+ * progreso y notas de una orden.
+ */
 const obtenerHistorialOrden = async (req, res) => {
     const { id } = req.params;
     try {
@@ -433,10 +495,10 @@ const obtenerHistorialOrden = async (req, res) => {
     }
 };
 
-// ─────────────────────────────────────────────────────────────
-// GET /api/ordenes/historial/general  (solo administrador)
-// Bitacora paginada de cambios de TODAS las ordenes (MongoDB Atlas).
-// ─────────────────────────────────────────────────────────────
+/**
+ * GET /api/ordenes/historial/general  (solo administrador)
+ * Bitácora paginada de cambios de TODAS las órdenes (MongoDB Atlas).
+ */
 const listarHistorialGeneral = async (req, res) => {
     const pagina    = parseInt(req.query.pagina, 10) || 1;
     const porPagina = Math.min(parseInt(req.query.porPagina, 10) || 20, 100);
@@ -444,6 +506,9 @@ const listarHistorialGeneral = async (req, res) => {
     return res.json(resultado);
 };
 
+/**
+ * Elimina una orden de trabajo del sistema.
+ */
 const eliminarOrden = async (req, res) => {
     const { id } = req.params;
     try {

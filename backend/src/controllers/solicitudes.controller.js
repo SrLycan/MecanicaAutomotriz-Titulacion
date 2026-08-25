@@ -1,3 +1,11 @@
+/**
+ * SS SWAP - Controlador de Solicitudes de Repuestos (Tienda del Cliente)
+ *
+ * Permite a los clientes registrados reservar repuestos habilitados para la
+ * venta. Las solicitudes actúan como preventa/reserva sin descontar stock
+ * físico de inmediato; la salida de stock se registra formalmente mediante
+ * el módulo de movimientos cuando el personal despacha la pieza.
+ */
 const pool = require('../config/db');
 
 // ─────────────────────────────────────────────────────────────
@@ -6,6 +14,7 @@ const pool = require('../config/db');
 // Reserva simbolica de un repuesto en venta. No descuenta stock: el stock se
 // ajusta cuando el taller la atiende (usa el flujo existente de movimientos).
 // ─────────────────────────────────────────────────────────────
+/** Registra una solicitud de producto para el cliente autenticado validando disponibilidad. */
 const crearSolicitud = async (req, res) => {
     const { email, id: usuario_id } = req.usuario;
     const { repuesto_id, cantidad, notas } = req.body;

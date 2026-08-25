@@ -1,3 +1,8 @@
+/**
+ * SS SWAP - Enrutador de Autenticación (/api/auth)
+ * Define los endpoints públicos de login/registro y el endpoint protegido
+ * 'me'. El login pasa antes por el anti-fuerza-bruta (verificarBloqueo).
+ */
 const express = require('express');
 const router  = express.Router();
 const { login, register, me } = require('../controllers/auth.controller');

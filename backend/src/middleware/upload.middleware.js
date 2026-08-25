@@ -1,3 +1,8 @@
+/**
+ * SS SWAP - Middleware de Carga de Archivos (Multer)
+ * Configura la subida de imágenes de perfil al servidor: valida extensión,
+ * limita el tamaño y genera nombres únicos por usuario y fecha.
+ */
 const multer = require('multer');
 const path   = require('path');
 const fs     = require('fs');

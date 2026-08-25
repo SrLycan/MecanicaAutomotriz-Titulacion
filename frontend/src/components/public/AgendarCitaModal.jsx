@@ -1,3 +1,9 @@
+/**
+ * SS SWAP - Modal de Agendamiento de Citas en Pasos
+ * Flujo paso a paso: 1. Sucursal -> 2. Calendario de Fecha -> 3. Selección de Turno -> 4. Vehículo y Notas.
+ * Incluye consulta de disponibilidad en tiempo real con polling para evitar colisiones.
+ * Los estilos (acm-*) viven en AgendarCitaModal.css.
+ */
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -5,6 +11,7 @@ import api from '../../services/api';
 import './AgendarCitaModal.css';
 
 const GOLD = '#3b7bab';
+// Utilidades de calendario local (sin librerías externas)
 const DIAS_SEMANA = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 const PASOS = [

@@ -1,3 +1,9 @@
+/**
+ * SS SWAP - Panel de Control Administrativo (Dashboard)
+ * Vista principal del staff autenticado. Muestra KPIs de inventario y taller,
+ * alertas de stock bajo, movimientos recientes y accesos rápidos a módulos clave.
+ * Las métricas se adaptan al rol del usuario: administrador, técnico o recepcionista.
+ */
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';

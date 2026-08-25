@@ -1,3 +1,11 @@
+/**
+ * SS SWAP - Controlador de Autenticación y Cuentas de Usuario
+ *
+ * Gestiona el inicio de sesión con JWT separando explícitamente el acceso del
+ * panel de clientes y del panel del personal (staff), la validación de estados
+ * de cuenta (activo, suspendido, bloqueado) y el registro de clientes con
+ * vinculación automática a la tabla 'clientes'.
+ */
 const bcrypt = require('bcryptjs');
 const jwt    = require('jsonwebtoken');
 const pool   = require('../config/db');
@@ -16,6 +24,11 @@ const PASSWORD_MIN_LEN = 6;
 const PASSWORD_MAX_LEN = 72;
 
 /* ── LOGIN ─────────────────────────────────────────────────── */
+/**
+ * Autentica usuarios del sistema (staff administrativo/técnico y clientes).
+ * Valida credenciales con hash bcrypt, verifica que la cuenta no esté
+ * suspendida o bloqueada y que el panel solicitado corresponda al rol.
+ */
 const login = async (req, res) => {
     const { email, password, panel } = req.body;
 
@@ -82,6 +95,12 @@ const login = async (req, res) => {
 };
 
 /* ── REGISTRO CLIENTE ───────────────────────────────────────── */
+/**
+ * Registra nuevos clientes desde el portal público.
+ * Crea el usuario con rol 'cliente' y asegura, dentro de la MISMA transacción,
+ * la creación/vínculo del registro correspondiente en la tabla 'clientes'
+ * para habilitar historial, citas y tienda.
+ */
 const register = async (req, res) => {
     const { nombre, email, password, telefono, cedula } = req.body;
 
@@ -155,6 +174,9 @@ const register = async (req, res) => {
 };
 
 /* ── ME ─────────────────────────────────────────────────────── */
+/**
+ * Retorna la información del usuario autenticado a partir del payload del token JWT.
+ */
 const me = (req, res) => res.json({ usuario: req.usuario });
 
 module.exports = { login, register, me };

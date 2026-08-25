@@ -1,3 +1,11 @@
+/**
+ * SS SWAP - Controlador de Inventario y Control de Stock
+ *
+ * Gestiona el catálogo de repuestos, categorías y registro de movimientos
+ * (entradas/salidas). Implementa concurrencia segura mediante bloqueo de fila
+ * ('FOR UPDATE') en transacciones de actualización de stock para evitar
+ * condiciones de carrera (race conditions).
+ */
 const pool = require('../config/db');
 
 // ─────────────────────────────────────────────────────────────
@@ -6,7 +14,8 @@ const pool = require('../config/db');
 
 /**
  * GET /api/inventory/repuestos
- * Query params: q (búsqueda), categoria_id, bajo_stock
+ * Consulta repuestos con soporte de paginación, filtros por categoría/texto
+ * y alerta de bajo stock.
  */
 const listarRepuestos = async (req, res) => {
     const { q, categoria_id, bajo_stock, page = 1, limit = 15 } = req.query;
@@ -195,8 +204,9 @@ const actualizarRepuesto = async (req, res) => {
     }
 };
 /**
- * DELETE /api/inventory/repuestos/:id
- * Soft delete — solo administrador
+ * DELETE /api/inventory/repuestos/:id  — solo administrador
+ * Elimina definitivamente un repuesto y limpia sus movimientos asociados en
+ * una única transacción.
  */
 const eliminarRepuesto = async (req, res) => {
     const { id } = req.params;
@@ -379,6 +389,10 @@ const listarPublico = async (req, res) => {
     }
 };
 
+/**
+ * PATCH /api/inventory/repuestos/:id/en-venta  — solo administrador
+ * Alterna la visibilidad de un repuesto en el catálogo público (campo en_venta).
+ */
 const toggleEnVenta = async (req, res) => {
     const { id } = req.params;
     try {

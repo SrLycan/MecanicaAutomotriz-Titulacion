@@ -1,3 +1,8 @@
+/**
+ * SS SWAP - Catálogo Público de Servicios Mecánicos
+ * Lista servicios activos con precios referenciales y duraciones estimadas,
+ * búsqueda instantánea y acceso directo a la reserva de citas en línea.
+ */
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../../components/public/Navbar';

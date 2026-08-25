@@ -1,3 +1,8 @@
+/**
+ * SS SWAP - SWAPBot: Asistente Virtual Flotante del Taller
+ * Widget de chat con árbol de opciones predefinidas (sin costo de IA)
+ * y fallback a Gemini solo para preguntas libres, cuidando la cuota.
+ */
 import { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
