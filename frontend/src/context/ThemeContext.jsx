@@ -1,3 +1,7 @@
+/**
+ * SS SWAP - Contexto Global de Tema Visual (ThemeContext)
+ * Controla el modo oscuro (dark) y claro (light) con persistencia en localStorage.
+ */
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const ThemeContext = createContext(null);

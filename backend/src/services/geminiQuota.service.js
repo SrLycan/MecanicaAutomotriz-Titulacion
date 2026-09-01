@@ -1,4 +1,5 @@
 /**
+ * SS SWAP - Control de Cuota Diaria de la API de Gemini
  * Control de cuota diaria para el consumo de la API gratuita de Gemini.
  *
  * Persiste en MongoDB Atlas (coleccion chatbot_cuota_diaria) para que el

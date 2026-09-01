@@ -1,3 +1,6 @@
+/**
+ * SS SWAP - Enrutador de Sucursales y Sedes (/api/sucursales)
+ */
 const express = require('express');
 const router  = express.Router();
 const {

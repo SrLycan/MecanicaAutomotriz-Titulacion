@@ -1,7 +1,17 @@
+/**
+ * SS SWAP - Controlador de Gestión de Órdenes de Trabajo, Clientes y Vehículos
+ *
+ * Modela el ciclo operativo del taller automotriz:
+ * - Registro y vinculación relacional de Clientes y Vehículos.
+ * - Ciclo de vida de Órdenes con doble dimensionamiento de estado:
+ *   1. 'estado' (Administrativo): pendiente, en_progreso, completado, cancelado.
+ *   2. 'estado_progreso' (Técnico/Mecánico): en_revision, deteccion_falla,
+ *      en_reparacion, esperando_repuestos, pruebas_finales, listo_entrega.
+ * - Control de acceso basado en roles (el técnico solo edita órdenes asignadas).
+ * - Trazabilidad y auditoría de cambios persistida en MongoDB Atlas
+ *   (ver services/ordenesHistorial.service.js).
+ */
 const pool = require('../config/db');
-// El historial de cambios de las ordenes ahora se persiste en MongoDB Atlas
-// (antes era la tabla Postgres `ordenes_historial`; ver migrations.sql,
-// Sprint 8, y backend/src/services/ordenesHistorial.service.js para el detalle).
 const {
     registrarHistorial, obtenerHistorialPorOrden,
     listarHistorialGeneral: listarHistorialGeneralService,
@@ -24,28 +34,97 @@ const validarDatosCliente = ({ nombre, email, telefono, cedula }) => {
 // CLIENTES
 // ═══════════════════════════════════════════════════════════════
 
+/**
+ * Lista clientes con opción de búsqueda por texto (nombre, cédula, teléfono, email)
+ * e indica si el cliente posee una cuenta de acceso al portal web vinculada.
+ */
 const listarClientes = async (req, res) => {
-    const { q } = req.query;
-    let query = `SELECT c.*,
-                        (u.id IS NOT NULL) AS cuenta_web
-                 FROM clientes c
-                 LEFT JOIN usuarios u ON LOWER(u.email) = LOWER(c.email) AND u.rol = 'cliente'
-                 WHERE 1=1`;
+    const { q, page, limit } = req.query;
+    let where = 'WHERE 1=1';
     const params = [];
     if (q) {
         params.push(`%${q}%`);
-        query += ` AND (c.nombre ILIKE $${params.length} OR c.cedula ILIKE $${params.length} OR c.telefono ILIKE $${params.length} OR c.email ILIKE $${params.length})`;
+        where += ` AND (c.nombre ILIKE $${params.length} OR c.cedula ILIKE $${params.length} OR c.telefono ILIKE $${params.length} OR c.email ILIKE $${params.length})`;
     }
-    query += ' ORDER BY c.nombre ASC';
+
+    const countQuery = `SELECT COUNT(*) AS total FROM clientes c ${where}`;
+    let dataQuery = `
+        SELECT c.*,
+               (u.id IS NOT NULL) AS cuenta_web
+        FROM clientes c
+        LEFT JOIN usuarios u ON LOWER(u.email) = LOWER(c.email) AND u.rol = 'cliente'
+        ${where}
+        ORDER BY c.nombre ASC
+    `;
+
+    const statsQuery = `
+        SELECT
+            COUNT(*)                                                               AS total,
+            COUNT(*) FILTER (WHERE telefono IS NOT NULL AND TRIM(telefono) <> '')  AS con_telefono,
+            COUNT(*) FILTER (WHERE email IS NOT NULL AND TRIM(email) <> '')        AS con_email
+        FROM clientes
+    `;
+
     try {
-        const { rows } = await pool.query(query, params);
-        return res.json({ clientes: rows });
+        if (page !== undefined || limit !== undefined) {
+            const pageNum  = Math.max(1, parseInt(page) || 1);
+            const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 50));
+            const offset   = (pageNum - 1) * limitNum;
+
+            dataQuery += ` LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+
+            const [{ rows: countRows }, { rows }, { rows: statsRows }] = await Promise.all([
+                pool.query(countQuery, params),
+                pool.query(dataQuery, [...params, limitNum, offset]),
+                pool.query(statsQuery),
+            ]);
+
+            const total = parseInt(countRows[0].total, 10);
+            const st = statsRows[0] || {};
+            return res.json({
+                clientes: rows,
+                total,
+                page: pageNum,
+                limit: limitNum,
+                totalPages: Math.ceil(total / limitNum) || 1,
+                stats: {
+                    total: parseInt(st.total, 10) || 0,
+                    conTelefono: parseInt(st.con_telefono, 10) || 0,
+                    conEmail: parseInt(st.con_email, 10) || 0,
+                },
+            });
+        }
+
+        const [{ rows: countRows }, { rows }, { rows: statsRows }] = await Promise.all([
+            pool.query(countQuery, params),
+            pool.query(dataQuery, params),
+            pool.query(statsQuery),
+        ]);
+
+        const total = parseInt(countRows[0]?.total, 10) || rows.length;
+        const st = statsRows[0] || {};
+        return res.json({
+            clientes: rows,
+            total,
+            page: 1,
+            limit: total,
+            totalPages: 1,
+            stats: {
+                total: parseInt(st.total, 10) || 0,
+                conTelefono: parseInt(st.con_telefono, 10) || 0,
+                conEmail: parseInt(st.con_email, 10) || 0,
+            },
+        });
     } catch (err) {
         console.error('Error listarClientes:', err);
         return res.status(500).json({ error: 'Error al obtener clientes.' });
     }
 };
 
+/**
+ * Obtiene el detalle de un cliente específico junto a sus vehículos registrados
+ * y sus órdenes de trabajo.
+ */
 const obtenerCliente = async (req, res) => {
     const { id } = req.params;
     try {
@@ -85,6 +164,9 @@ const obtenerCliente = async (req, res) => {
     }
 };
 
+/**
+ * Registra un nuevo cliente en el taller validando unicidad de cédula.
+ */
 const crearCliente = async (req, res) => {
     const { nombre, email, telefono, cedula, direccion } = req.body;
     const errVal = validarDatosCliente({ nombre, email, telefono, cedula });
@@ -106,6 +188,9 @@ const crearCliente = async (req, res) => {
     }
 };
 
+/**
+ * Elimina un cliente y sus registros relacionados en cascada.
+ */
 const eliminarCliente = async (req, res) => {
     const { id } = req.params;
     try {
@@ -118,6 +203,9 @@ const eliminarCliente = async (req, res) => {
     }
 };
 
+/**
+ * Actualiza los datos de contacto y filiación de un cliente.
+ */
 const actualizarCliente = async (req, res) => {
     const { id } = req.params;
     const { nombre, email, telefono, cedula, direccion } = req.body;
@@ -146,28 +234,102 @@ const actualizarCliente = async (req, res) => {
 // VEHICULOS
 // ═══════════════════════════════════════════════════════════════
 
+/**
+ * Consulta vehículos registrados, permitiendo filtrar por cliente específico
+ * o búsqueda por placa/marca.
+ */
 const listarVehiculos = async (req, res) => {
-    const { cliente_id, q } = req.query;
-    let query = `SELECT v.*, c.nombre AS cliente_nombre
-                 FROM vehiculos v
-                 JOIN clientes c ON c.id = v.cliente_id
-                 WHERE 1=1`;
+    const { cliente_id, q, page, limit } = req.query;
+    let where = 'WHERE 1=1';
     const params = [];
-    if (cliente_id) { params.push(cliente_id); query += ` AND v.cliente_id = $${params.length}`; }
+    if (cliente_id) {
+        params.push(cliente_id);
+        where += ` AND v.cliente_id = $${params.length}`;
+    }
     if (q) {
         params.push(`%${q}%`);
-        query += ` AND (v.placa ILIKE $${params.length} OR v.marca ILIKE $${params.length})`;
+        where += ` AND (v.placa ILIKE $${params.length} OR v.marca ILIKE $${params.length} OR v.modelo ILIKE $${params.length} OR c.nombre ILIKE $${params.length})`;
     }
-    query += ' ORDER BY v.created_at DESC';
+
+    const countQuery = `
+        SELECT COUNT(*) AS total
+        FROM vehiculos v
+        JOIN clientes c ON c.id = v.cliente_id
+        ${where}
+    `;
+
+    let dataQuery = `
+        SELECT v.*, c.nombre AS cliente_nombre
+        FROM vehiculos v
+        JOIN clientes c ON c.id = v.cliente_id
+        ${where}
+        ORDER BY v.created_at DESC
+    `;
+
+    const statsQuery = `
+        SELECT
+            COUNT(*)                    AS total_vehiculos,
+            COUNT(DISTINCT cliente_id)  AS total_clientes
+        FROM vehiculos
+    `;
+
     try {
-        const { rows } = await pool.query(query, params);
-        return res.json({ vehiculos: rows });
+        if (page !== undefined || limit !== undefined) {
+            const pageNum  = Math.max(1, parseInt(page) || 1);
+            const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 50));
+            const offset   = (pageNum - 1) * limitNum;
+
+            dataQuery += ` LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+
+            const [{ rows: countRows }, { rows }, { rows: statsRows }] = await Promise.all([
+                pool.query(countQuery, params),
+                pool.query(dataQuery, [...params, limitNum, offset]),
+                pool.query(statsQuery),
+            ]);
+
+            const total = parseInt(countRows[0].total, 10);
+            const st = statsRows[0] || {};
+            return res.json({
+                vehiculos: rows,
+                total,
+                page: pageNum,
+                limit: limitNum,
+                totalPages: Math.ceil(total / limitNum) || 1,
+                stats: {
+                    totalVehiculos: parseInt(st.total_vehiculos, 10) || 0,
+                    totalClientes:  parseInt(st.total_clientes, 10) || 0,
+                },
+            });
+        }
+
+        const [{ rows: countRows }, { rows }, { rows: statsRows }] = await Promise.all([
+            pool.query(countQuery, params),
+            pool.query(dataQuery, params),
+            pool.query(statsQuery),
+        ]);
+
+        const total = parseInt(countRows[0]?.total, 10) || rows.length;
+        const st = statsRows[0] || {};
+        return res.json({
+            vehiculos: rows,
+            total,
+            page: 1,
+            limit: total,
+            totalPages: 1,
+            stats: {
+                totalVehiculos: parseInt(st.total_vehiculos, 10) || 0,
+                totalClientes:  parseInt(st.total_clientes, 10) || 0,
+            },
+        });
     } catch (err) {
         console.error('Error listarVehiculos:', err);
         return res.status(500).json({ error: 'Error al obtener vehiculos.' });
     }
 };
 
+/**
+ * Registra un nuevo vehículo asociado a la ficha de un cliente.
+ */
 const crearVehiculo = async (req, res) => {
     const { cliente_id, placa, marca, modelo, anio, color, vin } = req.body;
     if (!cliente_id || !placa || !marca) {
@@ -187,6 +349,9 @@ const crearVehiculo = async (req, res) => {
     }
 };
 
+/**
+ * Actualiza la información técnica de un vehículo existente.
+ */
 const actualizarVehiculo = async (req, res) => {
     const { id } = req.params;
     const { placa, marca, modelo, anio, color, vin } = req.body;
@@ -205,6 +370,9 @@ const actualizarVehiculo = async (req, res) => {
     }
 };
 
+/**
+ * Elimina un vehículo registrado del sistema.
+ */
 const eliminarVehiculo = async (req, res) => {
     const { id } = req.params;
     try {
@@ -221,9 +389,40 @@ const eliminarVehiculo = async (req, res) => {
 // ORDENES DE TRABAJO
 // ═══════════════════════════════════════════════════════════════
 
+/**
+ * Lista órdenes de trabajo con filtros por estado administrativo, grupo
+ * (activas/anteriores), cliente o búsqueda por texto.
+ */
 const listarOrdenes = async (req, res) => {
-    const { estado, grupo, cliente_id, q } = req.query;
-    let query = `
+    const { estado, grupo, cliente_id, q, page, limit } = req.query;
+    let where = 'WHERE 1=1';
+    const params = [];
+    if (grupo === 'anteriores') {
+        where += ` AND o.estado IN ('completado', 'cancelado')`;
+    } else if (estado) {
+        params.push(estado);
+        where += ` AND o.estado = $${params.length}`;
+    }
+    if (cliente_id) {
+        params.push(cliente_id);
+        where += ` AND o.cliente_id = $${params.length}`;
+    }
+    if (q) {
+        params.push(`%${q}%`);
+        where += ` AND (c.nombre ILIKE $${params.length} OR v.placa ILIKE $${params.length} OR o.descripcion ILIKE $${params.length})`;
+    }
+
+    const countQuery = `
+        SELECT COUNT(*) AS total
+        FROM ordenes_trabajo o
+        JOIN clientes  c ON c.id = o.cliente_id
+        LEFT JOIN vehiculos v ON v.id = o.vehiculo_id
+        JOIN usuarios  u ON u.id = o.usuario_id
+        LEFT JOIN usuarios t ON t.id = o.tecnico_id
+        ${where}
+    `;
+
+    let dataQuery = `
         SELECT o.*,
                c.nombre AS cliente_nombre, c.telefono AS cliente_telefono,
                v.placa, v.marca, v.modelo, v.anio, v.color,
@@ -234,29 +433,56 @@ const listarOrdenes = async (req, res) => {
         LEFT JOIN vehiculos v ON v.id = o.vehiculo_id
         JOIN usuarios  u ON u.id = o.usuario_id
         LEFT JOIN usuarios t ON t.id = o.tecnico_id
-        WHERE 1=1`;
-    const params = [];
-    if (grupo === 'anteriores') {
-        query += ` AND o.estado IN ('completado', 'cancelado')`;
-    } else if (estado) {
-        params.push(estado);
-        query += ` AND o.estado = $${params.length}`;
-    }
-    if (cliente_id) { params.push(cliente_id); query += ` AND o.cliente_id = $${params.length}`; }
-    if (q) {
-        params.push(`%${q}%`);
-        query += ` AND (c.nombre ILIKE $${params.length} OR v.placa ILIKE $${params.length} OR o.descripcion ILIKE $${params.length})`;
-    }
-    query += ' ORDER BY o.created_at DESC';
+        ${where}
+        ORDER BY o.created_at DESC
+    `;
+
     try {
-        const { rows } = await pool.query(query, params);
-        return res.json({ ordenes: rows });
+        if (page !== undefined || limit !== undefined) {
+            const pageNum  = Math.max(1, parseInt(page) || 1);
+            const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 50));
+            const offset   = (pageNum - 1) * limitNum;
+
+            dataQuery += ` LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+
+            const [{ rows: countRows }, { rows }] = await Promise.all([
+                pool.query(countQuery, params),
+                pool.query(dataQuery, [...params, limitNum, offset]),
+            ]);
+
+            const total = parseInt(countRows[0].total, 10);
+            return res.json({
+                ordenes: rows,
+                total,
+                page: pageNum,
+                limit: limitNum,
+                totalPages: Math.ceil(total / limitNum) || 1,
+            });
+        }
+
+        const [{ rows: countRows }, { rows }] = await Promise.all([
+            pool.query(countQuery, params),
+            pool.query(dataQuery, params),
+        ]);
+
+        const total = parseInt(countRows[0]?.total, 10) || rows.length;
+        return res.json({
+            ordenes: rows,
+            total,
+            page: 1,
+            limit: total,
+            totalPages: 1,
+        });
     } catch (err) {
         console.error('Error listarOrdenes:', err);
         return res.status(500).json({ error: 'Error al obtener ordenes.' });
     }
 };
 
+/**
+ * Obtiene el detalle completo de una orden de trabajo
+ * (cliente, vehículo, técnico asignado y recepción).
+ */
 const obtenerOrden = async (req, res) => {
     const { id } = req.params;
     try {
@@ -282,6 +508,10 @@ const obtenerOrden = async (req, res) => {
     }
 };
 
+/**
+ * Crea una orden de trabajo y registra la primera entrada en la bitácora de auditoría.
+ * Solo administradores y recepcionistas pueden asignar técnico en el momento de creación.
+ */
 const crearOrden = async (req, res) => {
     const { cliente_id, vehiculo_id, descripcion, diagnostico, kilometraje, tecnico_id } = req.body;
     const usuario_id = req.usuario.id;
@@ -316,6 +546,14 @@ const crearOrden = async (req, res) => {
     }
 };
 
+/**
+ * Actualiza los datos o el estado de una orden.
+ * Aplica reglas de negocio y control de acceso:
+ * - Técnicos solo pueden modificar órdenes que tengan asignadas.
+ * - Administradores poseen control total.
+ * - Recepción no puede cambiar estados técnicos/mecánicos.
+ * - Registra cambios de estado y notas en el historial de auditoría (MongoDB).
+ */
 const actualizarOrden = async (req, res) => {
     const { id } = req.params;
     let {
@@ -416,9 +654,11 @@ const actualizarOrden = async (req, res) => {
     }
 };
 
-// ─────────────────────────────────────────────────────────────
-// GET /api/ordenes/ordenes/:id/historial
-// ─────────────────────────────────────────────────────────────
+/**
+ * GET /api/ordenes/ordenes/:id/historial
+ * Obtiene la secuencia cronológica completa de cambios de estado,
+ * progreso y notas de una orden.
+ */
 const obtenerHistorialOrden = async (req, res) => {
     const { id } = req.params;
     try {
@@ -433,10 +673,10 @@ const obtenerHistorialOrden = async (req, res) => {
     }
 };
 
-// ─────────────────────────────────────────────────────────────
-// GET /api/ordenes/historial/general  (solo administrador)
-// Bitacora paginada de cambios de TODAS las ordenes (MongoDB Atlas).
-// ─────────────────────────────────────────────────────────────
+/**
+ * GET /api/ordenes/historial/general  (solo administrador)
+ * Bitácora paginada de cambios de TODAS las órdenes (MongoDB Atlas).
+ */
 const listarHistorialGeneral = async (req, res) => {
     const pagina    = parseInt(req.query.pagina, 10) || 1;
     const porPagina = Math.min(parseInt(req.query.porPagina, 10) || 20, 100);
@@ -444,6 +684,9 @@ const listarHistorialGeneral = async (req, res) => {
     return res.json(resultado);
 };
 
+/**
+ * Elimina una orden de trabajo del sistema.
+ */
 const eliminarOrden = async (req, res) => {
     const { id } = req.params;
     try {

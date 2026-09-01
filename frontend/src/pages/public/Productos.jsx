@@ -1,3 +1,8 @@
+/**
+ * SS SWAP - Catálogo Público de Repuestos y Productos
+ * Explora productos disponibles para venta con filtros por categoría, rango de precio,
+ * indicador de stock y sistema de reserva/solicitud de compra para clientes.
+ */
 import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';

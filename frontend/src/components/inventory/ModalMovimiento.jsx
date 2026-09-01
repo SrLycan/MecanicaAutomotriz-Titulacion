@@ -1,3 +1,7 @@
+/**
+ * SS SWAP - Modal de Registro de Movimientos de Inventario (Entrada / Salida)
+ * Permite asentar entradas por compras o salidas por servicios con cálculo visual en tiempo real del nuevo stock.
+ */
 import React, { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import api from '../../services/api';
@@ -38,6 +42,8 @@ export default function ModalMovimiento({ repuesto, onGuardado, onCerrar }) {
         color: SKY_DEEP, WebkitTextFillColor: SKY_DEEP, background: 'none',
     };
 
+    // Cálculo en vivo del stock resultante: se muestra antes de guardar para
+    // evitar salidas que dejarian el stock en negativo.
     const esEntrada   = form.tipo === 'entrada';
     const accentColor = esEntrada ? '#10b981' : '#ef4444';
     const qty         = parseInt(form.cantidad) || 0;

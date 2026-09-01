@@ -1,3 +1,9 @@
+/**
+ * SS SWAP - Componente de Estructura Principal del Panel Administrativo (Layout)
+ * Provee la barra lateral colapsable, menú de navegación según rol del usuario,
+ * encabezado con selector de tema, datos de sesión y área principal con salida de rutas (Outlet).
+ * Los estilos de animaciones/clases auxiliares viven en Layout.css.
+ */
 import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -7,8 +13,11 @@ import toast from 'react-hot-toast';
 import './Layout.css';
 
 function IconRegMov() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/><polyline points="5 12 12 5 19 12"/></svg>; }
+// Icono exclusivo de la Bitácora (solo administradores)
 function IconBitacora() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>; }
 
+// Menú lateral: cada entrada declara los roles que pueden verla;
+// se filtra dinamicamente con tieneRol() del AuthContext.
 const NAV_ITEMS = [
     { to: '/dashboard',             label: 'Dashboard',   icon: IconDash,   roles: ['administrador','tecnico','recepcionista'] },
     { to: '/dashboard/inventario',  label: 'Inventario',  icon: IconInv,    roles: ['administrador','tecnico','recepcionista'] },

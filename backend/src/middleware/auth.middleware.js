@@ -1,3 +1,9 @@
+/**
+ * SS SWAP - Middlewares de Autenticación y Autorización
+ * verificaToken valida el JWT del header Authorization y adjunta
+ * req.usuario; verificarRol restringe el acceso por rol y soloStaff
+ * agrupa a todo el personal interno (excluye clientes).
+ */
 const jwt = require('jsonwebtoken');
 
 /**

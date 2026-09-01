@@ -1,3 +1,11 @@
+/**
+ * SS SWAP - Controlador de Autenticación y Cuentas de Usuario
+ *
+ * Gestiona el inicio de sesión con JWT separando explícitamente el acceso del
+ * panel de clientes y del panel del personal (staff), la validación de estados
+ * de cuenta (activo, suspendido, bloqueado) y el registro de clientes con
+ * vinculación automática a la tabla 'clientes'.
+ */
 const bcrypt = require('bcryptjs');
 const jwt    = require('jsonwebtoken');
 const pool   = require('../config/db');
@@ -16,6 +24,11 @@ const PASSWORD_MIN_LEN = 6;
 const PASSWORD_MAX_LEN = 72;
 
 /* ── LOGIN ─────────────────────────────────────────────────── */
+/**
+ * Autentica usuarios del sistema (staff administrativo/técnico y clientes).
+ * Valida credenciales con hash bcrypt, verifica que la cuenta no esté
+ * suspendida o bloqueada y que el panel solicitado corresponda al rol.
+ */
 const login = async (req, res) => {
     const { email, password, panel } = req.body;
 
@@ -82,6 +95,12 @@ const login = async (req, res) => {
 };
 
 /* ── REGISTRO CLIENTE ───────────────────────────────────────── */
+/**
+ * Registra nuevos clientes desde el portal público.
+ * Crea el usuario con rol 'cliente' y asegura, dentro de la MISMA transacción,
+ * la creación/vínculo del registro correspondiente en la tabla 'clientes'
+ * para habilitar historial, citas y tienda.
+ */
 const register = async (req, res) => {
     const { nombre, email, password, telefono, cedula } = req.body;
 
@@ -104,6 +123,7 @@ const register = async (req, res) => {
         return res.status(400).json({ error: 'La cedula no es valida.' });
 
     const emailNorm = email.toLowerCase().trim();
+    const cedulaLimpia = cedula?.trim() || null;
     const client = await pool.connect();
 
     try {
@@ -117,12 +137,26 @@ const register = async (req, res) => {
             return res.status(409).json({ error: 'Ya existe una cuenta con ese email.' });
         }
 
+        // clientes.cedula tiene restriccion UNIQUE: se valida antes de escribir
+        // (mismo criterio que actualizarMiPerfil en users.controller.js) para no
+        // depender de que el error de Postgres sea el unico control — sin esto,
+        // una cedula repetida rompia el registro con un 500 generico.
+        if (cedulaLimpia) {
+            const { rows: cedulaExiste } = await client.query(
+                'SELECT id FROM clientes WHERE cedula = $1', [cedulaLimpia]
+            );
+            if (cedulaExiste.length > 0) {
+                await client.query('ROLLBACK');
+                return res.status(409).json({ error: 'Ya existe una cuenta registrada con esa cedula.' });
+            }
+        }
+
         const hash = await bcrypt.hash(password, 10);
         const { rows } = await client.query(
             `INSERT INTO usuarios (nombre, email, password, rol, telefono, cedula)
              VALUES ($1, $2, $3, 'cliente', $4, $5)
              RETURNING id, nombre, email, rol`,
-            [nombre.trim(), emailNorm, hash, telefono || null, cedula || null]
+            [nombre.trim(), emailNorm, hash, telefono || null, cedulaLimpia]
         );
 
         // Vincula (o crea) el registro de "clientes" en la MISMA transaccion que el
@@ -135,7 +169,7 @@ const register = async (req, res) => {
             await client.query(
                 `INSERT INTO clientes (nombre, email, telefono, cedula)
                  VALUES ($1, $2, $3, $4)`,
-                [nombre.trim(), emailNorm, telefono || null, cedula || null]
+                [nombre.trim(), emailNorm, telefono || null, cedulaLimpia]
             );
         }
 
@@ -147,6 +181,12 @@ const register = async (req, res) => {
         return res.status(201).json({ token, usuario: payload });
     } catch (err) {
         await client.query('ROLLBACK');
+        // Red de seguridad ante una carrera (dos registros con la misma cedula
+        // casi al mismo tiempo): el chequeo de arriba ya cubre el caso normal,
+        // esto solo evita que ese caso extremo siga mostrando un 500 generico.
+        if (err.code === '23505') {
+            return res.status(409).json({ error: 'Ese correo o cedula ya esta en uso por otra cuenta.' });
+        }
         console.error('Error en register:', err);
         return res.status(500).json({ error: 'Error interno del servidor.' });
     } finally {
@@ -155,6 +195,9 @@ const register = async (req, res) => {
 };
 
 /* ── ME ─────────────────────────────────────────────────────── */
+/**
+ * Retorna la información del usuario autenticado a partir del payload del token JWT.
+ */
 const me = (req, res) => res.json({ usuario: req.usuario });
 
 module.exports = { login, register, me };

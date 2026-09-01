@@ -1,3 +1,11 @@
+/**
+ * SS SWAP - Controlador de Inventario y Control de Stock
+ *
+ * Gestiona el catálogo de repuestos, categorías y registro de movimientos
+ * (entradas/salidas). Implementa concurrencia segura mediante bloqueo de fila
+ * ('FOR UPDATE') en transacciones de actualización de stock para evitar
+ * condiciones de carrera (race conditions).
+ */
 const pool = require('../config/db');
 
 // ─────────────────────────────────────────────────────────────
@@ -6,7 +14,8 @@ const pool = require('../config/db');
 
 /**
  * GET /api/inventory/repuestos
- * Query params: q (búsqueda), categoria_id, bajo_stock
+ * Consulta repuestos con soporte de paginación, filtros por categoría/texto
+ * y alerta de bajo stock.
  */
 const listarRepuestos = async (req, res) => {
     const { q, categoria_id, bajo_stock, page = 1, limit = 15 } = req.query;
@@ -39,19 +48,41 @@ const listarRepuestos = async (req, res) => {
         ORDER BY r.nombre ASC
         LIMIT $${params.length + 1} OFFSET $${params.length + 2}
     `;
+    // Estadisticas del inventario COMPLETO (sin paginar ni filtrar): antes el
+    // frontend las calculaba con Array.reduce sobre "repuestos", que solo traia
+    // la pagina actual (15 registros) — las tarjetas de arriba mostraban el
+    // total de esa pagina, no del inventario real. Con esta consulta aparte,
+    // agregada en la base de datos, siempre reflejan TODO el inventario activo.
+    const statsQuery = `
+        SELECT
+            COUNT(*)                                                    AS total,
+            COUNT(*) FILTER (WHERE stock_actual <= stock_minimo)        AS bajo,
+            COALESCE(SUM(stock_actual * precio_venta), 0)               AS valor,
+            COALESCE(SUM(stock_actual), 0)                              AS unidades
+        FROM repuestos
+        WHERE activo = TRUE
+    `;
 
     try {
-        const [{ rows: countRows }, { rows }] = await Promise.all([
+        const [{ rows: countRows }, { rows }, { rows: statsRows }] = await Promise.all([
             pool.query(countQuery, params),
             pool.query(dataQuery, [...params, limitNum, offset]),
+            pool.query(statsQuery),
         ]);
         const total = parseInt(countRows[0].total, 10);
+        const st = statsRows[0];
         return res.json({
             repuestos: rows,
             total,
             page: pageNum,
             limit: limitNum,
             totalPages: Math.ceil(total / limitNum),
+            stats: {
+                total:    parseInt(st.total, 10),
+                bajo:     parseInt(st.bajo, 10),
+                valor:    parseFloat(st.valor),
+                unidades: parseInt(st.unidades, 10),
+            },
         });
     } catch (err) {
         console.error('Error listarRepuestos:', err);
@@ -195,8 +226,9 @@ const actualizarRepuesto = async (req, res) => {
     }
 };
 /**
- * DELETE /api/inventory/repuestos/:id
- * Soft delete — solo administrador
+ * DELETE /api/inventory/repuestos/:id  — solo administrador
+ * Elimina definitivamente un repuesto y limpia sus movimientos asociados en
+ * una única transacción.
  */
 const eliminarRepuesto = async (req, res) => {
     const { id } = req.params;
@@ -379,6 +411,10 @@ const listarPublico = async (req, res) => {
     }
 };
 
+/**
+ * PATCH /api/inventory/repuestos/:id/en-venta  — solo administrador
+ * Alterna la visibilidad de un repuesto en el catálogo público (campo en_venta).
+ */
 const toggleEnVenta = async (req, res) => {
     const { id } = req.params;
     try {

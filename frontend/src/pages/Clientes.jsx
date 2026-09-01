@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+/**
+ * SS SWAP - Gestión de Clientes del Taller
+ * CRUD completo de clientes: búsqueda en tiempo real, creación, edición y baja.
+ * Muestra KPIs de totales y permite filtrar por cédula, nombre o email.
+ * Accesible para administradores y recepcionistas.
+ */
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
@@ -99,10 +105,16 @@ export default function Clientes() {
     const [clientes, setClientes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [busqueda, setBusqueda] = useState('');
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [statsGlobal, setStatsGlobal] = useState({ total: 0, conEmail: 0, conTelefono: 0 });
     const [modal, setModal] = useState({ open: false, data: null });
+    const debounceRef = useRef(null);
 
     const SKY = '#c9a227';
     const SKY_DEEP = '#a87a14';
+    const SKY_PALE = isDark ? 'rgba(201,162,39,0.10)' : 'rgba(201,162,39,0.05)';
+    const SKY_BDR  = isDark ? 'rgba(201,162,39,0.25)' : 'rgba(201,162,39,0.18)';
     const txt = isDark ? '#f1f5f9' : '#0f172a';
     const txtSf = isDark ? '#cbd5e1' : '#334155';
     const mut = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
@@ -111,13 +123,20 @@ export default function Clientes() {
     const cardSh = isDark ? '0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 40px -16px rgba(0,0,0,0.55)' : '0 4px 16px -4px rgba(15,23,42,0.08)';
     const inputBg = isDark ? '#0b1220' : '#fafcff';
 
-    const cargarClientes = useCallback(async (q = '') => {
+    const cargarClientes = useCallback(async (q = '', p = 1) => {
         setLoading(true);
         try {
             const params = new URLSearchParams();
             if (q) params.set('q', q);
+            params.set('page', p);
+            params.set('limit', '50');
             const { data } = await api.get(`/ordenes/clientes?${params}`);
             setClientes(data.clientes || []);
+            setPage(data.page || p);
+            setTotalPages(data.totalPages || 1);
+            if (data.stats) {
+                setStatsGlobal(data.stats);
+            }
         } catch (err) {
             toast.error(err.response?.data?.error || 'Error al cargar clientes.');
         } finally {
@@ -125,12 +144,14 @@ export default function Clientes() {
         }
     }, []);
 
-    useEffect(() => { cargarClientes(); }, [cargarClientes]);
+    useEffect(() => { cargarClientes('', 1); }, [cargarClientes]);
 
     const handleBusqueda = (e) => {
         const value = e.target.value;
         setBusqueda(value);
-        setTimeout(() => cargarClientes(value), 300);
+        setPage(1);
+        clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => cargarClientes(value, 1), 300);
     };
 
     const guardarCliente = async (form) => {
@@ -143,7 +164,7 @@ export default function Clientes() {
                 toast.success('Cliente creado.');
             }
             setModal({ open: false, data: null });
-            cargarClientes(busqueda);
+            cargarClientes(busqueda, page);
         } catch (err) {
             toast.error(err.response?.data?.error || 'Error al guardar cliente.');
         }
@@ -154,17 +175,11 @@ export default function Clientes() {
         try {
             await api.delete(`/ordenes/clientes/${cliente.id}`);
             toast.success('Cliente eliminado.');
-            cargarClientes(busqueda);
+            cargarClientes(busqueda, page);
         } catch (err) {
             toast.error(err.response?.data?.error || 'Error al eliminar cliente.');
         }
     };
-
-    const stats = useMemo(() => ({
-        total: clientes.length,
-        conEmail: clientes.filter((c) => c.email).length,
-        conTelefono: clientes.filter((c) => c.telefono).length,
-    }), [clientes]);
 
     return (
         <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1400 }}>
@@ -186,9 +201,9 @@ export default function Clientes() {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 14, marginBottom: 20 }}>
-                <Kpi label="Total" value={stats.total} color={SKY} card={card} bdr={bdr} mut={mut} txt={txt} sh={cardSh} />
-                <Kpi label="Con correo" value={stats.conEmail} color="#10b981" card={card} bdr={bdr} mut={mut} txt={txt} sh={cardSh} />
-                <Kpi label="Con teléfono" value={stats.conTelefono} color="#0ea5e9" card={card} bdr={bdr} mut={mut} txt={txt} sh={cardSh} />
+                <Kpi label="Total" value={statsGlobal.total} color={SKY} card={card} bdr={bdr} mut={mut} txt={txt} sh={cardSh} />
+                <Kpi label="Con correo" value={statsGlobal.conEmail} color="#10b981" card={card} bdr={bdr} mut={mut} txt={txt} sh={cardSh} />
+                <Kpi label="Con teléfono" value={statsGlobal.conTelefono} color="#0ea5e9" card={card} bdr={bdr} mut={mut} txt={txt} sh={cardSh} />
             </div>
 
             <div style={{ padding: 16, marginBottom: 16, background: card, border: `1px solid ${bdr}`, borderRadius: 14, boxShadow: cardSh }}>
@@ -231,10 +246,108 @@ export default function Clientes() {
                             </div>
                         </div>
                     ))}
+
+                    {/* Paginación */}
+                    {totalPages > 1 && (
+                        <div style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            gap: 6, padding: '16px 18px',
+                            background: card, border: `1px solid ${bdr}`, borderRadius: 14,
+                            marginTop: 6,
+                        }}>
+                            <PageBtn
+                                disabled={page <= 1}
+                                onClick={() => cargarClientes(busqueda, page - 1)}
+                                bdr={bdr} txtSoft={txtSf} mut={mut}
+                                isDark={isDark} SKY={SKY} SKY_BDR={SKY_BDR} SKY_PALE={SKY_PALE}
+                            >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+                            </PageBtn>
+
+                            {generarPaginas(page, totalPages).map((p, i) =>
+                                p === '...' ? (
+                                    <span key={`e${i}`} style={{ fontFamily: "'Outfit'", fontSize: '.78rem', color: mut, padding: '0 4px' }}>...</span>
+                                ) : (
+                                    <PageNumBtn
+                                        key={p}
+                                        active={p === page}
+                                        onClick={() => cargarClientes(busqueda, p)}
+                                        isDark={isDark} SKY={SKY} SKY_DEEP={SKY_DEEP} SKY_PALE={SKY_PALE} txt={txt} mut={mut} bdr={bdr}
+                                    >
+                                        {p}
+                                    </PageNumBtn>
+                                )
+                            )}
+
+                            <PageBtn
+                                disabled={page >= totalPages}
+                                onClick={() => cargarClientes(busqueda, page + 1)}
+                                bdr={bdr} txtSoft={txtSf} mut={mut}
+                                isDark={isDark} SKY={SKY} SKY_BDR={SKY_BDR} SKY_PALE={SKY_PALE}
+                            >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                            </PageBtn>
+                        </div>
+                    )}
                 </div>
             )}
 
             {modal.open && <ModalCliente open={modal.open} data={modal.data} onClose={() => setModal({ open: false, data: null })} onGuardar={guardarCliente} isDark={isDark} />}
         </div>
+    );
+}
+
+function generarPaginas(current, total) {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const pages = [];
+    if (current <= 3) {
+        for (let i = 1; i <= Math.min(5, total); i++) pages.push(i);
+        if (total > 5) { pages.push('...'); pages.push(total); }
+    } else if (current >= total - 2) {
+        pages.push(1); pages.push('...');
+        for (let i = Math.max(total - 4, 2); i <= total; i++) pages.push(i);
+    } else {
+        pages.push(1); pages.push('...');
+        pages.push(current - 1); pages.push(current); pages.push(current + 1);
+        pages.push('...'); pages.push(total);
+    }
+    return pages;
+}
+
+function PageBtn({ disabled, onClick, bdr, txtSoft, mut, isDark, SKY, SKY_BDR, SKY_PALE, children }) {
+    return (
+        <button disabled={disabled} onClick={onClick}
+            style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                width: 34, height: 34, borderRadius: 9,
+                background: 'transparent', border: `1px solid ${bdr}`,
+                color: disabled ? mut : txtSoft, cursor: disabled ? 'not-allowed' : 'pointer',
+                opacity: disabled ? 0.35 : 1,
+                transition: 'all .18s',
+            }}
+            onMouseEnter={e => { if (!disabled) { e.currentTarget.style.borderColor = SKY_BDR; e.currentTarget.style.color = SKY; e.currentTarget.style.background = SKY_PALE; } }}
+            onMouseLeave={e => { if (!disabled) { e.currentTarget.style.borderColor = bdr; e.currentTarget.style.color = txtSoft; e.currentTarget.style.background = 'transparent'; } }}>
+            {children}
+        </button>
+    );
+}
+
+function PageNumBtn({ active, onClick, isDark, SKY, SKY_DEEP, SKY_PALE, txt, mut, bdr, children }) {
+    return (
+        <button onClick={onClick}
+            style={{
+                minWidth: 34, height: 34, borderRadius: 9,
+                background: active ? `linear-gradient(135deg, ${SKY_DEEP}, ${SKY})` : 'transparent',
+                border: active ? 'none' : `1px solid ${bdr}`,
+                color: active ? '#fff' : txt,
+                fontFamily: "'Outfit'", fontWeight: active ? 700 : 500, fontSize: '.82rem',
+                cursor: 'pointer', padding: '0 8px',
+                boxShadow: active ? `0 4px 12px -4px ${SKY}` : 'none',
+                transition: 'all .18s',
+            }}
+            onMouseEnter={e => { if (!active) { e.currentTarget.style.borderColor = SKY + '55'; e.currentTarget.style.background = SKY_PALE; } }}
+            onMouseLeave={e => { if (!active) { e.currentTarget.style.borderColor = bdr; e.currentTarget.style.background = 'transparent'; } }}>
+            {children}
+        </button>
     );
 }

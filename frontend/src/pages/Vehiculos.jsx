@@ -1,3 +1,9 @@
+/**
+ * SS SWAP - Gestión de Vehículos del Taller
+ * Registro y consulta de vehículos vinculados a clientes. Permite buscar por placa,
+ * marca o cliente; crear y editar datos del vehículo (placa, VIN, año, color)
+ * y consultar el historial de órdenes asociadas a cada unidad.
+ */
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -24,6 +30,9 @@ export default function Vehiculos() {
     const [vehiculos, setVehiculos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [busqueda, setBusqueda] = useState('');
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [statsGlobal, setStatsGlobal] = useState({ totalVehiculos: 0, totalClientes: 0 });
     const [modal, setModal] = useState({ open: false, data: null });
     const [modalOrdenes, setModalOrdenes] = useState(null);
     const [ordenesVehiculo, setOrdenesVehiculo] = useState([]);
@@ -42,24 +51,32 @@ export default function Vehiculos() {
         : '0 4px 16px -4px rgba(15,23,42,0.08), 0 2px 4px -2px rgba(15,23,42,0.04)';
     const inputBg = isDark ? '#0b1220' : '#fafcff';
 
-    const cargar = async (q = busqueda) => {
+    const cargar = async (q = busqueda, p = 1) => {
         setLoading(true);
         try {
             const params = new URLSearchParams();
             if (q) params.set('q', q);
+            params.set('page', p);
+            params.set('limit', '50');
             const { data } = await api.get(`/ordenes/vehiculos?${params}`);
-            setVehiculos(data.vehiculos);
+            setVehiculos(data.vehiculos || []);
+            setPage(data.page || p);
+            setTotalPages(data.totalPages || 1);
+            if (data.stats) {
+                setStatsGlobal(data.stats);
+            }
         } catch { toast.error('Error al cargar vehiculos.'); }
         finally { setLoading(false); }
     };
 
-    useEffect(() => { cargar(''); }, []);
+    useEffect(() => { cargar('', 1); }, []);
 
     const handleBusqueda = (e) => {
         const v = e.target.value;
         setBusqueda(v);
+        setPage(1);
         clearTimeout(debounceRef.current);
-        debounceRef.current = setTimeout(() => cargar(v), 300);
+        debounceRef.current = setTimeout(() => cargar(v, 1), 300);
     };
 
     const guardar = async (form) => {
@@ -72,7 +89,7 @@ export default function Vehiculos() {
                 toast.success('Vehiculo registrado.');
             }
             setModal({ open: false, data: null });
-            cargar(busqueda);
+            cargar(busqueda, page);
         } catch (err) { toast.error(err.response?.data?.error || 'Error al guardar.'); }
     };
 
@@ -81,7 +98,7 @@ export default function Vehiculos() {
         try {
             await api.delete(`/ordenes/vehiculos/${v.id}`);
             toast.success('Vehiculo eliminado.');
-            cargar(busqueda);
+            cargar(busqueda, page);
         } catch (err) { toast.error(err.response?.data?.error || 'Error.'); }
     };
 
@@ -106,7 +123,7 @@ export default function Vehiculos() {
                     </div>
                     <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.6rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>Vehiculos</h1>
                     <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.85rem', color: mut, marginTop: 6 }}>
-                        {clientesUnicos.length} clientes · {vehiculos.length} vehiculos registrados
+                        {statsGlobal.totalClientes || clientesUnicos.length} clientes · {statsGlobal.totalVehiculos || vehiculos.length} vehiculos registrados
                         {esRecepcion && ' · Asociacion y consulta de datos'}
                     </p>
                 </div>
@@ -187,6 +204,49 @@ export default function Vehiculos() {
                                 ))}
                             </tbody>
                         </table>
+
+                        {/* Paginación */}
+                        {totalPages > 1 && (
+                            <div style={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                gap: 6, padding: '16px 18px',
+                                borderTop: `1px solid ${bdr}`,
+                                background: SKY_PALE,
+                            }}>
+                                <PageBtn
+                                    disabled={page <= 1}
+                                    onClick={() => cargar(busqueda, page - 1)}
+                                    bdr={bdr} txtSoft={txtSf} mut={mut}
+                                    isDark={isDark} SKY={SKY} SKY_BDR={SKY_BDR} SKY_PALE={SKY_PALE}
+                                >
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+                                </PageBtn>
+
+                                {generarPaginas(page, totalPages).map((p, i) =>
+                                    p === '...' ? (
+                                        <span key={`e${i}`} style={{ fontFamily: "'Outfit'", fontSize: '.78rem', color: mut, padding: '0 4px' }}>...</span>
+                                    ) : (
+                                        <PageNumBtn
+                                            key={p}
+                                            active={p === page}
+                                            onClick={() => cargar(busqueda, p)}
+                                            isDark={isDark} SKY={SKY} SKY_DEEP={SKY_DEEP} SKY_PALE={SKY_PALE} txt={txt} mut={mut} bdr={bdr}
+                                        >
+                                            {p}
+                                        </PageNumBtn>
+                                    )
+                                )}
+
+                                <PageBtn
+                                    disabled={page >= totalPages}
+                                    onClick={() => cargar(busqueda, page + 1)}
+                                    bdr={bdr} txtSoft={txtSf} mut={mut}
+                                    isDark={isDark} SKY={SKY} SKY_BDR={SKY_BDR} SKY_PALE={SKY_PALE}
+                                >
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                                </PageBtn>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
@@ -279,6 +339,7 @@ function ModalHistorial({ vehiculo, ordenes, onClose, isDark }) {
 
 function ModalVehiculo({ data, onClose, onGuardar, isDark }) {
     const [clientes, setClientes] = useState([]);
+    const [buscandoCliente, setBuscandoCliente] = useState('');
     const [form, setForm] = useState({
         cliente_id: data?.cliente_id || '',
         placa: data?.placa || '',
@@ -301,8 +362,16 @@ function ModalVehiculo({ data, onClose, onGuardar, isDark }) {
     const labelSt = { display: 'block', marginBottom: 6, fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.22em', color: SKY_DEEP };
 
     useEffect(() => {
-        api.get('/ordenes/clientes').then(r => setClientes(r.data.clientes)).catch(() => {});
+        api.get('/ordenes/clientes').then(r => setClientes(r.data.clientes || [])).catch(() => {});
     }, []);
+
+    const filteredClientes = buscandoCliente
+        ? clientes.filter(c =>
+            c.nombre.toLowerCase().includes(buscandoCliente.toLowerCase()) ||
+            c.cedula?.includes(buscandoCliente) ||
+            c.email?.toLowerCase().includes(buscandoCliente.toLowerCase()) ||
+            c.telefono?.includes(buscandoCliente))
+        : clientes;
 
     const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -330,10 +399,20 @@ function ModalVehiculo({ data, onClose, onGuardar, isDark }) {
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 13 }}>
                         <div style={{ gridColumn: '1/-1' }}>
                             <label style={labelSt}>PROPIETARIO *</label>
+                            <div style={{ marginBottom: 6 }}>
+                                <input
+                                    placeholder="Buscar cliente por nombre, cédula o teléfono..."
+                                    value={buscandoCliente}
+                                    onChange={e => setBuscandoCliente(e.target.value)}
+                                    style={inputSt}
+                                />
+                            </div>
                             <select name="cliente_id" value={form.cliente_id} onChange={onChange} required style={inputSt}>
-                                <option value="">Seleccionar cliente...</option>
-                                {clientes.map(c => (
-                                    <option key={c.id} value={c.id}>{c.nombre} {c.cedula ? `· ${c.cedula}` : ''}</option>
+                                <option value="">Seleccionar cliente ({filteredClientes.length} encontrados)...</option>
+                                {filteredClientes.map(c => (
+                                    <option key={c.id} value={c.id}>
+                                        {c.nombre} {c.cedula ? `· ${c.cedula}` : ''} {c.telefono ? `· ${c.telefono}` : ''}
+                                    </option>
                                 ))}
                             </select>
                         </div>
@@ -371,5 +450,60 @@ function ModalVehiculo({ data, onClose, onGuardar, isDark }) {
                 </form>
             </div>
         </div>
+    );
+}
+
+function generarPaginas(current, total) {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const pages = [];
+    if (current <= 3) {
+        for (let i = 1; i <= Math.min(5, total); i++) pages.push(i);
+        if (total > 5) { pages.push('...'); pages.push(total); }
+    } else if (current >= total - 2) {
+        pages.push(1); pages.push('...');
+        for (let i = Math.max(total - 4, 2); i <= total; i++) pages.push(i);
+    } else {
+        pages.push(1); pages.push('...');
+        pages.push(current - 1); pages.push(current); pages.push(current + 1);
+        pages.push('...'); pages.push(total);
+    }
+    return pages;
+}
+
+function PageBtn({ disabled, onClick, bdr, txtSoft, mut, isDark, SKY, SKY_BDR, SKY_PALE, children }) {
+    return (
+        <button disabled={disabled} onClick={onClick}
+            style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                width: 34, height: 34, borderRadius: 9,
+                background: 'transparent', border: `1px solid ${bdr}`,
+                color: disabled ? mut : txtSoft, cursor: disabled ? 'not-allowed' : 'pointer',
+                opacity: disabled ? 0.35 : 1,
+                transition: 'all .18s',
+            }}
+            onMouseEnter={e => { if (!disabled) { e.currentTarget.style.borderColor = SKY_BDR; e.currentTarget.style.color = SKY; e.currentTarget.style.background = SKY_PALE; } }}
+            onMouseLeave={e => { if (!disabled) { e.currentTarget.style.borderColor = bdr; e.currentTarget.style.color = txtSoft; e.currentTarget.style.background = 'transparent'; } }}>
+            {children}
+        </button>
+    );
+}
+
+function PageNumBtn({ active, onClick, isDark, SKY, SKY_DEEP, SKY_PALE, txt, mut, bdr, children }) {
+    return (
+        <button onClick={onClick}
+            style={{
+                minWidth: 34, height: 34, borderRadius: 9,
+                background: active ? `linear-gradient(135deg, ${SKY_DEEP}, ${SKY})` : 'transparent',
+                border: active ? 'none' : `1px solid ${bdr}`,
+                color: active ? '#fff' : txt,
+                fontFamily: "'Outfit'", fontWeight: active ? 700 : 500, fontSize: '.82rem',
+                cursor: 'pointer', padding: '0 8px',
+                boxShadow: active ? `0 4px 12px -4px ${SKY}` : 'none',
+                transition: 'all .18s',
+            }}
+            onMouseEnter={e => { if (!active) { e.currentTarget.style.borderColor = SKY + '55'; e.currentTarget.style.background = SKY_PALE; } }}
+            onMouseLeave={e => { if (!active) { e.currentTarget.style.borderColor = bdr; e.currentTarget.style.background = 'transparent'; } }}>
+            {children}
+        </button>
     );
 }

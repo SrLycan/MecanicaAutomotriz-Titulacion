@@ -1,3 +1,9 @@
+/**
+ * SS SWAP - Módulo de Inventario de Repuestos
+ * Gestión completa del catálogo de repuestos: búsqueda multi-criterio, filtros por categoría
+ * y nivel de stock, exportación a CSV, creación/edición de repuestos con foto comprimida
+ * y registro de movimientos de entrada/salida directamente desde la ficha del repuesto.
+ */
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -178,6 +184,7 @@ export default function Inventario() {
     const [seleccionados, setSeleccionados] = useState([]);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+    const [statsGlobal, setStatsGlobal] = useState({ total: 0, bajo: 0, valor: 0, unidades: 0 });
     const [bulkCategoria, setBulkCategoria] = useState('');
     const [bulkBusy, setBulkBusy] = useState(false);
     const debounceRef = useRef(null);
@@ -222,6 +229,7 @@ export default function Inventario() {
             const { data } = await api.get(`/inventory/repuestos?${params}`);
             setRepuestos(data.repuestos || []);
             setTotalPages(data.totalPages || 1);
+            if (data.stats) setStatsGlobal(data.stats);
             setSeleccionados([]);
         } catch { toast.error('Error al cargar repuestos.'); }
         finally { setLoading(false); }
@@ -232,17 +240,22 @@ export default function Inventario() {
         api.get('/inventory/categorias').then(r => setCategorias(r.data.categorias || [])).catch(() => {});
     }, [cargarRepuestos]);
 
-    // Show low stock alert modal only on initial page load
+    // Alerta de bajo stock: fetch propio, independiente de la paginacion de la
+    // tabla — antes se filtraba "repuestos" (solo la pagina 1 de 15) y un
+    // repuesto con bajo stock en cualquier otra pagina nunca se detectaba.
     useEffect(() => {
-        if (!loading && repuestos.length > 0 && !alertaInicialRef.current) {
-            const bajos = repuestos.filter(r => r.stock_actual <= r.stock_minimo);
-            if (bajos.length > 0) {
-                setBajoStockList(bajos);
-                setShowAlertModal(true);
+        if (alertaInicialRef.current) return;
+        api.get('/inventory/repuestos', { params: { bajo_stock: 'true', limit: 500 } })
+            .then(({ data }) => {
+                const bajos = data.repuestos || [];
+                if (bajos.length > 0) {
+                    setBajoStockList(bajos);
+                    setShowAlertModal(true);
+                }
                 alertaInicialRef.current = true;
-            }
-        }
-    }, [loading, repuestos]);
+            })
+            .catch(() => { alertaInicialRef.current = true; });
+    }, []);
 
     const repuestosOrdenados = useMemo(() => {
         const lista = [...repuestos];
@@ -410,14 +423,11 @@ export default function Inventario() {
         } catch (err) { toast.error(err.response?.data?.error || 'Error al cambiar estado.'); }
     };
 
-    // ── KPIs computados ──
-    const stats = useMemo(() => {
-        const total      = repuestos.length;
-        const bajo       = repuestos.filter(r => r.stock_actual <= r.stock_minimo).length;
-        const valor      = repuestos.reduce((s, r) => s + (r.stock_actual * parseFloat(r.precio_venta || 0)), 0);
-        const unidades   = repuestos.reduce((s, r) => s + (parseInt(r.stock_actual) || 0), 0);
-        return { total, bajo, valor, unidades };
-    }, [repuestos]);
+    // ── KPIs: vienen del backend ya agregados sobre TODO el inventario activo,
+    // no se calculan con "repuestos" porque ese array solo trae la pagina
+    // actual (antes las tarjetas de arriba mostraban el total de esa pagina,
+    // no del inventario real).
+    const stats = statsGlobal;
 
     const inputStyle = { padding: '9px 12px 9px 32px', background: inputBg, border: `1px solid ${bdr}`, borderRadius: 10, color: txt, fontFamily: "'Outfit'", fontSize: '.85rem', outline: 'none', width: 220, transition: 'border-color .18s, box-shadow .18s' };
     const selStyle   = { padding: '9px 12px', background: inputBg, border: `1px solid ${bdr}`, borderRadius: 10, color: txt, fontFamily: "'Outfit'", fontSize: '.85rem', outline: 'none', transition: 'border-color .18s, box-shadow .18s' };
@@ -888,4 +898,3 @@ function ActionBtn({ color, hoverBg, bdr, title, onClick, children }) {
         </button>
     );
 }
-

@@ -1,3 +1,9 @@
+/**
+ * SS SWAP - Panel Personal del Cliente
+ * Portal de autoservicio para clientes autenticados. Permite consultar el estado
+ * de sus órdenes en tiempo real (barra de progreso animada con etapas técnicas),
+ * gestionar citas, ver sus vehículos registrados y actualizar datos de perfil y foto.
+ */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';

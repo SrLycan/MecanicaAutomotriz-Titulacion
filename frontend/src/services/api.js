@@ -1,3 +1,8 @@
+/**
+ * SS SWAP - Cliente HTTP Axios y Manejo de Sesión
+ * Configura la URL base de la API, inyección automática del token JWT
+ * en cabeceras e interceptor de respuestas para expiración de sesión.
+ */
 import axios from 'axios';
 
 const API_BASE = process.env.REACT_APP_API_URL || '/api';

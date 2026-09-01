@@ -1,3 +1,9 @@
+/**
+ * SS SWAP - Bitácora General (solo Administradores)
+ * Consulta en un solo lugar la auditoría de dos fuentes almacenadas en MongoDB:
+ * el historial de cambios de las órdenes de trabajo y las conversaciones
+ * del chatbot. Soporta paginación, filtros y pestañas por tipo de registro.
+ */
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';

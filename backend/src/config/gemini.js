@@ -1,3 +1,8 @@
+/**
+ * SS SWAP - Configuración del Cliente de Google Gemini
+ * Centraliza la creación del cliente de IA generativa usado por el chatbot,
+ * con instanciación perezosa y modelo configurable por variable de entorno.
+ */
 const { GoogleGenAI } = require('@google/genai');
 
 // Modelo por defecto: gemini-3.1-flash-lite es (a esta fecha) el modelo GA

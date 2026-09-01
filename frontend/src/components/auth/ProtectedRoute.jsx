@@ -1,3 +1,10 @@
+/**
+ * SS SWAP - Guardián de Rutas Protegidas (ProtectedRoute)
+ * Controla el acceso basado en autenticación y roles permitidos:
+ * - Redirige a /admin/login para intentos no autorizados al panel administrativo.
+ * - Redirige a /auth para accesos no autenticados al portal de clientes.
+ * - Restringe vistas exclusivas de administrador/técnico/recepcionista.
+ */
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';

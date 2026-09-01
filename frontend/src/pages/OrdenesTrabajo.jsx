@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+/**
+ * SS SWAP - Gestión de Órdenes de Trabajo
+ * Módulo central del taller: crea, asigna, actualiza el estado de avance técnico
+ * y elimina órdenes. Segrega permisos por rol (administrador, técnico, recepcionista)
+ * e incluye historial de cambios con timeline expandible por orden.
+ */
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
@@ -36,12 +42,15 @@ export default function OrdenesTrabajo() {
     const [loading, setLoading] = useState(true);
     const [filtroGrupo, setFiltroGrupo] = useState('');
     const [busqueda, setBusqueda] = useState('');
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
     const [modal, setModal] = useState({ open: false, data: null });
     const [modalCliente, setModalCliente] = useState(false);
     const [expandedId, setExpandedId] = useState(null);
     const [historialAbierto, setHistorialAbierto] = useState({});
     const [historialData, setHistorialData] = useState({});
     const [historialCargando, setHistorialCargando] = useState({});
+    const debounceRef = useRef(null);
 
     const SKY = '#0ea5e9'; const SKY_DEEP = '#0284c7';
     const SKY_PALE = isDark ? 'rgba(14,165,233,0.10)' : 'rgba(14,165,233,0.05)';
@@ -56,25 +65,31 @@ export default function OrdenesTrabajo() {
         : '0 4px 16px -4px rgba(15,23,42,0.08), 0 2px 4px -2px rgba(15,23,42,0.04)';
     const inputBg = isDark ? '#0b1220' : '#fafcff';
 
-    const cargar = useCallback(async (q = '', grupo = filtroGrupo) => {
+    const cargar = useCallback(async (q = '', grupo = filtroGrupo, p = 1) => {
         setLoading(true);
         try {
             const params = new URLSearchParams();
             if (q) params.set('q', q);
             if (grupo === 'anteriores') params.set('grupo', 'anteriores');
             else if (grupo) params.set('estado', grupo);
+            params.set('page', p);
+            params.set('limit', '50');
             const { data } = await api.get(`/ordenes/ordenes?${params}`);
-            setOrdenes(data.ordenes);
+            setOrdenes(data.ordenes || []);
+            setPage(data.page || p);
+            setTotalPages(data.totalPages || 1);
         } catch { toast.error('Error al cargar ordenes.'); }
         finally { setLoading(false); }
     }, [filtroGrupo]);
 
-    useEffect(() => { cargar(busqueda, filtroGrupo); }, []);
+    useEffect(() => { cargar(busqueda, filtroGrupo, 1); }, []);
 
     const handleBusqueda = (e) => {
         const v = e.target.value;
         setBusqueda(v);
-        setTimeout(() => cargar(v, filtroGrupo), 300);
+        setPage(1);
+        clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => cargar(v, filtroGrupo, 1), 300);
     };
 
     // Determina si el usuario actual puede cambiar estado de una orden concreta
@@ -88,7 +103,7 @@ export default function OrdenesTrabajo() {
         try {
             await api.put(`/ordenes/ordenes/${id}`, { estado: nuevo, ...extra });
             toast.success(`Orden ${ESTADO_ORDEN_MAP[nuevo]?.label || nuevo}.`);
-            cargar(busqueda, filtroGrupo);
+            cargar(busqueda, filtroGrupo, page);
         } catch (err) { toast.error(err.response?.data?.error || 'Error.'); }
     };
 
@@ -96,7 +111,7 @@ export default function OrdenesTrabajo() {
         try {
             await api.put(`/ordenes/ordenes/${id}`, { estado_progreso, notas_progreso: notas_progreso || null });
             toast.success('Progreso actualizado.');
-            cargar(busqueda, filtroGrupo);
+            cargar(busqueda, filtroGrupo, page);
         } catch (err) { toast.error(err.response?.data?.error || 'Error.'); }
     };
 
@@ -121,7 +136,7 @@ export default function OrdenesTrabajo() {
         try {
             await api.delete(`/ordenes/ordenes/${o.id}`);
             toast.success('Orden eliminada.');
-            cargar(busqueda, filtroGrupo);
+            cargar(busqueda, filtroGrupo, page);
         } catch (err) { toast.error(err.response?.data?.error || 'Error.'); }
     };
 
@@ -135,7 +150,7 @@ export default function OrdenesTrabajo() {
                 toast.success('Orden creada.');
             }
             setModal({ open: false, data: null });
-            cargar(busqueda, filtroGrupo);
+            cargar(busqueda, filtroGrupo, page);
         } catch (err) { toast.error(err.response?.data?.error || 'Error al guardar.'); }
     };
 
@@ -146,7 +161,8 @@ export default function OrdenesTrabajo() {
 
     const aplicarFiltro = (grupo) => {
         setFiltroGrupo(grupo);
-        cargar(busqueda, grupo);
+        setPage(1);
+        cargar(busqueda, grupo, 1);
     };
 
     return (
@@ -357,6 +373,49 @@ export default function OrdenesTrabajo() {
                             </div>
                         );
                     })}
+
+                    {/* Paginación */}
+                    {totalPages > 1 && (
+                        <div style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            gap: 6, padding: '16px 18px',
+                            background: card, border: `1px solid ${bdr}`, borderRadius: 14,
+                            marginTop: 6,
+                        }}>
+                            <PageBtn
+                                disabled={page <= 1}
+                                onClick={() => cargar(busqueda, filtroGrupo, page - 1)}
+                                bdr={bdr} txtSoft={txtSf} mut={mut}
+                                isDark={isDark} SKY={SKY} SKY_BDR={SKY_BDR} SKY_PALE={SKY_PALE}
+                            >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+                            </PageBtn>
+
+                            {generarPaginas(page, totalPages).map((p, i) =>
+                                p === '...' ? (
+                                    <span key={`e${i}`} style={{ fontFamily: "'Outfit'", fontSize: '.78rem', color: mut, padding: '0 4px' }}>...</span>
+                                ) : (
+                                    <PageNumBtn
+                                        key={p}
+                                        active={p === page}
+                                        onClick={() => cargar(busqueda, filtroGrupo, p)}
+                                        isDark={isDark} SKY={SKY} SKY_DEEP={SKY_DEEP} SKY_PALE={SKY_PALE} txt={txt} mut={mut} bdr={bdr}
+                                    >
+                                        {p}
+                                    </PageNumBtn>
+                                )
+                            )}
+
+                            <PageBtn
+                                disabled={page >= totalPages}
+                                onClick={() => cargar(busqueda, filtroGrupo, page + 1)}
+                                bdr={bdr} txtSoft={txtSf} mut={mut}
+                                isDark={isDark} SKY={SKY} SKY_BDR={SKY_BDR} SKY_PALE={SKY_PALE}
+                            >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                            </PageBtn>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -792,5 +851,60 @@ function ModalOrden({ data, clientePre, onClose, onGuardar, onNuevoCliente, isDa
                 </form>
             </div>
         </div>
+    );
+}
+
+function generarPaginas(current, total) {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const pages = [];
+    if (current <= 3) {
+        for (let i = 1; i <= Math.min(5, total); i++) pages.push(i);
+        if (total > 5) { pages.push('...'); pages.push(total); }
+    } else if (current >= total - 2) {
+        pages.push(1); pages.push('...');
+        for (let i = Math.max(total - 4, 2); i <= total; i++) pages.push(i);
+    } else {
+        pages.push(1); pages.push('...');
+        pages.push(current - 1); pages.push(current); pages.push(current + 1);
+        pages.push('...'); pages.push(total);
+    }
+    return pages;
+}
+
+function PageBtn({ disabled, onClick, bdr, txtSoft, mut, isDark, SKY, SKY_BDR, SKY_PALE, children }) {
+    return (
+        <button disabled={disabled} onClick={onClick}
+            style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                width: 34, height: 34, borderRadius: 9,
+                background: 'transparent', border: `1px solid ${bdr}`,
+                color: disabled ? mut : txtSoft, cursor: disabled ? 'not-allowed' : 'pointer',
+                opacity: disabled ? 0.35 : 1,
+                transition: 'all .18s',
+            }}
+            onMouseEnter={e => { if (!disabled) { e.currentTarget.style.borderColor = SKY_BDR; e.currentTarget.style.color = SKY; e.currentTarget.style.background = SKY_PALE; } }}
+            onMouseLeave={e => { if (!disabled) { e.currentTarget.style.borderColor = bdr; e.currentTarget.style.color = txtSoft; e.currentTarget.style.background = 'transparent'; } }}>
+            {children}
+        </button>
+    );
+}
+
+function PageNumBtn({ active, onClick, isDark, SKY, SKY_DEEP, SKY_PALE, txt, mut, bdr, children }) {
+    return (
+        <button onClick={onClick}
+            style={{
+                minWidth: 34, height: 34, borderRadius: 9,
+                background: active ? `linear-gradient(135deg, ${SKY_DEEP}, ${SKY})` : 'transparent',
+                border: active ? 'none' : `1px solid ${bdr}`,
+                color: active ? '#fff' : txt,
+                fontFamily: "'Outfit'", fontWeight: active ? 700 : 500, fontSize: '.82rem',
+                cursor: 'pointer', padding: '0 8px',
+                boxShadow: active ? `0 4px 12px -4px ${SKY}` : 'none',
+                transition: 'all .18s',
+            }}
+            onMouseEnter={e => { if (!active) { e.currentTarget.style.borderColor = SKY + '55'; e.currentTarget.style.background = SKY_PALE; } }}
+            onMouseLeave={e => { if (!active) { e.currentTarget.style.borderColor = bdr; e.currentTarget.style.background = 'transparent'; } }}>
+            {children}
+        </button>
     );
 }

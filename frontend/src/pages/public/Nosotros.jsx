@@ -1,3 +1,8 @@
+/**
+ * SS SWAP - Página Institucional "Nosotros"
+ * Muestra la historia, misión, visión, línea de tiempo de crecimiento,
+ * principios corporativos y el equipo técnico responsable del taller.
+ */
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../../components/public/Navbar';

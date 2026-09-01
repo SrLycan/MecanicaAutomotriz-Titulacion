@@ -1,3 +1,13 @@
+/**
+ * SS SWAP - Controlador de Administración de Usuarios y Perfil de Cuenta
+ *
+ * Gestiona el ciclo de vida de usuarios (administradores, técnicos,
+ * recepcionistas y clientes):
+ * - Altas, edición, suspensión/bloqueo y gestión de credenciales.
+ * - Perfil personal (actualización de datos de contacto, contraseña y foto).
+ * - Sincronización bidireccional de datos con la tabla 'clientes' ante
+ *   modificaciones de perfil.
+ */
 const bcrypt = require('bcryptjs');
 const jwt    = require('jsonwebtoken');
 const fs     = require('fs');
@@ -13,29 +23,93 @@ const ESTADOS_VALIDOS = ['activo','suspendido','bloqueado'];
 // query: q (busqueda), rol, estado
 // ─────────────────────────────────────────────────────────────
 const listarUsuarios = async (req, res) => {
-    const { q, rol, estado } = req.query;
-    let query = `SELECT id, nombre, email, rol, telefono, cedula, activo, estado,
-                        created_at, updated_at
-                 FROM usuarios WHERE 1=1`;
+    const { q, rol, estado, page, limit } = req.query;
+    let where = 'WHERE 1=1';
     const params = [];
 
     if (q) {
         params.push(`%${q}%`);
-        query += ` AND (nombre ILIKE $${params.length} OR email ILIKE $${params.length})`;
+        where += ` AND (nombre ILIKE $${params.length} OR email ILIKE $${params.length})`;
     }
     if (rol && ROLES_VALIDOS.includes(rol)) {
         params.push(rol);
-        query += ` AND rol = $${params.length}`;
+        where += ` AND rol = $${params.length}`;
     }
     if (estado && ESTADOS_VALIDOS.includes(estado)) {
         params.push(estado);
-        query += ` AND estado = $${params.length}`;
+        where += ` AND estado = $${params.length}`;
     }
-    query += ' ORDER BY created_at DESC';
+
+    const countQuery = `SELECT COUNT(*) AS total FROM usuarios ${where}`;
+    let dataQuery = `
+        SELECT id, nombre, email, rol, telefono, cedula, activo, estado,
+               created_at, updated_at
+        FROM usuarios
+        ${where}
+        ORDER BY created_at DESC
+    `;
+
+    const statsQuery = `
+        SELECT
+            COUNT(*)                                       AS total,
+            COUNT(*) FILTER (WHERE rol = 'administrador')  AS admins,
+            COUNT(*) FILTER (WHERE estado = 'suspendido')  AS suspendidos,
+            COUNT(*) FILTER (WHERE estado = 'bloqueado')   AS bloqueados
+        FROM usuarios
+    `;
 
     try {
-        const { rows } = await pool.query(query, params);
-        return res.json({ usuarios: rows, total: rows.length });
+        if (page !== undefined || limit !== undefined) {
+            const pageNum  = Math.max(1, parseInt(page) || 1);
+            const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 50));
+            const offset   = (pageNum - 1) * limitNum;
+
+            dataQuery += ` LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+
+            const [{ rows: countRows }, { rows }, { rows: statsRows }] = await Promise.all([
+                pool.query(countQuery, params),
+                pool.query(dataQuery, [...params, limitNum, offset]),
+                pool.query(statsQuery),
+            ]);
+
+            const total = parseInt(countRows[0].total, 10);
+            const st = statsRows[0] || {};
+            return res.json({
+                usuarios: rows,
+                total,
+                page: pageNum,
+                limit: limitNum,
+                totalPages: Math.ceil(total / limitNum) || 1,
+                stats: {
+                    total:       parseInt(st.total, 10) || 0,
+                    admins:      parseInt(st.admins, 10) || 0,
+                    suspendidos: parseInt(st.suspendidos, 10) || 0,
+                    bloqueados:  parseInt(st.bloqueados, 10) || 0,
+                },
+            });
+        }
+
+        const [{ rows: countRows }, { rows }, { rows: statsRows }] = await Promise.all([
+            pool.query(countQuery, params),
+            pool.query(dataQuery, params),
+            pool.query(statsQuery),
+        ]);
+
+        const total = parseInt(countRows[0]?.total, 10) || rows.length;
+        const st = statsRows[0] || {};
+        return res.json({
+            usuarios: rows,
+            total,
+            page: 1,
+            limit: total,
+            totalPages: 1,
+            stats: {
+                total:       parseInt(st.total, 10) || 0,
+                admins:      parseInt(st.admins, 10) || 0,
+                suspendidos: parseInt(st.suspendidos, 10) || 0,
+                bloqueados:  parseInt(st.bloqueados, 10) || 0,
+            },
+        });
     } catch (err) {
         console.error('Error listarUsuarios:', err);
         return res.status(500).json({ error: 'Error al obtener usuarios.' });
@@ -241,6 +315,7 @@ const crearUsuario = async (req, res) => {
 // PERFIL PROPIO (cualquier usuario autenticado: cliente o staff)
 // ─────────────────────────────────────────────────────────────
 
+/** Genera y firma un nuevo JWT con los datos actualizados del usuario. */
 function reemitirToken(usuarioRow) {
     const payload = { id: usuarioRow.id, nombre: usuarioRow.nombre, email: usuarioRow.email, rol: usuarioRow.rol };
     const token   = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '8h' });

@@ -1,3 +1,8 @@
+/**
+ * SS SWAP - Servicio de Generación de Respuestas con Inteligencia Artificial
+ * Integra Google Gemini para responder consultas libres sobre el taller automotriz,
+ * utilizando grounding con información viva del negocio y configuración optimizada.
+ */
 const { obtenerClienteGemini, GEMINI_MODEL } = require('../config/gemini');
 const { obtenerContextoTaller }              = require('./chatbotContext.service');
 
