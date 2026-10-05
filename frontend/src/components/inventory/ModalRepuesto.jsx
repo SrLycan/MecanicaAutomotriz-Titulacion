@@ -20,6 +20,7 @@ const EMPTY = {
     unidad_medida: 'unidad',
     imagen_url: '',
     en_venta: false,
+    area: 'mecanica',
 };
 
 function IconX() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>; }
@@ -27,7 +28,7 @@ function IconImage() { return <svg width="28" height="28" viewBox="0 0 24 24" fi
 
 const getImagenSrc = (repuesto = {}) => resolveImagenSrc(repuesto.imagen_url || repuesto.imagen || repuesto.foto_url || repuesto.foto || '');
 
-export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerrar }) {
+export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerrar, areaInicial = 'mecanica' }) {
     const { isDark } = useTheme();
     const [form, setForm] = useState(EMPTY);
     const [preview, setPreview] = useState('');
@@ -86,14 +87,15 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
                 unidad_medida: repuesto.unidad_medida || 'unidad',
                 imagen_url: imagen,
                 en_venta: Boolean(repuesto.en_venta),
+                area: repuesto.area || 'mecanica',
             };
             setForm(nextForm);
             setPreview(resolveImagenSrc(imagen));
         } else {
-            setForm(EMPTY);
+            setForm({ ...EMPTY, area: areaInicial });
             setPreview('');
         }
-    }, [repuesto]);
+    }, [repuesto, areaInicial]);
 
     const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
     const onFocus = (e) => { e.target.style.borderColor = SKY; e.target.style.boxShadow = `0 0 0 3px rgba(14,165,233,.14)`; };
@@ -168,7 +170,16 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
                             <label style={labelSt}>UNIDAD DE MEDIDA</label>
                             <select name="unidad_medida" value={form.unidad_medida} onChange={handleChange}
                                 onFocus={onFocus} onBlur={onBlur} style={inputSt}>
-                                {['unidad','litro','kg','metro','juego','par','caja'].map(u => <option key={u}>{u}</option>)}
+                                {['unidad','litro','galon','kg','metro','juego','par','caja','pliego'].map(u => <option key={u}>{u}</option>)}
+                            </select>
+                        </div>
+
+                        {/* Inventario / area (Sprint 14) */}
+                        <div style={{ gridColumn: '1/-1' }}>
+                            <label style={labelSt}>INVENTARIO</label>
+                            <select name="area" value={form.area} onChange={handleChange} onFocus={onFocus} onBlur={onBlur} style={inputSt}>
+                                <option value="mecanica">Inventario Mecánica</option>
+                                <option value="colisiones">Inventario Colisiones / Pintura</option>
                             </select>
                         </div>
 
@@ -250,7 +261,7 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
                             <label style={labelSt}>
                                 {esEdicion ? 'STOCK ACTUAL (usar Movimientos)' : 'STOCK INICIAL'}
                             </label>
-                            <input type="number" min="0" name="stock_actual"
+                            <input type="number" min="0" step="0.01" name="stock_actual"
                                 onFocus={onFocus} onBlur={onBlur}
                                 value={form.stock_actual} onChange={handleChange}
                                 disabled={esEdicion}
@@ -258,7 +269,7 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
                         </div>
                         <div>
                             <label style={labelSt}>STOCK MINIMO (alerta)</label>
-                            <input type="number" min="0" name="stock_minimo"
+                            <input type="number" min="0" step="0.01" name="stock_minimo"
                                 onFocus={onFocus} onBlur={onBlur}
                                 value={form.stock_minimo} onChange={handleChange} style={inputSt} />
                         </div>

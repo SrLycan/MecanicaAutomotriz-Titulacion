@@ -5,6 +5,7 @@
  * Incluye subida de foto de perfil con compresión y filtros por rol y estado.
  */
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import useParamUrl from '../hooks/useParamUrl';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
@@ -39,7 +40,11 @@ export default function Usuarios() {
     const [usuarios, setUsuarios] = useState([]);
     const [loading, setLoading]   = useState(true);
     const [q, setQ]               = useState('');
-    const [filtroRol, setFiltroRol]   = useState('');
+    // El rol se lee de la URL (?rol=tecnico) para que el submenu
+    // Usuarios > Técnicos / Administradores / ... abra la lista filtrada.
+    const [rolUrl, setRolUrl] = useParamUrl('rol', '', ['administrador', 'tecnico', 'recepcionista', 'cliente']);
+    const [filtroRol, setFiltroRolEstado] = useState(rolUrl);
+    const setFiltroRol = (v) => { setFiltroRolEstado(v); setRolUrl(v); };
     const [filtroEst, setFiltroEst]   = useState('');
     const [modalNew,    setModalNew]  = useState(false);
     const [modalEdit,   setModalEdit] = useState(null);
@@ -79,7 +84,8 @@ export default function Usuarios() {
         } finally { setLoading(false); }
     };
 
-    useEffect(() => { cargar(); /* eslint-disable-next-line */ }, []);
+    // Carga inicial y cada vez que cambia el rol desde el menu lateral
+    useEffect(() => { setFiltroRolEstado(rolUrl); cargar(q, rolUrl, filtroEst); /* eslint-disable-next-line */ }, [rolUrl]);
 
     const handleQ = (e) => {
         const v = e.target.value; setQ(v);

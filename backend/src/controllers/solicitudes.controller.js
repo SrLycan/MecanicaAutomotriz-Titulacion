@@ -30,7 +30,7 @@ const crearSolicitud = async (req, res) => {
             return res.status(409).json({ error: 'Tu cuenta aun no esta vinculada a un cliente del taller. Visita una sucursal para completar tu registro.' });
 
         const { rows: repRows } = await pool.query(
-            `SELECT id, nombre, precio_venta, stock_actual FROM repuestos
+            `SELECT id, nombre, precio_venta, stock_actual::float8 AS stock_actual FROM repuestos
              WHERE id = $1 AND activo = TRUE AND en_venta = TRUE`,
             [repuesto_id]
         );

@@ -12,26 +12,79 @@ import api from '../../services/api';
 import toast from 'react-hot-toast';
 import './Layout.css';
 
-function IconRegMov() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/><polyline points="5 12 12 5 19 12"/></svg>; }
-// Icono exclusivo de la Bitácora (solo administradores)
-function IconBitacora() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>; }
+// Icono exclusivo de Proveedores (solo administradores)
+function IconTruck() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>; }
+function IconChart() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>; }
 
-// Menú lateral: cada entrada declara los roles que pueden verla;
-// se filtra dinamicamente con tieneRol() del AuthContext.
-const NAV_ITEMS = [
-    { to: '/dashboard',             label: 'Dashboard',   icon: IconDash,   roles: ['administrador','tecnico','recepcionista'] },
-    { to: '/dashboard/inventario',  label: 'Inventario',  icon: IconInv,    roles: ['administrador','tecnico','recepcionista'] },
-    { to: '/dashboard/registrar',   label: 'Registrar',   icon: IconRegMov, roles: ['administrador','tecnico','recepcionista'] },
-    { to: '/dashboard/movimientos', label: 'Movimientos', icon: IconMov,    roles: ['administrador','tecnico','recepcionista'] },
-    { to: '/dashboard/usuarios',    label: 'Usuarios',    icon: IconUsers,  roles: ['administrador'] },
-    { to: '/dashboard/clientes',    label: 'Clientes',    icon: IconClient, roles: ['administrador','recepcionista'] },
-    { to: '/dashboard/vehiculos',   label: 'Vehiculos',   icon: IconCar,    roles: ['administrador','tecnico','recepcionista'] },
-    { to: '/dashboard/ordenes',     label: 'Ordenes',     icon: IconOrden,  roles: ['administrador','tecnico','recepcionista'] },
-    { to: '/dashboard/citas',       label: 'Citas',       icon: IconCalendar, roles: ['administrador','tecnico','recepcionista'] },
-    { to: '/dashboard/sucursales',  label: 'Sucursales',  icon: IconBranch, roles: ['administrador'] },
-    { to: '/dashboard/servicios',   label: 'Servicios',   icon: IconSvc,    roles: ['administrador'] },
-    { to: '/dashboard/bitacora',    label: 'Bitácora',    icon: IconBitacora, roles: ['administrador'] },
+// Menú lateral tipo ACORDEÓN (igual al modelo pedido): cada sección se
+// despliega al hacer clic y muestra sus opciones; solo una abierta a la vez.
+// Cada opción lleva directo a la vista correspondiente (?tab= / ?rol= /
+// ?area=). Roles: cada grupo e hijo declara quién lo ve; un grupo sin
+// hijos visibles no se muestra.
+const STAFF = ['administrador', 'tecnico', 'recepcionista'];
+const ADMIN = ['administrador'];
+const ADMIN_RECEP = ['administrador', 'recepcionista'];
+const NAV_GROUPS = [
+    { id: 'panel', label: 'Panel', icon: IconDash, to: '/dashboard', roles: STAFF },
+    { id: 'inventario', label: 'Inventario', icon: IconInv, roles: STAFF, badgeStock: true, children: [
+        { to: '/dashboard/inventario',                 label: 'Inventario Mecánica', roles: STAFF },
+        { to: '/dashboard/inventario?area=colisiones', label: 'Colisiones / Pintura', roles: STAFF },
+        { to: '/dashboard/registrar',   label: 'Registrar movimiento', roles: STAFF },
+        { to: '/dashboard/movimientos', label: 'Registros', roles: STAFF },
+    ] },
+    { id: 'taller', label: 'Taller', icon: IconOrden, roles: STAFF, children: [
+        { to: '/dashboard/ordenes',          label: 'Órdenes de trabajo', roles: STAFF },
+        { to: '/dashboard/proformas',        label: 'Proformas', roles: STAFF, prefijo: true },
+        { to: '/dashboard/proformas/nueva',  label: 'Nueva proforma', roles: STAFF },
+        { to: '/dashboard/citas',            label: 'Citas', roles: STAFF },
+    ] },
+    { id: 'clientes', label: 'Clientes', icon: IconClient, roles: STAFF, children: [
+        { to: '/dashboard/clientes',            label: 'Visualizar', roles: ADMIN_RECEP },
+        { to: '/dashboard/vehiculos',           label: 'Vehículos', roles: STAFF },
+        { to: '/dashboard/clientes?tab=pagare', label: 'Pagaré / Cartera', roles: ADMIN_RECEP },
+    ] },
+    { id: 'proveedores', label: 'Proveedores', icon: IconTruck, roles: ADMIN, children: [
+        { to: '/dashboard/proveedores',               label: 'Visualizar', roles: ADMIN },
+        { to: '/dashboard/proveedores?tab=compras',   label: 'Compras', roles: ADMIN },
+        { to: '/dashboard/proveedores?tab=gastos',    label: 'Gastos', roles: ADMIN },
+        { to: '/dashboard/proveedores?tab=historial', label: 'Pagos / Historial', roles: ADMIN },
+    ] },
+    { id: 'usuarios', label: 'Usuarios', icon: IconUsers, roles: ADMIN, children: [
+        { to: '/dashboard/usuarios',                   label: 'Todos los usuarios', roles: ADMIN },
+        { to: '/dashboard/usuarios?rol=administrador', label: 'Administradores', roles: ADMIN },
+        { to: '/dashboard/usuarios?rol=tecnico',       label: 'Técnicos', roles: ADMIN },
+        { to: '/dashboard/usuarios?rol=recepcionista', label: 'Recepcionistas', roles: ADMIN },
+        { to: '/dashboard/usuarios?rol=cliente',       label: 'Clientes (portal)', roles: ADMIN },
+    ] },
+    { id: 'graficas', label: 'Gráficas', icon: IconChart, roles: ADMIN, children: [
+        { to: '/dashboard/graficas',                  label: 'Productos', roles: ADMIN },
+        { to: '/dashboard/graficas?tab=servicios',    label: 'Servicios', roles: ADMIN },
+        { to: '/dashboard/graficas?tab=proformas',    label: 'Proformas', roles: ADMIN },
+        { to: '/dashboard/graficas?tab=crecimiento',  label: 'Crecimiento', roles: ADMIN },
+    ] },
+    { id: 'ajustes', label: 'Ajustes', icon: IconSvc, roles: ADMIN, children: [
+        { to: '/dashboard/servicios',  label: 'Servicios del taller', roles: ADMIN },
+        { to: '/dashboard/sucursales', label: 'Sucursales', roles: ADMIN },
+        { to: '/dashboard/bitacora',   label: 'Bitácora', roles: ADMIN },
+    ] },
 ];
+
+/** Puntaje de coincidencia de una opcion del menu con la URL actual (0 = no coincide). */
+function puntajeRuta(to, location, hermanos, prefijo) {
+    const [ruta, query = ''] = to.split('?');
+    const params = new URLSearchParams(query);
+    const actuales = new URLSearchParams(location.search);
+    const exacta = location.pathname === ruta;
+    if (!exacta && !(prefijo && location.pathname.startsWith(`${ruta}/`))) return 0;
+    for (const [k, v] of params) if (actuales.get(k) !== v) return 0;
+    if ([...params.keys()].length === 0) {
+        // Opcion "por defecto" (sin parametros): no aplica si la URL trae un
+        // parametro que identifica a otra opcion hermana de la misma pagina.
+        const clavesHermanas = new Set(hermanos.filter(h => h.to.split('?')[0] === ruta).flatMap(h => [...new URLSearchParams(h.to.split('?')[1] || '').keys()]));
+        for (const k of clavesHermanas) if (actuales.get(k)) return 0;
+    }
+    return (exacta ? 10 : 1) + [...params.keys()].length;
+}
 
 const ROL_COLOR = { administrador: '#7fabce', tecnico: '#1a8f5c', recepcionista: '#c9821a' };
 const GOLD = '#3b7bab';
@@ -41,13 +94,9 @@ const ROL_LABEL = { administrador: 'ADMIN', tecnico: 'TECNICO', recepcionista: '
 
 function IconDash() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>; }
 function IconInv()  { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>; }
-function IconMov()  { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>; }
 function IconUsers(){ return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>; }
 function IconClient(){ return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>; }
-function IconBranch(){return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>; }
-function IconCar()   { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M5 17h14M5 17a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.5l2-3h7l2 3H19a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2"/><circle cx="8" cy="15" r="2"/><circle cx="16" cy="15" r="2"/></svg>; }
 function IconOrden(){ return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>; }
-function IconCalendar(){ return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>; }
 function IconSvc()  { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>; }
 
 export default function Layout() {
@@ -67,7 +116,7 @@ export default function Layout() {
     }, []);
 
     // Cerrar drawer al navegar en móvil
-    useEffect(() => { setMobileOpen(false); }, [location.pathname]);
+    useEffect(() => { setMobileOpen(false); }, [location.pathname, location.search]);
 
     // Fetch low stock count for sidebar badge
     useEffect(() => {
@@ -96,12 +145,38 @@ export default function Layout() {
     const navMut  = 'rgba(203,213,225,0.55)';
 
     const handleLogout = () => { logout(); toast.success('Sesion cerrada'); navigate('/admin/login'); };
-    const items = NAV_ITEMS.filter(item => tieneRol(...item.roles));
+    const grupos = NAV_GROUPS
+        .filter(g => tieneRol(...g.roles))
+        .map(g => g.children ? { ...g, children: g.children.filter(c => tieneRol(...c.roles)) } : g)
+        .filter(g => !g.children || g.children.length > 0);
+
+    // Opcion activa = la de mayor puntaje entre todas (la mas especifica)
+    const activo = (() => {
+        let mejor = { score: 0, grupo: null, to: null };
+        grupos.forEach(g => {
+            const lista = g.children || [{ to: g.to }];
+            lista.forEach(c => {
+                const sc = g.children ? puntajeRuta(c.to, location, g.children, c.prefijo) : (location.pathname === g.to ? 10 : 0);
+                if (sc > mejor.score) mejor = { score: sc, grupo: g.id, to: c.to };
+            });
+        });
+        return mejor;
+    })();
+
+    // Acordeon: se abre solo el grupo de la pagina actual; el usuario puede
+    // abrir otro (y se cierra el anterior) o cerrarlo con otro clic.
+    const [grupoAbierto, setGrupoAbierto] = useState(activo.grupo);
+    useEffect(() => { if (activo.grupo) setGrupoAbierto(activo.grupo); }, [activo.grupo]);
+    const clickGrupo = (g) => {
+        if (!g.children) { navigate(g.to); return; }
+        if (collapsed && !isMobile) { navigate(g.children[0].to); setGrupoAbierto(g.id); return; }
+        setGrupoAbierto(abierto => (abierto === g.id ? null : g.id));
+    };
 
     // Breadcrumb dinámico
     const crumb = (() => {
         if (location.pathname.endsWith('/inventario'))   return 'Inventario';
-        if (location.pathname.endsWith('/movimientos'))  return 'Movimientos';
+        if (location.pathname.endsWith('/movimientos'))  return 'Registros de inventario';
         if (location.pathname.endsWith('/usuarios'))     return 'Usuarios';
         if (location.pathname.endsWith('/clientes'))     return 'Clientes';
         if (location.pathname.endsWith('/ordenes'))      return 'Ordenes';
@@ -110,6 +185,14 @@ export default function Layout() {
         if (location.pathname.endsWith('/sucursales'))   return 'Sucursales';
         if (location.pathname.endsWith('/servicios'))    return 'Servicios';
         if (location.pathname.endsWith('/bitacora'))     return 'Bitácora';
+        if (location.pathname.endsWith('/proveedores'))  return 'Proveedores';
+        if (location.pathname.endsWith('/graficas'))     return 'Gráficas';
+        if (location.pathname.includes('/proformas')) {
+            if (location.pathname.endsWith('/nueva'))   return 'Nueva Proforma';
+            if (location.pathname.endsWith('/editar'))  return 'Editar Proforma';
+            if (location.pathname.endsWith('/proformas')) return 'Proformas';
+            return 'Proforma';
+        }
         return 'Dashboard';
     })();
 
@@ -169,55 +252,59 @@ export default function Layout() {
                 </div>
 
                 {/* Nav */}
-                <nav style={{ flex: 1, paddingTop: 14, paddingBottom: 12, position: 'relative', zIndex: 1 }}>
+                <nav className="layout-sidebar-nav" style={{ flex: 1, paddingTop: 14, paddingBottom: 12, position: 'relative', zIndex: 1 }}>
                     {!collapsed && (
                         <p style={{ padding: '0 24px 8px', fontFamily: "'Sora'", fontWeight: 600, fontSize: '.72rem', letterSpacing: '.14em', color: 'rgba(127,171,206,0.5)' }}>MENÚ</p>
                     )}
-                    {items.map((item, idx) => (
-                        <NavLink key={item.to} to={item.to} end={item.to === '/dashboard'}
-                            className={({ isActive }) => `sb-item${isActive ? ' is-active' : ''}`}
-                            style={({ isActive }) => ({
-                                display: 'flex', alignItems: 'center', gap: 13,
-                                padding: collapsed ? '12px 0' : '12px 22px',
-                                margin: '2px 0',
-                                justifyContent: collapsed ? 'center' : 'flex-start',
-                                color: isActive ? '#fff' : navMut,
-                                textDecoration: 'none',
-                                position: 'relative',
-                                background: isActive ? 'linear-gradient(90deg, rgba(43,92,133,0.22), rgba(43,92,133,0.02))' : 'transparent',
-                                transition: 'all .2s cubic-bezier(.4,0,.2,1)',
-                                fontSize: '.95rem', fontFamily: "'Outfit'", fontWeight: 500,
-                                animationDelay: `${idx * 50}ms`,
-                            })}>
-                            <span className="sb-icon" style={{ flexShrink: 0, display: 'flex', color: 'inherit', position: 'relative' }}>
-                                <item.icon />
-                                {/* Low stock badge on Inventario */}
-                                {item.to === '/dashboard/inventario' && bajoStockCount > 0 && (
-                                    <span style={{
-                                        position: 'absolute', top: -6, right: -8,
-                                        minWidth: 16, height: 16, borderRadius: 999,
-                                        background: '#ef4444', color: '#fff',
-                                        fontSize: '.5rem', fontFamily: "'Bebas Neue'",
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        padding: '0 4px',
-                                        boxShadow: '0 2px 6px rgba(239,68,68,.55)',
-                                    }}>{bajoStockCount}</span>
+                    {grupos.map((g, idx) => {
+                        const abierto = grupoAbierto === g.id && !(collapsed && !isMobile);
+                        const grupoActivo = activo.grupo === g.id;
+                        return (
+                            <div key={g.id} className="sb-group" style={{ animationDelay: `${idx * 40}ms` }}>
+                                <button type="button" onClick={() => clickGrupo(g)}
+                                    className={`sb-item sb-group-btn${grupoActivo ? ' is-active' : ''}${abierto ? ' is-open' : ''}`}
+                                    aria-expanded={g.children ? abierto : undefined}
+                                    title={collapsed ? g.label : undefined}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', gap: 13, width: '100%',
+                                        padding: collapsed && !isMobile ? '12px 0' : '12px 22px', margin: '2px 0',
+                                        justifyContent: collapsed && !isMobile ? 'center' : 'flex-start',
+                                        color: grupoActivo || abierto ? '#fff' : navMut,
+                                        background: grupoActivo && !g.children ? 'linear-gradient(90deg, rgba(43,92,133,0.22), rgba(43,92,133,0.02))' : 'transparent',
+                                        border: 'none', cursor: 'pointer', textAlign: 'left',
+                                        fontSize: '.95rem', fontFamily: "'Outfit'", fontWeight: 500,
+                                    }}>
+                                    <span className="sb-icon" style={{ flexShrink: 0, display: 'flex', color: grupoActivo ? GOLD_LIGHT : 'inherit', position: 'relative' }}>
+                                        <g.icon />
+                                        {g.badgeStock && bajoStockCount > 0 && (
+                                            <span style={{ position: 'absolute', top: -6, right: -8, minWidth: 16, height: 16, borderRadius: 999, background: '#ef4444', color: '#fff', fontSize: '.5rem', fontFamily: "'Bebas Neue'", display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px', boxShadow: '0 2px 6px rgba(239,68,68,.55)' }}>{bajoStockCount}</span>
+                                        )}
+                                    </span>
+                                    {!(collapsed && !isMobile) && <span style={{ whiteSpace: 'nowrap', flex: 1 }}>{g.label}</span>}
+                                    {!(collapsed && !isMobile) && g.children && (
+                                        <svg className="sb-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18" /></svg>
+                                    )}
+                                </button>
+                                {g.children && !(collapsed && !isMobile) && (
+                                    <div className={`sb-sub${abierto ? ' is-open' : ''}`} role="group" aria-label={g.label} aria-hidden={!abierto}>
+                                        <div className="sb-sub-inner">
+                                            {g.children.map(c => {
+                                                const activoHijo = activo.to === c.to;
+                                                return (
+                                                    <NavLink key={c.to} to={c.to} tabIndex={abierto ? 0 : -1}
+                                                        className={`sb-subitem${activoHijo ? ' is-active' : ''}`}
+                                                        aria-current={activoHijo ? 'page' : undefined}>
+                                                        <span className="sb-subdot" />
+                                                        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.label}</span>
+                                                    </NavLink>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
                                 )}
-                            </span>
-                            {!collapsed && <span style={{ whiteSpace: 'nowrap' }}>{item.label}</span>}
-                            {/* Low stock badge text on Inventario */}
-                            {!collapsed && item.to === '/dashboard/inventario' && bajoStockCount > 0 && (
-                                <span style={{
-                                    marginLeft: 'auto',
-                                    fontFamily: "'Bebas Neue'", fontSize: '.5rem', letterSpacing: '.08em',
-                                    color: '#ef4444', background: 'rgba(239,68,68,.15)',
-                                    padding: '2px 7px', borderRadius: 999,
-                                }}>
-                                    {bajoStockCount} alert{bajoStockCount !== 1 ? 'as' : 'a'}
-                                </span>
-                            )}
-                        </NavLink>
-                    ))}
+                            </div>
+                        );
+                    })}
                 </nav>
 
                 {/* Toggle collapse — hidden on mobile */}

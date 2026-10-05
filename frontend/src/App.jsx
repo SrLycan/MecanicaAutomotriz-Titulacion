@@ -40,6 +40,17 @@ import PanelCliente   from './pages/PanelCliente';
 // Bitacora de actividad — solo administradores
 import Bitacora       from './pages/Bitacora';
 
+// Proveedores — solo administradores
+import Proveedores    from './pages/Proveedores';
+
+// Graficas — solo administradores
+import Graficas        from './pages/Graficas';
+
+// Proformas — administrador, tecnico y recepcionista (igual que Ordenes)
+import Proformas        from './pages/Proformas';
+import ProformaForm     from './pages/ProformaForm';
+import ProformaView     from './pages/ProformaView';
+
 import './styles/global.css';
 
 const ROLES_STAFF = ['administrador', 'tecnico', 'recepcionista'];
@@ -132,6 +143,36 @@ export default function App() {
                             <Route path="bitacora" element={
                                 <ProtectedRoute roles={['administrador']}>
                                     <Bitacora />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="proveedores" element={
+                                <ProtectedRoute roles={['administrador']}>
+                                    <Proveedores />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="graficas" element={
+                                <ProtectedRoute roles={['administrador']}>
+                                    <Graficas />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="proformas" element={
+                                <ProtectedRoute roles={['administrador','tecnico','recepcionista']}>
+                                    <Proformas />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="proformas/nueva" element={
+                                <ProtectedRoute roles={['administrador','tecnico','recepcionista']}>
+                                    <ProformaForm />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="proformas/:id/editar" element={
+                                <ProtectedRoute roles={['administrador','tecnico','recepcionista']}>
+                                    <ProformaForm />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="proformas/:id" element={
+                                <ProtectedRoute roles={['administrador','tecnico','recepcionista']}>
+                                    <ProformaView />
                                 </ProtectedRoute>
                             } />
                         </Route>

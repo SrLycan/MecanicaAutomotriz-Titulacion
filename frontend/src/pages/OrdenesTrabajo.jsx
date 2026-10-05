@@ -5,6 +5,7 @@
  * e incluye historial de cambios con timeline expandible por orden.
  */
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
@@ -27,6 +28,7 @@ function IconUser()  { return <svg width="13" height="13" viewBox="0 0 24 24" fi
 function IconChevron({ open }) { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" style={{ transform: open ? 'rotate(90deg)' : 'none', transition: 'transform .18s' }}><polyline points="9 18 15 12 9 6"/></svg>; }
 function IconArrowRight() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>; }
 function IconClock() { return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>; }
+function IconFileText() { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>; }
 
 export default function OrdenesTrabajo() {
     const confirm = useConfirm();
@@ -37,6 +39,7 @@ export default function OrdenesTrabajo() {
     const esTecnico      = tieneRol('tecnico');
     const puedeAsignar   = esAdmin || esRecepcionista;
     const puedeVerAcciones = esAdmin || esTecnico;
+    const navigate = useNavigate();
 
     const [ordenes, setOrdenes] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -240,7 +243,7 @@ export default function OrdenesTrabajo() {
                                         padding: '14px 20px', cursor: 'pointer', gap: 10 }}>
                                     <div style={{ minWidth: 0 }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                                            <span style={{ fontFamily: "'Bebas Neue'", fontSize: '1.3rem', letterSpacing: '.03em', color: txt }}>#{String(o.id).padStart(4, '0')}</span>
+                                            <span style={{ fontFamily: "'Bebas Neue'", fontSize: '1.3rem', letterSpacing: '.03em', color: txt }}>{o.numero || `OT-${String(o.id).padStart(6, '0')}`}</span>
                                             <span style={{ padding: '3px 10px', borderRadius: 999, background: `${est.color}14`, border: `1px solid ${est.color}35`, color: est.color, fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.16em' }}>{est.label.toUpperCase()}</span>
                                             {prog && (
                                                 <span style={{ padding: '3px 10px', borderRadius: 999, background: `${prog.color}14`, border: `1px solid ${prog.color}35`, color: prog.color, fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.16em' }}>{prog.label.toUpperCase()}</span>
@@ -348,6 +351,13 @@ export default function OrdenesTrabajo() {
                                                 <button onClick={() => setModal({ open: true, data: o })}
                                                     style={{ background: 'none', border: `1px solid ${bdr}`, borderRadius: 8, padding: '7px 12px', cursor: 'pointer', color: SKY_DEEP, display: 'flex', alignItems: 'center', gap: 6, fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.14em' }}>
                                                     <IconEdit /> EDITAR / ASIGNAR
+                                                </button>
+                                            )}
+                                            {/* Generar Proforma: mismo criterio de permisos que Proformas (soloStaff) */}
+                                            {o.vehiculo_id && (
+                                                <button onClick={() => navigate(`/dashboard/proformas/nueva?desde_orden=${o.id}`)}
+                                                    style={{ background: 'none', border: `1px solid ${bdr}`, borderRadius: 8, padding: '7px 12px', cursor: 'pointer', color: '#8b5cf6', display: 'flex', alignItems: 'center', gap: 6, fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.14em' }}>
+                                                    <IconFileText /> GENERAR PROFORMA
                                                 </button>
                                             )}
                                             {/* Eliminar: solo admin */}

@@ -57,7 +57,7 @@ const miActividad = async (req, res) => {
         // 4. Repuestos disponibles para venta al público
         const { rows: repuestosVenta } = await pool.query(
             `SELECT r.id, r.codigo, r.nombre, r.descripcion, r.precio_venta,
-                    r.stock_actual, r.unidad_medida, r.imagen_url,
+                    r.stock_actual::float8 AS stock_actual, r.unidad_medida, r.imagen_url,
                     c.nombre AS categoria_nombre
              FROM repuestos r
              LEFT JOIN categorias_repuesto c ON c.id = r.categoria_id

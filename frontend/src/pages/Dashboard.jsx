@@ -41,6 +41,12 @@ export default function Dashboard() {
     const puedeVerMovimientos = tieneRol('administrador', 'tecnico', 'recepcionista');
     const [loading, setLoading] = useState(true);
 
+    // ── Fase 5: KPIs adicionales de negocio (Proveedores + Graficas) ──
+    // Estado y fetch completamente separados de los de arriba, para no
+    // tocar la logica ni el loading existente del Dashboard.
+    const [negocio, setNegocio] = useState(null);
+    const [loadingNegocio, setLoadingNegocio] = useState(true);
+
     const SKY      = '#0ea5e9';
     const SKY_DEEP = '#0284c7';
     const SKY_PALE = isDark ? 'rgba(14,165,233,0.10)' : 'rgba(14,165,233,0.05)';
@@ -103,6 +109,28 @@ export default function Dashboard() {
         };
         cargar();
     }, [puedeVerMovimientos]);
+
+    // Fase 5: KPIs de negocio (solo administrador, fetch aislado y silencioso
+    // ante errores — nunca debe romper ni retrasar el resto del Dashboard).
+    useEffect(() => {
+        if (usuario?.rol !== 'administrador') { setLoadingNegocio(false); return; }
+        (async () => {
+            setLoadingNegocio(true);
+            try {
+                const [resumenRes, prodRes, servRes] = await Promise.all([
+                    api.get('/proveedores/resumen?periodo=mes').catch(() => ({ data: null })),
+                    api.get('/estadisticas/productos-mas-vendidos?periodo=mes&limit=1').catch(() => ({ data: null })),
+                    api.get('/estadisticas/servicios-mas-solicitados?periodo=mes&limit=1').catch(() => ({ data: null })),
+                ]);
+                setNegocio({
+                    resumen: resumenRes.data,
+                    productoTop: prodRes.data?.productos?.[0] || null,
+                    servicioTop: servRes.data?.servicios?.[0] || null,
+                });
+            } catch { setNegocio(null); }
+            finally { setLoadingNegocio(false); }
+        })();
+    }, [usuario?.rol]);
 
     const meta = ROL_META[usuario?.rol] || ROL_META.recepcionista;
     const esAdmin     = usuario?.rol === 'administrador';
@@ -244,6 +272,51 @@ export default function Dashboard() {
                             </p>
                         </div>
                     ))}
+                </div>
+            )}
+
+            {/* ── Fase 5: Resumen del Negocio (solo admin) — seccion NUEVA, ── */}
+            {/* no reemplaza ni modifica las tarjetas de arriba.             */}
+            {esAdmin && (
+                <div style={{ marginBottom: 28 }}>
+                    <div className="dash-section-header" style={{ display: 'flex', alignItems: 'center', marginBottom: 14, gap: 10 }}>
+                        <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.5rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>
+                            Resumen del Negocio · Este mes
+                        </h2>
+                        <div className="separator" style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(14,165,233,0.2), transparent)' }} />
+                        <Link to="/dashboard/graficas" style={{ fontFamily: "'Bebas Neue'", fontSize: '.68rem', letterSpacing: '.14em', color: SKY, textDecoration: 'none' }}>VER GRÁFICAS</Link>
+                    </div>
+
+                    {loadingNegocio ? (
+                        <div className="dash-stats-grid">
+                            {Array(6).fill(0).map((_, i) => (
+                                <div key={i} className="sk-pulse" style={{ height: 110, background: card, border: `1px solid ${bdr}`, borderRadius: 16 }} />
+                            ))}
+                        </div>
+                    ) : !negocio ? (
+                        <p style={{ fontFamily: "'Outfit'", fontSize: '.85rem', color: mut }}>No se pudo cargar el resumen de negocio en este momento.</p>
+                    ) : (
+                        <div className="dash-stats-grid">
+                            {[
+                                { key: 'compras',   label: 'Compras a Proveedores', val: `$${Number(negocio.resumen?.total_comprado || 0).toFixed(2)}`,  color: SKY_DEEP },
+                                { key: 'gastos',    label: 'Gastos del Periodo',     val: `$${Number(negocio.resumen?.total_gastos || 0).toFixed(2)}`,   color: '#ef4444' },
+                                { key: 'deudas',    label: 'Deudas con Proveedores', val: `$${Number(negocio.resumen?.total_pendiente || 0).toFixed(2)}`, color: '#f59e0b' },
+                                { key: 'proveed',   label: 'Proveedores Activos',    val: negocio.resumen?.proveedores_activos ?? 0,                       color: '#8b5cf6' },
+                                { key: 'prodTop',   label: 'Producto Más Vendido',   val: negocio.productoTop ? negocio.productoTop.nombre : 'Sin datos',  color: '#6366f1', small: true },
+                                { key: 'servTop',   label: 'Servicio Más Solicitado', val: negocio.servicioTop ? negocio.servicioTop.nombre : 'Sin datos', color: '#10b981', small: true },
+                            ].map((c, i) => (
+                                <div key={c.key} className="dash-card"
+                                    style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 16, padding: '22px 24px 20px', boxShadow: cardSh, animationDelay: `${i * 70}ms` }}>
+                                    <div className="glow" style={{ background: `radial-gradient(closest-side, ${c.color}, transparent)` }} />
+                                    <div style={{ position: 'absolute', top: 0, left: 0, width: 3, height: '100%', background: `linear-gradient(180deg, ${c.color}, transparent)` }} />
+                                    <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.68rem', letterSpacing: '.22em', color: mut, marginBottom: 14 }}>{c.label.toUpperCase()}</p>
+                                    <p style={{ fontFamily: c.small ? "'Outfit'" : "'Bebas Neue'", fontWeight: c.small ? 700 : 400, fontSize: c.small ? '1.15rem' : '2rem', letterSpacing: '.02em', color: c.color, lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                        {c.val}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
 

@@ -1,0 +1,95 @@
+/**
+ * SS SWAP - Estilos de la seccion Proveedores
+ * Reutiliza .modal-backdrop / .modal-box / .SS SWAP-chip definidos en global.css
+ */
+
+.prov-tabs {
+    display: flex;
+    gap: 6px;
+    border-bottom: 1px solid var(--prov-bdr, rgba(148,163,184,0.18));
+    margin-bottom: 20px;
+    overflow-x: auto;
+}
+
+.prov-tab-btn {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: .8rem;
+    letter-spacing: .12em;
+    background: none;
+    border: none;
+    padding: 12px 18px 14px;
+    cursor: pointer;
+    color: var(--prov-mut, #64748b);
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: color .15s, border-color .15s;
+}
+
+.prov-tab-btn.active {
+    color: var(--prov-sky, #0284c7);
+    border-bottom-color: var(--prov-sky, #0284c7);
+}
+
+.prov-table-wrap {
+    overflow-x: auto;
+    border-radius: 14px;
+}
+
+.prov-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 720px;
+}
+
+.prov-table th {
+    text-align: left;
+    padding: 12px 14px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: .66rem;
+    letter-spacing: .18em;
+    white-space: nowrap;
+}
+
+.prov-table td {
+    padding: 12px 14px;
+    font-family: 'Outfit', sans-serif;
+    font-size: .85rem;
+    vertical-align: middle;
+}
+
+.prov-table tbody tr {
+    border-top: 1px solid var(--prov-bdr, rgba(148,163,184,0.14));
+    transition: background .15s;
+}
+
+.prov-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: .62rem;
+    letter-spacing: .12em;
+    white-space: nowrap;
+}
+
+.prov-icon-btn {
+    background: none;
+    border: 1px solid var(--prov-bdr, rgba(148,163,184,0.18));
+    border-radius: 8px;
+    padding: 7px;
+    cursor: pointer;
+    display: inline-flex;
+}
+
+.prov-items-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr auto;
+    gap: 8px;
+    align-items: center;
+}
+
+@media (max-width: 640px) {
+    .prov-items-row { grid-template-columns: 1fr; }
+}

@@ -5,6 +5,7 @@
  * y registro de movimientos de entrada/salida directamente desde la ficha del repuesto.
  */
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import useParamUrl from '../hooks/useParamUrl';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
@@ -187,6 +188,12 @@ export default function Inventario() {
     const [bulkCategoria, setBulkCategoria] = useState('');
     const [bulkBusy, setBulkBusy] = useState(false);
     const debounceRef = useRef(null);
+    // Sprint 14: dos inventarios sobre el mismo catalogo (columna repuestos.area)
+    // El area se lee de la URL (?area=colisiones): el submenu Inventario >
+    // Colisiones / Pintura abre directamente ese inventario.
+    const [areaUrl, setAreaUrl] = useParamUrl('area', 'mecanica', ['mecanica', 'colisiones']);
+    const [area, setArea] = useState(areaUrl);
+    const areaRef = useRef(areaUrl);
 
     const esAdmin    = tieneRol('administrador');
     const esAdminTec = tieneRol('administrador', 'tecnico');
@@ -223,6 +230,7 @@ export default function Inventario() {
             if (q)      params.set('q', q);
             if (catId)  params.set('categoria_id', catId);
             if (alerta) params.set('bajo_stock', 'true');
+            params.set('area', areaRef.current);
             params.set('page', pg);
             params.set('limit', 15);
             const { data } = await api.get(`/inventory/repuestos?${params}`);
@@ -233,10 +241,30 @@ export default function Inventario() {
         finally { setLoading(false); }
     }, []);
 
+    const cargarCategorias = useCallback((a) => {
+        api.get(`/inventory/categorias?area=${a}`).then(r => setCategorias(r.data.categorias || [])).catch(() => {});
+    }, []);
+
     useEffect(() => {
         cargarRepuestos();
-        api.get('/inventory/categorias').then(r => setCategorias(r.data.categorias || [])).catch(() => {});
-    }, [cargarRepuestos]);
+        cargarCategorias(areaRef.current);
+    }, [cargarRepuestos, cargarCategorias]);
+
+    // Si la URL cambia (menu lateral o boton), se aplica el area
+    useEffect(() => {
+        if (areaUrl !== areaRef.current) cambiarArea(areaUrl);
+        // eslint-disable-next-line
+    }, [areaUrl]);
+
+    const cambiarArea = (nueva) => {
+        if (nueva === areaRef.current) return;
+        areaRef.current = nueva;
+        setArea(nueva);
+        setFiltroCateg('');
+        setBulkCategoria('');
+        cargarCategorias(nueva);
+        cargarRepuestos(busqueda, '', soloAlerta, 1);
+    };
 
     // Show low stock alert modal only on initial page load
     useEffect(() => {
@@ -316,6 +344,7 @@ export default function Inventario() {
         stock_actual: repuesto.stock_actual ?? 0,
         stock_minimo: repuesto.stock_minimo ?? 0,
         unidad_medida: repuesto.unidad_medida || 'unidad',
+        area: repuesto.area || areaRef.current,
         activo: repuesto.activo !== false,
         imagen_url: getImagenSrc(repuesto),
         ...overrides,
@@ -454,6 +483,23 @@ export default function Inventario() {
                         <IconPlus /> NUEVO REPUESTO
                     </button>
                 )}
+            </div>
+
+            {/* ── Selector de inventario (Sprint 14) ── */}
+            <div role="tablist" aria-label="Tipo de inventario" style={{ display: 'flex', gap: 10, marginBottom: 18, flexWrap: 'wrap' }}>
+                {[{ v: 'mecanica', t: 'Inventario Mecánica', d: 'Repuestos, filtros, baterías, eléctricos...' },
+                  { v: 'colisiones', t: 'Inventario Colisiones / Pintura', d: 'Pinturas, masillas, lijas, primer, barniz...' }].map(op => {
+                    const activo = area === op.v;
+                    return (
+                        <button key={op.v} role="tab" aria-selected={activo} onClick={() => setAreaUrl(op.v)}
+                            style={{ flex: '1 1 260px', textAlign: 'left', cursor: 'pointer', borderRadius: 14, padding: '14px 18px',
+                                border: `2px solid ${activo ? SKY_DEEP : bdr}`, background: activo ? SKY_PALE : card, boxShadow: activo ? 'none' : cardSh,
+                                transition: 'border-color .15s, background .15s' }}>
+                            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.05rem', letterSpacing: '.08em', color: activo ? SKY_DEEP : txt }}>{op.t.toUpperCase()}</p>
+                            <p style={{ fontFamily: "'Outfit'", fontSize: '.78rem', color: mut, marginTop: 2 }}>{op.d}</p>
+                        </button>
+                    );
+                })}
             </div>
 
             {/* ── KPI Cards ── */}
@@ -757,7 +803,7 @@ export default function Inventario() {
             </div>
 
             {/* Modales */}
-            {modalRep.open && <ModalRepuesto repuesto={modalRep.data} categorias={categorias} onGuardar={handleGuardar} onCerrar={() => setModalRep({ open: false, data: null })} />}
+            {modalRep.open && <ModalRepuesto repuesto={modalRep.data} categorias={categorias} areaInicial={area} onGuardar={handleGuardar} onCerrar={() => setModalRep({ open: false, data: null })} />}
             {modalMov.open && <ModalMovimiento repuesto={modalMov.repuesto} onGuardado={() => {            setModalMov({ open: false, repuesto: null }); cargarRepuestos(busqueda, filtroCateg, soloAlerta, page); toast.success('Movimiento registrado.'); }} onCerrar={() => setModalMov({ open: false, repuesto: null })} />}
             {showAlertModal && bajoStockList.length > 0 && (
                 <StockAlertModal

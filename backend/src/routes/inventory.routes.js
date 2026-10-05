@@ -6,7 +6,7 @@ const router  = express.Router();
 const { verificarToken, verificarRol, soloStaff } = require('../middleware/auth.middleware');
 const {
     listarRepuestos, obtenerRepuesto, crearRepuesto, actualizarRepuesto, eliminarRepuesto,
-    registrarMovimiento, listarMovimientos, listarCategorias, toggleEnVenta, listarPublico
+    registrarMovimiento, listarMovimientos, filtrosMovimientos, listarCategorias, toggleEnVenta, listarPublico
 } = require('../controllers/inventory.controller');
 
 // Catalogo publico — sin autenticacion (usado por la pagina publica de Productos)
@@ -28,6 +28,7 @@ router.delete('/repuestos/:id',   verificarRol('administrador'), eliminarRepuest
 
 // Movimientos — registro: admin + tecnico + recepcionista; consulta: staff
 router.post('/movimientos',       verificarRol('administrador','tecnico','recepcionista'), registrarMovimiento);
+router.get('/movimientos/filtros', soloStaff, filtrosMovimientos);
 router.get('/movimientos',        soloStaff, listarMovimientos);
 
 module.exports = router;

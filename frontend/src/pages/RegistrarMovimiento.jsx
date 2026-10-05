@@ -23,7 +23,7 @@ export default function RegistrarMovimiento() {
     const [selected, setSelected] = useState(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [form, setForm] = useState({ tipo: 'entrada', cantidad: '', motivo: '', referencia: '' });
+    const [form, setForm] = useState({ tipo: 'entrada', cantidad: '', motivo: '', referencia: '', origen: 'manual' });
     const [error, setError] = useState('');
     const [step, setStep] = useState('select'); // 'select' | 'form' | 'done'
 
@@ -44,7 +44,7 @@ export default function RegistrarMovimiento() {
 
     useEffect(() => {
         setLoading(true);
-        api.get('/inventory/repuestos')
+        api.get('/inventory/repuestos?limit=500')
             .then(r => setRepuestos(r.data.repuestos || []))
             .catch(() => toast.error('Error al cargar repuestos'))
             .finally(() => setLoading(false));
@@ -62,15 +62,15 @@ export default function RegistrarMovimiento() {
 
     const esEntrada = form.tipo === 'entrada';
     const accentColor = esEntrada ? '#10b981' : '#ef4444';
-    const qty = parseInt(form.cantidad) || 0;
-    const stockNuevo = selected ? (esEntrada ? selected.stock_actual + qty : selected.stock_actual - qty) : 0;
+    const qty = Math.round((parseFloat(form.cantidad) || 0) * 100) / 100; // stock decimal (Sprint 14)
+    const stockNuevo = selected ? (esEntrada ? Math.round((Number(selected.stock_actual) + qty) * 100) / 100 : Math.round((Number(selected.stock_actual) - qty) * 100) / 100) : 0;
 
     const inputSt = { width: '100%', boxSizing: 'border-box', padding: '10px 13px', borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: txt, fontFamily: "'Outfit', sans-serif", fontWeight: 400, fontSize: '.88rem', outline: 'none' };
     const labelSt = { display: 'block', marginBottom: 6, fontFamily: "'Bebas Neue', sans-serif", fontSize: '.62rem', letterSpacing: '.22em', color: SKY_DEEP, WebkitTextFillColor: SKY_DEEP, background: 'none' };
 
     const handleSelect = (r) => {
         setSelected(r);
-        setForm({ tipo: 'entrada', cantidad: '', motivo: '', referencia: '' });
+        setForm({ tipo: 'entrada', cantidad: '', motivo: '', referencia: '', origen: 'manual' });
         setError('');
         setStep('form');
     };
@@ -87,6 +87,7 @@ export default function RegistrarMovimiento() {
                 cantidad: qty,
                 motivo: form.motivo,
                 referencia: form.referencia,
+                origen: form.origen,
             });
             toast.success(`Movimiento registrado: ${esEntrada ? '+' : '-'}${qty} ${selected.nombre}`);
             // Update local stock
@@ -100,7 +101,7 @@ export default function RegistrarMovimiento() {
 
     const resetAll = () => {
         setSelected(null);
-        setForm({ tipo: 'entrada', cantidad: '', motivo: '', referencia: '' });
+        setForm({ tipo: 'entrada', cantidad: '', motivo: '', referencia: '', origen: 'manual' });
         setError('');
         setStep('select');
     };
@@ -207,6 +208,7 @@ export default function RegistrarMovimiento() {
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 3 }}>
                                                 <code style={{ fontFamily: 'monospace', fontSize: '.7rem', fontWeight: 600, background: SKY_PALE, padding: '1px 7px', borderRadius: 5, color: SKY_DEEP, border: `1px solid ${SKY_BDR}` }}>{r.codigo}</code>
                                                 {r.categoria_nombre && <span style={{ fontFamily: "'Outfit'", fontSize: '.72rem', color: mut }}>{r.categoria_nombre}</span>}
+                                                {r.area && <span style={{ fontFamily: "'Outfit'", fontSize: '.68rem', color: r.area === 'colisiones' ? '#f97316' : SKY_DEEP, marginLeft: 6 }}>{r.area === 'colisiones' ? 'COLISIONES / PINTURA' : 'MECÁNICA'}</span>}
                                             </div>
                                         </div>
 
@@ -294,7 +296,7 @@ export default function RegistrarMovimiento() {
                                                     fontFamily: "'Bebas Neue'", fontSize: '.78rem', letterSpacing: '.14em',
                                                     cursor: 'pointer', transition: 'all .18s',
                                                 }}
-                                                onClick={() => { setForm(f => ({ ...f, tipo: t.val })); setError(''); }}>
+                                                onClick={() => { setForm(f => ({ ...f, tipo: t.val, origen: t.val === 'salida' && f.origen === 'devolucion' ? 'manual' : f.origen })); setError(''); }}>
                                                 {t.icon} {t.label}
                                             </button>
                                         );
@@ -302,10 +304,21 @@ export default function RegistrarMovimiento() {
                                 </div>
                             </div>
 
+                            {/* Origen (Sprint 14): diferencia salida manual / ajuste / devolucion.
+                                Las salidas por proforma y entradas por compra las registra el sistema. */}
+                            <div>
+                                <label style={labelSt}>ORIGEN DEL MOVIMIENTO</label>
+                                <select value={form.origen} onChange={e => { const o = e.target.value; setForm(f => ({ ...f, origen: o, tipo: o === 'devolucion' ? 'entrada' : f.tipo })); setError(''); }} style={inputSt}>
+                                    <option value="manual">{esEntrada ? 'Entrada manual' : 'Salida manual'}</option>
+                                    <option value="ajuste">Ajuste de inventario (conteo físico, merma, daño)</option>
+                                    <option value="devolucion">Devolución (entrada)</option>
+                                </select>
+                            </div>
+
                             {/* Cantidad */}
                             <div>
                                 <label style={labelSt}>CANTIDAD *</label>
-                                <input type="number" min="1" name="cantidad"
+                                <input type="number" min="0.01" step="0.01" name="cantidad"
                                     value={form.cantidad} onChange={e => { setForm(f => ({ ...f, cantidad: e.target.value })); setError(''); }}
                                     required placeholder="0"
                                     style={{ ...inputSt, fontSize: '1.15rem', textAlign: 'center', fontFamily: "'Bebas Neue'", letterSpacing: '.04em', padding: '12px' }} />
@@ -373,7 +386,7 @@ export default function RegistrarMovimiento() {
                         Se ha registrado {esEntrada ? 'una entrada' : 'una salida'} de <strong style={{ color: txt }}>{qty} {qty === 1 ? 'unidad' : 'unidades'}</strong> de <strong style={{ color: txt }}>{selected?.nombre}</strong>.
                     </p>
                     <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-                        <button onClick={() => { resetAll(); setRepuestos([]); setLoading(true); api.get('/inventory/repuestos').then(r => setRepuestos(r.data.repuestos || [])).finally(() => setLoading(false)); }}
+                        <button onClick={() => { resetAll(); setRepuestos([]); setLoading(true); api.get('/inventory/repuestos?limit=500').then(r => setRepuestos(r.data.repuestos || [])).finally(() => setLoading(false)); }}
                             style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontFamily: "'Bebas Neue'", fontSize: '.78rem', letterSpacing: '.14em', color: '#fff', background: `linear-gradient(135deg, ${SKY_DEEP}, ${SKY})`, border: 'none', borderRadius: 10, padding: '11px 24px', cursor: 'pointer', boxShadow: `0 6px 18px -6px ${SKY}` }}>
                             NUEVO MOVIMIENTO
                         </button>

@@ -1,0 +1,72 @@
+/**
+ * SS SWAP - Enrutador de Proveedores (/api/proveedores)
+ *
+ * Agrupa, siguiendo el mismo patron que ordenes.routes.js (clientes +
+ * vehiculos + ordenes bajo /api/ordenes), los sub-recursos de la seccion
+ * "Proveedores" del panel: proveedores, sus contactos, gastos, compras y
+ * el historial financiero.
+ *
+ * Todo el modulo queda restringido a 'administrador', igual que Sucursales
+ * y Servicios (secciones ya existentes con informacion sensible del
+ * negocio). Si se necesita abrir lectura a otros roles, se ajusta aqui.
+ */
+const express = require('express');
+const router  = express.Router();
+const { verificarToken, verificarRol } = require('../middleware/auth.middleware');
+
+const {
+    listarProveedores, obtenerProveedor, crearProveedor, actualizarProveedor, eliminarProveedor,
+    listarContactos, crearContacto, actualizarContacto, cambiarEstadoContacto, eliminarContacto,
+} = require('../controllers/proveedores.controller');
+
+const {
+    listarGastos, obtenerGasto, crearGasto, actualizarGasto, eliminarGasto,
+} = require('../controllers/gastosProveedor.controller');
+
+const {
+    listarCompras, obtenerCompra, crearCompra, actualizarCompra, cambiarEstadoCompra, eliminarCompra,
+} = require('../controllers/comprasProveedor.controller');
+
+const {
+    listarMovimientos, registrarMovimiento, cambiarEstadoMovimiento, resumenFinanciero,
+} = require('../controllers/movimientosFinancieros.controller');
+
+// Todas las rutas de este modulo requieren estar autenticado como administrador
+router.use(verificarToken, verificarRol('administrador'));
+
+// ── Proveedores ──────────────────────────────────────────────
+router.get('/proveedores',        listarProveedores);
+router.get('/proveedores/:id',    obtenerProveedor);
+router.post('/proveedores',       crearProveedor);
+router.put('/proveedores/:id',    actualizarProveedor);
+router.delete('/proveedores/:id', eliminarProveedor);
+
+// ── Contactos de proveedor ───────────────────────────────────
+router.get('/contactos',              listarContactos);
+router.post('/contactos',             crearContacto);
+router.put('/contactos/:id',          actualizarContacto);
+router.patch('/contactos/:id/estado', cambiarEstadoContacto);
+router.delete('/contactos/:id',       eliminarContacto);
+
+// ── Gastos ───────────────────────────────────────────────────
+router.get('/gastos',        listarGastos);
+router.get('/gastos/:id',    obtenerGasto);
+router.post('/gastos',       crearGasto);
+router.put('/gastos/:id',    actualizarGasto);
+router.delete('/gastos/:id', eliminarGasto);
+
+// ── Compras ──────────────────────────────────────────────────
+router.get('/compras',              listarCompras);
+router.get('/compras/:id',          obtenerCompra);
+router.post('/compras',             crearCompra);
+router.put('/compras/:id',          actualizarCompra);
+router.patch('/compras/:id/estado', cambiarEstadoCompra);
+router.delete('/compras/:id',       eliminarCompra);
+
+// ── Historial financiero + resumen ───────────────────────────
+router.get('/movimientos',               listarMovimientos);
+router.post('/movimientos',              registrarMovimiento);
+router.patch('/movimientos/:id/estado',  cambiarEstadoMovimiento);
+router.get('/resumen',                   resumenFinanciero);
+
+module.exports = router;

@@ -6,10 +6,14 @@
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
+import { useSearchParams } from 'react-router-dom';
+import useParamUrl from '../hooks/useParamUrl';
 import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
 import { useConfirm } from '../components/common/ConfirmDialog';
+import PagareTab from '../components/clientes/PagareTab';
 import './Clientes.css';
+import '../pages/Proveedores.css';
 
 function IconPlus() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>; }
 function IconSearch() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>; }
@@ -106,6 +110,10 @@ export default function Clientes() {
     const [loading, setLoading] = useState(true);
     const [busqueda, setBusqueda] = useState('');
     const [modal, setModal] = useState({ open: false, data: null });
+    // ?tab=pagare&cuenta=ID abre directamente un pagare (enlace desde la proforma)
+    const [searchParams] = useSearchParams();
+    const [tab, setTab] = useParamUrl('tab', 'clientes', ['clientes', 'pagare'], ['cuenta']);
+    const cuentaInicial = searchParams.get('cuenta');
 
     const SKY = '#c9a227';
     const SKY_DEEP = '#a87a14';
@@ -191,6 +199,15 @@ export default function Clientes() {
                 </button>
             </div>
 
+            <div className="prov-tabs" style={{ '--prov-bdr': bdr, '--prov-mut': mut, '--prov-sky': SKY_DEEP }}>
+                <button className={`prov-tab-btn ${tab === 'clientes' ? 'active' : ''}`} onClick={() => setTab('clientes')}>CLIENTES</button>
+                <button className={`prov-tab-btn ${tab === 'pagare' ? 'active' : ''}`} onClick={() => setTab('pagare')}>PAGARÉ</button>
+            </div>
+
+            {tab === 'pagare' ? (
+                <PagareTab theme={{ txt, txtSf, mut, bdr, card, cardSh, inputBg, SKY, SKY_DEEP, isDark }} cuentaInicial={cuentaInicial} />
+            ) : (
+            <>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 14, marginBottom: 20 }}>
                 <Kpi label="Total" value={stats.total} color={SKY} card={card} bdr={bdr} mut={mut} txt={txt} sh={cardSh} />
                 <Kpi label="Con correo" value={stats.conEmail} color="#10b981" card={card} bdr={bdr} mut={mut} txt={txt} sh={cardSh} />
@@ -241,6 +258,8 @@ export default function Clientes() {
             )}
 
             {modal.open && <ModalCliente open={modal.open} data={modal.data} onClose={() => setModal({ open: false, data: null })} onGuardar={guardarCliente} isDark={isDark} />}
+            </>
+            )}
         </div>
     );
 }

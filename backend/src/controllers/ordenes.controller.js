@@ -13,7 +13,7 @@
  */
 const pool = require('../config/db');
 const {
-    registrarHistorial, obtenerHistorialPorOrden,
+    registrarHistorial, obtenerHistorialPorOrden, registrarAccionBitacora,
     listarHistorialGeneral: listarHistorialGeneralService,
 } = require('../services/ordenesHistorial.service');
 
@@ -133,6 +133,19 @@ const crearCliente = async (req, res) => {
 const eliminarCliente = async (req, res) => {
     const { id } = req.params;
     try {
+        // Sprint 15: un cliente con historial (ordenes, proformas, pagares)
+        // no se borra: antes el DELETE fallaba con error 500 o borraba sus
+        // vehiculos en cascada dejando proformas sin vehiculo.
+        const { rows: hist } = await pool.query(
+            `SELECT (SELECT COUNT(*)::int FROM ordenes_trabajo WHERE cliente_id = $1) AS ordenes,
+                    (SELECT COUNT(*)::int FROM proformas WHERE cliente_id = $1) AS proformas,
+                    (SELECT COUNT(*)::int FROM cuentas_cobrar WHERE cliente_id = $1) AS cuentas`,
+            [id]
+        );
+        const h = hist[0];
+        if (h.ordenes || h.proformas || h.cuentas) {
+            return res.status(409).json({ error: `No se puede eliminar: el cliente tiene ${[h.ordenes && `${h.ordenes} orden(es)`, h.proformas && `${h.proformas} proforma(s)`, h.cuentas && `${h.cuentas} cuenta(s) por cobrar`].filter(Boolean).join(', ')} registradas.` });
+        }
         const { rowCount } = await pool.query('DELETE FROM clientes WHERE id = $1', [id]);
         if (rowCount === 0) return res.status(404).json({ error: 'Cliente no encontrado.' });
         return res.json({ ok: true });
@@ -248,6 +261,16 @@ const actualizarVehiculo = async (req, res) => {
 const eliminarVehiculo = async (req, res) => {
     const { id } = req.params;
     try {
+        const { rows: hist } = await pool.query(
+            `SELECT (SELECT COUNT(*)::int FROM ordenes_trabajo WHERE vehiculo_id = $1) AS ordenes,
+                    (SELECT COUNT(*)::int FROM proformas WHERE vehiculo_id = $1) AS proformas,
+                    (SELECT COUNT(*)::int FROM cuentas_cobrar WHERE vehiculo_id = $1) AS cuentas`,
+            [id]
+        );
+        const h = hist[0];
+        if (h.ordenes || h.proformas || h.cuentas) {
+            return res.status(409).json({ error: `No se puede eliminar: el vehículo tiene ${[h.ordenes && `${h.ordenes} orden(es)`, h.proformas && `${h.proformas} proforma(s)`, h.cuentas && `${h.cuentas} cuenta(s) por cobrar`].filter(Boolean).join(', ')} registradas.` });
+        }
         const { rowCount } = await pool.query('DELETE FROM vehiculos WHERE id = $1', [id]);
         if (rowCount === 0) return res.status(404).json({ error: 'Vehiculo no encontrado.' });
         return res.json({ ok: true });
@@ -502,7 +525,9 @@ const obtenerHistorialOrden = async (req, res) => {
 const listarHistorialGeneral = async (req, res) => {
     const pagina    = parseInt(req.query.pagina, 10) || 1;
     const porPagina = Math.min(parseInt(req.query.porPagina, 10) || 20, 100);
-    const resultado = await listarHistorialGeneralService({ pagina, porPagina });
+    const tipo      = req.query.tipo === 'otras' ? 'otras' : 'orden';
+    const entidad   = typeof req.query.entidad === 'string' && /^[a-z_]{1,40}$/.test(req.query.entidad) ? req.query.entidad : null;
+    const resultado = await listarHistorialGeneralService({ pagina, porPagina, tipo, entidad });
     return res.json(resultado);
 };
 
@@ -512,8 +537,25 @@ const listarHistorialGeneral = async (req, res) => {
 const eliminarOrden = async (req, res) => {
     const { id } = req.params;
     try {
-        const { rowCount } = await pool.query('DELETE FROM ordenes_trabajo WHERE id = $1', [id]);
+        // Sprint 14: una OT con pagare/pagos o con salidas de inventario es
+        // parte del historial financiero y de inventario: no se borra.
+        const { rows: ligados } = await pool.query(
+            `SELECT
+                (SELECT COUNT(*)::int FROM cuentas_cobrar WHERE orden_id = $1 AND estado <> 'anulado') AS cuentas,
+                (SELECT COUNT(*)::int FROM movimientos_inventario WHERE orden_id = $1) AS movimientos`,
+            [id]
+        );
+        if (ligados[0].cuentas > 0) return res.status(409).json({ error: 'Esta orden tiene un pagare/cuenta por cobrar activo. Anulalo antes de eliminar la orden.' });
+        if (ligados[0].movimientos > 0) return res.status(409).json({ error: 'Esta orden tiene movimientos de inventario asociados y no se puede eliminar.' });
+
+        const { rows: delRows, rowCount } = await pool.query('DELETE FROM ordenes_trabajo WHERE id = $1 RETURNING id, cliente_id', [id]);
         if (rowCount === 0) return res.status(404).json({ error: 'Orden no encontrada.' });
+        registrarAccionBitacora({
+            entidad_tipo: 'orden_eliminada', entidad_id: Number(id), accion: 'eliminada',
+            usuario_id: req.usuario?.id || null, usuario_nombre: req.usuario?.nombre || null,
+            detalle: `Orden de trabajo OT-${String(id).padStart(6, '0')} eliminada.`,
+            metadata: { orden_id: Number(id), cliente_id: delRows[0].cliente_id },
+        });
         return res.json({ ok: true });
     } catch (err) {
         console.error('Error eliminarOrden:', err);

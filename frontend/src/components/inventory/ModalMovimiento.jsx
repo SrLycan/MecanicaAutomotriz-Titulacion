@@ -12,7 +12,7 @@ function IconOut()  { return <svg width="14" height="14" viewBox="0 0 24 24" fil
 
 export default function ModalMovimiento({ repuesto, onGuardado, onCerrar }) {
     const { isDark } = useTheme();
-    const [form, setForm]     = useState({ tipo: 'entrada', cantidad: '', motivo: '', referencia: '' });
+    const [form, setForm]     = useState({ tipo: 'entrada', cantidad: '', motivo: '', referencia: '', origen: 'manual' });
     const [saving, setSaving] = useState(false);
     const [error,  setError]  = useState('');
 
@@ -46,8 +46,8 @@ export default function ModalMovimiento({ repuesto, onGuardado, onCerrar }) {
     // evitar salidas que dejarian el stock en negativo.
     const esEntrada   = form.tipo === 'entrada';
     const accentColor = esEntrada ? '#10b981' : '#ef4444';
-    const qty         = parseInt(form.cantidad) || 0;
-    const stockNuevo  = esEntrada ? repuesto.stock_actual + qty : repuesto.stock_actual - qty;
+    const qty         = Math.round((parseFloat(form.cantidad) || 0) * 100) / 100; // stock decimal (Sprint 14)
+    const stockNuevo  = esEntrada ? Math.round((Number(repuesto.stock_actual) + qty) * 100) / 100 : Math.round((Number(repuesto.stock_actual) - qty) * 100) / 100;
 
     const handleChange = (e) => { setForm({ ...form, [e.target.name]: e.target.value }); setError(''); };
     const onFocus = (e) => { e.target.style.borderColor = SKY; e.target.style.boxShadow = `0 0 0 3px rgba(14,165,233,.14)`; };
@@ -60,7 +60,7 @@ export default function ModalMovimiento({ repuesto, onGuardado, onCerrar }) {
         try {
             await api.post('/inventory/movimientos', {
                 repuesto_id: repuesto.id, tipo: form.tipo, cantidad: qty,
-                motivo: form.motivo, referencia: form.referencia,
+                motivo: form.motivo, referencia: form.referencia, origen: form.origen,
             });
             onGuardado();
         } catch (err) {
@@ -154,7 +154,7 @@ export default function ModalMovimiento({ repuesto, onGuardado, onCerrar }) {
                                             cursor: 'pointer', transition: 'all .18s', textTransform: 'uppercase',
                                             boxShadow: active ? `0 6px 18px -8px ${t.color}` : 'none',
                                         }}
-                                        onClick={() => setForm(f => ({ ...f, tipo: t.val }))}>
+                                        onClick={() => setForm(f => ({ ...f, tipo: t.val, origen: t.val === 'salida' && f.origen === 'devolucion' ? 'manual' : f.origen }))}>
                                         {t.icon} {t.label}
                                     </button>
                                 );
@@ -162,10 +162,21 @@ export default function ModalMovimiento({ repuesto, onGuardado, onCerrar }) {
                         </div>
                     </div>
 
+                    {/* Origen (Sprint 14): diferencia salida manual / ajuste / devolucion.
+                        Las salidas por proforma y entradas por compra las registra el sistema. */}
+                    <div>
+                        <label style={labelSt}>ORIGEN DEL MOVIMIENTO</label>
+                        <select value={form.origen} onChange={e => { const o = e.target.value; setForm(f => ({ ...f, origen: o, tipo: o === 'devolucion' ? 'entrada' : f.tipo })); setError(''); }} style={inputSt}>
+                            <option value="manual">{esEntrada ? 'Entrada manual' : 'Salida manual'}</option>
+                            <option value="ajuste">Ajuste de inventario (conteo físico, merma, daño)</option>
+                            <option value="devolucion">Devolución (entrada)</option>
+                        </select>
+                    </div>
+
                     {/* Cantidad */}
                     <div>
                         <label style={labelSt}>CANTIDAD *</label>
-                        <input type="number" min="1" name="cantidad"
+                        <input type="number" min="0.01" step="0.01" name="cantidad"
                             value={form.cantidad} onChange={handleChange}
                             onFocus={onFocus} onBlur={onBlur}
                             required placeholder="0"

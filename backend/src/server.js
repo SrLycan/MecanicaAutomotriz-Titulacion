@@ -19,6 +19,11 @@ const panelRoutes      = require('./routes/panel.routes');
 const citasRoutes      = require('./routes/citas.routes');
 const solicitudesRoutes = require('./routes/solicitudes.routes');
 const chatbotRoutes    = require('./routes/chatbot.routes');
+const proveedoresRoutes = require('./routes/proveedores.routes');
+const estadisticasRoutes = require('./routes/estadisticas.routes');
+const proformasRoutes = require('./routes/proformas.routes');
+const cuentasCobrarRoutes = require('./routes/cuentasCobrar.routes');
+const catalogosRoutes = require('./routes/catalogos.routes');
 // Nota: ya NO se requiere './config/initDb' aqui a proposito. El esquema y
 // las migraciones de Postgres se corrieron manualmente contra Supabase
 // (schema.sql + migrations.sql via el SQL Editor), y no se quiere que el
@@ -44,10 +49,20 @@ const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000')
     .map(o => o.trim())
     .filter(Boolean);
 
+// Mantiene disponibles las dos direcciones locales habituales aunque el
+// proceso haya heredado una configuracion CORS anterior del entorno.
+for (const localOrigin of ['http://localhost:3000', 'http://127.0.0.1:3000']) {
+    if (!allowedOrigins.includes(localOrigin)) allowedOrigins.push(localOrigin);
+}
+
 app.use(cors({
     origin: (origin, callback) => {
         // Sin "origin" = curl, health checks, apps moviles: se permite.
-        if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+        // En desarrollo tambien se permite el origen del navegador local, ya
+        // que VS Code puede servir el frontend con una variante de localhost.
+        if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development') {
+            return callback(null, true);
+        }
         callback(new Error('Origen no permitido por CORS.'));
     },
     credentials: true,
@@ -69,6 +84,11 @@ app.use('/api/panel',      panelRoutes);
 app.use('/api/citas',      citasRoutes);
 app.use('/api/solicitudes', solicitudesRoutes);
 app.use('/api/chatbot',    chatbotRoutes);
+app.use('/api/proveedores', proveedoresRoutes);
+app.use('/api/estadisticas', estadisticasRoutes);
+app.use('/api/proformas', proformasRoutes);
+app.use('/api/cuentas-cobrar', cuentasCobrarRoutes);
+app.use('/api/catalogos', catalogosRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => res.json({
