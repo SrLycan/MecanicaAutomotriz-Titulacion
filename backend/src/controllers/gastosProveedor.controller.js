@@ -8,6 +8,7 @@
  * para que el resumen financiero por proveedor sea consistente.
  */
 const pool = require('../config/db');
+const { errorBD } = require('../utils/erroresBD');
 const { registrarAccionBitacora } = require('../services/ordenesHistorial.service');
 
 const CATEGORIAS = ['repuestos', 'materiales', 'insumos', 'herramientas', 'servicios', 'otros'];
@@ -59,6 +60,7 @@ const listarGastos = async (req, res) => {
         return res.json({ gastos: rows, total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) });
     } catch (err) {
         console.error('Error listarGastos:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener gastos.' });
     }
 };
@@ -82,6 +84,7 @@ const obtenerGasto = async (req, res) => {
         return res.json({ gasto: rows[0] });
     } catch (err) {
         console.error('Error obtenerGasto:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener el gasto.' });
     }
 };
@@ -103,8 +106,9 @@ const crearGasto = async (req, res) => {
     if (metodo_pago && !METODOS.includes(metodo_pago)) return res.status(400).json({ error: 'Metodo de pago invalido.' });
     if (estado && !ESTADOS.includes(estado))  return res.status(400).json({ error: 'Estado invalido.' });
 
-    const client = await pool.connect();
+    let client;
     try {
+        client = await pool.connect();
         await client.query('BEGIN');
 
         if (proveedor_id) {
@@ -146,11 +150,12 @@ const crearGasto = async (req, res) => {
 
         return res.status(201).json({ gasto });
     } catch (err) {
-        await client.query('ROLLBACK');
+        await client?.query('ROLLBACK');
         console.error('Error crearGasto:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al registrar el gasto.' });
     } finally {
-        client.release();
+        client?.release();
     }
 };
 
@@ -171,8 +176,9 @@ const actualizarGasto = async (req, res) => {
     if (metodo_pago && !METODOS.includes(metodo_pago)) return res.status(400).json({ error: 'Metodo de pago invalido.' });
     if (estado && !ESTADOS.includes(estado))  return res.status(400).json({ error: 'Estado invalido.' });
 
-    const client = await pool.connect();
+    let client;
     try {
+        client = await pool.connect();
         await client.query('BEGIN');
 
         if (proveedor_id) {
@@ -238,11 +244,12 @@ const actualizarGasto = async (req, res) => {
 
         return res.json({ gasto });
     } catch (err) {
-        await client.query('ROLLBACK');
+        await client?.query('ROLLBACK');
         console.error('Error actualizarGasto:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al actualizar el gasto.' });
     } finally {
-        client.release();
+        client?.release();
     }
 };
 
@@ -252,8 +259,9 @@ const actualizarGasto = async (req, res) => {
 // ─────────────────────────────────────────────────────────────
 const eliminarGasto = async (req, res) => {
     const { id } = req.params;
-    const client = await pool.connect();
+    let client;
     try {
+        client = await pool.connect();
         await client.query('BEGIN');
         const { rows: gastoRows } = await client.query('SELECT estado FROM gastos_proveedor WHERE id = $1', [id]);
         if (!gastoRows[0]) {
@@ -271,11 +279,12 @@ const eliminarGasto = async (req, res) => {
         await client.query('COMMIT');
         return res.json({ mensaje: 'Gasto eliminado correctamente.' });
     } catch (err) {
-        await client.query('ROLLBACK');
+        await client?.query('ROLLBACK');
         console.error('Error eliminarGasto:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al eliminar el gasto.' });
     } finally {
-        client.release();
+        client?.release();
     }
 };
 

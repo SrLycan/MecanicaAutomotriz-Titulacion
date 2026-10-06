@@ -3,55 +3,58 @@
  * Configura proveedores globales (Tema, Autenticación, Confirmación),
  * rutas públicas, portal de clientes y panel administrativo con control por roles.
  */
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ConfirmProvider } from './components/common/ConfirmDialog';
 import ScrollToTop from './components/common/ScrollToTop';
+import CargandoPagina from './components/common/CargandoPagina';
 import SwapBot from './components/chatbot/SwapBot';
+import ProtectedRoute from './components/auth/ProtectedRoute';
 
-// ── Rutas Públicas ───────────────────────────────────────────
+// ── Rutas Públicas de entrada (en el paquete principal) ──────
+// Home, registro/login de clientes y login del personal abren al instante.
 import Home       from './pages/public/Home';
 import AuthPage   from './pages/public/AuthPage';
 import AdminLogin from './pages/public/AdminLogin';
-import ServiciosPublic from './pages/public/Servicios';
-import NosotrosPublic  from './pages/public/Nosotros';
-import ProductosPublic from './pages/public/Productos';
-
-// ── Rutas del Panel Administrativo (Staff) ───────────────
-import ProtectedRoute from './components/auth/ProtectedRoute';
-import Layout         from './components/layout/Layout';
-import Dashboard      from './pages/Dashboard';
-import Inventario     from './pages/Inventario';
-import Movimientos    from './pages/Movimientos';
-import RegistrarMovimiento from './pages/RegistrarMovimiento';
-import Usuarios       from './pages/Usuarios';
-import Sucursales     from './pages/Sucursales';
-import OrdenesTrabajo from './pages/OrdenesTrabajo';
-import Vehiculos      from './pages/Vehiculos';
-import Clientes       from './pages/Clientes';
-import Servicios      from './pages/Servicios';
-import Citas          from './pages/Citas';
-// Public / cliente
-import PanelCliente   from './pages/PanelCliente';
-
-// Bitacora de actividad — solo administradores
-import Bitacora       from './pages/Bitacora';
-
-// Proveedores — solo administradores
-import Proveedores    from './pages/Proveedores';
-
-// Graficas — solo administradores
-import Graficas        from './pages/Graficas';
-
-// Proformas — administrador, tecnico y recepcionista (igual que Ordenes)
-import Proformas        from './pages/Proformas';
-import ProformaForm     from './pages/ProformaForm';
-import ProformaView     from './pages/ProformaView';
 
 import './styles/global.css';
+import './styles/mobile-performance.css';
+
+// El resto de paginas se carga bajo demanda (lazy): antes todo el panel, las
+// graficas (recharts) y las paginas publicas se descargaban y procesaban de
+// golpe al abrir la web, lo que en telefonos hacia lenta la primera carga.
+const ServiciosPublic = lazy(() => import('./pages/public/Servicios'));
+const NosotrosPublic  = lazy(() => import('./pages/public/Nosotros'));
+const ProductosPublic = lazy(() => import('./pages/public/Productos'));
+
+// Portal del cliente
+const PanelCliente    = lazy(() => import('./pages/PanelCliente'));
+
+// ── Panel Administrativo (Staff) ─────────────────────────────
+const Layout              = lazy(() => import('./components/layout/Layout'));
+const Dashboard           = lazy(() => import('./pages/Dashboard'));
+const Inventario          = lazy(() => import('./pages/Inventario'));
+const Movimientos         = lazy(() => import('./pages/Movimientos'));
+const RegistrarMovimiento = lazy(() => import('./pages/RegistrarMovimiento'));
+const Usuarios            = lazy(() => import('./pages/Usuarios'));
+const Sucursales          = lazy(() => import('./pages/Sucursales'));
+const OrdenesTrabajo      = lazy(() => import('./pages/OrdenesTrabajo'));
+const Vehiculos           = lazy(() => import('./pages/Vehiculos'));
+const Clientes            = lazy(() => import('./pages/Clientes'));
+const Servicios           = lazy(() => import('./pages/Servicios'));
+const Citas               = lazy(() => import('./pages/Citas'));
+const Bitacora            = lazy(() => import('./pages/Bitacora'));       // solo administradores
+const Proveedores         = lazy(() => import('./pages/Proveedores'));    // solo administradores
+const Graficas            = lazy(() => import('./pages/Graficas'));       // solo administradores
+const Proformas           = lazy(() => import('./pages/Proformas'));
+const ProformaForm        = lazy(() => import('./pages/ProformaForm'));
+const ProformaView        = lazy(() => import('./pages/ProformaView'));
+const Finanzas            = lazy(() => import('./pages/Finanzas'));       // solo administradores
+const Caja                = lazy(() => import('./pages/Caja'));           // admin y recepcion
+const Pedidos             = lazy(() => import('./pages/Pedidos'));        // pedidos de la tienda
 
 const ROLES_STAFF = ['administrador', 'tecnico', 'recepcionista'];
 
@@ -74,6 +77,7 @@ export default function App() {
                             error: { duration: 4500 },
                         }}
                     />
+                    <Suspense fallback={<CargandoPagina />}>
                     <Routes>
                         {/* ── Paginas publicas ── */}
                         <Route path="/"            element={<Home />} />
@@ -170,6 +174,21 @@ export default function App() {
                                     <ProformaForm />
                                 </ProtectedRoute>
                             } />
+                            <Route path="finanzas" element={
+                                <ProtectedRoute roles={['administrador']}>
+                                    <Finanzas />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="pedidos" element={
+                                <ProtectedRoute roles={['administrador','tecnico','recepcionista']}>
+                                    <Pedidos />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="caja" element={
+                                <ProtectedRoute roles={['administrador','recepcionista']}>
+                                    <Caja />
+                                </ProtectedRoute>
+                            } />
                             <Route path="proformas/:id" element={
                                 <ProtectedRoute roles={['administrador','tecnico','recepcionista']}>
                                     <ProformaView />
@@ -179,6 +198,7 @@ export default function App() {
 
                         <Route path="*" element={<Navigate to="/" replace />} />
                     </Routes>
+                    </Suspense>
                     <SwapBot />
                 </BrowserRouter>
             </ConfirmProvider>

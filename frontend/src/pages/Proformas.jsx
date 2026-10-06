@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
+import { avisarInventario } from '../utils/avisoInventario';
 import { useConfirm } from '../components/common/ConfirmDialog';
 import Paginador from '../components/proveedores/Paginador';
 import './Proformas.css';
@@ -87,9 +88,13 @@ export default function Proformas() {
     };
 
     const cambiarEstado = async (p, estado) => {
+        if (p.inventario_descontado_at && estado !== 'aprobada'
+            && !(await confirm({ title: 'Cambiar estado', confirmLabel: 'Cambiar', danger: false,
+                message: `La proforma ${p.numero} ya descontó material del inventario. Al pasarla a "${estado}" ese material volverá al stock. ¿Continuar?` }))) return;
         try {
-            await api.patch(`/proformas/${p.id}/estado`, { estado });
-            toast.success('Estado actualizado.');
+            const { data } = await api.patch(`/proformas/${p.id}/estado`, { estado });
+            toast.success(`Proforma ${p.numero}: ${estado}.`);
+            avisarInventario(data.inventario);
             cargar();
         } catch (err) { toast.error(err.response?.data?.error || 'Error al cambiar el estado.'); }
     };
@@ -110,7 +115,7 @@ export default function Proformas() {
         <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1500, '--pf-bdr': bdr, '--pf-sky': SKY_DEEP }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
                 <div>
-                    <div className="SS SWAP-chip" style={{ marginBottom: 8 }}>
+                    <div className="ssswap-chip" style={{ marginBottom: 8 }}>
                         <span className="dot" />
                         <span>SS SWAP · PROFORMAS</span>
                     </div>

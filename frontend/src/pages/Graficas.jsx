@@ -38,7 +38,7 @@ export default function Graficas() {
     return (
         <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1400, '--graf-bdr': bdr, '--graf-mut': mut, '--graf-sky': SKY_DEEP }}>
             <div style={{ marginBottom: 20 }}>
-                <div className="SS SWAP-chip" style={{ marginBottom: 8 }}>
+                <div className="ssswap-chip" style={{ marginBottom: 8 }}>
                     <span className="dot" />
                     <span>SS SWAP · ADMIN · GRÁFICAS</span>
                 </div>

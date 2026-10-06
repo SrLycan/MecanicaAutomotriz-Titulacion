@@ -9,6 +9,7 @@
 const bcrypt = require('bcryptjs');
 const jwt    = require('jsonwebtoken');
 const pool   = require('../config/db');
+const { errorBD } = require('../utils/erroresBD');
 const { registrarIntento, registrarIntentoIp } = require('../middleware/loginThrottle.middleware');
 
 const ROLES_STAFF = ['administrador', 'tecnico', 'recepcionista'];
@@ -90,6 +91,7 @@ const login = async (req, res) => {
         return res.json({ token, usuario: payload });
     } catch (err) {
         console.error('Error en login:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error interno del servidor.' });
     }
 };
@@ -123,9 +125,12 @@ const register = async (req, res) => {
         return res.status(400).json({ error: 'La cedula no es valida.' });
 
     const emailNorm = email.toLowerCase().trim();
-    const client = await pool.connect();
+    let client;
 
     try {
+        // Dentro del try: si no se logra conexion, se responde un error en vez
+        // de dejar la peticion colgada (el usuario veia "cargando" eterno).
+        client = await pool.connect();
         await client.query('BEGIN');
 
         const { rows: existe } = await client.query(
@@ -165,11 +170,12 @@ const register = async (req, res) => {
 
         return res.status(201).json({ token, usuario: payload });
     } catch (err) {
-        await client.query('ROLLBACK');
+        if (client) await client.query('ROLLBACK').catch(() => {});
         console.error('Error en register:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error interno del servidor.' });
     } finally {
-        client.release();
+        if (client) client.release();
     }
 };
 

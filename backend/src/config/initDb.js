@@ -15,7 +15,7 @@ async function runMigrations() {
     const client = await pool.connect();
     try {
         await client.query(sql);
-        console.log('  Migraciones aplicadas (sucursales + estado usuarios).');
+        console.log('  Migraciones aplicadas (migrations.sql).');
     } catch (err) {
         console.error('  [migrations] Error aplicando migraciones:', err.message);
     } finally {

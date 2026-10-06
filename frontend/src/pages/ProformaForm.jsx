@@ -190,7 +190,7 @@ export default function ProformaForm() {
 
     return (
         <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1100 }}>
-            <div className="SS SWAP-chip" style={{ marginBottom: 8 }}><span className="dot" /><span>SS SWAP · PROFORMAS</span></div>
+            <div className="ssswap-chip" style={{ marginBottom: 8 }}><span className="dot" /><span>SS SWAP · PROFORMAS</span></div>
             <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.4rem', letterSpacing: '.04em', color: txt, lineHeight: 1, marginBottom: 22 }}>
                 {esEdicion ? 'Editar Proforma' : 'Nueva Proforma'}
             </h1>

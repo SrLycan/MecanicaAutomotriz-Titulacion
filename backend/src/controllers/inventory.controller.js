@@ -7,6 +7,7 @@
  * condiciones de carrera (race conditions).
  */
 const pool = require('../config/db');
+const { errorBD } = require('../utils/erroresBD');
 const { normalizarCantidades, cantidadValida, redondear2 } = require('../utils/numeros');
 const { registrarAccionBitacora } = require('../services/ordenesHistorial.service');
 
@@ -31,7 +32,7 @@ async function areasValidas() {
 // Origenes que un usuario puede registrar a mano. 'compra' y 'proforma' los
 // asigna solo el sistema (recepcion de compras / confirmar uso de proforma).
 const ORIGENES_MANUALES = ['manual', 'ajuste', 'devolucion'];
-const ORIGENES = ['manual', 'compra', 'proforma', 'ajuste', 'devolucion'];
+const ORIGENES = ['manual', 'compra', 'proforma', 'ajuste', 'devolucion', 'venta'];
 const numeroONull = (v, porDefecto) => (v === '' || v == null ? porDefecto : redondear2(v));
 
 // ─────────────────────────────────────────────────────────────
@@ -94,6 +95,7 @@ const listarRepuestos = async (req, res) => {
         });
     } catch (err) {
         console.error('Error listarRepuestos:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener repuestos.' });
     }
 };
@@ -115,6 +117,7 @@ const obtenerRepuesto = async (req, res) => {
         return res.json(normalizarCantidades(rows[0]));
     } catch (err) {
         console.error('Error obtenerRepuesto:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener repuesto.' });
     }
 };
@@ -174,6 +177,7 @@ const crearRepuesto = async (req, res) => {
     } catch (err) {
         if (err.code === '23505') return res.status(409).json({ error: 'El código ya existe.' });
         console.error('Error crearRepuesto:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al crear repuesto.' });
     }
 };
@@ -244,6 +248,7 @@ const actualizarRepuesto = async (req, res) => {
     } catch (err) {
         if (err.code === '23505') return res.status(409).json({ error: 'El código ya existe.' });
         console.error('Error actualizarRepuesto:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al actualizar repuesto.' });
     }
 };
@@ -254,9 +259,10 @@ const actualizarRepuesto = async (req, res) => {
  */
 const eliminarRepuesto = async (req, res) => {
     const { id } = req.params;
-    const client = await pool.connect();
+    let client;
 
     try {
+        client = await pool.connect();
         await client.query('BEGIN');
 
         // Sprint 14: un producto que ya salio por una proforma (o fue
@@ -294,11 +300,12 @@ const eliminarRepuesto = async (req, res) => {
             repuesto: rows[0],
         });
     } catch (err) {
-        await client.query('ROLLBACK');
+        await client?.query('ROLLBACK');
         console.error('Error eliminarRepuesto:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al eliminar repuesto.' });
     } finally {
-        client.release();
+        client?.release();
     }
 };
 // ─────────────────────────────────────────────────────────────
@@ -332,8 +339,9 @@ const registrarMovimiento = async (req, res) => {
         return res.status(400).json({ error: 'La cantidad debe ser mayor a cero (maximo 2 decimales).' });
     }
 
-    const client = await pool.connect();
+    let client;
     try {
+        client = await pool.connect();
         await client.query('BEGIN');
 
         // Bloquea la fila para evitar race conditions
@@ -389,11 +397,12 @@ const registrarMovimiento = async (req, res) => {
             stock_nuevo: stockNuevo,
         });
     } catch (err) {
-        await client.query('ROLLBACK');
+        await client?.query('ROLLBACK');
         console.error('Error registrarMovimiento:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al registrar movimiento.' });
     } finally {
-        client.release();
+        client?.release();
     }
 };
 
@@ -465,6 +474,7 @@ const listarMovimientos = async (req, res) => {
         return res.json({ movimientos, total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) });
     } catch (err) {
         console.error('Error listarMovimientos:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener movimientos.' });
     }
 };
@@ -483,6 +493,7 @@ const filtrosMovimientos = async (_req, res) => {
         return res.json({ usuarios, por_origen: porOrigen, areas: (await areasValidas()).map(a => ({ valor: a, etiqueta: ETIQUETA_AREA[a] || a })), origenes: ORIGENES });
     } catch (err) {
         console.error('Error filtrosMovimientos:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener los filtros.' });
     }
 };
@@ -520,6 +531,7 @@ const listarPublico = async (req, res) => {
         return res.json({ repuestos: rows.map(normalizarCantidades) });
     } catch (err) {
         console.error('Error listarPublico:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener el catalogo.' });
     }
 };
@@ -539,6 +551,7 @@ const toggleEnVenta = async (req, res) => {
         return res.json(rows[0]);
     } catch (err) {
         console.error('Error toggleEnVenta:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al cambiar estado de venta.' });
     }
 };

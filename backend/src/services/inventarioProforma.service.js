@@ -170,4 +170,40 @@ async function revertirSalidaProforma(client, proformaId, usuario, motivo) {
     return { proforma: actualizada[0], devoluciones };
 }
 
-module.exports = { confirmarUsoProforma, revertirSalidaProforma, ErrorNegocio, formatoOrden, ESTADOS_PERMITIDOS_SALIDA };
+/**
+ * Descuento AUTOMATICO al aprobar / convertir en orden una proforma.
+ * A diferencia de confirmarUsoProforma, nunca hace fallar la operacion que
+ * lo llama: si falta stock (o no hay items de inventario) devuelve el
+ * motivo y la proforma queda con el descuento pendiente, para confirmarlo
+ * a mano cuando se reponga el stock. Usa un SAVEPOINT para que un intento
+ * fallido no deje nada a medias dentro de la transaccion del llamador.
+ * @returns {{descontado: boolean, movimientos: object[], motivo?: string, detalle?: string[]}}
+ */
+async function descontarInventarioAutomatico(client, proformaId, usuario) {
+    const { rows } = await client.query(
+        `SELECT p.inventario_descontado_at,
+                (SELECT COUNT(*)::int FROM proforma_items i
+                  WHERE i.proforma_id = p.id AND i.referencia_tipo = 'repuesto' AND i.referencia_id IS NOT NULL) AS items_inventario
+         FROM proformas p WHERE p.id = $1`,
+        [proformaId]
+    );
+    if (!rows[0]) return { descontado: false, movimientos: [], motivo: 'Proforma no encontrada.' };
+    if (rows[0].inventario_descontado_at) return { descontado: true, ya_estaba: true, movimientos: [] };
+    if (!rows[0].items_inventario) return { descontado: false, sin_items: true, movimientos: [] };
+
+    await client.query('SAVEPOINT descuento_auto');
+    try {
+        const { movimientos } = await confirmarUsoProforma(client, proformaId, usuario);
+        await client.query('RELEASE SAVEPOINT descuento_auto');
+        return { descontado: true, movimientos };
+    } catch (err) {
+        await client.query('ROLLBACK TO SAVEPOINT descuento_auto');
+        if (err instanceof ErrorNegocio) return { descontado: false, movimientos: [], motivo: err.message, detalle: err.detalle || undefined };
+        throw err;
+    }
+}
+
+module.exports = {
+    confirmarUsoProforma, revertirSalidaProforma, descontarInventarioAutomatico,
+    ErrorNegocio, formatoOrden, ESTADOS_PERMITIDOS_SALIDA,
+};

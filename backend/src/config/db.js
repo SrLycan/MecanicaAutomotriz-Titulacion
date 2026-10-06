@@ -27,8 +27,13 @@ const pool = new Pool({
     password: process.env.DB_PASSWORD,
     ssl:      usarSSL ? { rejectUnauthorized: false } : false,
     max: 10,              // Máximo de conexiones en el pool
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
+    // Conexiones inactivas se conservan 5 min (antes 30 s): reabrirlas contra
+    // Supabase es lo que hacia lenta la "primera" peticion tras un rato.
+    idleTimeoutMillis: 5 * 60 * 1000,
+    // Antes 2 s: una conexion nueva al pooler de Supabase puede tardar mas,
+    // y al vencer se lanzaba un error que dejaba la peticion colgada.
+    connectionTimeoutMillis: 15000,
+    keepAlive: true,
 });
 
 pool.on('error', (err) => {

@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
+import { avisarInventario } from '../utils/avisoInventario';
 import { useConfirm } from '../components/common/ConfirmDialog';
 import { DIAGRAMAS, CARROCERIAS } from '../components/proformas/vehiculo';
 import './Proformas.css';
@@ -69,7 +70,7 @@ export default function ProformaView() {
     };
 
     const convertirAOrden = async () => {
-        if (!(await confirm({ title: 'Convertir a orden de trabajo', confirmLabel: 'Convertir', message: `¿Convertir la proforma ${proforma.numero} en una orden de trabajo? La proforma quedará marcada como "convertida" y se generará automáticamente el pagaré del 70% (${'$'}${(Number(proforma.total) * 0.7).toFixed(2)}).` }))) return;
+        if (!(await confirm({ title: 'Convertir a orden de trabajo', confirmLabel: 'Convertir', message: `¿Convertir la proforma ${proforma.numero} en una orden de trabajo? La proforma quedará marcada como "convertida", se generará automáticamente el pagaré del 70% (${'$'}${(Number(proforma.total) * 0.7).toFixed(2)})${(proforma.items || []).some(i => i.referencia_tipo === 'repuesto' && i.referencia_id) && !proforma.inventario_descontado_at ? ' y se descontarán del inventario los productos vinculados' : ''}.` }))) return;
         setConvirtiendo(true);
         try {
             const { data } = await api.post(`/proformas/${id}/convertir-orden`);
@@ -77,9 +78,20 @@ export default function ProformaView() {
             toast.success(data.pagare_creado
                 ? `Orden ${ot} creada. Pagaré automático #${data.pagare.id} por $${Number(data.pagare.monto_total).toFixed(2)} (70%).`
                 : `Orden ${ot} creada.${data.pagare_motivo ? ` ${data.pagare_motivo}` : ''}`, { duration: 6000 });
+            avisarInventario(data.inventario);
             cargar();
         } catch (err) { toast.error(err.response?.data?.error || 'Error al convertir la proforma.'); }
         finally { setConvirtiendo(false); }
+    };
+
+    const cambiarEstado = async (estado, mensaje) => {
+        if (!(await confirm({ title: 'Cambiar estado', confirmLabel: 'Confirmar', danger: estado === 'rechazada', message: mensaje }))) return;
+        try {
+            const { data } = await api.patch(`/proformas/${id}/estado`, { estado });
+            toast.success(`Proforma ${estado}.`);
+            avisarInventario(data.inventario);
+            cargar();
+        } catch (err) { toast.error(err.response?.data?.error || 'Error al cambiar el estado.'); }
     };
 
     const confirmarUso = async () => {
@@ -125,7 +137,7 @@ export default function ProformaView() {
         <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1000 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 22, flexWrap: 'wrap', gap: 14 }}>
                 <div>
-                    <div className="SS SWAP-chip" style={{ marginBottom: 8 }}><span className="dot" /><span>SS SWAP · PROFORMAS</span></div>
+                    <div className="ssswap-chip" style={{ marginBottom: 8 }}><span className="dot" /><span>SS SWAP · PROFORMAS</span></div>
                     <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.4rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>{proforma.numero}</h1>
                     <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 8 }}>
                         <span className="pf-badge" style={{ background: `${ESTADO_COLOR[proforma.estado]}18`, border: `1px solid ${ESTADO_COLOR[proforma.estado]}44`, color: ESTADO_COLOR[proforma.estado] }}>{proforma.estado.toUpperCase()}</span>
@@ -138,6 +150,14 @@ export default function ProformaView() {
                     )}
                     <button onClick={() => descargar('pdf')} style={btnSec(bdr, txt)}><IconDownload /> PDF</button>
                     <button onClick={() => descargar('excel')} style={btnSec(bdr, txt)}><IconDownload /> EXCEL</button>
+                    {['borrador', 'emitida', 'rechazada', 'vencida'].includes(proforma.estado) && (
+                        <button onClick={() => cambiarEstado('aprobada', `¿Aprobar la proforma ${proforma.numero}?${itemsInventario.length ? ` Se descontarán del inventario ${itemsInventario.length} producto(s) y quedarán en Inventario › Registros.` : ''}`)}
+                            style={btnPrim('#10b981')}>✔ APROBAR</button>
+                    )}
+                    {proforma.estado === 'aprobada' && (
+                        <button onClick={() => cambiarEstado('rechazada', `¿Marcar la proforma ${proforma.numero} como rechazada?${descontado ? ' El material descontado volverá al inventario.' : ''}`)}
+                            style={btnSec(bdr, '#ef4444')}>RECHAZAR</button>
+                    )}
                     {proforma.estado !== 'convertida' && (
                         <button onClick={convertirAOrden} disabled={convirtiendo} style={btnPrim(SKY_DEEP)}><IconRefresh /> {convirtiendo ? 'CONVIRTIENDO...' : 'CONVERTIR A ORDEN'}</button>
                     )}
@@ -224,8 +244,8 @@ export default function ProformaView() {
                                 {descontado
                                     ? <>✔ Descontado el {fmtFecha(proforma.inventario_descontado_at)} por <strong>{proforma.inventario_descontado_por_nombre || '—'}</strong></>
                                     : puedeDescontar
-                                        ? `${itemsInventario.length} producto(s) vinculados al inventario pendientes de descontar.`
-                                        : `${itemsInventario.length} producto(s) vinculados al inventario. Aprueba la proforma para poder confirmar el uso de materiales.`}
+                                        ? `${itemsInventario.length} producto(s) vinculados al inventario. No se pudieron descontar al aprobar (falta stock): repón el stock y confírmalo aquí.`
+                                        : `${itemsInventario.length} producto(s) vinculados al inventario. Se descontarán automáticamente al APROBAR la proforma o convertirla en orden.`}
                             </p>
                         </div>
                         {!descontado && (

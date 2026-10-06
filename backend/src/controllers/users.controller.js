@@ -13,6 +13,7 @@ const jwt    = require('jsonwebtoken');
 const fs     = require('fs');
 const path   = require('path');
 const pool   = require('../config/db');
+const { errorBD } = require('../utils/erroresBD');
 
 const ROLES_VALIDOS   = ['administrador','tecnico','recepcionista','cliente'];
 const ESTADOS_VALIDOS = ['activo','suspendido','bloqueado'];
@@ -48,6 +49,7 @@ const listarUsuarios = async (req, res) => {
         return res.json({ usuarios: rows, total: rows.length });
     } catch (err) {
         console.error('Error listarUsuarios:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener usuarios.' });
     }
 };
@@ -77,6 +79,7 @@ const cambiarRol = async (req, res) => {
         return res.json({ usuario: rows[0] });
     } catch (err) {
         console.error('Error cambiarRol:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al cambiar rol.' });
     }
 };
@@ -108,6 +111,7 @@ const cambiarEstado = async (req, res) => {
         return res.json({ usuario: rows[0] });
     } catch (err) {
         console.error('Error cambiarEstado:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al cambiar estado.' });
     }
 };
@@ -150,6 +154,7 @@ const actualizarUsuario = async (req, res) => {
         return res.json({ usuario: rows[0] });
     } catch (err) {
         console.error('Error actualizarUsuario:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al actualizar usuario.' });
     }
 };
@@ -176,6 +181,7 @@ const cambiarPassword = async (req, res) => {
         return res.json({ ok: true, mensaje: 'Contrasena actualizada correctamente.' });
     } catch (err) {
         console.error('Error cambiarPassword:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al cambiar contrasena.' });
     }
 };
@@ -208,6 +214,7 @@ const eliminarUsuario = async (req, res) => {
         return res.json({ ok: true });
     } catch (err) {
         console.error('Error eliminarUsuario:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al eliminar usuario.' });
     }
 };
@@ -243,6 +250,7 @@ const crearUsuario = async (req, res) => {
         return res.status(201).json({ usuario: rows[0] });
     } catch (err) {
         console.error('Error crearUsuario:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al crear usuario.' });
     }
 };
@@ -271,6 +279,7 @@ const obtenerMiPerfil = async (req, res) => {
         return res.json({ usuario: rows[0] });
     } catch (err) {
         console.error('Error obtenerMiPerfil:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener tu perfil.' });
     }
 };
@@ -300,9 +309,10 @@ const actualizarMiPerfil = async (req, res) => {
             if (existeCedula.length > 0) return res.status(409).json({ error: 'Ya existe otro cliente registrado con esa cedula.' });
         }
 
-        const client = await pool.connect();
+        let client;
         let usuarioActualizado;
         try {
+            client = await pool.connect();
             await client.query('BEGIN');
             const { rows } = await client.query(
                 `UPDATE usuarios SET nombre = $1, email = $2, telefono = $3, cedula = $4
@@ -319,10 +329,10 @@ const actualizarMiPerfil = async (req, res) => {
             );
             await client.query('COMMIT');
         } catch (err) {
-            await client.query('ROLLBACK');
+            await client?.query('ROLLBACK');
             throw err;
         } finally {
-            client.release();
+            client?.release();
         }
 
         const { token, usuario } = reemitirToken(usuarioActualizado);
@@ -330,6 +340,7 @@ const actualizarMiPerfil = async (req, res) => {
     } catch (err) {
         if (err.code === '23505') return res.status(409).json({ error: 'Ese correo o cedula ya esta en uso por otro registro.' });
         console.error('Error actualizarMiPerfil:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al actualizar tu perfil.' });
     }
 };
@@ -357,6 +368,7 @@ const cambiarMiPassword = async (req, res) => {
         return res.json({ ok: true, mensaje: 'Contrasena actualizada correctamente.' });
     } catch (err) {
         console.error('Error cambiarMiPassword:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al cambiar tu contrasena.' });
     }
 };
@@ -384,6 +396,7 @@ const subirMiFoto = async (req, res) => {
         return res.json({ usuario: rows[0], token, sesion: usuario });
     } catch (err) {
         console.error('Error subirMiFoto:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al guardar la foto de perfil.' });
     }
 };

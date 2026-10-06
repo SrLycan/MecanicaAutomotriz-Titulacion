@@ -25,6 +25,16 @@ function IconTrash() { return <svg width="13" height="13" viewBox="0 0 24 24" fi
 
 const ETIQUETA_AREA = { mecanica: 'Inventario Mecánica', colisiones: 'Inventario Colisiones / Pintura' };
 const fmtCant = (n) => (Number(n) % 1 === 0 ? String(Number(n)) : Number(n).toFixed(2));
+const normalizar = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+
+/** Producto del inventario cuyo nombre se parece a lo escrito (para sugerir vincularlo). */
+function sugerencia(catalogo, descripcion) {
+    const d = normalizar(descripcion);
+    if (!catalogo || d.length < 3) return null;
+    return catalogo.find(c => normalizar(c.nombre) === d)
+        || catalogo.find(c => normalizar(c.nombre).includes(d) || d.includes(normalizar(c.nombre)))
+        || null;
+}
 
 export default function ItemsEditor({ theme, categoria, titulo, items, onChange, modoSimple, catalogo, areaPreferida, bloqueado }) {
     const { txt, txtSf, mut, bdr, inputSt, SKY_DEEP } = theme;
@@ -87,13 +97,15 @@ export default function ItemsEditor({ theme, categoria, titulo, items, onChange,
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 8 }}>
                     {propios.map((it, idx) => {
                         const prod = esInventario ? productoDe(it) : null;
+                        const libre = esInventario && catalogo && !it.referencia_id && String(it.descripcion || '').trim();
+                        const sug = libre ? sugerencia(catalogo, it.descripcion) : null;
                         const excede = prod && prod.stock !== undefined && (parseFloat(it.cantidad) || 0) > prod.stock;
                         return (
                         <div key={idx}>
                         <div style={{ display: 'grid', gridTemplateColumns: gridCols, gap: 8, alignItems: 'center' }}>
                             {catalogo && (
                                 <select value={it.referencia_id || ''} onChange={e => actualizar(idx, 'referencia_id', e.target.value)} disabled={bloqueado}
-                                    title={esInventario ? 'Producto del inventario (se descontará al confirmar el uso)' : 'Servicio del catálogo'}
+                                    title={esInventario ? 'Producto del inventario (se descuenta al aprobar la proforma)' : 'Servicio del catálogo'}
                                     style={{ ...inputSt, padding: '8px 10px', fontSize: '.8rem', borderColor: it.referencia_id && esInventario ? SKY_DEEP : inputSt.borderColor }}>
                                     <option value="">{esInventario ? 'Item libre (no inventario)...' : 'Item libre...'}</option>
                                     {grupos.map(g => {
@@ -121,11 +133,22 @@ export default function ItemsEditor({ theme, categoria, titulo, items, onChange,
                                 <IconTrash />
                             </button>
                         </div>
+                        {libre && (
+                            <p style={{ fontFamily: "'Outfit'", fontSize: '.72rem', color: '#f59e0b', margin: '3px 0 0 4px' }}>
+                                ⚠ Escrito a mano: NO está vinculado al inventario y no se descontará stock.
+                                {sug ? (
+                                    <button type="button" disabled={bloqueado} onClick={() => actualizar(idx, 'referencia_id', sug.id)}
+                                        style={{ marginLeft: 6, background: 'none', border: 'none', padding: 0, color: SKY_DEEP, fontWeight: 600, cursor: 'pointer', fontFamily: "'Outfit'", fontSize: '.72rem', textDecoration: 'underline' }}>
+                                        Vincular con «{sug.nombre}» (stock {fmtCant(sug.stock)})
+                                    </button>
+                                ) : ' Elígelo en la lista de la izquierda si existe en el inventario.'}
+                            </p>
+                        )}
                         {prod && (
                             <p style={{ fontFamily: "'Outfit'", fontSize: '.72rem', color: excede ? '#ef4444' : mut, margin: '3px 0 0 4px' }}>
                                 {excede
-                                    ? `⚠ Stock insuficiente: hay ${fmtCant(prod.stock)} ${prod.unidad || ''} de ${prod.nombre}. No se podrá confirmar el uso hasta reponer stock.`
-                                    : `Vinculado al inventario (${prod.area === 'colisiones' ? 'Colisiones / Pintura' : 'Mecánica'}) · disponible ${fmtCant(prod.stock)} ${prod.unidad || ''}`}
+                                    ? `⚠ Stock insuficiente: hay ${fmtCant(prod.stock)} ${prod.unidad || ''} de ${prod.nombre}. Al aprobar no se podrá descontar hasta reponer stock.`
+                                    : `✔ Del inventario (${prod.area === 'colisiones' ? 'Colisiones / Pintura' : 'Mecánica'}) · disponible ${fmtCant(prod.stock)} ${prod.unidad || ''} · se descuenta al aprobar la proforma`}
                             </p>
                         )}
                         </div>

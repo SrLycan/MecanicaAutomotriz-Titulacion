@@ -4,16 +4,18 @@
  * encabezado con selector de tema, datos de sesión y área principal con salida de rutas (Outlet).
  * Los estilos de animaciones/clases auxiliares viven en Layout.css.
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
+import CargandoPagina from '../common/CargandoPagina';
 import './Layout.css';
 
 // Icono exclusivo de Proveedores (solo administradores)
 function IconTruck() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>; }
+function IconMoney() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>; }
 function IconChart() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>; }
 
 // Menú lateral tipo ACORDEÓN (igual al modelo pedido): cada sección se
@@ -31,6 +33,7 @@ const NAV_GROUPS = [
         { to: '/dashboard/inventario?area=colisiones', label: 'Colisiones / Pintura', roles: STAFF },
         { to: '/dashboard/registrar',   label: 'Registrar movimiento', roles: STAFF },
         { to: '/dashboard/movimientos', label: 'Registros', roles: STAFF },
+        { to: '/dashboard/pedidos',     label: 'Pedidos de la tienda', roles: STAFF },
     ] },
     { id: 'taller', label: 'Taller', icon: IconOrden, roles: STAFF, children: [
         { to: '/dashboard/ordenes',          label: 'Órdenes de trabajo', roles: STAFF },
@@ -48,6 +51,13 @@ const NAV_GROUPS = [
         { to: '/dashboard/proveedores?tab=compras',   label: 'Compras', roles: ADMIN },
         { to: '/dashboard/proveedores?tab=gastos',    label: 'Gastos', roles: ADMIN },
         { to: '/dashboard/proveedores?tab=historial', label: 'Pagos / Historial', roles: ADMIN },
+    ] },
+    { id: 'finanzas', label: 'Finanzas', icon: IconMoney, roles: ADMIN_RECEP, children: [
+        { to: '/dashboard/finanzas',                  label: 'Resumen / ¿Cuánto hay?', roles: ADMIN },
+        { to: '/dashboard/caja',                      label: 'Caja diaria', roles: ADMIN_RECEP },
+        { to: '/dashboard/finanzas?tab=movimientos',  label: 'Movimientos de dinero', roles: ADMIN },
+        { to: '/dashboard/finanzas?tab=nomina',       label: 'Nómina / Empleados', roles: ADMIN },
+        { to: '/dashboard/finanzas?tab=cuentas',      label: 'Cuentas (caja / bancos)', roles: ADMIN },
     ] },
     { id: 'usuarios', label: 'Usuarios', icon: IconUsers, roles: ADMIN, children: [
         { to: '/dashboard/usuarios',                   label: 'Todos los usuarios', roles: ADMIN },
@@ -110,9 +120,17 @@ export default function Layout() {
     const [bajoStockCount, setBajoStockCount] = useState(0);
 
     useEffect(() => {
-        const handleResize = () => setIsMobile(window.innerWidth <= 768);
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
+        // matchMedia solo avisa al cruzar los 768px; el evento 'resize' se
+        // disparaba sin parar en moviles al mostrar/ocultar la barra del navegador.
+        const mq = window.matchMedia('(max-width: 768px)');
+        const onChange = () => setIsMobile(mq.matches);
+        onChange();
+        if (mq.addEventListener) mq.addEventListener('change', onChange);
+        else mq.addListener(onChange);
+        return () => {
+            if (mq.removeEventListener) mq.removeEventListener('change', onChange);
+            else mq.removeListener(onChange);
+        };
     }, []);
 
     // Cerrar drawer al navegar en móvil
@@ -187,6 +205,9 @@ export default function Layout() {
         if (location.pathname.endsWith('/bitacora'))     return 'Bitácora';
         if (location.pathname.endsWith('/proveedores'))  return 'Proveedores';
         if (location.pathname.endsWith('/graficas'))     return 'Gráficas';
+        if (location.pathname.endsWith('/finanzas'))     return 'Finanzas';
+        if (location.pathname.endsWith('/caja'))         return 'Caja diaria';
+        if (location.pathname.endsWith('/pedidos'))      return 'Pedidos de la tienda';
         if (location.pathname.includes('/proformas')) {
             if (location.pathname.endsWith('/nueva'))   return 'Nueva Proforma';
             if (location.pathname.endsWith('/editar'))  return 'Editar Proforma';
@@ -200,12 +221,12 @@ export default function Layout() {
     const sidebarWidth = isMobile ? 232 : (collapsed ? 68 : 232);
 
     return (
-        <div style={{ display: 'flex', height: '100vh', background: mainBg, overflow: 'hidden' }}>
+        <div className="layout-root" style={{ display: 'flex', background: mainBg, overflow: 'hidden' }}>
 
             {/* ── Mobile overlay ── */}
             {isMobile && mobileOpen && (
                 <div onClick={() => setMobileOpen(false)}
-                    style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 19, backdropFilter: 'blur(2px)' }} />
+                    style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 19 }} />
             )}
 
             {/* ── Sidebar ── */}
@@ -213,7 +234,10 @@ export default function Layout() {
                 width: sidebarWidth,
                 background: sbBg,
                 display: 'flex', flexDirection: 'column',
-                transition: 'width .28s cubic-bezier(.4,0,.2,1), transform .28s cubic-bezier(.4,0,.2,1)',
+                // En movil solo se anima transform (lo mueve la GPU); animar width
+                // obliga a recalcular el layout de toda la pagina en cada frame.
+                transition: isMobile ? 'transform .26s cubic-bezier(.4,0,.2,1)' : 'width .28s cubic-bezier(.4,0,.2,1)',
+                willChange: isMobile ? 'transform' : undefined,
                 flexShrink: 0,
                 borderRight: `1px solid ${sbBdr}`,
                 overflow: 'hidden',
@@ -337,7 +361,7 @@ export default function Layout() {
                     borderBottom: `1px solid ${hdrBdr}`,
                     padding: '0 32px', height: 64,
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    flexShrink: 0, backdropFilter: 'blur(14px)', position: 'relative', zIndex: 5,
+                    flexShrink: 0, position: 'relative', zIndex: 5,
                 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         {/* Hamburger — mobile only */}
@@ -396,7 +420,11 @@ export default function Layout() {
 
                 {/* Content */}
                 <main className="main-content-pad" style={{ flex: 1, overflowY: 'auto', padding: '32px 36px', animation: 'fadeIn .35s ease', background: mainBg }}>
-                    <Outlet />
+                    {/* Suspense aqui: al cambiar de pagina solo el contenido muestra
+                        el indicador de carga; menu y encabezado se quedan quietos. */}
+                    <Suspense fallback={<CargandoPagina />}>
+                        <Outlet />
+                    </Suspense>
                 </main>
             </div>
         </div>

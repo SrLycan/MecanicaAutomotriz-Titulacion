@@ -66,7 +66,7 @@ const responderMensaje = async (req, res) => {
         let clienteNombre = null;
         if (emailCliente) {
             try {
-                const { rows } = await pool.query('SELECT id, nombre FROM clientes WHERE email = $1 LIMIT 1', [emailCliente]);
+                const { rows } = await pool.query('SELECT id, nombre FROM clientes WHERE LOWER(email) = LOWER($1) ORDER BY id LIMIT 1', [emailCliente]);
                 clienteId = rows[0]?.id ?? null;
                 clienteNombre = rows[0]?.nombre ?? null;
             } catch (_) { /* no critico para responder el chat */ }

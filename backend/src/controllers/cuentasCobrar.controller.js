@@ -10,6 +10,7 @@
  * (ej. marcar 'vencido' o 'anulado') via cambiarEstadoCuenta.
  */
 const pool = require('../config/db');
+const { errorBD } = require('../utils/erroresBD');
 const { registrarAccionBitacora } = require('../services/ordenesHistorial.service');
 
 const ESTADOS = ['pendiente', 'parcial', 'pagado', 'vencido', 'anulado'];
@@ -157,6 +158,7 @@ const listarCuentas = async (req, res) => {
         return res.json({ cuentas: rows.map(conNumeroOrden), total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) });
     } catch (err) {
         console.error('Error listarCuentas:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener las cuentas por cobrar.' });
     }
 };
@@ -183,6 +185,7 @@ const obtenerCuenta = async (req, res) => {
         return res.json({ cuenta: { ...conNumeroOrden(cuenta), pagos: pagos.map(pg => ({ ...pg, detalle: resumenDetallePago(pg.metodo_pago, pg) })) } });
     } catch (err) {
         console.error('Error obtenerCuenta:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener la cuenta.' });
     }
 };
@@ -198,6 +201,9 @@ const crearCuenta = async (req, res) => {
     if (!cliente_id) return res.status(400).json({ error: 'El cliente es obligatorio.' });
     if (!concepto || !concepto.trim()) return res.status(400).json({ error: 'El concepto es obligatorio.' });
     if (!monto_total || parseFloat(monto_total) <= 0) return res.status(400).json({ error: 'El monto debe ser mayor a cero.' });
+    // Sin `fecha` (= hoy en la BD) lo valida la restriccion cuentas_cobrar_vencimiento_valido.
+    if (fecha && fecha_vencimiento && fecha_vencimiento < fecha)
+        return res.status(400).json({ error: 'La fecha de vencimiento no puede ser anterior a la fecha de la cuenta.' });
 
     try {
         const { rows: clienteRows } = await pool.query('SELECT id FROM clientes WHERE id = $1', [cliente_id]);
@@ -234,6 +240,7 @@ const crearCuenta = async (req, res) => {
         return res.status(201).json({ cuenta: { ...cuenta, saldo: cuenta.monto_total } });
     } catch (err) {
         console.error('Error crearCuenta:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al crear la cuenta por cobrar.' });
     }
 };
@@ -280,6 +287,7 @@ const actualizarCuenta = async (req, res) => {
         return res.json({ cuenta: { ...rows[0], saldo: rows[0].monto_total - rows[0].monto_pagado } });
     } catch (err) {
         console.error('Error actualizarCuenta:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al actualizar la cuenta.' });
     }
 };
@@ -309,6 +317,7 @@ const cambiarEstadoCuenta = async (req, res) => {
         return res.json({ cuenta: { ...rows[0], saldo: rows[0].monto_total - rows[0].monto_pagado } });
     } catch (err) {
         console.error('Error cambiarEstadoCuenta:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al cambiar el estado de la cuenta.' });
     }
 };
@@ -331,8 +340,9 @@ const registrarPago = async (req, res) => {
     // La referencia general se completa con el comprobante/cheque si no se envio.
     const referenciaFinal = (referencia && String(referencia).trim()) || d.numero_comprobante || d.numero_cheque || d.autorizacion || null;
 
-    const client = await pool.connect();
+    let client;
     try {
+        client = await pool.connect();
         await client.query('BEGIN');
 
         const { rows: cuentaRows } = await client.query('SELECT * FROM cuentas_cobrar WHERE id = $1 FOR UPDATE', [id]);
@@ -377,11 +387,12 @@ const registrarPago = async (req, res) => {
 
         return res.status(201).json({ pago: { ...pagoRows[0], detalle: resumen }, cuenta: { ...c, saldo: c.monto_total - c.monto_pagado } });
     } catch (err) {
-        await client.query('ROLLBACK');
+        await client?.query('ROLLBACK');
         console.error('Error registrarPago:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al registrar el pago.' });
     } finally {
-        client.release();
+        client?.release();
     }
 };
 
@@ -398,8 +409,9 @@ const registrarPago = async (req, res) => {
 const eliminarPago = async (req, res) => {
     const { id, pagoId } = req.params;
     const motivo = (req.body && typeof req.body.motivo === 'string' && req.body.motivo.trim()) ? req.body.motivo.trim().slice(0, 255) : 'Registrado por error';
-    const client = await pool.connect();
+    let client;
     try {
+        client = await pool.connect();
         await client.query('BEGIN');
         const { rows: cuentaRows } = await client.query('SELECT * FROM cuentas_cobrar WHERE id = $1 FOR UPDATE', [id]);
         const cuenta = cuentaRows[0];
@@ -432,11 +444,12 @@ const eliminarPago = async (req, res) => {
 
         return res.json({ mensaje: 'Pago anulado. Sigue visible en el historial, pero ya no cuenta como pagado.' });
     } catch (err) {
-        await client.query('ROLLBACK');
+        await client?.query('ROLLBACK');
         console.error('Error anular pago:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al anular el pago.' });
     } finally {
-        client.release();
+        client?.release();
     }
 };
 
@@ -470,6 +483,7 @@ const eliminarCuenta = async (req, res) => {
         return res.json({ mensaje: 'Cuenta eliminada correctamente.' });
     } catch (err) {
         console.error('Error eliminarCuenta:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al eliminar la cuenta.' });
     }
 };
@@ -492,6 +506,7 @@ const resumenCuentas = async (req, res) => {
         return res.json(rows[0]);
     } catch (err) {
         console.error('Error resumenCuentas:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al calcular el resumen.' });
     }
 };

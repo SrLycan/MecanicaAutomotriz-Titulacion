@@ -22,6 +22,7 @@
  *    "No existen datos suficientes para este periodo").
  */
 const pool = require('../config/db');
+const { errorBD } = require('../utils/erroresBD');
 
 const PERIODOS = { semana: 7, mes: 30, anio: 365 };
 
@@ -75,6 +76,7 @@ const productosMasVendidos = async (req, res) => {
         return res.json({ periodo, desde, total_cantidad: totalCantidad, productos, fuente: 'precio_historico_proforma_o_catalogo_actual' });
     } catch (err) {
         console.error('Error productosMasVendidos:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al calcular productos mas vendidos.' });
     }
 };
@@ -118,6 +120,7 @@ const serviciosMasSolicitados = async (req, res) => {
         return res.json({ periodo, desde, total_solicitudes: totalSolicitudes, servicios, fuente: 'citas_agendadas' });
     } catch (err) {
         console.error('Error serviciosMasSolicitados:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al calcular servicios mas solicitados.' });
     }
 };
@@ -224,6 +227,7 @@ const crecimiento = async (req, res) => {
         return res.json({ periodo, granularidad, serie, totales, fuente: 'estimado_catalogo_actual' });
     } catch (err) {
         console.error('Error crecimiento:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al calcular el crecimiento.' });
     }
 };
@@ -327,6 +331,7 @@ const estadisticasProformas = async (req, res) => {
         });
     } catch (err) {
         console.error('Error estadisticasProformas:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al calcular las estadisticas de proformas.' });
     }
 };

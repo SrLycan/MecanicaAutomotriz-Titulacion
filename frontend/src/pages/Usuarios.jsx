@@ -134,7 +134,7 @@ export default function Usuarios() {
             {/* ── Header ── */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
                 <div>
-                    <div className="SS SWAP-chip" style={{ marginBottom: 8 }}>
+                    <div className="ssswap-chip" style={{ marginBottom: 8 }}>
                         <span className="dot" />
                         <span>SS SWAP · ADMIN · USUARIOS</span>
                     </div>

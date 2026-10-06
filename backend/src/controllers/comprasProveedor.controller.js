@@ -9,6 +9,7 @@
  * para no duplicar esa logica de concurrencia.
  */
 const pool = require('../config/db');
+const { errorBD } = require('../utils/erroresBD');
 const { registrarAccionBitacora } = require('../services/ordenesHistorial.service');
 
 const ESTADOS = ['pendiente', 'solicitada', 'en_proceso', 'recibida', 'cancelada'];
@@ -72,6 +73,7 @@ const listarCompras = async (req, res) => {
         return res.json({ compras: rows, total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) });
     } catch (err) {
         console.error('Error listarCompras:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener compras.' });
     }
 };
@@ -105,6 +107,7 @@ const obtenerCompra = async (req, res) => {
         return res.json({ compra: { ...compra, items } });
     } catch (err) {
         console.error('Error obtenerCompra:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener la compra.' });
     }
 };
@@ -130,8 +133,9 @@ const crearCompra = async (req, res) => {
         }
     }
 
-    const client = await pool.connect();
+    let client;
     try {
+        client = await pool.connect();
         await client.query('BEGIN');
 
         const { rows: provRows } = await client.query('SELECT id FROM proveedores WHERE id = $1 AND activo = TRUE', [proveedor_id]);
@@ -191,11 +195,12 @@ const crearCompra = async (req, res) => {
         const { rows: items_final } = await pool.query('SELECT * FROM compras_proveedor_items WHERE compra_id = $1 ORDER BY id ASC', [compra.id]);
         return res.status(201).json({ compra: { ...compra, ...totales, items: items_final } });
     } catch (err) {
-        await client.query('ROLLBACK');
+        await client?.query('ROLLBACK');
         console.error('Error crearCompra:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al registrar la compra.' });
     } finally {
-        client.release();
+        client?.release();
     }
 };
 
@@ -222,6 +227,7 @@ const actualizarCompra = async (req, res) => {
         return res.json({ compra: rows[0] });
     } catch (err) {
         console.error('Error actualizarCompra:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al actualizar la compra.' });
     }
 };
@@ -250,8 +256,9 @@ const cambiarEstadoCompra = async (req, res) => {
         return res.status(400).json({ error: `Estado invalido. Valores permitidos: ${ESTADOS.join(', ')}.` });
     }
 
-    const client = await pool.connect();
+    let client;
     try {
+        client = await pool.connect();
         await client.query('BEGIN');
 
         const { rows: compraRows } = await client.query('SELECT * FROM compras_proveedor WHERE id = $1 FOR UPDATE', [id]);
@@ -352,11 +359,12 @@ const cambiarEstadoCompra = async (req, res) => {
 
         return res.json({ compra: rows[0], stock_actualizado: stockActualizado });
     } catch (err) {
-        await client.query('ROLLBACK');
+        await client?.query('ROLLBACK');
         console.error('Error cambiarEstadoCompra:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al cambiar el estado de la compra.' });
     } finally {
-        client.release();
+        client?.release();
     }
 };
 
@@ -366,8 +374,9 @@ const cambiarEstadoCompra = async (req, res) => {
 // ─────────────────────────────────────────────────────────────
 const eliminarCompra = async (req, res) => {
     const { id } = req.params;
-    const client = await pool.connect();
+    let client;
     try {
+        client = await pool.connect();
         await client.query('BEGIN');
         const { rows: compraRows } = await client.query('SELECT estado FROM compras_proveedor WHERE id = $1', [id]);
         if (!compraRows[0]) {
@@ -385,11 +394,12 @@ const eliminarCompra = async (req, res) => {
         await client.query('COMMIT');
         return res.json({ mensaje: 'Compra eliminada correctamente.' });
     } catch (err) {
-        await client.query('ROLLBACK');
+        await client?.query('ROLLBACK');
         console.error('Error eliminarCompra:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al eliminar la compra.' });
     } finally {
-        client.release();
+        client?.release();
     }
 };
 

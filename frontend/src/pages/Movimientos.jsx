@@ -26,6 +26,7 @@ export function clasificarMovimiento(m) {
     if (m.origen === 'compra') return { label: 'ENTRADA POR COMPRA', color: '#10b981' };
     if (m.origen === 'ajuste') return { label: m.tipo === 'entrada' ? 'AJUSTE (+)' : 'AJUSTE (−)', color: '#8b5cf6' };
     if (m.origen === 'devolucion') return { label: 'DEVOLUCIÓN', color: '#0ea5e9' };
+    if (m.origen === 'venta') return { label: 'VENTA A CLIENTE', color: '#e11d48' };
     return m.tipo === 'entrada' ? { label: 'ENTRADA MANUAL', color: '#10b981' } : { label: 'SALIDA MANUAL', color: '#ef4444' };
 }
 const fmtCant = (n) => (Number(n) % 1 === 0 ? String(Number(n)) : Number(n).toFixed(2));
@@ -127,7 +128,7 @@ export default function Movimientos() {
         <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1500 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 18, flexWrap: 'wrap', gap: 12 }}>
                 <div>
-                    <div className="SS SWAP-chip" style={{ marginBottom: 8 }}><span className="dot" /><span>SS SWAP · TRAZABILIDAD</span></div>
+                    <div className="ssswap-chip" style={{ marginBottom: 8 }}><span className="dot" /><span>SS SWAP · TRAZABILIDAD</span></div>
                     <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.6rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>Registros de inventario</h1>
                     <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.85rem', color: mut, marginTop: 6 }}>
                         Qué pasó con cada producto: entradas, salidas, compras, ajustes, devoluciones y salidas por proforma
@@ -160,6 +161,7 @@ export default function Movimientos() {
                             <option value="entrada|manual">Entrada manual</option>
                             <option value="salida|manual">Salida manual</option>
                             <option value="salida|proforma">Salida por proforma</option>
+                            <option value="salida|venta">Venta a cliente (tienda)</option>
                             <option value="entrada|compra">Entrada por compra</option>
                             <option value="|ajuste">Ajuste de inventario</option>
                             <option value="entrada|devolucion">Devolución</option>

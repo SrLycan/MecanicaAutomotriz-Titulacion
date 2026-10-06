@@ -81,7 +81,7 @@ export default function Sucursales() {
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 22, flexWrap: 'wrap', gap: 12 }}>
                 <div>
-                    <div className="SS SWAP-chip" style={{ marginBottom: 8 }}>
+                    <div className="ssswap-chip" style={{ marginBottom: 8 }}>
                         <span className="dot" />
                         <span>SS SWAP · ADMIN · SUCURSALES</span>
                     </div>
@@ -263,7 +263,7 @@ function ModalSucursal({ data, onClose, onGuardar }) {
                         </div>
                         <div style={{ gridColumn: '1/-1' }}>
                             <label style={labelSt}>EMAIL</label>
-                            <input type="email" name="email" value={form.email || ''} onChange={onChange} placeholder="sucursal@SS SWAP.com" style={inputSt} />
+                            <input type="email" name="email" value={form.email || ''} onChange={onChange} placeholder="sucursal@ssswap.com" style={inputSt} />
                         </div>
                         <div style={{ gridColumn: '1/-1' }}>
                             <label style={labelSt}>HORARIO</label>

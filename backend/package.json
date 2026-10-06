@@ -1,5 +1,5 @@
 {
-  "name": "SS SWAP-backend",
+  "name": "ssswap-backend",
   "version": "1.0.0",
   "description": "API REST - Sistema SS SWAP Mecánica Automotriz",
   "main": "src/server.js",

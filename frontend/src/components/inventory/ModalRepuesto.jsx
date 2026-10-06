@@ -202,7 +202,7 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
 
                         {/* Imagen */}
                         <div style={{ gridColumn: '1/-1' }}>
-                            <label className="SS SWAP-label">FOTO DEL REPUESTO</label>
+                            <label className="ssswap-label">FOTO DEL REPUESTO</label>
                             <div style={{ display: 'grid', gridTemplateColumns: '108px 1fr', gap: 12, alignItems: 'stretch' }}>
                                 <div style={{ minHeight: 108, borderRadius: 14, border: `1px dashed ${bdr}`, background: isDark ? 'rgba(255,255,255,.025)' : 'rgba(124,58,237,.035)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', color: mut }}>
                                     {preview ? (
@@ -215,8 +215,8 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
                                     )}
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                    <input className="SS SWAP-input" type="file" accept="image/*" onChange={handleImagenFile} style={{ ...inputSt, padding: '9px 12px' }} />
-                                    <input className="SS SWAP-input" name="imagen_url" value={urlValue} onChange={handleChange}
+                                    <input className="ssswap-input" type="file" accept="image/*" onChange={handleImagenFile} style={{ ...inputSt, padding: '9px 12px' }} />
+                                    <input className="ssswap-input" name="imagen_url" value={urlValue} onChange={handleChange}
                                         placeholder="O pega una URL/ruta de imagen..." style={inputSt} />
                                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
                                         <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.68rem', color: mut }}>

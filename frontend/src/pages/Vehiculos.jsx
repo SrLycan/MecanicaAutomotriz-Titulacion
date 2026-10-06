@@ -106,7 +106,7 @@ export default function Vehiculos() {
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
                 <div>
-                    <div className="SS SWAP-chip" style={{ marginBottom: 8 }}>
+                    <div className="ssswap-chip" style={{ marginBottom: 8 }}>
                         <span className="dot" />
                         <span>SS SWAP · TALLER · VEHICULOS</span>
                     </div>
@@ -263,7 +263,7 @@ function ModalHistorial({ vehiculo, ordenes, onClose, isDark }) {
                             return (
                                 <div key={o.id} style={{ padding: '12px 16px', borderRadius: 10, background: isDark ? 'rgba(255,255,255,.015)' : 'rgba(14,165,233,.02)', border: `1px solid ${bdr}` }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, flexWrap: 'wrap', gap: 6 }}>
-                                        <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.9rem', letterSpacing: '.03em', color: txt }}>#{String(o.id).padStart(4, '0')}</span>
+                                        <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.9rem', letterSpacing: '.03em', color: txt }}>{o.numero || `OT-${String(o.id).padStart(6, '0')}`}</span>
                                         <div style={{ display: 'flex', gap: 6 }}>
                                             <span style={{ padding: '2px 9px', borderRadius: 999, background: `${est.color}14`, border: `1px solid ${est.color}35`, color: est.color, fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.16em' }}>{est.label.toUpperCase()}</span>
                                             {prog && (

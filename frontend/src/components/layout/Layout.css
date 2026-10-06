@@ -34,6 +34,11 @@
 .hdr-pill { transition: border-color .2s, background .2s; }
 .hdr-pill:hover { border-color: rgba(127,171,206,.45); }
 
+/* 100dvh = alto real visible en moviles (100vh incluye la barra del
+   navegador y hacia "saltar" la pagina al mostrarse/ocultarse). */
+.layout-root { height: 100vh; height: 100dvh; }
+.main-content-pad { -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
+
 @media (max-width: 768px) {
     .main-content-pad { padding: 18px 16px !important; }
     .hdr-username { display: none; }

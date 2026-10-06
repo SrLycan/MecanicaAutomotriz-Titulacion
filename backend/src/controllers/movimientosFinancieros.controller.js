@@ -8,6 +8,7 @@
  * historial y el endpoint para registrar pagos/abonos manuales.
  */
 const pool = require('../config/db');
+const { errorBD } = require('../utils/erroresBD');
 const { registrarAccionBitacora } = require('../services/ordenesHistorial.service');
 
 const TIPOS   = ['compra', 'pago', 'abono', 'gasto', 'cancelacion', 'ajuste'];
@@ -54,6 +55,7 @@ const listarMovimientos = async (req, res) => {
         return res.json({ movimientos: rows, total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) });
     } catch (err) {
         console.error('Error listarMovimientos:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener el historial financiero.' });
     }
 };
@@ -101,6 +103,7 @@ const registrarMovimiento = async (req, res) => {
         return res.status(201).json({ movimiento });
     } catch (err) {
         console.error('Error registrarMovimiento (financiero):', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al registrar el movimiento.' });
     }
 };
@@ -134,6 +137,7 @@ const cambiarEstadoMovimiento = async (req, res) => {
         return res.json({ movimiento: rows[0] });
     } catch (err) {
         console.error('Error cambiarEstadoMovimiento:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al cambiar el estado del movimiento.' });
     }
 };
@@ -196,6 +200,7 @@ const resumenFinanciero = async (req, res) => {
         });
     } catch (err) {
         console.error('Error resumenFinanciero:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al calcular el resumen financiero.' });
     }
 };
