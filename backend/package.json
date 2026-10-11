@@ -11,7 +11,10 @@
     "start": "node src/server.js",
     "seed": "node src/config/seed.js",
     "test": "jest",
-    "superadmin": "node src/scripts/superadmin.js"
+    "superadmin": "node src/scripts/superadmin.js",
+    "respaldo": "node src/scripts/respaldo.js",
+    "respaldo:probar": "node src/scripts/respaldo.js --probar",
+    "restaurar": "node src/scripts/restaurar.js"
   },
   "dependencies": {
     "@google/genai": "^2.12.0",
