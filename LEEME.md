@@ -4,6 +4,68 @@
 
 ---
 
+# SS SWAP — Sprint 22: Plataforma multiempresa, soporte auditado y respaldos
+
+## 1. Base de datos (OBLIGATORIO antes de desplegar el código nuevo)
+Requiere el Sprint 21. Corre el bloque **"Sprint 22"** del final de `backend/src/config/migrations.sql`
+(con `RUN_MIGRATIONS=true` se aplica solo al arrancar). Para Supabase: `Downloads/ssswap/supabase_sprint22.sql`
+(mismo bloque en BEGIN/COMMIT; probado sobre una copia de la BD anterior, y una 2ª corrida no cambia nada).
+**Respalda antes** (`npm run respaldo -- --tipo previo_migracion`). Sin esta migración el backend nuevo no arranca bien.
+
+- `empresas`: **SS SWAP es la primera empresa** y recibe TODOS los datos existentes (una sola vez,
+  registrado en `migraciones_registro`). No se borra ni se renombra nada.
+- `empresa_id` en las 32 tablas operativas (`backend/src/config/multiempresa.js`), llaves foráneas
+  compuestas `(col, empresa_id)` para que un registro nunca apunte a otro de otra empresa, y
+  únicos por empresa (códigos, cédulas, números de proforma, etc.).
+- **Aislamiento dentro de PostgreSQL (RLS)**: el backend ejecuta cada consulta de una empresa con el rol
+  `ssswap_app` (sin privilegios, sin BYPASSRLS) y `app.empresa_id` de la sesión del servidor. Aunque una
+  consulta olvide el filtro, la base no devuelve ni acepta filas de otra empresa. El `empresa_id` nunca se
+  toma del frontend.
+- Numeración por empresa (`empresa_secuencias`): proformas y referencias de repuestos.
+- Tablas de plataforma: `accesos_soporte`, `respaldos_registro`, `errores_sistema`, `migraciones_registro`.
+
+## 2. Roles
+- **Superadministrador global** (sin empresa): solo ve la **Plataforma** (empresas, auditoría global,
+  respaldos, sistema). No ve datos de ninguna empresa salvo con acceso de soporte.
+  `npm run superadmin -- --crear --email x@dominio --nombre "..."` (sin `--empresa` = solo plataforma;
+  con `--empresa ss-swap` es además dueño de SS SWAP, como `admin@ssswap.com` en local).
+  `--sin-empresa` / `--empresa <slug>` cambian eso en una cuenta existente.
+- **Administrador de empresa**: gestiona usuarios, permisos, auditoría y datos de SU empresa
+  (menú **Mi empresa**). Solo puede conceder permisos que él mismo tiene.
+- **Acceso de soporte**: la empresa lo habilita en *Mi empresa › Configuración*; el superadmin lo abre
+  con motivo (mín. 10 caracteres), modo **lectura** o **completo** y duración (máx. 8 h). Se ve un aviso
+  fijo, todo queda en auditoría (`soporte.*`) y se cierra con *Terminar soporte* o al vencer.
+- Empresa **suspendida/inactiva**: sus usuarios no pueden entrar. La empresa de la web pública
+  (`EMPRESA_PUBLICA`, por defecto `ss-swap`) no se puede suspender desde la plataforma.
+
+## 3. Respaldos
+```
+npm run respaldo                       # BD completa + uploads/, con manifiesto y SHA-256
+npm run respaldo -- --listar
+npm run respaldo:probar                # restaura en una base TEMPORAL, verifica y la borra
+npm run restaurar -- --clave <respaldo> --destino <base_nueva>
+```
+- Cifrado AES-256-GCM con `BACKUP_ENCRYPTION_KEY`; retención `BACKUP_RETENTION_DAYS`/`BACKUP_MIN_KEEP`.
+- Automático: `BACKUP_AUTO=true` (dentro del servidor, a la hora `BACKUP_HOUR`) o el Programador de
+  tareas de Windows con `backend/scripts/programar-respaldo-windows.ps1`.
+- Restaurar sobre la base de la aplicación exige `--confirmar-produccion`, escribir el nombre de la base
+  y hace antes un respaldo `previo_restauracion`. Procedimiento completo: [RECUPERACION.md](RECUPERACION.md).
+- Variables nuevas documentadas en `backend/.env.example` (sin secretos).
+
+## 4. Pruebas
+- `PG_INTEGRATION=1 DB_NAME=ssswap_test npx jest` (backend, **nunca contra producción**): incluye
+  `sprint22.multiempresa.integracion` (escenarios A–F con peticiones HTTP reales entre dos empresas).
+- `CI=true npm test` (frontend): menú por rol, plataforma, aviso de soporte.
+
+## 5. Límites conocidos
+- Los números de orden de trabajo salen del id global: no chocan entre empresas pero no son
+  consecutivos por empresa.
+- La bitácora y el chatbot (MongoDB) se separan con `empresa_id` en cada documento (los antiguos sin
+  campo se consideran de SS SWAP); MongoDB no tiene RLS.
+- Las fotos de `uploads/` se sirven por nombre aleatorio difícil de adivinar, no por empresa.
+
+---
+
 # SS SWAP — Sprint 21: Superadministrador y permisos personalizados
 
 ## 1. Base de datos (OBLIGATORIO antes de desplegar el código nuevo)
