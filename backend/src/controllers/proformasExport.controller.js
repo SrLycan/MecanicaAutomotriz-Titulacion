@@ -17,6 +17,8 @@ function sanitizarNombreArchivo(texto) {
 }
 
 async function obtenerProformaCompleta(id) {
+    // Un id que no es numero no existe (antes terminaba en un error 500).
+    if (!/^\d+$/.test(String(id))) return null;
     const { rows } = await pool.query(
         `SELECT p.*, u.nombre AS usuario_nombre,
                 s.nombre AS sucursal_nombre, s.direccion AS sucursal_direccion,
