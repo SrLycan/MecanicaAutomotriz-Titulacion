@@ -17,6 +17,7 @@ import './Layout.css';
 
 // Icono exclusivo de Proveedores (solo administradores)
 function IconTruck() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>; }
+function IconPlataforma() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="7" rx="1.5"/><rect x="2" y="14" width="20" height="7" rx="1.5"/><line x1="6" y1="6.5" x2="6.01" y2="6.5"/><line x1="6" y1="17.5" x2="6.01" y2="17.5"/></svg>; }
 function IconMoney() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>; }
 function IconChart() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>; }
 
@@ -73,11 +74,19 @@ const NAV_GROUPS = [
         { to: '/dashboard/sucursales', label: 'Sucursales', permiso: 'sucursales:ver' },
         { to: '/dashboard/bitacora',   label: 'Bitácora', permiso: 'bitacora:ver' },
     ] },
-    { id: 'seguridad', label: 'Usuarios y permisos', icon: IconUsers, children: [
-        { to: '/dashboard/usuarios',            label: 'Todos los usuarios', soloSuperadmin: true },
-        { to: '/dashboard/usuarios?rol=staff',  label: 'Personal del taller', soloSuperadmin: true },
-        { to: '/dashboard/usuarios?rol=cliente', label: 'Clientes (portal)', soloSuperadmin: true },
-        { to: '/dashboard/auditoria',           label: 'Auditoría', soloSuperadmin: true },
+    { id: 'seguridad', label: 'Mi empresa', icon: IconUsers, children: [
+        { to: '/dashboard/usuarios',            label: 'Usuarios y permisos', permiso: 'usuarios:ver' },
+        { to: '/dashboard/usuarios?rol=staff',  label: 'Personal del taller', permiso: 'usuarios:ver' },
+        { to: '/dashboard/usuarios?rol=cliente', label: 'Clientes (portal)', permiso: 'usuarios:ver' },
+        { to: '/dashboard/auditoria',           label: 'Auditoría', permiso: 'auditoria:ver' },
+        { to: '/dashboard/empresa',             label: 'Configuración de la empresa', permiso: 'empresa:ver' },
+    ] },
+    // Plataforma multiempresa: solo el superadministrador.
+    { id: 'plataforma', label: 'Plataforma', icon: IconPlataforma, children: [
+        { to: '/dashboard/plataforma',           label: 'Empresas', soloSuperadmin: true },
+        { to: '/dashboard/plataforma/auditoria', label: 'Auditoría global', soloSuperadmin: true },
+        { to: '/dashboard/plataforma/respaldos', label: 'Respaldos', soloSuperadmin: true },
+        { to: '/dashboard/plataforma/sistema',   label: 'Migraciones y errores', soloSuperadmin: true },
     ] },
 ];
 
@@ -112,7 +121,7 @@ function IconOrden(){ return <svg width="16" height="16" viewBox="0 0 24 24" fil
 function IconSvc()  { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>; }
 
 export default function Layout() {
-    const { usuario, logout, puede, puedeAlguno, esSuperadmin } = useAuth();
+    const { usuario, logout, puede, puedeAlguno, esSuperadmin, empresa, soporte, terminarSoporte } = useAuth();
     const { isDark, toggle } = useTheme();
     const navigate = useNavigate();
     const location = useLocation();
@@ -248,6 +257,11 @@ export default function Layout() {
         if (location.pathname.endsWith('/inventario'))   return 'Inventario';
         if (location.pathname.endsWith('/movimientos'))  return 'Registros de inventario';
         if (location.pathname.endsWith('/usuarios'))     return 'Usuarios y permisos';
+        if (location.pathname.includes('/plataforma/auditoria')) return 'Auditoría global';
+        if (location.pathname.includes('/plataforma/respaldos')) return 'Respaldos';
+        if (location.pathname.includes('/plataforma/sistema'))   return 'Migraciones y errores';
+        if (location.pathname.endsWith('/plataforma'))   return 'Empresas';
+        if (location.pathname.endsWith('/empresa'))      return 'Configuración de la empresa';
         if (location.pathname.endsWith('/auditoria'))    return 'Auditoría';
         if (location.pathname.endsWith('/acceso-denegado')) return 'Acceso denegado';
         if (location.pathname.endsWith('/clientes'))     return 'Clientes';
@@ -434,6 +448,13 @@ export default function Layout() {
                         <p style={{ fontFamily: "'Sora'", fontWeight: 700, fontSize: '.74rem', letterSpacing: '.14em', color: SKY_DEEP }}>ADMIN</p>
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={mut} strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
                         <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.95rem', color: txt }}>{crumb}</p>
+                        {/* Empresa de la sesion (la decide el servidor) */}
+                        {(empresa || esSuperadmin) && (
+                            <span className="hdr-empresa" title="Empresa en la que estas trabajando" style={{ marginLeft: 10, padding: '3px 10px', borderRadius: 999, fontFamily: "'Sora'", fontWeight: 600, fontSize: '.68rem', letterSpacing: '.06em',
+                                color: soporte ? '#b45309' : SKY_DEEP, background: soporte ? 'rgba(245,158,11,.12)' : 'rgba(59,123,171,.10)', border: `1px solid ${soporte ? 'rgba(245,158,11,.45)' : 'rgba(59,123,171,.30)'}`, whiteSpace: 'nowrap' }}>
+                                {empresa ? empresa.nombre.toUpperCase() : 'PLATAFORMA'}
+                            </span>
+                        )}
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -483,6 +504,15 @@ export default function Layout() {
 
                 {/* Content */}
                 <main className="main-content-pad" style={{ flex: 1, overflowY: 'auto', padding: '32px 36px', animation: 'fadeIn .35s ease', background: mainBg }}>
+                    {/* Modo soporte: visible siempre, con su motivo, limite y salida */}
+                    {soporte && (
+                        <div role="status" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 18, padding: '10px 14px', borderRadius: 12,
+                            background: 'rgba(245,158,11,.10)', border: '1px solid rgba(245,158,11,.45)', fontFamily: "'Outfit'", fontSize: '.85rem', color: txt }}>
+                            <strong style={{ color: '#b45309' }}>MODO SOPORTE{soporte.modo === 'lectura' ? ' · SOLO LECTURA' : ''}</strong>
+                            <span>en {empresa?.nombre} · {soporte.motivo} · vence a las {new Date(soporte.expira).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })} — todo lo que hagas queda en su auditoría</span>
+                            <button type="button" onClick={terminarSoporte} style={{ marginLeft: 'auto', background: 'none', border: '1px solid rgba(245,158,11,.6)', borderRadius: 8, padding: '5px 12px', cursor: 'pointer', color: '#b45309', fontFamily: "'Bebas Neue'", letterSpacing: '.1em' }}>TERMINAR SOPORTE</button>
+                        </div>
+                    )}
                     {/* Suspense aqui: al cambiar de pagina solo el contenido muestra
                         el indicador de carga; menu y encabezado se quedan quietos. */}
                     <Suspense fallback={<CargandoPagina />}>

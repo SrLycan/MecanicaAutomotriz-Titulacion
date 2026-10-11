@@ -41,7 +41,7 @@ const fmtCant = (n) => (Number(n) % 1 === 0 ? String(Number(n)) : Number(n).toFi
 const hora = (h) => String(h || '').slice(0, 5);
 
 export default function Dashboard() {
-    const { usuario, puede, puedeAlguno } = useAuth();
+    const { usuario, puede, puedeAlguno, empresa } = useAuth();
     const veResumen = puede('dashboard', 'ver');
     const { isDark } = useTheme();
     const [d, setD] = useState(null);
@@ -132,7 +132,7 @@ export default function Dashboard() {
             }}>
                 <div className="hero-orb-1" style={{ position: 'absolute', top: -80, right: -40, width: 280, height: 280, borderRadius: '50%', background: 'radial-gradient(closest-side, rgba(14,165,233,0.30), transparent)', pointerEvents: 'none' }} />
                 <div style={{ position: 'relative', zIndex: 1 }}>
-                    <div className="ssswap-chip" style={{ marginBottom: 10 }}><span className="dot" /><span>SS SWAP · {meta.label.toUpperCase()}</span></div>
+                    <div className="ssswap-chip" style={{ marginBottom: 10 }}><span className="dot" /><span>{(empresa?.nombre || 'SS SWAP').toUpperCase()} · {meta.label.toUpperCase()}</span></div>
                     <p style={{ fontFamily: "'Outfit'", fontWeight: 500, fontSize: '1rem', color: SKY_DEEP, marginBottom: 2 }}>{greet},</p>
                     <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '3rem', letterSpacing: '.02em', color: txt, lineHeight: 1 }}>{usuario?.nombre || 'Usuario'}</h1>
                     <p style={{ fontFamily: "'Outfit'", fontSize: '.95rem', color: mut, marginTop: 8, maxWidth: 420 }}>{meta.sub}.</p>

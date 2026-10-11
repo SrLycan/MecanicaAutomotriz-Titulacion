@@ -14,7 +14,7 @@ import ScrollToTop from './components/common/ScrollToTop';
 import CargandoPagina from './components/common/CargandoPagina';
 import SwapBot from './components/chatbot/SwapBot';
 import ProtectedRoute, { RutaPublica } from './components/auth/ProtectedRoute';
-import { ROLES_STAFF } from './context/AuthContext';
+import { ROLES_STAFF, useAuth } from './context/AuthContext';
 
 // ── Rutas Públicas de entrada (en el paquete principal) ──────
 // Home, registro/login de clientes y login del personal abren al instante.
@@ -58,8 +58,24 @@ const Finanzas            = lazy(() => import('./pages/Finanzas'));
 const Caja                = lazy(() => import('./pages/Caja'));
 const Pedidos             = lazy(() => import('./pages/Pedidos'));
 
-const Auditoria           = lazy(() => import('./pages/Auditoria'));      // solo superadministrador
+const Auditoria           = lazy(() => import('./pages/Auditoria'));
+const EmpresaConfig       = lazy(() => import('./pages/EmpresaConfig'));
+// Plataforma (solo superadministrador)
+const PlataformaEmpresas  = lazy(() => import('./pages/plataforma/Empresas'));
+const PlataformaAuditoria = lazy(() => import('./pages/plataforma/AuditoriaGlobal'));
+const PlataformaRespaldos = lazy(() => import('./pages/plataforma/Respaldos'));
+const PlataformaSistema   = lazy(() => import('./pages/plataforma/Sistema'));
 const AccesoDenegado      = lazy(() => import('./pages/AccesoDenegado'));
+
+/**
+ * Inicio del panel: el superadministrador sin empresa (solo plataforma) no
+ * tiene panel de empresa y va directo a la gestion de empresas.
+ */
+function InicioPanel() {
+    const { usuario, empresa } = useAuth();
+    if (usuario?.rol === 'superadministrador' && !empresa) return <Navigate to="/dashboard/plataforma" replace />;
+    return <Dashboard />;
+}
 
 const PROF_VER    = ['proformas_mecanica:ver', 'proformas_colisiones:ver'];
 const PROF_CREAR  = ['proformas_mecanica:crear', 'proformas_colisiones:crear'];
@@ -86,8 +102,15 @@ const RUTAS_PANEL = [
     { path: 'servicios',            Pagina: Servicios,           permiso: 'servicios:ver' },
     { path: 'sucursales',           Pagina: Sucursales,          permiso: 'sucursales:ver' },
     { path: 'bitacora',             Pagina: Bitacora,            permiso: 'bitacora:ver' },
-    { path: 'usuarios',             Pagina: Usuarios,            soloSuperadmin: true },
-    { path: 'auditoria',            Pagina: Auditoria,           soloSuperadmin: true },
+    // Administracion de la empresa (cada empresa la suya).
+    { path: 'usuarios',             Pagina: Usuarios,            permiso: 'usuarios:ver' },
+    { path: 'auditoria',            Pagina: Auditoria,           permiso: 'auditoria:ver' },
+    { path: 'empresa',              Pagina: EmpresaConfig,       permiso: 'empresa:ver' },
+    // Plataforma: solo el superadministrador.
+    { path: 'plataforma',           Pagina: PlataformaEmpresas,  soloSuperadmin: true },
+    { path: 'plataforma/auditoria', Pagina: PlataformaAuditoria, soloSuperadmin: true },
+    { path: 'plataforma/respaldos', Pagina: PlataformaRespaldos, soloSuperadmin: true },
+    { path: 'plataforma/sistema',   Pagina: PlataformaSistema,   soloSuperadmin: true },
 ];
 
 export default function App() {
@@ -137,7 +160,7 @@ export default function App() {
                                 <Layout />
                             </ProtectedRoute>
                         }>
-                            <Route index                element={<Dashboard />} />
+                            <Route index                element={<InicioPanel />} />
                             <Route path="acceso-denegado" element={<AccesoDenegado />} />
                             {RUTAS_PANEL.map(({ path, permiso, soloSuperadmin, Pagina }) => (
                                 <Route key={path} path={path} element={

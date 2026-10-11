@@ -18,6 +18,12 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
     const token = localStorage.getItem('SS SWAP_token');
     if (token) config.headers.Authorization = `Bearer ${token}`;
+    // Modo soporte del superadministrador: el servidor comprueba que exista
+    // un acceso de soporte vigente para esa empresa (si no, responde 403).
+    try {
+        const soporte = JSON.parse(localStorage.getItem('SS SWAP_soporte'));
+        if (token && soporte?.id) config.headers['X-Soporte-Empresa'] = String(soporte.id);
+    } catch { /* sin soporte */ }
     return config;
 });
 
@@ -39,6 +45,8 @@ api.interceptors.response.use(
             localStorage.removeItem('SS SWAP_token');
             localStorage.removeItem('SS SWAP_usuario');
             localStorage.removeItem('SS SWAP_permisos');
+            localStorage.removeItem('SS SWAP_sesion');
+            localStorage.removeItem('SS SWAP_soporte');
             const destino = enPanel ? '/admin/login' : '/auth';
             if (!window.location.pathname.startsWith(destino)) {
                 window.location.href = `${destino}?sesion=expirada`;
@@ -48,6 +56,11 @@ api.interceptors.response.use(
         // se pide al AuthContext que refresque los permisos (y el menu).
         if (error.response?.status === 403 && error.response?.data?.codigo === 'SIN_PERMISO') {
             window.dispatchEvent(new Event('ssswap:permisos-cambiaron'));
+        }
+        // El acceso de soporte vencio o se cerro: se vuelve a la plataforma.
+        if (error.response?.status === 403 && error.response?.data?.codigo === 'SOPORTE_NO_VALIDO') {
+            localStorage.removeItem('SS SWAP_soporte');
+            window.location.href = '/dashboard/plataforma?soporte=vencido';
         }
         return Promise.reject(error);
     }

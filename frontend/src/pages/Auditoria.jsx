@@ -1,5 +1,10 @@
 /**
- * SS SWAP - Auditoría de seguridad (solo SUPERADMINISTRADOR)
+ * SS SWAP - Auditoría de seguridad
+ *
+ * - De la empresa (permiso "auditoria"): /api/users/auditoria, el servidor
+ *   solo devuelve eventos de la propia empresa.
+ * - Global (plataforma, superadministrador): /api/plataforma/auditoria, con
+ *   filtro y columna de empresa (incluye eventos de la plataforma).
  *
  * Consulta de la tabla auditoria_seguridad: altas y cambios de cuentas,
  * permisos concedidos/revocados, cambios de rol y estado, inicios de sesión
@@ -25,11 +30,18 @@ const ACCIONES = [
     { val: 'acceso.denegado', label: 'Accesos denegados' },
     { val: 'sesion.inicio', label: 'Inicios de sesión del personal' },
     { val: 'superadmin.', label: 'Gestión de superadministradores' },
+    { val: 'soporte.', label: 'Accesos de soporte' },
+    { val: 'empresa.', label: 'Empresas (alta, cambios, estado)' },
+    { val: 'respaldo.', label: 'Respaldos' },
 ];
 const ETIQUETA = Object.fromEntries(ACCIONES.filter(a => a.val && !a.val.endsWith('.')).map(a => [a.val, a.label]));
 Object.assign(ETIQUETA, {
     'usuario.editar': 'Datos modificados', 'usuario.cerrar_sesiones': 'Sesiones cerradas', 'usuario.eliminar': 'Cuenta eliminada',
     'superadmin.conceder': 'Promovido a superadministrador', 'superadmin.revocar': 'Dejó de ser superadministrador', 'superadmin.crear': 'Superadministrador creado',
+    'soporte.abrir': 'Acceso de soporte abierto', 'soporte.cerrar': 'Acceso de soporte cerrado', 'soporte.accion': 'Acción en modo soporte',
+    'empresa.crear': 'Empresa creada', 'empresa.editar': 'Empresa modificada', 'empresa.suspender': 'Empresa suspendida', 'empresa.activar': 'Empresa reactivada',
+    'empresa.configurar': 'Configuración de la empresa', 'empresa.crear_administrador': 'Administrador creado', 'empresa.restablecer_administrador': 'Acceso de administrador restablecido',
+    'respaldo.manual': 'Respaldo manual', 'respaldo.prueba_restauracion': 'Prueba de restauración',
 });
 const COLOR_RESULTADO = { exito: '#10b981', denegado: '#ef4444', error: '#f59e0b' };
 
@@ -47,13 +59,18 @@ function resumenDetalle(d) {
     return partes.join(' | ');
 }
 
-export default function Auditoria() {
+export default function Auditoria({ endpoint = '/users/auditoria', global = false }) {
     const { isDark } = useTheme();
     const [searchParams] = useSearchParams();
     const [filtros, setFiltros] = useState({
         accion: '', resultado: '', q: '', desde: '', hasta: '',
         usuario_id: searchParams.get('usuario_id') || '',
+        empresa_id: '',
     });
+    const [empresas, setEmpresas] = useState([]);
+    useEffect(() => {
+        if (global) api.get('/plataforma/empresas').then(r => setEmpresas(r.data.empresas)).catch(() => {});
+    }, [global]);
     const [datos, setDatos] = useState({ registros: [], total: 0, page: 1, limit: 50 });
     const [loading, setLoading] = useState(true);
 
@@ -73,12 +90,12 @@ export default function Auditoria() {
         try {
             const params = new URLSearchParams({ page, limit: 50 });
             Object.entries(filtros).forEach(([k, v]) => { if (v) params.set(k, v); });
-            const { data } = await api.get(`/users/auditoria?${params}`);
+            const { data } = await api.get(`${endpoint}?${params}`);
             setDatos(data);
         } catch (err) {
             toast.error(err.response?.data?.error || 'Error al cargar la auditoría.');
         } finally { setLoading(false); }
-    }, [filtros]);
+    }, [filtros, endpoint]);
 
     useEffect(() => {
         const t = setTimeout(() => cargar(1), 250);
@@ -91,8 +108,8 @@ export default function Auditoria() {
     return (
         <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1500 }}>
             <div style={{ marginBottom: 20 }}>
-                <div className="ssswap-chip" style={{ marginBottom: 8 }}><span className="dot" /><span>SS SWAP · SUPERADMIN · SEGURIDAD</span></div>
-                <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.6rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>Auditoría de seguridad</h1>
+                <div className="ssswap-chip" style={{ marginBottom: 8 }}><span className="dot" /><span>{global ? 'PLATAFORMA · SUPERADMINISTRADOR' : 'EMPRESA · SEGURIDAD'}</span></div>
+                <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.6rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>{global ? 'Auditoría global' : 'Auditoría de seguridad'}</h1>
                 <p style={{ fontFamily: "'Outfit'", fontSize: '.85rem', color: mut, marginTop: 6, maxWidth: 680 }}>
                     Quién creó o modificó cuentas, concedió o revocó permisos y qué accesos fueron rechazados.
                     Estos registros no se pueden editar ni borrar.
@@ -103,6 +120,13 @@ export default function Auditoria() {
                 <select aria-label="Acción" className="u-input" value={filtros.accion} onChange={set('accion')} style={ctrl}>
                     {ACCIONES.map(a => <option key={a.val} value={a.val}>{a.label}</option>)}
                 </select>
+                {global && (
+                    <select aria-label="Empresa" className="u-input" value={filtros.empresa_id} onChange={set('empresa_id')} style={ctrl}>
+                        <option value="">Todas las empresas</option>
+                        <option value="global">Solo eventos de la plataforma</option>
+                        {empresas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+                    </select>
+                )}
                 <select aria-label="Resultado" className="u-input" value={filtros.resultado} onChange={set('resultado')} style={ctrl}>
                     <option value="">Cualquier resultado</option>
                     <option value="exito">Éxito</option>
@@ -121,18 +145,19 @@ export default function Auditoria() {
                 <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 900 }}>
                     <thead>
                         <tr style={{ borderBottom: `1px solid ${bdr}`, background: SKY_PALE }}>
-                            {['Fecha y hora', 'Responsable', 'Acción', 'Recurso', 'Resultado', 'Detalle'].map(h => (
+                            {[...(global ? ['Empresa'] : []), 'Fecha y hora', 'Responsable', 'Acción', 'Recurso', 'Resultado', 'Detalle'].map(h => (
                                 <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.22em', color: SKY_DEEP, whiteSpace: 'nowrap' }}>{h}</th>
                             ))}
                         </tr>
                     </thead>
                     <tbody>
                         {loading ? (
-                            <tr><td colSpan={6} style={{ padding: 40, textAlign: 'center', fontFamily: "'Outfit'", color: mut }}>Cargando...</td></tr>
+                            <tr><td colSpan={global ? 7 : 6} style={{ padding: 40, textAlign: 'center', fontFamily: "'Outfit'", color: mut }}>Cargando...</td></tr>
                         ) : datos.registros.length === 0 ? (
-                            <tr><td colSpan={6} style={{ padding: 40, textAlign: 'center', fontFamily: "'Outfit'", color: mut }}>Sin registros con estos filtros.</td></tr>
+                            <tr><td colSpan={global ? 7 : 6} style={{ padding: 40, textAlign: 'center', fontFamily: "'Outfit'", color: mut }}>Sin registros con estos filtros.</td></tr>
                         ) : datos.registros.map(r => (
                             <tr key={r.id} className="u-row" style={{ borderBottom: `1px solid ${bdr}` }}>
+                                {global && <td style={{ padding: '10px 16px', fontFamily: "'Outfit'", fontSize: '.78rem', color: txt }}>{r.empresa_nombre || 'Plataforma'}</td>}
                                 <td style={{ padding: '10px 16px', fontFamily: "'Outfit'", fontSize: '.78rem', color: txtSf, whiteSpace: 'nowrap' }}>{new Date(r.created_at).toLocaleString('es-EC')}</td>
                                 <td style={{ padding: '10px 16px', fontFamily: "'Outfit'", fontSize: '.8rem', color: txt }}>
                                     {r.actor_email || 'sistema'}

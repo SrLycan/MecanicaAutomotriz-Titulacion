@@ -20,10 +20,10 @@ const mockGet = (url) => { mockLlamadas.push(url); return Promise.resolve({ data
 jest.mock('../../services/api', () => ({ __esModule: true, default: { get: (...a) => mockGet(...a) } }));
 jest.mock('../../context/ThemeContext', () => ({ useTheme: () => ({ isDark: false, toggle: () => {} }) }));
 jest.mock('../../context/AuthContext', () => {
+    // Misma regla que el AuthContext real: '*' = todo (superadmin dentro de una empresa).
     const puede = (modulo, accion) => {
-        const u = mockEstadoAuth.usuario;
-        if (!u) return false;
-        if (u.rol === 'superadministrador') return true;
+        if (!mockEstadoAuth.usuario) return false;
+        if (mockEstadoAuth.permisos.includes('*')) return true;
         return mockEstadoAuth.permisos.includes(accion ? `${modulo}:${accion}` : modulo);
     };
     return {
@@ -34,6 +34,9 @@ jest.mock('../../context/AuthContext', () => {
             esSuperadmin: mockEstadoAuth.usuario?.rol === 'superadministrador',
             puede,
             puedeAlguno: (...claves) => claves.flat().some(c => puede(c)),
+            empresa: mockEstadoAuth.empresa,
+            soporte: mockEstadoAuth.soporte,
+            terminarSoporte: () => {},
         }),
     };
 });
@@ -60,15 +63,53 @@ function renderLayout() {
 const menu = () => within(screen.getByRole('navigation'));
 
 describe('Layout — menú lateral según permisos', () => {
-    afterEach(() => { mockEstadoAuth.usuario = null; mockEstadoAuth.permisos = []; mockLlamadas.length = 0; });
+    afterEach(() => {
+        mockEstadoAuth.usuario = null; mockEstadoAuth.permisos = []; mockLlamadas.length = 0;
+        mockEstadoAuth.empresa = null; mockEstadoAuth.soporte = null;
+    });
 
-    test('el superadministrador ve todos los modulos y la gestion de usuarios', () => {
+    test('el superadministrador en su empresa ve todos los modulos, su empresa y la plataforma', () => {
         mockEstadoAuth.usuario = { id: 1, nombre: 'Dueño', rol: 'superadministrador' };
+        mockEstadoAuth.permisos = ['*'];
+        mockEstadoAuth.empresa = { id: 1, nombre: 'SS SWAP', slug: 'ss-swap' };
         renderLayout();
-        for (const g of ['Panel', 'Inventario', 'Taller', 'Clientes', 'Proveedores', 'Finanzas', 'Gráficas', 'Ajustes', 'Usuarios y permisos']) {
+        for (const g of ['Panel', 'Inventario', 'Taller', 'Clientes', 'Proveedores', 'Finanzas', 'Gráficas', 'Ajustes', 'Mi empresa', 'Plataforma']) {
             expect(menu().getByText(g)).toBeInTheDocument();
         }
         expect(screen.getByText('SUPERADMIN')).toBeInTheDocument();
+        expect(screen.getByTitle('Empresa en la que estas trabajando')).toHaveTextContent('SS SWAP'); // empresa de la sesion
+    });
+
+    test('Sprint 22: el superadministrador global (sin empresa) solo ve la plataforma', () => {
+        mockEstadoAuth.usuario = { id: 1, nombre: 'Plataforma', rol: 'superadministrador' };
+        mockEstadoAuth.permisos = [];
+        renderLayout();
+        expect(menu().getByText('Plataforma')).toBeInTheDocument();
+        for (const g of ['Inventario', 'Taller', 'Clientes', 'Finanzas', 'Mi empresa']) {
+            expect(menu().queryByText(g)).not.toBeInTheDocument();
+        }
+        expect(screen.getByText('PLATAFORMA')).toBeInTheDocument();
+    });
+
+    test('Sprint 22: el administrador de una empresa gestiona su empresa pero nunca ve la plataforma', () => {
+        mockEstadoAuth.usuario = { id: 2, nombre: 'Admin Norte', rol: 'administrador' };
+        mockEstadoAuth.permisos = ['usuarios:ver', 'auditoria:ver', 'empresa:ver', 'clientes:ver'];
+        mockEstadoAuth.empresa = { id: 5, nombre: 'Taller Norte', slug: 'taller-norte' };
+        renderLayout();
+        expect(menu().getByText('Mi empresa')).toBeInTheDocument();
+        expect(menu().queryByText('Plataforma')).not.toBeInTheDocument();
+        expect(screen.getByText('TALLER NORTE')).toBeInTheDocument();
+    });
+
+    test('Sprint 22: en modo soporte se ve un aviso con el motivo y el boton para terminar', () => {
+        mockEstadoAuth.usuario = { id: 1, nombre: 'Plataforma', rol: 'superadministrador' };
+        mockEstadoAuth.permisos = ['clientes:ver'];
+        mockEstadoAuth.empresa = { id: 5, nombre: 'Taller Norte', slug: 'taller-norte' };
+        mockEstadoAuth.soporte = { modo: 'lectura', motivo: 'Revisar descuadre de inventario', expira: new Date(Date.now() + 3600e3).toISOString() };
+        renderLayout();
+        expect(screen.getByRole('status')).toHaveTextContent(/MODO SOPORTE · SOLO LECTURA/);
+        expect(screen.getByRole('status')).toHaveTextContent(/Revisar descuadre de inventario/);
+        expect(screen.getByRole('button', { name: 'TERMINAR SOPORTE' })).toBeInTheDocument();
     });
 
     test('permisos parciales: solo inventario de colisiones y sus registros', () => {
