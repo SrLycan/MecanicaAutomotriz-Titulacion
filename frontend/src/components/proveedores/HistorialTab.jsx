@@ -8,6 +8,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import Paginador from './Paginador';
+import { useAuth } from '../../context/AuthContext';
 
 function IconPlus() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>; }
 function IconX()    { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>; }
@@ -20,6 +21,7 @@ const TIPO_COLOR = { compra: '#0ea5e9', pago: '#10b981', abono: '#22c55e', gasto
 const EMPTY = { proveedor_id: '', tipo: 'pago', compra_id: '', descripcion: '', monto: '', metodo_pago: 'efectivo', referencia: '' };
 
 export default function HistorialTab({ theme, proveedores }) {
+    const { puede } = useAuth();
     const { txt, txtSf, mut, bdr, card, cardSh, SKY, SKY_DEEP, SKY_PALE, labelSt, inputSt } = theme;
     const [movimientos, setMovimientos] = useState([]);
     const [total, setTotal] = useState(0);
@@ -90,10 +92,10 @@ export default function HistorialTab({ theme, proveedores }) {
                     <label style={labelSt}>HASTA</label>
                     <input type="date" style={filtroSel} value={filtros.fecha_fin} onChange={e => setFiltros({ ...filtros, fecha_fin: e.target.value })} />
                 </div>
-                <button onClick={() => setModal(true)}
+                {puede('proveedores', 'crear') && <button onClick={() => setModal(true)}
                     style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.14em', color: '#fff', background: `linear-gradient(135deg, ${SKY_DEEP}, ${SKY})`, border: 'none', borderRadius: 11, padding: '10px 20px', cursor: 'pointer', height: 38 }}>
                     <IconPlus /> REGISTRAR PAGO/ABONO
-                </button>
+                </button>}
             </div>
 
             <p style={{ fontFamily: "'Outfit'", fontSize: '.82rem', color: mut, marginBottom: 12 }}>{total} movimiento{total !== 1 ? 's' : ''}</p>
@@ -131,7 +133,7 @@ export default function HistorialTab({ theme, proveedores }) {
                                     <td style={{ color: txtSf }}>{m.usuario_nombre || '—'}</td>
                                     <td>
                                         {TIPOS_MANUALES.includes(m.tipo) && m.estado !== 'anulado' && (
-                                            <button className="prov-icon-btn" title="Anular" style={{ color: '#ef4444' }} onClick={() => anular(m)}><IconBan /></button>
+                                            puede('proveedores', 'editar') && <button className="prov-icon-btn" title="Anular" style={{ color: '#ef4444' }} onClick={() => anular(m)}><IconBan /></button>
                                         )}
                                     </td>
                                 </tr>

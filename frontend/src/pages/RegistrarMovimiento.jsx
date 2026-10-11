@@ -6,6 +6,7 @@
  */
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTheme } from '../context/ThemeContext';
+import { stockBajo } from '../utils/stock';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import './RegistrarMovimiento.css';
@@ -28,17 +29,17 @@ export default function RegistrarMovimiento() {
     const [step, setStep] = useState('select'); // 'select' | 'form' | 'done'
 
     const SKY = '#0ea5e9'; const SKY_DEEP = '#0284c7';
-    const SKY_PALE = isDark ? 'rgba(14,165,233,0.10)' : 'rgba(14,165,233,0.05)';
-    const SKY_BDR  = isDark ? 'rgba(56,189,248,0.22)' : 'rgba(14,165,233,0.18)';
+    const SKY_PALE = isDark ? 'rgba(14,165,233,0.10)' : 'rgba(14,165,233,0.12)';
+    const SKY_BDR  = isDark ? 'rgba(56,189,248,0.22)' : 'rgba(14,165,233,0.35)';
     const txt    = isDark ? '#f1f5f9' : '#0f172a';
     const txtSf  = isDark ? '#cbd5e1' : '#334155';
     const mut    = isDark ? 'rgba(241,245,249,0.55)' : '#111827';
     const faint  = isDark ? 'rgba(241,245,249,0.38)' : '#2d3748';
-    const bdr    = isDark ? 'rgba(148,163,184,0.18)' : 'rgba(15,23,42,0.07)';
+    const bdr    = isDark ? 'rgba(148,163,184,0.18)' : '#b6c3d3';
     const card   = isDark ? 'rgba(255,255,255,0.025)' : '#ffffff';
     const cardSh = isDark
         ? '0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 40px -16px rgba(0,0,0,0.55)'
-        : '0 4px 16px -4px rgba(15,23,42,0.08), 0 2px 4px -2px rgba(15,23,42,0.04)';
+        : '0 1px 2px rgba(15,23,42,0.06), 0 8px 22px -8px rgba(15,23,42,0.20)';
     const inputBg = isDark ? '#0b1220' : '#fafcff';
     const rowHov  = isDark ? 'rgba(14,165,233,0.06)' : 'rgba(14,165,233,0.04)';
 
@@ -56,6 +57,7 @@ export default function RegistrarMovimiento() {
         return repuestos.filter(r =>
             r.nombre?.toLowerCase().includes(q) ||
             r.codigo?.toLowerCase().includes(q) ||
+            r.codigo_proveedor?.toLowerCase().includes(q) ||
             r.categoria_nombre?.toLowerCase().includes(q)
         );
     }, [repuestos, search]);
@@ -158,7 +160,7 @@ export default function RegistrarMovimiento() {
                         <div style={{ position: 'relative', maxWidth: 400 }}>
                             <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: faint, display: 'flex' }}><IconSearch /></span>
                             <input
-                                placeholder="Buscar por codigo, nombre o categoria..."
+                                placeholder="Buscar por referencia, código de proveedor, nombre o categoría..."
                                 value={search} onChange={e => setSearch(e.target.value)}
                                 style={{ width: '100%', padding: '10px 12px 10px 34px', background: inputBg, border: `1px solid ${bdr}`, borderRadius: 10, color: txt, fontFamily: "'Outfit'", fontSize: '.85rem', outline: 'none' }}
                             />
@@ -180,7 +182,7 @@ export default function RegistrarMovimiento() {
                     ) : (
                         <div style={{ maxHeight: 480, overflowY: 'auto', padding: 4 }}>
                             {filtrados.map((r, i) => {
-                                const bajo = r.stock_actual <= r.stock_minimo;
+                                const bajo = stockBajo(r);
                                 return (
                                     <div key={r.id} className="reg-item"
                                         onClick={() => handleSelect(r)}

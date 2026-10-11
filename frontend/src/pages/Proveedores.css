@@ -1,6 +1,6 @@
 /**
  * SS SWAP - Estilos de la seccion Proveedores
- * Reutiliza .modal-backdrop / .modal-box / .SS SWAP-chip definidos en global.css
+ * Reutiliza .modal-backdrop / .modal-box / .ssswap-chip definidos en global.css
  */
 
 .prov-tabs {
@@ -92,4 +92,5 @@
 
 @media (max-width: 640px) {
     .prov-items-row { grid-template-columns: 1fr; }
+    .prov-pago-row  { grid-template-columns: 1fr !important; }
 }

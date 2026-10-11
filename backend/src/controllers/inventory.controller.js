@@ -7,14 +7,19 @@
  * condiciones de carrera (race conditions).
  */
 const pool = require('../config/db');
+const { errorBD } = require('../utils/erroresBD');
 const { normalizarCantidades, cantidadValida, redondear2 } = require('../utils/numeros');
 const { registrarAccionBitacora } = require('../services/ordenesHistorial.service');
+const { areasRepuestosVisibles, areasInventarioPermitidas, esSuperadmin } = require('../middleware/auth.middleware');
 
 // Sprint 14: dos inventarios conceptuales sobre el MISMO catalogo.
 // Sprint 15: las areas validas salen de la tabla cat_areas_inventario
 // (agregar un area nueva = insertar una fila). Cache corto para no consultar
 // en cada request; si la tabla aun no existe se usan las dos areas base.
 const AREAS_BASE = ['mecanica', 'colisiones'];
+// Areas que NO generan alertas de stock bajo (Colisiones/Pintura se maneja
+// por consumo). Debe coincidir con frontend/src/utils/stock.js.
+const AREAS_SIN_ALERTA = ['colisiones'];
 const ETIQUETA_AREA = { mecanica: 'Mecánica', colisiones: 'Colisiones / Pintura' };
 let cacheAreas = { valores: null, expira: 0 };
 async function areasValidas() {
@@ -31,8 +36,30 @@ async function areasValidas() {
 // Origenes que un usuario puede registrar a mano. 'compra' y 'proforma' los
 // asigna solo el sistema (recepcion de compras / confirmar uso de proforma).
 const ORIGENES_MANUALES = ['manual', 'ajuste', 'devolucion'];
-const ORIGENES = ['manual', 'compra', 'proforma', 'ajuste', 'devolucion'];
+const ORIGENES = ['manual', 'compra', 'proforma', 'ajuste', 'devolucion', 'venta'];
 const numeroONull = (v, porDefecto) => (v === '' || v == null ? porDefecto : redondear2(v));
+
+// Sprint 20: codigo de referencia INTERNO generado por el sistema
+// (MEC-000012, COL-000013...). Es el unico codigo que se imprime en
+// proformas; el del proveedor/fabricante se guarda aparte en
+// codigo_proveedor. Usa una secuencia (atomica entre usuarios) y, si el
+// codigo ya existiera por un registro antiguo cargado a mano, salta al
+// siguiente numero.
+const PREFIJO_AREA = { mecanica: 'MEC', colisiones: 'COL' };
+async function generarCodigoReferencia(client, area) {
+    const prefijo = PREFIJO_AREA[area] || String(area || 'INV').replace(/[^a-z]/gi, '').slice(0, 3).toUpperCase() || 'INV';
+    for (let intento = 0; intento < 20; intento++) {
+        const { rows } = await client.query("SELECT nextval('repuestos_referencia_seq') AS n");
+        const codigo = `${prefijo}-${String(rows[0].n).padStart(6, '0')}`;
+        const { rows: existe } = await client.query('SELECT 1 FROM repuestos WHERE codigo = $1', [codigo]);
+        if (!existe[0]) return codigo;
+    }
+    throw new Error('No se pudo generar un codigo de referencia unico.');
+}
+const limpiarCodigoProveedor = (v) => {
+    const t = String(v ?? '').trim();
+    return t ? t.slice(0, 100) : null;
+};
 
 // ─────────────────────────────────────────────────────────────
 // REPUESTOS - CRUD
@@ -55,18 +82,25 @@ const listarRepuestos = async (req, res) => {
 
     if (q) {
         params.push(`%${q}%`);
-        where += ` AND (r.nombre ILIKE $${params.length} OR r.codigo ILIKE $${params.length})`;
+        where += ` AND (r.nombre ILIKE $${params.length} OR r.codigo ILIKE $${params.length} OR r.codigo_proveedor ILIKE $${params.length})`;
     }
     if (categoria_id) {
         params.push(categoria_id);
         where += ` AND r.categoria_id = $${params.length}`;
     }
     if (bajo_stock === 'true') {
-        where += ` AND r.stock_actual <= r.stock_minimo`;
+        params.push(AREAS_SIN_ALERTA);
+        where += ` AND r.stock_actual <= r.stock_minimo AND NOT (COALESCE(r.area, '') = ANY($${params.length}))`;
     }
     if (area && (await areasValidas()).includes(area)) {
         params.push(area);
         where += ` AND r.area = $${params.length}`;
+    }
+    // Permisos: sin acceso amplio, solo las areas que el usuario puede ver.
+    const visibles = areasRepuestosVisibles(req.usuario);
+    if (visibles) {
+        params.push(visibles);
+        where += ` AND r.area = ANY($${params.length})`;
     }
 
     const countQuery = `SELECT COUNT(*) AS total FROM repuestos r ${where}`;
@@ -94,6 +128,7 @@ const listarRepuestos = async (req, res) => {
         });
     } catch (err) {
         console.error('Error listarRepuestos:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener repuestos.' });
     }
 };
@@ -115,6 +150,7 @@ const obtenerRepuesto = async (req, res) => {
         return res.json(normalizarCantidades(rows[0]));
     } catch (err) {
         console.error('Error obtenerRepuesto:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener repuesto.' });
     }
 };
@@ -125,7 +161,6 @@ const obtenerRepuesto = async (req, res) => {
  */
 const crearRepuesto = async (req, res) => {
     const {
-        codigo,
         nombre,
         descripcion,
         categoria_id,
@@ -139,8 +174,9 @@ const crearRepuesto = async (req, res) => {
         area = 'mecanica',
     } = req.body;
 
-    if (!codigo || !nombre) {
-        return res.status(400).json({ error: 'Código y nombre son obligatorios.' });
+    // El codigo de referencia lo genera el sistema (no se acepta del cliente).
+    if (!nombre || !String(nombre).trim()) {
+        return res.status(400).json({ error: 'El nombre es obligatorio.' });
     }
     if (!(await areasValidas()).includes(area)) {
         return res.status(400).json({ error: `Área inválida. Valores permitidos: ${(await areasValidas()).join(', ')}.` });
@@ -150,13 +186,14 @@ const crearRepuesto = async (req, res) => {
     }
 
     try {
+        const codigo = await generarCodigoReferencia(pool, area);
         const { rows } = await pool.query(
             `INSERT INTO repuestos
-                (codigo, nombre, descripcion, categoria_id, precio_compra, precio_venta, stock_actual, stock_minimo, unidad_medida, imagen_url, en_venta, area)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+                (codigo, nombre, descripcion, categoria_id, precio_compra, precio_venta, stock_actual, stock_minimo, unidad_medida, imagen_url, en_venta, area, codigo_proveedor)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
              RETURNING *`,
             [
-                codigo.trim().toUpperCase(),
+                codigo,
                 nombre.trim(),
                 descripcion || null,
                 categoria_id || null,
@@ -168,12 +205,14 @@ const crearRepuesto = async (req, res) => {
                 imagen_url || null,
                 en_venta === true || en_venta === 'true',
                 area,
+                limpiarCodigoProveedor(req.body.codigo_proveedor),
             ]
         );
         return res.status(201).json(normalizarCantidades(rows[0]));
     } catch (err) {
         if (err.code === '23505') return res.status(409).json({ error: 'El código ya existe.' });
         console.error('Error crearRepuesto:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al crear repuesto.' });
     }
 };
@@ -184,8 +223,8 @@ const crearRepuesto = async (req, res) => {
  */
 const actualizarRepuesto = async (req, res) => {
     const { id } = req.params;
+    // `codigo` (referencia interna) NO se modifica al editar: se ignora si llega.
     const {
-        codigo,
         nombre,
         descripcion,
         categoria_id,
@@ -209,7 +248,7 @@ const actualizarRepuesto = async (req, res) => {
     try {
         const { rows } = await pool.query(
             `UPDATE repuestos
-             SET codigo=COALESCE(NULLIF($1, ''), codigo),
+             SET codigo_proveedor=CASE WHEN $1::boolean THEN $14 ELSE codigo_proveedor END,
                  nombre=$2,
                  descripcion=$3,
                  categoria_id=$4,
@@ -224,7 +263,7 @@ const actualizarRepuesto = async (req, res) => {
              WHERE id=$12
              RETURNING *`,
             [
-                codigo ? codigo.trim().toUpperCase() : null,
+                Object.prototype.hasOwnProperty.call(req.body, 'codigo_proveedor'),
                 nombre.trim(),
                 descripcion || null,
                 categoria_id || null,
@@ -237,6 +276,7 @@ const actualizarRepuesto = async (req, res) => {
                 typeof en_venta === 'boolean' ? en_venta : (en_venta === 'true' ? true : en_venta === 'false' ? false : null),
                 id,
                 (await areasValidas()).includes(area) ? area : null,
+                limpiarCodigoProveedor(req.body.codigo_proveedor),
             ]
         );
         if (!rows[0]) return res.status(404).json({ error: 'Repuesto no encontrado.' });
@@ -244,6 +284,7 @@ const actualizarRepuesto = async (req, res) => {
     } catch (err) {
         if (err.code === '23505') return res.status(409).json({ error: 'El código ya existe.' });
         console.error('Error actualizarRepuesto:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al actualizar repuesto.' });
     }
 };
@@ -254,9 +295,10 @@ const actualizarRepuesto = async (req, res) => {
  */
 const eliminarRepuesto = async (req, res) => {
     const { id } = req.params;
-    const client = await pool.connect();
+    let client;
 
     try {
+        client = await pool.connect();
         await client.query('BEGIN');
 
         // Sprint 14: un producto que ya salio por una proforma (o fue
@@ -294,11 +336,12 @@ const eliminarRepuesto = async (req, res) => {
             repuesto: rows[0],
         });
     } catch (err) {
-        await client.query('ROLLBACK');
+        await client?.query('ROLLBACK');
         console.error('Error eliminarRepuesto:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al eliminar repuesto.' });
     } finally {
-        client.release();
+        client?.release();
     }
 };
 // ─────────────────────────────────────────────────────────────
@@ -332,8 +375,9 @@ const registrarMovimiento = async (req, res) => {
         return res.status(400).json({ error: 'La cantidad debe ser mayor a cero (maximo 2 decimales).' });
     }
 
-    const client = await pool.connect();
+    let client;
     try {
+        client = await pool.connect();
         await client.query('BEGIN');
 
         // Bloquea la fila para evitar race conditions
@@ -389,11 +433,12 @@ const registrarMovimiento = async (req, res) => {
             stock_nuevo: stockNuevo,
         });
     } catch (err) {
-        await client.query('ROLLBACK');
+        await client?.query('ROLLBACK');
         console.error('Error registrarMovimiento:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al registrar movimiento.' });
     } finally {
-        client.release();
+        client?.release();
     }
 };
 
@@ -419,6 +464,8 @@ const listarMovimientos = async (req, res) => {
     if (tipo && ['entrada', 'salida'].includes(tipo)) add('m.tipo = $?', tipo);
     if (origen && ORIGENES.includes(origen)) add('m.origen = $?', origen);
     if (area && (await areasValidas()).includes(area)) add('COALESCE(m.area, r.area) = $?', area);
+    // Permisos: solo movimientos de las areas de inventario que el usuario puede ver.
+    if (!esSuperadmin(req.usuario)) add('COALESCE(m.area, r.area) = ANY($?)', areasInventarioPermitidas(req.usuario, 'ver'));
     if (usuario_id) add('m.usuario_id = $?', usuario_id);
     if (orden_id) add('m.orden_id = $?', String(orden_id).replace(/\D/g, '') || 0);
     if (proforma) {
@@ -465,6 +512,7 @@ const listarMovimientos = async (req, res) => {
         return res.json({ movimientos, total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) });
     } catch (err) {
         console.error('Error listarMovimientos:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener movimientos.' });
     }
 };
@@ -483,6 +531,7 @@ const filtrosMovimientos = async (_req, res) => {
         return res.json({ usuarios, por_origen: porOrigen, areas: (await areasValidas()).map(a => ({ valor: a, etiqueta: ETIQUETA_AREA[a] || a })), origenes: ORIGENES });
     } catch (err) {
         console.error('Error filtrosMovimientos:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener los filtros.' });
     }
 };
@@ -490,16 +539,92 @@ const filtrosMovimientos = async (_req, res) => {
 /**
  * GET /api/inventory/categorias
  */
+// Incluye cuantos repuestos usan cada categoria (para la gestion de categorias).
+const SQL_CATEGORIAS = `SELECT c.*, (SELECT COUNT(*) FROM repuestos r WHERE r.categoria_id = c.id)::int AS total_repuestos
+                        FROM categorias_repuesto c`;
+
 const listarCategorias = async (req, res) => {
     try {
         // ?area=colisiones devuelve las categorias de esa area + las compartidas (area NULL).
         const area = (await areasValidas()).includes(req.query.area) ? req.query.area : null;
         const { rows } = area
-            ? await pool.query('SELECT * FROM categorias_repuesto WHERE area IS NULL OR area = $1 ORDER BY nombre', [area])
-            : await pool.query('SELECT * FROM categorias_repuesto ORDER BY nombre');
+            ? await pool.query(`${SQL_CATEGORIAS} WHERE c.area IS NULL OR c.area = $1 ORDER BY c.nombre`, [area])
+            : await pool.query(`${SQL_CATEGORIAS} ORDER BY c.nombre`);
         return res.json({ categorias: rows });
     } catch (err) {
         return res.status(500).json({ error: 'Error al obtener categorías.' });
+    }
+};
+
+// Valida y normaliza el cuerpo de crear/editar categoria.
+async function datosCategoria(body) {
+    const nombre = String(body.nombre || '').trim();
+    if (!nombre) return { error: 'El nombre de la categoría es obligatorio.' };
+    if (nombre.length > 100) return { error: 'El nombre no puede superar 100 caracteres.' };
+    const descripcion = String(body.descripcion || '').trim() || null;
+    // area vacia = categoria compartida por todas las areas
+    const area = body.area ? String(body.area) : null;
+    if (area && !(await areasValidas()).includes(area)) return { error: 'Área no válida.' };
+    return { nombre, descripcion, area };
+}
+
+// ─────────────────────────────────────────────────────────────
+// POST /api/inventory/categorias   (solo administrador)
+// ─────────────────────────────────────────────────────────────
+const crearCategoria = async (req, res) => {
+    try {
+        const d = await datosCategoria(req.body);
+        if (d.error) return res.status(400).json({ error: d.error });
+        const { rows } = await pool.query(
+            'INSERT INTO categorias_repuesto (nombre, descripcion, area) VALUES ($1, $2, $3) RETURNING *',
+            [d.nombre, d.descripcion, d.area]
+        );
+        return res.status(201).json({ categoria: rows[0] });
+    } catch (err) {
+        console.error('Error crearCategoria:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
+        return res.status(500).json({ error: 'Error al crear la categoría.' });
+    }
+};
+
+// ─────────────────────────────────────────────────────────────
+// PUT /api/inventory/categorias/:id   (solo administrador)
+// ─────────────────────────────────────────────────────────────
+const actualizarCategoria = async (req, res) => {
+    try {
+        const d = await datosCategoria(req.body);
+        if (d.error) return res.status(400).json({ error: d.error });
+        const { rows } = await pool.query(
+            'UPDATE categorias_repuesto SET nombre = $1, descripcion = $2, area = $3 WHERE id = $4 RETURNING *',
+            [d.nombre, d.descripcion, d.area, req.params.id]
+        );
+        if (!rows.length) return res.status(404).json({ error: 'Categoría no encontrada.' });
+        return res.json({ categoria: rows[0] });
+    } catch (err) {
+        console.error('Error actualizarCategoria:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
+        return res.status(500).json({ error: 'Error al actualizar la categoría.' });
+    }
+};
+
+// ─────────────────────────────────────────────────────────────
+// DELETE /api/inventory/categorias/:id   (solo administrador)
+// No se borra una categoria en uso: la FK la pondria en NULL y los
+// repuestos quedarian sin categoria sin que nadie lo note.
+// ─────────────────────────────────────────────────────────────
+const eliminarCategoria = async (req, res) => {
+    try {
+        const { rows: uso } = await pool.query('SELECT COUNT(*)::int AS n FROM repuestos WHERE categoria_id = $1', [req.params.id]);
+        if (uso[0].n > 0) {
+            return res.status(409).json({ error: `La categoría tiene ${uso[0].n} repuesto(s) asignado(s). Reasígnalos a otra categoría antes de eliminarla.` });
+        }
+        const { rowCount } = await pool.query('DELETE FROM categorias_repuesto WHERE id = $1', [req.params.id]);
+        if (!rowCount) return res.status(404).json({ error: 'Categoría no encontrada.' });
+        return res.json({ mensaje: 'Categoría eliminada.' });
+    } catch (err) {
+        console.error('Error eliminarCategoria:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
+        return res.status(500).json({ error: 'Error al eliminar la categoría.' });
     }
 };
 
@@ -520,6 +645,7 @@ const listarPublico = async (req, res) => {
         return res.json({ repuestos: rows.map(normalizarCantidades) });
     } catch (err) {
         console.error('Error listarPublico:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener el catalogo.' });
     }
 };
@@ -539,8 +665,9 @@ const toggleEnVenta = async (req, res) => {
         return res.json(rows[0]);
     } catch (err) {
         console.error('Error toggleEnVenta:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al cambiar estado de venta.' });
     }
 };
 
-module.exports = { listarRepuestos, obtenerRepuesto, crearRepuesto, actualizarRepuesto, eliminarRepuesto, registrarMovimiento, listarMovimientos, filtrosMovimientos, listarCategorias, toggleEnVenta, listarPublico };
+module.exports = { listarRepuestos, obtenerRepuesto, crearRepuesto, actualizarRepuesto, eliminarRepuesto, registrarMovimiento, listarMovimientos, filtrosMovimientos, listarCategorias, crearCategoria, actualizarCategoria, eliminarCategoria, toggleEnVenta, listarPublico };

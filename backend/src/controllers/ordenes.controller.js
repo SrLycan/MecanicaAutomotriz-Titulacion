@@ -12,6 +12,8 @@
  *   (ver services/ordenesHistorial.service.js).
  */
 const pool = require('../config/db');
+const { errorBD } = require('../utils/erroresBD');
+const { puede } = require('../middleware/auth.middleware');
 const {
     registrarHistorial, obtenerHistorialPorOrden, registrarAccionBitacora,
     listarHistorialGeneral: listarHistorialGeneralService,
@@ -56,6 +58,7 @@ const listarClientes = async (req, res) => {
         return res.json({ clientes: rows });
     } catch (err) {
         console.error('Error listarClientes:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener clientes.' });
     }
 };
@@ -99,6 +102,7 @@ const obtenerCliente = async (req, res) => {
         });
     } catch (err) {
         console.error('Error obtenerCliente:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener cliente.' });
     }
 };
@@ -123,6 +127,7 @@ const crearCliente = async (req, res) => {
         return res.status(201).json({ cliente: rows[0] });
     } catch (err) {
         console.error('Error crearCliente:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al crear cliente.' });
     }
 };
@@ -151,6 +156,7 @@ const eliminarCliente = async (req, res) => {
         return res.json({ ok: true });
     } catch (err) {
         console.error('Error eliminarCliente:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al eliminar cliente.' });
     }
 };
@@ -178,6 +184,7 @@ const actualizarCliente = async (req, res) => {
         return res.json({ cliente: rows[0] });
     } catch (err) {
         console.error('Error actualizarCliente:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al actualizar cliente.' });
     }
 };
@@ -208,6 +215,7 @@ const listarVehiculos = async (req, res) => {
         return res.json({ vehiculos: rows });
     } catch (err) {
         console.error('Error listarVehiculos:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener vehiculos.' });
     }
 };
@@ -230,6 +238,7 @@ const crearVehiculo = async (req, res) => {
         return res.status(201).json({ vehiculo: rows[0] });
     } catch (err) {
         console.error('Error crearVehiculo:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al crear vehiculo.' });
     }
 };
@@ -242,15 +251,17 @@ const actualizarVehiculo = async (req, res) => {
     const { placa, marca, modelo, anio, color, vin } = req.body;
     try {
         const { rows } = await pool.query(
-            `UPDATE vehiculos SET placa=$1, marca=$2, modelo=$3, anio=$4, color=$5, vin=$6
+            `UPDATE vehiculos SET placa=COALESCE(NULLIF($1, ''), placa), marca=COALESCE(NULLIF($2, ''), marca),
+             modelo=$3, anio=$4, color=$5, vin=$6
              WHERE id=$7 RETURNING *`,
-            [placa?.trim().toUpperCase(), marca?.trim(), modelo || null,
+            [placa?.trim().toUpperCase() || null, marca?.trim() || null, modelo || null,
              anio || null, color || null, vin || null, id]
         );
         if (!rows[0]) return res.status(404).json({ error: 'Vehiculo no encontrado.' });
         return res.json({ vehiculo: rows[0] });
     } catch (err) {
         console.error('Error actualizarVehiculo:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al actualizar vehiculo.' });
     }
 };
@@ -276,6 +287,7 @@ const eliminarVehiculo = async (req, res) => {
         return res.json({ ok: true });
     } catch (err) {
         console.error('Error eliminarVehiculo:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al eliminar vehiculo.' });
     }
 };
@@ -320,6 +332,7 @@ const listarOrdenes = async (req, res) => {
         return res.json({ ordenes: rows });
     } catch (err) {
         console.error('Error listarOrdenes:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener ordenes.' });
     }
 };
@@ -349,6 +362,7 @@ const obtenerOrden = async (req, res) => {
         return res.json(rows[0]);
     } catch (err) {
         console.error('Error obtenerOrden:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener orden.' });
     }
 };
@@ -360,14 +374,13 @@ const obtenerOrden = async (req, res) => {
 const crearOrden = async (req, res) => {
     const { cliente_id, vehiculo_id, descripcion, diagnostico, kilometraje, tecnico_id } = req.body;
     const usuario_id = req.usuario.id;
-    const rol = req.usuario?.rol;
 
     if (!cliente_id || !descripcion) {
         return res.status(400).json({ error: 'cliente_id y descripcion son obligatorios.' });
     }
 
-    // Solo admin y recepcionista pueden asignar tecnico al crear
-    const puedeAsignar = ['administrador', 'recepcionista'].includes(rol);
+    // Solo quien tiene el permiso "Asignar tecnico" puede asignarlo al crear
+    const puedeAsignar = puede(req.usuario, 'ordenes', 'asignar');
     const tecnicoFinal = puedeAsignar ? (tecnico_id || null) : null;
 
     try {
@@ -387,6 +400,7 @@ const crearOrden = async (req, res) => {
         return res.status(201).json({ orden: rows[0] });
     } catch (err) {
         console.error('Error crearOrden:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al crear orden de trabajo.' });
     }
 };
@@ -395,7 +409,7 @@ const crearOrden = async (req, res) => {
  * Actualiza los datos o el estado de una orden.
  * Aplica reglas de negocio y control de acceso:
  * - Técnicos solo pueden modificar órdenes que tengan asignadas.
- * - Administradores poseen control total.
+ * - Permiso "Cambiar estado de cualquier orden" (ordenes:aprobar): control total del estado.
  * - Recepción no puede cambiar estados técnicos/mecánicos.
  * - Registra cambios de estado y notas en el historial de auditoría (MongoDB).
  */
@@ -430,21 +444,19 @@ const actualizarOrden = async (req, res) => {
     const cambiaEstado = estado !== undefined || estado_progreso !== undefined || notas_progreso !== undefined;
 
     if (cambiaEstado) {
-        if (rol === 'administrador') {
-            // El admin puede cambiar cualquier estado sin restriccion
+        if (puede(req.usuario, 'ordenes', 'aprobar')) {
+            // Permiso "Cambiar estado de cualquier orden": sin restriccion
+        } else if (ordenActual.tecnico_id === usuarioId) {
+            // El tecnico asignado actualiza el avance de SU orden
         } else if (rol === 'tecnico') {
-            // El tecnico solo puede actualizar si es el tecnico asignado
-            if (ordenActual.tecnico_id !== usuarioId) {
-                return res.status(403).json({ error: 'Solo el tecnico asignado puede actualizar el estado de esta orden.' });
-            }
+            return res.status(403).json({ error: 'Solo el tecnico asignado puede actualizar el estado de esta orden.' });
         } else {
-            // Recepcionista y otros no pueden cambiar estado
             return res.status(403).json({ error: 'No tienes permiso para cambiar el estado de la orden.' });
         }
     }
 
-    // Solo admin y recepcionista pueden asignar/cambiar el tecnico
-    const puedeAsignar = ['administrador', 'recepcionista'].includes(rol);
+    // Solo quien tiene el permiso "Asignar tecnico" puede asignarlo/cambiarlo
+    const puedeAsignar = puede(req.usuario, 'ordenes', 'asignar');
     const tecnicoFinal = tecnico_id !== undefined
         ? (puedeAsignar ? (tecnico_id || null) : undefined)
         : undefined;
@@ -495,6 +507,7 @@ const actualizarOrden = async (req, res) => {
         return res.json({ orden: rows[0] });
     } catch (err) {
         console.error('Error actualizarOrden:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al actualizar orden.' });
     }
 };
@@ -514,6 +527,7 @@ const obtenerHistorialOrden = async (req, res) => {
         return res.json({ historial });
     } catch (err) {
         console.error('Error obtenerHistorialOrden:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener el historial de la orden.' });
     }
 };
@@ -559,6 +573,7 @@ const eliminarOrden = async (req, res) => {
         return res.json({ ok: true });
     } catch (err) {
         console.error('Error eliminarOrden:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al eliminar orden.' });
     }
 };

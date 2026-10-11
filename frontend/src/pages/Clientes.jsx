@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import { useSearchParams } from 'react-router-dom';
 import useParamUrl from '../hooks/useParamUrl';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import { useConfirm } from '../components/common/ConfirmDialog';
 import PagareTab from '../components/clientes/PagareTab';
@@ -49,7 +50,7 @@ function ModalCliente({ open, data, onClose, onGuardar, isDark }) {
     if (!open) return null;
 
     const card = isDark ? 'rgba(255,255,255,0.025)' : '#ffffff';
-    const bdr = isDark ? 'rgba(148,163,184,0.18)' : 'rgba(15,23,42,0.08)';
+    const bdr = isDark ? 'rgba(148,163,184,0.18)' : '#b6c3d3';
     const txt = isDark ? '#f1f5f9' : '#0f172a';
     const mut = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
     const inputBg = isDark ? '#0b1220' : '#fafcff';
@@ -106,13 +107,18 @@ function ModalCliente({ open, data, onClose, onGuardar, isDark }) {
 export default function Clientes() {
     const confirm = useConfirm();
     const { isDark } = useTheme();
+    const { puede } = useAuth();
+    const verClientes = puede('clientes', 'ver');
+    const verPagare = puede('cuentas_cobrar', 'ver');
     const [clientes, setClientes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [busqueda, setBusqueda] = useState('');
     const [modal, setModal] = useState({ open: false, data: null });
     // ?tab=pagare&cuenta=ID abre directamente un pagare (enlace desde la proforma)
     const [searchParams] = useSearchParams();
-    const [tab, setTab] = useParamUrl('tab', 'clientes', ['clientes', 'pagare'], ['cuenta']);
+    const [tabUrl, setTab] = useParamUrl('tab', 'clientes', ['clientes', 'pagare'], ['cuenta']);
+    // Solo las pestañas permitidas: sin "ver clientes" se abre directo la cartera.
+    const tab = !verClientes ? 'pagare' : (!verPagare ? 'clientes' : tabUrl);
     const cuentaInicial = searchParams.get('cuenta');
 
     const SKY = '#c9a227';
@@ -120,9 +126,9 @@ export default function Clientes() {
     const txt = isDark ? '#f1f5f9' : '#0f172a';
     const txtSf = isDark ? '#cbd5e1' : '#334155';
     const mut = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
-    const bdr = isDark ? 'rgba(148,163,184,0.18)' : 'rgba(15,23,42,0.08)';
+    const bdr = isDark ? 'rgba(148,163,184,0.18)' : '#b6c3d3';
     const card = isDark ? 'rgba(255,255,255,0.025)' : '#ffffff';
-    const cardSh = isDark ? '0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 40px -16px rgba(0,0,0,0.55)' : '0 4px 16px -4px rgba(15,23,42,0.08)';
+    const cardSh = isDark ? '0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 40px -16px rgba(0,0,0,0.55)' : '0 1px 2px rgba(15,23,42,0.06), 0 8px 22px -8px rgba(15,23,42,0.20)';
     const inputBg = isDark ? '#0b1220' : '#fafcff';
 
     const cargarClientes = useCallback(async (q = '') => {
@@ -139,7 +145,7 @@ export default function Clientes() {
         }
     }, []);
 
-    useEffect(() => { cargarClientes(); }, [cargarClientes]);
+    useEffect(() => { if (verClientes) cargarClientes(); }, [cargarClientes, verClientes]);
 
     const handleBusqueda = (e) => {
         const value = e.target.value;
@@ -185,7 +191,7 @@ export default function Clientes() {
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
                 <div>
-                    <div className="SS SWAP-chip" style={{ marginBottom: 8 }}>
+                    <div className="ssswap-chip" style={{ marginBottom: 8 }}>
                         <span className="dot" />
                         <span>SS SWAP · TALLER · CLIENTES</span>
                     </div>
@@ -194,14 +200,16 @@ export default function Clientes() {
                         Gestiona la base de clientes del taller, sus datos y contacto.
                     </p>
                 </div>
+                {tab === 'clientes' && puede('clientes', 'crear') && (
                 <button onClick={() => setModal({ open: true, data: null })} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: "'Bebas Neue'", fontSize: '.78rem', letterSpacing: '.14em', color: '#fff', background: `linear-gradient(135deg, ${SKY_DEEP}, ${SKY})`, border: 'none', borderRadius: 11, padding: '11px 22px', cursor: 'pointer' }}>
                     <IconPlus /> NUEVO CLIENTE
                 </button>
+                )}
             </div>
 
             <div className="prov-tabs" style={{ '--prov-bdr': bdr, '--prov-mut': mut, '--prov-sky': SKY_DEEP }}>
-                <button className={`prov-tab-btn ${tab === 'clientes' ? 'active' : ''}`} onClick={() => setTab('clientes')}>CLIENTES</button>
-                <button className={`prov-tab-btn ${tab === 'pagare' ? 'active' : ''}`} onClick={() => setTab('pagare')}>PAGARÉ</button>
+                {verClientes && <button className={`prov-tab-btn ${tab === 'clientes' ? 'active' : ''}`} onClick={() => setTab('clientes')}>CLIENTES</button>}
+                {verPagare && <button className={`prov-tab-btn ${tab === 'pagare' ? 'active' : ''}`} onClick={() => setTab('pagare')}>PAGARÉ</button>}
             </div>
 
             {tab === 'pagare' ? (
@@ -249,8 +257,8 @@ export default function Clientes() {
                                 </div>
                             </div>
                             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                                <button onClick={() => setModal({ open: true, data: cliente })} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: `1px solid ${bdr}`, background: 'transparent', color: SKY_DEEP, borderRadius: 10, padding: '8px 12px', cursor: 'pointer', fontFamily: "'Bebas Neue'", letterSpacing: '.12em' }}><IconEdit /> Editar</button>
-                                <button onClick={() => eliminarCliente(cliente)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: `1px solid ${bdr}`, background: 'transparent', color: '#ef4444', borderRadius: 10, padding: '8px 12px', cursor: 'pointer', fontFamily: "'Bebas Neue'", letterSpacing: '.12em' }}><IconTrash /> Eliminar</button>
+                                {puede('clientes', 'editar') && <button onClick={() => setModal({ open: true, data: cliente })} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: `1px solid ${bdr}`, background: 'transparent', color: SKY_DEEP, borderRadius: 10, padding: '8px 12px', cursor: 'pointer', fontFamily: "'Bebas Neue'", letterSpacing: '.12em' }}><IconEdit /> Editar</button>}
+                                {puede('clientes', 'eliminar') && <button onClick={() => eliminarCliente(cliente)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: `1px solid ${bdr}`, background: 'transparent', color: '#ef4444', borderRadius: 10, padding: '8px 12px', cursor: 'pointer', fontFamily: "'Bebas Neue'", letterSpacing: '.12em' }}><IconTrash /> Eliminar</button>}
                             </div>
                         </div>
                     ))}

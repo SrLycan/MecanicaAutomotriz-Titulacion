@@ -8,6 +8,7 @@
  * historial y el endpoint para registrar pagos/abonos manuales.
  */
 const pool = require('../config/db');
+const { errorBD } = require('../utils/erroresBD');
 const { registrarAccionBitacora } = require('../services/ordenesHistorial.service');
 
 const TIPOS   = ['compra', 'pago', 'abono', 'gasto', 'cancelacion', 'ajuste'];
@@ -54,6 +55,7 @@ const listarMovimientos = async (req, res) => {
         return res.json({ movimientos: rows, total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) });
     } catch (err) {
         console.error('Error listarMovimientos:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener el historial financiero.' });
     }
 };
@@ -78,8 +80,20 @@ const registrarMovimiento = async (req, res) => {
         if (!provRows[0]) return res.status(404).json({ error: 'Proveedor no encontrado.' });
 
         if (compra_id) {
-            const { rows: compraRows } = await pool.query('SELECT id FROM compras_proveedor WHERE id = $1 AND proveedor_id = $2', [compra_id, proveedor_id]);
+            const { rows: compraRows } = await pool.query(
+                `SELECT c.id, c.estado, c.total - (SELECT COALESCE(SUM(m.monto), 0) FROM movimientos_financieros_proveedor m
+                         WHERE m.compra_id = c.id AND m.tipo IN ('pago','abono') AND m.estado = 'confirmado') AS saldo
+                 FROM compras_proveedor c WHERE c.id = $1 AND c.proveedor_id = $2`,
+                [compra_id, proveedor_id]
+            );
             if (!compraRows[0]) return res.status(404).json({ error: 'La compra indicada no pertenece a este proveedor.' });
+            if (['pago', 'abono'].includes(tipo)) {
+                if (compraRows[0].estado === 'cancelada') return res.status(409).json({ error: 'La compra esta cancelada.' });
+                const saldo = Number(compraRows[0].saldo);
+                if (parseFloat(monto) > saldo + 0.005) {
+                    return res.status(400).json({ error: `El monto supera el saldo pendiente de la compra ($${Math.max(saldo, 0).toFixed(2)}).` });
+                }
+            }
         }
 
         const { rows } = await pool.query(
@@ -101,6 +115,7 @@ const registrarMovimiento = async (req, res) => {
         return res.status(201).json({ movimiento });
     } catch (err) {
         console.error('Error registrarMovimiento (financiero):', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al registrar el movimiento.' });
     }
 };
@@ -134,6 +149,7 @@ const cambiarEstadoMovimiento = async (req, res) => {
         return res.json({ movimiento: rows[0] });
     } catch (err) {
         console.error('Error cambiarEstadoMovimiento:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al cambiar el estado del movimiento.' });
     }
 };
@@ -196,6 +212,7 @@ const resumenFinanciero = async (req, res) => {
         });
     } catch (err) {
         console.error('Error resumenFinanciero:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al calcular el resumen financiero.' });
     }
 };

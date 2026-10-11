@@ -33,11 +33,21 @@ api.interceptors.response.use(
         const teniaToken    = Boolean(error.config?.headers?.Authorization);
 
         if (error.response?.status === 401 && teniaToken && !esAuthPublico) {
+            // Sesion vencida, revocada o cuenta desactivada: el personal vuelve a
+            // su propio acceso (/admin/login) y los clientes al portal (/auth).
+            const enPanel = window.location.pathname.startsWith('/dashboard');
             localStorage.removeItem('SS SWAP_token');
             localStorage.removeItem('SS SWAP_usuario');
-            if (!window.location.pathname.startsWith('/auth')) {
-                window.location.href = '/auth?sesion=expirada';
+            localStorage.removeItem('SS SWAP_permisos');
+            const destino = enPanel ? '/admin/login' : '/auth';
+            if (!window.location.pathname.startsWith(destino)) {
+                window.location.href = `${destino}?sesion=expirada`;
             }
+        }
+        // Sin permiso: puede que el superadministrador acabe de revocarlo;
+        // se pide al AuthContext que refresque los permisos (y el menu).
+        if (error.response?.status === 403 && error.response?.data?.codigo === 'SIN_PERMISO') {
+            window.dispatchEvent(new Event('ssswap:permisos-cambiaron'));
         }
         return Promise.reject(error);
     }

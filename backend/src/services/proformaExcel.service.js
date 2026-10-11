@@ -7,6 +7,9 @@
  */
 const ExcelJS = require('exceljs');
 const { etiquetaZona, CARROCERIAS } = require('../shared/vehiculoDiagramas');
+const { porcentajeAnticipo, resumenDeuda } = require('./reglasPago');
+
+const NOMBRE_COMERCIAL = 'SS Swap - SSarango Sosa Intercambio Inteligente';
 
 const FONT = 'Calibri';
 const AZUL = 'FF0284C7';
@@ -32,39 +35,43 @@ function estiloEncabezadoTabla(cell, texto) {
     cell.alignment = { vertical: 'middle', horizontal: 'center' };
 }
 
-/** Escribe una tabla de items con columnas Item/Descripcion/Cantidad/Precio/Subtotal y fila de total con formula SUM. */
+/**
+ * Tabla de items #/Codigo/Descripcion/Cantidad/Precio/Subtotal con fila de total (formula SUM).
+ * Codigo = referencia INTERNA del inventario; nunca el codigo del proveedor.
+ */
 function escribirTablaCantPrecio(sheet, filaInicio, colInicio, items, tituloTotal) {
     let fila = filaInicio;
     const c = colInicio;
-    ['#', 'Descripción', 'Cant.', 'P. Unit.', 'Subtotal'].forEach((h, i) => estiloEncabezadoTabla(sheet.getCell(fila, c + i), h));
+    ['#', 'Código', 'Descripción', 'Cant.', 'P. Unit.', 'Subtotal'].forEach((h, i) => estiloEncabezadoTabla(sheet.getCell(fila, c + i), h));
     fila++;
     const filaInicioItems = fila;
     items.forEach((it, i) => {
         sheet.getCell(fila, c).value = i + 1;
-        sheet.getCell(fila, c + 1).value = it.descripcion;
-        sheet.getCell(fila, c + 2).value = Number(it.cantidad);
-        sheet.getCell(fila, c + 3).value = Number(it.precio_unitario);
-        sheet.getCell(fila, c + 3).numFmt = '$#,##0.00';
-        const colCant = sheet.getColumn(c + 2).letter, colPrecio = sheet.getColumn(c + 3).letter;
-        sheet.getCell(fila, c + 4).value = { formula: `${colCant}${fila}*${colPrecio}${fila}` };
+        sheet.getCell(fila, c + 1).value = it.referencia_tipo === 'repuesto' && it.repuesto_codigo ? it.repuesto_codigo : '—';
+        sheet.getCell(fila, c + 2).value = it.descripcion;
+        sheet.getCell(fila, c + 3).value = Number(it.cantidad);
+        sheet.getCell(fila, c + 4).value = Number(it.precio_unitario);
         sheet.getCell(fila, c + 4).numFmt = '$#,##0.00';
-        for (let k = 0; k < 5; k++) sheet.getCell(fila, c + k).border = bordeCelda;
+        const colCant = sheet.getColumn(c + 3).letter, colPrecio = sheet.getColumn(c + 4).letter;
+        sheet.getCell(fila, c + 5).value = { formula: `${colCant}${fila}*${colPrecio}${fila}` };
+        sheet.getCell(fila, c + 5).numFmt = '$#,##0.00';
+        for (let k = 0; k < 6; k++) sheet.getCell(fila, c + k).border = bordeCelda;
         fila++;
     });
     const filaFinItems = fila - 1;
-    const colSub = sheet.getColumn(c + 4).letter;
+    const colSub = sheet.getColumn(c + 5).letter;
     const totalCell = sheet.getCell(fila, c);
-    sheet.mergeCells(fila, c, fila, c + 3);
+    sheet.mergeCells(fila, c, fila, c + 4);
     totalCell.value = tituloTotal;
     totalCell.font = { name: FONT, bold: true, size: 9 };
     totalCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: GRIS } };
     totalCell.alignment = { horizontal: 'right' };
-    const totalValor = sheet.getCell(fila, c + 4);
+    const totalValor = sheet.getCell(fila, c + 5);
     totalValor.value = filaFinItems >= filaInicioItems ? { formula: `SUM(${colSub}${filaInicioItems}:${colSub}${filaFinItems})` } : 0;
     totalValor.numFmt = '$#,##0.00';
     totalValor.font = { name: FONT, bold: true, size: 9 };
     totalValor.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: GRIS } };
-    for (let k = 0; k < 5; k++) sheet.getCell(fila, c + k).border = bordeCelda;
+    for (let k = 0; k < 6; k++) sheet.getCell(fila, c + k).border = bordeCelda;
     return { filaSiguiente: fila + 2, filaTotal: fila, colTotal: colSub };
 }
 
@@ -103,7 +110,7 @@ function escribirTablaSimple(sheet, filaInicio, colInicio, items, tituloTotal) {
 
 async function generarProformaExcel(proforma) {
     const wb = new ExcelJS.Workbook();
-    wb.creator = 'SS SWAP';
+    wb.creator = NOMBRE_COMERCIAL;
     wb.created = new Date();
     const sheet = wb.addWorksheet('Proforma', { pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true, fitToWidth: 1 } });
     sheet.properties.defaultRowHeight = 16;
@@ -111,14 +118,14 @@ async function generarProformaExcel(proforma) {
 
     // ── Encabezado ──
     sheet.mergeCells('A1:F1');
-    estiloEncabezadoSeccion(sheet.getCell('A1'), proforma.sucursal_nombre || 'SS SWAP — Mecánica Automotriz');
+    estiloEncabezadoSeccion(sheet.getCell('A1'), NOMBRE_COMERCIAL);
     sheet.getCell('A1').font = { name: FONT, bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
     sheet.getRow(1).height = 26;
     sheet.mergeCells('G1:L1');
     estiloEncabezadoSeccion(sheet.getCell('G1'), `PROFORMA  ${proforma.numero}`);
     sheet.getCell('G1').alignment = { horizontal: 'right', vertical: 'middle' };
 
-    sheet.getCell('A2').value = proforma.tipo === 'pintura' ? 'Proforma — Colisiones / Pintura y Carrocería' : 'Proforma — Servicio Mecánico';
+    sheet.getCell('A2').value = `${proforma.tipo === 'pintura' ? 'Proforma — Colisiones / Pintura y Carrocería' : 'Proforma — Mecánica General'}${proforma.sucursal_nombre ? `  ·  Sucursal: ${proforma.sucursal_nombre}` : ''}`;
     sheet.getCell('A2').font = { name: FONT, italic: true, size: 10, color: { argb: 'FF64748B' } };
     sheet.mergeCells('A2:F2');
     sheet.getCell('G2').value = `Emisión: ${fecha(proforma.fecha_emision)}   Validez: ${fecha(proforma.fecha_validez)}`;
@@ -216,7 +223,7 @@ async function generarProformaExcel(proforma) {
     if (proforma.tipo === 'mecanica') {
         const productos = porCategoria('producto');
         if (productos.length) {
-            sheet.mergeCells(`A${fila}:E${fila}`);
+            sheet.mergeCells(`A${fila}:F${fila}`);
             estiloEncabezadoSeccion(sheet.getCell(`A${fila}`), 'PRODUCTOS / REPUESTOS');
             fila++;
             const r = escribirTablaCantPrecio(sheet, fila, 1, productos, 'TOTAL PRODUCTOS');
@@ -225,7 +232,7 @@ async function generarProformaExcel(proforma) {
         }
         const servicios = porCategoria('servicio');
         if (servicios.length) {
-            sheet.mergeCells(`A${fila}:E${fila}`);
+            sheet.mergeCells(`A${fila}:F${fila}`);
             estiloEncabezadoSeccion(sheet.getCell(`A${fila}`), 'SERVICIOS / MANO DE OBRA');
             fila++;
             const r = escribirTablaCantPrecio(sheet, fila, 1, servicios, 'TOTAL SERVICIOS');
@@ -245,7 +252,7 @@ async function generarProformaExcel(proforma) {
         fila = Math.max(rMano.filaSiguiente, rPintura.filaSiguiente);
 
         // Repuestos (izq) + Insumos (der)
-        sheet.mergeCells(`A${fila}:E${fila}`);
+        sheet.mergeCells(`A${fila}:F${fila}`);
         estiloEncabezadoSeccion(sheet.getCell(`A${fila}`), 'REPUESTOS');
         sheet.mergeCells(`G${fila}:L${fila}`);
         estiloEncabezadoSeccion(sheet.getCell(`G${fila}`), 'INSUMOS');
@@ -305,19 +312,26 @@ async function generarProformaExcel(proforma) {
     const filaTotal = fila;
     fila++;
 
-    sheet.getCell(fila, 8).value = 'Anticipo';
-    sheet.getCell(fila, 8).font = { name: FONT, size: 9 };
-    sheet.getCell(fila, 9).value = Number(proforma.anticipo || 0);
-    sheet.getCell(fila, 9).numFmt = '$#,##0.00';
-    const filaAnticipo = fila;
-    fila++;
-
-    sheet.getCell(fila, 8).value = 'Saldo pendiente';
-    sheet.getCell(fila, 8).font = { name: FONT, bold: true, size: 9 };
-    sheet.getCell(fila, 9).value = { formula: `I${filaTotal}-I${filaAnticipo}` };
-    sheet.getCell(fila, 9).numFmt = '$#,##0.00';
-    sheet.getCell(fila, 9).font = { name: FONT, bold: true, size: 9 };
-    fila += 2;
+    // Condiciones de pago (reglasPago): el anticipo es REQUERIDO; lo pagado
+    // son solo los pagos registrados en el pagare de la proforma.
+    const pct = porcentajeAnticipo(proforma.tipo);
+    const deuda = resumenDeuda({ montoTotal: proforma.total, montoPagado: proforma.pagare ? proforma.pagare.monto_pagado : 0, anticipoRequerido: proforma.anticipo });
+    const lineaPago = (label, valor, negrita) => {
+        sheet.getCell(fila, 8).value = label;
+        sheet.getCell(fila, 8).font = { name: FONT, size: 9, bold: !!negrita };
+        sheet.getCell(fila, 9).value = valor;
+        sheet.getCell(fila, 9).numFmt = '$#,##0.00';
+        sheet.getCell(fila, 9).font = { name: FONT, size: 9, bold: !!negrita };
+        fila++;
+    };
+    if (deuda.anticipo_requerido > 0) {
+        lineaPago(pct ? `Anticipo requerido (${pct}%)` : 'Anticipo requerido', deuda.anticipo_requerido);
+        lineaPago(pct ? `Saldo restante (${100 - pct}%)` : 'Saldo después del anticipo', { formula: `I${filaTotal}-${deuda.anticipo_requerido}` });
+    }
+    const filaPagado = fila;
+    lineaPago('Total pagado', deuda.pagado);
+    lineaPago('Saldo pendiente de pago', { formula: `MAX(I${filaTotal}-I${filaPagado},0)` }, true);
+    fila += 1;
 
     // ── Notas ──
     if (proforma.tipo === 'pintura' && proforma.garantia) {
@@ -345,7 +359,7 @@ async function generarProformaExcel(proforma) {
         fila++;
     }
     fila += 2;
-    sheet.getCell(`A${fila}`).value = `Preparado por: ${proforma.usuario_nombre || ''}`;
+    sheet.getCell(`A${fila}`).value = `Elaborado por: ${proforma.usuario_nombre || ''}`;
     sheet.getCell(`A${fila}`).font = { name: FONT, size: 8, color: { argb: 'FF64748B' } };
     sheet.getCell(`H${fila}`).value = 'Firma del cliente: ______________________________';
     sheet.getCell(`H${fila}`).font = { name: FONT, size: 8, color: { argb: 'FF64748B' } };

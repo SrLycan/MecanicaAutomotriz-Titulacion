@@ -9,9 +9,30 @@
 const bcrypt = require('bcryptjs');
 const jwt    = require('jsonwebtoken');
 const pool   = require('../config/db');
+const { errorBD } = require('../utils/erroresBD');
 const { registrarIntento, registrarIntentoIp } = require('../middleware/loginThrottle.middleware');
+const { ROLES_STAFF, ROL_SUPERADMIN } = require('../config/permisos');
+const { registrarAuditoria } = require('../services/auditoria.service');
 
-const ROLES_STAFF = ['administrador', 'tecnico', 'recepcionista'];
+/**
+ * Firma el JWT de una cuenta. "tv" (token_version) permite invalidar todas
+ * las sesiones de la cuenta al desactivarla o restablecer su acceso.
+ */
+function firmarToken(u) {
+    const payload = { id: u.id, nombre: u.nombre, email: u.email, rol: u.rol };
+    const token = jwt.sign({ ...payload, tv: Number(u.token_version) || 0 }, process.env.JWT_SECRET,
+        { expiresIn: process.env.JWT_EXPIRES_IN || '8h' });
+    return { token, usuario: payload };
+}
+
+/** Permisos vigentes de una cuenta ('*' = todos, para el superadministrador). */
+async function permisosDe(u) {
+    if (u.rol === ROL_SUPERADMIN) return ['*'];
+    if (!ROLES_STAFF.includes(u.rol)) return [];
+    const { rows } = await pool.query(
+        `SELECT modulo || ':' || accion AS p FROM usuario_permisos WHERE usuario_id = $1 ORDER BY 1`, [u.id]);
+    return rows.map(r => r.p);
+}
 
 // Limites de longitud aceptados para email/contrasena. No son solo cosmeticos:
 // - EMAIL_MAX_LEN evita procesar strings gigantes en la consulta/comparaciones.
@@ -49,7 +70,7 @@ const login = async (req, res) => {
 
     try {
         const { rows } = await pool.query(
-            `SELECT id, nombre, email, password, rol, activo, estado
+            `SELECT id, nombre, email, password, rol, activo, estado, token_version
              FROM usuarios WHERE email = $1`,
             [emailNorm]
         );
@@ -84,12 +105,17 @@ const login = async (req, res) => {
         if (panel === 'staff' && !esStaff)
             return res.status(403).json({ error: 'Este acceso es exclusivo para personal del taller.' });
 
-        const payload = { id: usuario.id, nombre: usuario.nombre, email: usuario.email, rol: usuario.rol };
-        const token   = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '8h' });
+        const { token, usuario: payload } = firmarToken(usuario);
+        const permisos = await permisosDe(usuario);
+        pool.query('UPDATE usuarios SET ultimo_acceso = NOW() WHERE id = $1', [usuario.id]).catch(() => {});
+        if (esStaff) {
+            registrarAuditoria({ req, actor: payload, accion: 'sesion.inicio', recursoTipo: 'usuario', recursoId: usuario.id });
+        }
 
-        return res.json({ token, usuario: payload });
+        return res.json({ token, usuario: payload, permisos });
     } catch (err) {
         console.error('Error en login:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error interno del servidor.' });
     }
 };
@@ -123,9 +149,12 @@ const register = async (req, res) => {
         return res.status(400).json({ error: 'La cedula no es valida.' });
 
     const emailNorm = email.toLowerCase().trim();
-    const client = await pool.connect();
+    let client;
 
     try {
+        // Dentro del try: si no se logra conexion, se responde un error en vez
+        // de dejar la peticion colgada (el usuario veia "cargando" eterno).
+        client = await pool.connect();
         await client.query('BEGIN');
 
         const { rows: existe } = await client.query(
@@ -160,23 +189,29 @@ const register = async (req, res) => {
 
         await client.query('COMMIT');
 
-        const payload = { id: rows[0].id, nombre: rows[0].nombre, email: rows[0].email, rol: rows[0].rol };
-        const token   = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '8h' });
+        const { token, usuario: payload } = firmarToken(rows[0]);
 
-        return res.status(201).json({ token, usuario: payload });
+        return res.status(201).json({ token, usuario: payload, permisos: [] });
     } catch (err) {
-        await client.query('ROLLBACK');
+        if (client) await client.query('ROLLBACK').catch(() => {});
         console.error('Error en register:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error interno del servidor.' });
     } finally {
-        client.release();
+        if (client) client.release();
     }
 };
 
 /* ── ME ─────────────────────────────────────────────────────── */
 /**
- * Retorna la información del usuario autenticado a partir del payload del token JWT.
+ * Retorna el usuario autenticado y sus permisos VIGENTES (leídos de la BD por
+ * verificarToken). El panel lo consulta al cargar y periódicamente para que
+ * un permiso revocado desaparezca del menú sin cerrar sesión.
  */
-const me = (req, res) => res.json({ usuario: req.usuario });
+const me = (req, res) => {
+    const { id, nombre, email, rol } = req.usuario;
+    const permisos = rol === ROL_SUPERADMIN ? ['*'] : req.usuario.permisos;
+    return res.json({ usuario: { id, nombre, email, rol }, permisos });
+};
 
-module.exports = { login, register, me };
+module.exports = { login, register, me, firmarToken, permisosDe };

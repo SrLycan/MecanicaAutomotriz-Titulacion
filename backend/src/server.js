@@ -24,11 +24,17 @@ const estadisticasRoutes = require('./routes/estadisticas.routes');
 const proformasRoutes = require('./routes/proformas.routes');
 const cuentasCobrarRoutes = require('./routes/cuentasCobrar.routes');
 const catalogosRoutes = require('./routes/catalogos.routes');
+const cajaRoutes = require('./routes/caja.routes');
+const finanzasRoutes = require('./routes/finanzas.routes');
+const dashboardRoutes = require('./routes/dashboard.routes');
 // Nota: ya NO se requiere './config/initDb' aqui a proposito. El esquema y
 // las migraciones de Postgres se corrieron manualmente contra Supabase
 // (schema.sql + migrations.sql via el SQL Editor), y no se quiere que el
 // servidor intente correr nada mas (ni migraciones ni seed) en cada arranque
 // — los datos deben quedar tal cual estan en Supabase.
+// Con BD local se activa RUN_MIGRATIONS=true en el .env para aplicar
+// migrations.sql (idempotente) en cada arranque.
+const { runMigrations } = require('./config/initDb');
 const { connectMongo }  = require('./config/mongo');
 const path = require('path');
 
@@ -55,6 +61,16 @@ for (const localOrigin of ['http://localhost:3000', 'http://127.0.0.1:3000']) {
     if (!allowedOrigins.includes(localOrigin)) allowedOrigins.push(localOrigin);
 }
 
+// Agrega automaticamente la variante con/sin "www" de cada dominio, porque
+// los clientes entran a veces por una y a veces por otra (la causa de los
+// "Origen no permitido por CORS" en produccion).
+for (const o of [...allowedOrigins]) {
+    const variante = o.includes('://www.') ? o.replace('://www.', '://') : o.replace('://', '://www.');
+    if (!o.includes('localhost') && !o.includes('127.0.0.1') && !allowedOrigins.includes(variante)) {
+        allowedOrigins.push(variante);
+    }
+}
+
 app.use(cors({
     origin: (origin, callback) => {
         // Sin "origin" = curl, health checks, apps moviles: se permite.
@@ -63,7 +79,11 @@ app.use(cors({
         if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development') {
             return callback(null, true);
         }
-        callback(new Error('Origen no permitido por CORS.'));
+        // Se rechaza sin lanzar error: antes el Error caia en el manejador
+        // global (500 + stack completo en el log por cada peticion). Ahora
+        // simplemente no se envian cabeceras CORS y se registra una linea.
+        console.warn(`[cors] Origen rechazado: ${origin}`);
+        callback(null, false);
     },
     credentials: true,
 }));
@@ -89,6 +109,9 @@ app.use('/api/estadisticas', estadisticasRoutes);
 app.use('/api/proformas', proformasRoutes);
 app.use('/api/cuentas-cobrar', cuentasCobrarRoutes);
 app.use('/api/catalogos', catalogosRoutes);
+app.use('/api/caja', cajaRoutes);
+app.use('/api/finanzas', finanzasRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => res.json({
@@ -107,11 +130,27 @@ app.use((err, _req, res, _next) => {
     res.status(500).json({ error: 'Error interno del servidor.' });
 });
 
+// ── Conexion "caliente" a Postgres ─────────────────────────────
+// Abrir una conexion nueva al pooler de Supabase (TLS + auth) tarda varios
+// segundos; si eso ocurre en la primera peticion del usuario (ej. registro),
+// esa peticion se siente lentisima. Se abre una al arrancar y se hace un
+// ping periodico para que el pool nunca quede vacio por inactividad.
+const pool = require('./config/db');
+const PING_MS = 4 * 60 * 1000;
+function calentarPostgres() {
+    const ping = () => pool.query('SELECT 1').catch(err =>
+        console.warn('[postgres] Ping fallido:', err.message));
+    ping();
+    setInterval(ping, PING_MS).unref();
+}
+
 // ── Arranque ─────────────────────────────────────────────────
 app.listen(PORT, async () => {
     console.log(`\n SS SWAP Backend corriendo en http://localhost:${PORT}`);
     console.log(`  Entorno : ${process.env.NODE_ENV || 'development'}`);
     console.log(`  Postgres: ${process.env.DB_NAME}@${process.env.DB_HOST}`);
+    if (process.env.RUN_MIGRATIONS === 'true') await runMigrations();
     await connectMongo();
+    calentarPostgres();
     console.log('');
 });

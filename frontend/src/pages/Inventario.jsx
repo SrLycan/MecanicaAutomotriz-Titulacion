@@ -12,7 +12,9 @@ import api from '../services/api';
 import toast from 'react-hot-toast';
 import ModalRepuesto from '../components/inventory/ModalRepuesto';
 import ModalMovimiento from '../components/inventory/ModalMovimiento';
+import ModalCategorias from '../components/inventory/ModalCategorias';
 import { useConfirm } from '../components/common/ConfirmDialog';
+import { stockBajo, areaConAlerta } from '../utils/stock';
 import './Inventario.css';
 
 function IconSearch() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>; }
@@ -82,14 +84,14 @@ function StockAlertModal({ repuestos, onCerrar, onIrAAlertas, isDark }) {
                     </div>
                     <button onClick={onCerrar}
                         style={{
-                            background: 'none', border: '1px solid ' + (isDark ? 'rgba(148,163,184,.18)' : 'rgba(15,23,42,.1)'),
+                            background: 'none', border: '1px solid ' + (isDark ? 'rgba(148,163,184,.18)' : '#b6c3d3'),
                             borderRadius: 8, padding: 6, cursor: 'pointer',
                             color: isDark ? 'rgba(241,245,249,.55)' : '#64748b',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             transition: 'all .15s', flexShrink: 0,
                         }}
                         onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,.1)'; e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.borderColor = 'rgba(239,68,68,.25)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = isDark ? 'rgba(241,245,249,.55)' : '#64748b'; e.currentTarget.style.borderColor = isDark ? 'rgba(148,163,184,.18)' : 'rgba(15,23,42,.1)'; }}>
+                        onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = isDark ? 'rgba(241,245,249,.55)' : '#64748b'; e.currentTarget.style.borderColor = isDark ? 'rgba(148,163,184,.18)' : '#b6c3d3'; }}>
                         <IconXSm />
                     </button>
                 </div>
@@ -107,7 +109,7 @@ function StockAlertModal({ repuestos, onCerrar, onIrAAlertas, isDark }) {
                                 fontFamily: 'monospace', fontSize: '.72rem', fontWeight: 600,
                                 background: isDark ? 'rgba(14,165,233,.1)' : 'rgba(14,165,233,.05)',
                                 padding: '2px 8px', borderRadius: 5,
-                                color: '#0284c7', border: '1px solid ' + (isDark ? 'rgba(56,189,248,.22)' : 'rgba(14,165,233,.18)'),
+                                color: '#0284c7', border: '1px solid ' + (isDark ? 'rgba(56,189,248,.22)' : 'rgba(14,165,233,0.35)'),
                                 flexShrink: 0,
                             }}>{r.codigo}</code>
                             <div style={{ flex: 1, minWidth: 0 }}>
@@ -126,17 +128,17 @@ function StockAlertModal({ repuestos, onCerrar, onIrAAlertas, isDark }) {
                 </div>
 
                 {/* Actions */}
-                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', borderTop: '1px solid ' + (isDark ? 'rgba(148,163,184,.12)' : 'rgba(15,23,42,.07)'), paddingTop: 16 }}>
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', borderTop: '1px solid ' + (isDark ? 'rgba(148,163,184,.12)' : '#b6c3d3'), paddingTop: 16 }}>
                     <button onClick={onCerrar}
                         style={{
                             fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.14em',
-                            background: 'none', border: '1px solid ' + (isDark ? 'rgba(148,163,184,.18)' : 'rgba(15,23,42,.1)'),
+                            background: 'none', border: '1px solid ' + (isDark ? 'rgba(148,163,184,.18)' : '#b6c3d3'),
                             borderRadius: 9, padding: '9px 18px', cursor: 'pointer',
                             color: isDark ? 'rgba(241,245,249,.55)' : '#64748b',
                             transition: 'all .18s',
                         }}
                         onMouseEnter={e => { e.currentTarget.style.borderColor = isDark ? 'rgba(56,189,248,.25)' : 'rgba(14,165,233,.25)'; e.currentTarget.style.color = isDark ? '#f1f5f9' : '#0f172a'; }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = isDark ? 'rgba(148,163,184,.18)' : 'rgba(15,23,42,.1)'; e.currentTarget.style.color = isDark ? 'rgba(241,245,249,.55)' : '#64748b'; }}>
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = isDark ? 'rgba(148,163,184,.18)' : '#b6c3d3'; e.currentTarget.style.color = isDark ? 'rgba(241,245,249,.55)' : '#64748b'; }}>
                         IGNORAR
                     </button>
                     <button onClick={onIrAAlertas}
@@ -160,7 +162,7 @@ function StockAlertModal({ repuestos, onCerrar, onIrAAlertas, isDark }) {
 
 export default function Inventario() {
     const confirm = useConfirm();
-    const { tieneRol }  = useAuth();
+    const { puede }  = useAuth();
     const { isDark }    = useTheme();
 
     // Helpers de formato y normalización de texto/imagen
@@ -181,6 +183,7 @@ export default function Inventario() {
     const [soloAlerta,  setSoloAlerta]  = useState(false);
     const [modalRep,    setModalRep]    = useState({ open: false, data: null });
     const [modalMov,    setModalMov]    = useState({ open: false, repuesto: null });
+    const [modalCat,    setModalCat]    = useState(false);
     const [sortConfig,  setSortConfig]  = useState({ key: 'nombre', direction: 'asc' });
     const [seleccionados, setSeleccionados] = useState([]);
     const [page, setPage] = useState(1);
@@ -195,9 +198,14 @@ export default function Inventario() {
     const [area, setArea] = useState(areaUrl);
     const areaRef = useRef(areaUrl);
 
-    const esAdmin    = tieneRol('administrador');
-    const esAdminTec = tieneRol('administrador', 'tecnico');
-    const puedeMov   = tieneRol('administrador', 'tecnico', 'recepcionista');
+    // Permisos del AREA que se esta viendo (inventario_mecanica / inventario_colisiones).
+    // Solo deciden que botones se muestran: el backend valida cada operacion.
+    const moduloArea   = (a) => (a === 'colisiones' ? 'inventario_colisiones' : 'inventario_mecanica');
+    const puedeCrear    = puede(moduloArea(area), 'crear');
+    const puedeEditar   = puede(moduloArea(area), 'editar');
+    const puedeEliminar = puede(moduloArea(area), 'eliminar');
+    const puedeMov      = puede('registros_inventario', 'crear');
+    const areasVisibles = ['mecanica', 'colisiones'].filter(a => puede(moduloArea(a), 'ver'));
     const [showAlertModal, setShowAlertModal] = useState(false);
     const [bajoStockList, setBajoStockList] = useState([]);
     const alertaInicialRef = useRef(false);
@@ -206,21 +214,21 @@ export default function Inventario() {
     const SKY      = '#0ea5e9';   // sky-500 (acento principal)
     const SKY_DEEP = '#0284c7';   // sky-600
     const SKY_SOFT = '#7dd3fc';   // sky-300
-    const SKY_PALE = isDark ? 'rgba(14,165,233,0.10)' : 'rgba(14,165,233,0.05)';
-    const SKY_BDR  = isDark ? 'rgba(56,189,248,0.22)' : 'rgba(14,165,233,0.18)';
+    const SKY_PALE = isDark ? 'rgba(14,165,233,0.10)' : 'rgba(14,165,233,0.12)';
+    const SKY_BDR  = isDark ? 'rgba(56,189,248,0.22)' : 'rgba(14,165,233,0.35)';
 
     const txt     = isDark ? '#f1f5f9'                    : '#0f172a';
     const txtSoft = isDark ? '#cbd5e1'                    : '#334155';
     const mut     = isDark ? 'rgba(241,245,249,0.55)'     : '#64748b';
     const faint   = isDark ? 'rgba(241,245,249,0.38)'     : '#94a3b8';
-    const bdr     = isDark ? 'rgba(148,163,184,0.18)'     : 'rgba(15,23,42,0.07)';
+    const bdr     = isDark ? 'rgba(148,163,184,0.18)'     : '#b6c3d3';
     const card    = isDark ? 'rgba(255,255,255,0.025)'    : '#ffffff';
     const cardSh  = isDark
         ? '0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 40px -16px rgba(0,0,0,0.55)'
-        : '0 4px 16px -4px rgba(15,23,42,0.08), 0 2px 4px -2px rgba(15,23,42,0.04)';
+        : '0 1px 2px rgba(15,23,42,0.06), 0 8px 22px -8px rgba(15,23,42,0.20)';
     const inputBg = isDark ? '#0b1220'                    : '#fafcff';
     const rowHov  = isDark ? 'rgba(14,165,233,0.06)'      : 'rgba(14,165,233,0.04)';
-    const headBg  = isDark ? 'rgba(14,165,233,0.06)'      : 'rgba(14,165,233,0.025)';
+    const headBg  = isDark ? 'rgba(14,165,233,0.06)'      : 'rgba(14,165,233,0.12)';
 
     const cargarRepuestos = useCallback(async (q = '', catId = '', alerta = false, pg = 1) => {
         setLoading(true);
@@ -250,6 +258,11 @@ export default function Inventario() {
         cargarCategorias(areaRef.current);
     }, [cargarRepuestos, cargarCategorias]);
 
+    useEffect(() => {
+        if (areasVisibles.length && !areasVisibles.includes(areaUrl)) setAreaUrl(areasVisibles[0]);
+        // eslint-disable-next-line
+    }, [areaUrl, areasVisibles.join(',')]);
+
     // Si la URL cambia (menu lateral o boton), se aplica el area
     useEffect(() => {
         if (areaUrl !== areaRef.current) cambiarArea(areaUrl);
@@ -263,13 +276,16 @@ export default function Inventario() {
         setFiltroCateg('');
         setBulkCategoria('');
         cargarCategorias(nueva);
-        cargarRepuestos(busqueda, '', soloAlerta, 1);
+        // Colisiones/Pintura no tiene alertas de stock: se quita el filtro "Solo bajo stock".
+        const alerta = soloAlerta && areaConAlerta(nueva);
+        if (!alerta) setSoloAlerta(false);
+        cargarRepuestos(busqueda, '', alerta, 1);
     };
 
     // Show low stock alert modal only on initial page load
     useEffect(() => {
         if (!loading && repuestos.length > 0 && !alertaInicialRef.current) {
-            const bajos = repuestos.filter(r => r.stock_actual <= r.stock_minimo);
+            const bajos = repuestos.filter(stockBajo);
             if (bajos.length > 0) {
                 setBajoStockList(bajos);
                 setShowAlertModal(true);
@@ -351,9 +367,10 @@ export default function Inventario() {
     });
 
     const rowsCSV = (items) => {
-        const rows = [['Codigo','Nombre','Categoria','Stock Actual','Stock Minimo','Precio Compra','Precio Venta','Estado']];
+        const rows = [['Referencia interna','Codigo proveedor','Nombre','Categoria','Stock Actual','Stock Minimo','Precio Compra','Precio Venta','Estado']];
         items.forEach(r => rows.push([
             r.codigo,
+            r.codigo_proveedor || '',
             r.nombre,
             r.categoria_nombre || '',
             r.stock_actual,
@@ -448,7 +465,7 @@ export default function Inventario() {
     // ── KPIs computados ──
     const stats = useMemo(() => {
         const total      = repuestos.length;
-        const bajo       = repuestos.filter(r => r.stock_actual <= r.stock_minimo).length;
+        const bajo       = repuestos.filter(stockBajo).length;
         const valor      = repuestos.reduce((s, r) => s + (r.stock_actual * parseFloat(r.precio_venta || 0)), 0);
         const unidades   = repuestos.reduce((s, r) => s + (parseInt(r.stock_actual) || 0), 0);
         return { total, bajo, valor, unidades };
@@ -469,7 +486,19 @@ export default function Inventario() {
                     <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.6rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>Inventario</h1>
                     <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.85rem', color: mut, marginTop: 6 }}>Catalogo de repuestos y control de stock en tiempo real</p>
                 </div>
-                {esAdminTec && (
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                {puedeEditar && (
+                    <button onClick={() => setModalCat(true)}
+                        style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 8,
+                            fontFamily: "'Bebas Neue'", fontSize: '.78rem', letterSpacing: '.14em',
+                            color: SKY_DEEP, background: SKY_PALE, border: `1px solid ${SKY_BDR}`,
+                            borderRadius: 11, padding: '11px 22px', cursor: 'pointer',
+                        }}>
+                        CATEGORÍAS
+                    </button>
+                )}
+                {puedeCrear && (
                     <button onClick={() => setModalRep({ open: true, data: null })}
                         style={{
                             display: 'inline-flex', alignItems: 'center', gap: 8,
@@ -483,12 +512,13 @@ export default function Inventario() {
                         <IconPlus /> NUEVO REPUESTO
                     </button>
                 )}
+                </div>
             </div>
 
             {/* ── Selector de inventario (Sprint 14) ── */}
             <div role="tablist" aria-label="Tipo de inventario" style={{ display: 'flex', gap: 10, marginBottom: 18, flexWrap: 'wrap' }}>
                 {[{ v: 'mecanica', t: 'Inventario Mecánica', d: 'Repuestos, filtros, baterías, eléctricos...' },
-                  { v: 'colisiones', t: 'Inventario Colisiones / Pintura', d: 'Pinturas, masillas, lijas, primer, barniz...' }].map(op => {
+                  { v: 'colisiones', t: 'Inventario Colisiones / Pintura', d: 'Pinturas, masillas, lijas, primer, barniz...' }].filter(op => areasVisibles.includes(op.v)).map(op => {
                     const activo = area === op.v;
                     return (
                         <button key={op.v} role="tab" aria-selected={activo} onClick={() => setAreaUrl(op.v)}
@@ -505,7 +535,7 @@ export default function Inventario() {
             {/* ── KPI Cards ── */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 14, marginBottom: 20 }}>
                 <KpiCard label="Total Repuestos" value={stats.total} icon={<IconBox />}      color={SKY}      bg={card} bdr={bdr} mut={mut} txt={txt} shadow={cardSh} />
-                <KpiCard label="Bajo Stock"      value={stats.bajo}  icon={<IconAlert />}    color={stats.bajo > 0 ? '#ef4444' : '#10b981'} bg={card} bdr={bdr} mut={mut} txt={txt} shadow={cardSh} sub={stats.bajo > 0 ? 'Requiere atencion' : 'Todo en orden'} />
+                {areaConAlerta(area) && <KpiCard label="Bajo Stock"      value={stats.bajo}  icon={<IconAlert />}    color={stats.bajo > 0 ? '#ef4444' : '#10b981'} bg={card} bdr={bdr} mut={mut} txt={txt} shadow={cardSh} sub={stats.bajo > 0 ? 'Requiere atencion' : 'Todo en orden'} />}
                 <KpiCard label="Unidades Totales" value={stats.unidades.toLocaleString()} icon={<IconTag />} color={SKY_DEEP} bg={card} bdr={bdr} mut={mut} txt={txt} shadow={cardSh} />
                 <KpiCard label="Valor Inventario" value={`$${stats.valor.toLocaleString('en-US', { maximumFractionDigits: 0 })}`} icon={<IconCash />} color={SKY} bg={card} bdr={bdr} mut={mut} txt={txt} shadow={cardSh} sub="Precio de venta" />
             </div>
@@ -518,12 +548,13 @@ export default function Inventario() {
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
                     <div style={{ position: 'relative' }}>
                         <span style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: faint, display: 'flex' }}><IconSearch /></span>
-                        <input className="inv-input" placeholder="Buscar por codigo o nombre..." value={busqueda} onChange={handleBusqueda} style={inputStyle} />
+                        <input className="inv-input" placeholder="Buscar por nombre, referencia o código de proveedor..." value={busqueda} onChange={handleBusqueda} style={inputStyle} />
                     </div>
                     <select className="inv-input" value={filtroCateg} onChange={handleFiltroCateg} style={selStyle}>
                         <option value="">Todas las categorias</option>
                         {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                     </select>
+                    {areaConAlerta(area) && (
                     <label style={{
                         display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
                         fontFamily: "'Outfit'", fontWeight: 500, fontSize: '.82rem', color: soloAlerta ? '#ef4444' : txtSoft,
@@ -535,6 +566,7 @@ export default function Inventario() {
                         <input type="checkbox" checked={soloAlerta} onChange={handleSoloAlerta} style={{ accentColor: '#ef4444', width: 14, height: 14 }} />
                         Solo bajo stock
                     </label>
+                    )}
                     <div style={{ flex: 1 }} />
                     <button onClick={exportCSV}
                         style={{
@@ -600,7 +632,7 @@ export default function Inventario() {
                     </span>
                     <button className="btn-ghost" disabled={bulkBusy} onClick={exportSeleccion}><IconDownload /> Exportar seleccion</button>
 
-                    {esAdmin && (
+                    {puedeEditar && (
                         <>
                             <button className="btn-ghost" disabled={bulkBusy} onClick={() => handleBulkActivo(true)}>Activar</button>
                             <button className="btn-ghost" disabled={bulkBusy} onClick={() => handleBulkActivo(false)}>Desactivar</button>
@@ -610,7 +642,7 @@ export default function Inventario() {
                                 {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                             </select>
                             <button className="btn-ghost" disabled={bulkBusy} onClick={handleBulkCategoria}>Aplicar categoria</button>
-                            <button className="btn-ghost" disabled={bulkBusy} onClick={handleBulkEliminar} style={{ color: '#ef4444', borderColor: 'rgba(239,68,68,.25)' }}><IconTrash /> Eliminar</button>
+                            {puedeEliminar && <button className="btn-ghost" disabled={bulkBusy} onClick={handleBulkEliminar} style={{ color: '#ef4444', borderColor: 'rgba(239,68,68,.25)' }}><IconTrash /> Eliminar</button>}
                         </>
                     )}
                     <button className="btn-ghost" disabled={bulkBusy} onClick={() => setSeleccionados([])}>Limpiar seleccion</button>
@@ -631,7 +663,7 @@ export default function Inventario() {
                             <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.4rem', letterSpacing: '.06em', color: txt }}>Sin repuestos</p>
                             <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.82rem', color: mut, marginTop: 4 }}>No se encontraron resultados con los filtros aplicados</p>
                         </div>
-                        {esAdminTec && (
+                        {puedeCrear && (
                             <button onClick={() => setModalRep({ open: true, data: null })}
                                 style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontFamily: "'Bebas Neue'", fontSize: '.75rem', letterSpacing: '.14em', color: '#fff', background: `linear-gradient(135deg, ${SKY_DEEP}, ${SKY})`, border: 'none', borderRadius: 10, padding: '10px 20px', cursor: 'pointer', boxShadow: `0 6px 18px -6px ${SKY}` }}>
                                 <IconPlus /> CREAR PRIMERO
@@ -643,7 +675,7 @@ export default function Inventario() {
                         <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 880 }}>
                             <thead>
                                 <tr style={{ borderBottom: `1px solid ${bdr}`, background: headBg }}>
-                                    {['Codigo','Repuesto','Categoria','Stock','P. Venta','Estado','Acciones'].map(h => (
+                                    {['Referencia','Repuesto','Categoria','Stock','P. Venta','Estado','Acciones'].map(h => (
                                         <th key={h} style={{
                                             padding: '13px 18px', textAlign: 'left',
                                             fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.22em',
@@ -654,10 +686,12 @@ export default function Inventario() {
                             </thead>
                             <tbody>
                                 {repuestos.map((r, idx) => {
-                                    const bajo  = r.stock_actual <= r.stock_minimo;
+                                    const conAlerta = areaConAlerta(r.area);
+                                    const bajo  = stockBajo(r);
+                                    const medio = conAlerta && r.stock_actual < r.stock_minimo * 2;
                                     const limit = Math.max(r.stock_minimo * 4, 50);
                                     const pct   = Math.min(100, Math.round((r.stock_actual / limit) * 100));
-                                    const stockColor = bajo ? '#ef4444' : r.stock_actual < r.stock_minimo * 2 ? '#f59e0b' : '#10b981';
+                                    const stockColor = bajo ? '#ef4444' : medio ? '#f59e0b' : '#10b981';
                                     return (
                                         <tr key={r.id} className="inv-row"
                                             style={{ borderBottom: `1px solid ${bdr}`, transition: 'background .15s', animationDelay: `${Math.min(idx * 18, 240)}ms` }}
@@ -669,6 +703,7 @@ export default function Inventario() {
                                                     background: SKY_PALE, padding: '3px 9px', borderRadius: 6,
                                                     color: SKY_DEEP, border: `1px solid ${SKY_BDR}`,
                                                 }}>{r.codigo}</code>
+                                                {r.codigo_proveedor && <span title="Código de proveedor / fabricante" style={{ display: 'block', marginTop: 4, fontFamily: "'Outfit'", fontSize: '.68rem', color: mut }}>Prov.: {r.codigo_proveedor}</span>}
                                             </td>
                                             <td style={{ padding: '13px 18px', maxWidth: 260 }}>
                                                 <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.92rem', color: txt, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', letterSpacing: '.005em' }}>{r.nombre}</p>
@@ -684,12 +719,12 @@ export default function Inventario() {
                                                     <span style={{ fontFamily: "'Bebas Neue'", fontSize: '1.25rem', letterSpacing: '.02em', color: stockColor, lineHeight: 1 }}>{r.stock_actual}</span>
                                                     <span style={{ fontFamily: "'Outfit'", fontSize: '.68rem', color: mut, fontWeight: 400 }}>/ min {r.stock_minimo}</span>
                                                 </div>
-                                                <div style={{ marginTop: 5, height: 4, background: isDark ? 'rgba(148,163,184,0.12)' : 'rgba(15,23,42,0.06)', borderRadius: 999, overflow: 'hidden' }}>
+                                                <div style={{ marginTop: 5, height: 4, background: isDark ? 'rgba(148,163,184,0.12)' : '#b6c3d3', borderRadius: 999, overflow: 'hidden' }}>
                                                     <div className="inv-stock-bar" style={{
                                                         width: `${pct}%`, height: '100%',
                                                         background: bajo
                                                             ? 'linear-gradient(90deg, #dc2626, #ef4444)'
-                                                            : r.stock_actual < r.stock_minimo * 2
+                                                            : medio
                                                                 ? 'linear-gradient(90deg, #d97706, #f59e0b)'
                                                                 : `linear-gradient(90deg, ${SKY_DEEP}, ${SKY})`,
                                                         borderRadius: 999,
@@ -726,19 +761,19 @@ export default function Inventario() {
                                                             <IconArrows />
                                                         </ActionBtn>
                                                     )}
-                                                    {esAdminTec && (
+                                                    {puedeEditar && (
                                                         <ActionBtn color={SKY_DEEP} hoverBg={SKY_PALE} bdr={bdr} title="Editar"
                                                             onClick={() => setModalRep({ open: true, data: r })}>
                                                             <IconEdit />
                                                         </ActionBtn>
                                                     )}
-                                                    {esAdmin && (
+                                                    {puedeEliminar && (
                                                         <ActionBtn color="#ef4444" hoverBg="rgba(239,68,68,.1)" bdr={bdr} title="Eliminar"
                                                             onClick={() => handleEliminar(r.id, r.nombre)}>
                                                             <IconTrash />
                                                         </ActionBtn>
                                                     )}
-                                                    {esAdmin && (
+                                                    {puedeEditar && (
                                                         <ActionBtn
                                                             color={r.en_venta ? '#10b981' : mut}
                                                             hoverBg={r.en_venta ? 'rgba(16,185,129,.1)' : 'rgba(255,255,255,.06)'}
@@ -803,6 +838,7 @@ export default function Inventario() {
             </div>
 
             {/* Modales */}
+            {modalCat && <ModalCategorias onCambio={() => { cargarCategorias(areaRef.current); cargarRepuestos(busqueda, filtroCateg, soloAlerta, page); }} onCerrar={() => setModalCat(false)} />}
             {modalRep.open && <ModalRepuesto repuesto={modalRep.data} categorias={categorias} areaInicial={area} onGuardar={handleGuardar} onCerrar={() => setModalRep({ open: false, data: null })} />}
             {modalMov.open && <ModalMovimiento repuesto={modalMov.repuesto} onGuardado={() => {            setModalMov({ open: false, repuesto: null }); cargarRepuestos(busqueda, filtroCateg, soloAlerta, page); toast.success('Movimiento registrado.'); }} onCerrar={() => setModalMov({ open: false, repuesto: null })} />}
             {showAlertModal && bajoStockList.length > 0 && (

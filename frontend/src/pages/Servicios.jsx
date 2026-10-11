@@ -6,6 +6,7 @@
  */
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { useConfirm } from '../components/common/ConfirmDialog';
@@ -37,7 +38,7 @@ function Modal({ servicio, onClose, onSaved, isDark }) {
     const [saving, setSaving] = useState(false);
 
     const bg    = isDark ? '#080e1c' : '#ffffff';
-    const bdr   = isDark ? 'rgba(201,162,39,.22)' : 'rgba(15,23,42,.1)';
+    const bdr   = isDark ? 'rgba(201,162,39,.22)' : '#b6c3d3';
     const txt   = isDark ? '#f1f5f9' : '#0f172a';
     const mut   = isDark ? 'rgba(241,245,249,.55)' : '#64748b';
     const inp   = isDark ? '#0d1526' : '#f8fafc';
@@ -149,6 +150,7 @@ function Modal({ servicio, onClose, onSaved, isDark }) {
 }
 
 export default function Servicios() {
+    const { puede } = useAuth();
     const confirm = useConfirm();
     const { isDark } = useTheme();
     const [servicios, setServicios]   = useState([]);
@@ -159,7 +161,7 @@ export default function Servicios() {
 
     const bg   = isDark ? '#050a14' : '#f1f5f9';
     const card = isDark ? '#0a1020' : '#ffffff';
-    const bdr  = isDark ? 'rgba(201,162,39,.18)' : 'rgba(15,23,42,.08)';
+    const bdr  = isDark ? 'rgba(201,162,39,.18)' : '#b6c3d3';
     const txt  = isDark ? '#f1f5f9' : '#0f172a';
     const mut  = isDark ? 'rgba(241,245,249,.55)' : '#64748b';
 
@@ -209,10 +211,10 @@ export default function Servicios() {
                         Define qué servicios ofrece el taller para que los clientes puedan agendar.
                     </p>
                 </div>
-                <button onClick={() => setModal({})}
+                {puede('servicios', 'crear') && <button onClick={() => setModal({})}
                     style={{ display: 'flex', alignItems: 'center', gap: 8, background: GOLD, color: '#0a0a0a', border: 'none', borderRadius: 10, padding: '11px 20px', fontFamily: "'Outfit'", fontWeight: 700, fontSize: '.88rem', cursor: 'pointer', flexShrink: 0 }}>
                     <IconPlus /> Nuevo Servicio
-                </button>
+                </button>}
             </div>
 
             {/* Search */}
@@ -286,14 +288,14 @@ export default function Servicios() {
                             </div>
 
                             <div style={{ display: 'flex', gap: 8 }}>
-                                <button onClick={() => setModal(s)}
+                                {puede('servicios', 'editar') && <button onClick={() => setModal(s)}
                                     style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px 0', borderRadius: 8, border: `1px solid ${bdr}`, background: 'none', color: mut, fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.82rem', cursor: 'pointer' }}>
                                     <IconEdit /> Editar
-                                </button>
-                                <button onClick={() => handleDelete(s.id)} disabled={deletingId === s.id}
+                                </button>}
+                                {puede('servicios', 'eliminar') && <button onClick={() => handleDelete(s.id)} disabled={deletingId === s.id}
                                     style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px 0', borderRadius: 8, border: '1px solid rgba(239,68,68,.25)', background: 'none', color: '#ef4444', fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.82rem', cursor: 'pointer', opacity: deletingId === s.id ? .5 : 1 }}>
                                     <IconTrash /> {deletingId === s.id ? '…' : 'Desactivar'}
-                                </button>
+                                </button>}
                             </div>
                         </div>
                     ))}

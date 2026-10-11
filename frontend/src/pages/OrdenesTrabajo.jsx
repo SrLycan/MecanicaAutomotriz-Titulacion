@@ -32,13 +32,17 @@ function IconFileText() { return <svg width="13" height="13" viewBox="0 0 24 24"
 
 export default function OrdenesTrabajo() {
     const confirm = useConfirm();
-    const { tieneRol, usuario } = useAuth();
+    const { puede, puedeAlguno, usuario } = useAuth();
     const { isDark }  = useTheme();
-    const esAdmin        = tieneRol('administrador');
-    const esRecepcionista = tieneRol('recepcionista');
-    const esTecnico      = tieneRol('tecnico');
-    const puedeAsignar   = esAdmin || esRecepcionista;
-    const puedeVerAcciones = esAdmin || esTecnico;
+    // Permisos del modulo "ordenes" (el backend valida cada operacion).
+    const puedeCrear     = puede('ordenes', 'crear');
+    const puedeEliminar  = puede('ordenes', 'eliminar');
+    const puedeAsignar   = puede('ordenes', 'asignar');
+    const puedeAprobar   = puede('ordenes', 'aprobar'); // cambiar estado de cualquier orden
+    // El tecnico trabaja con los botones de estado de SUS ordenes; el boton
+    // "Editar / asignar" es para quien administra las ordenes.
+    const puedeEditarDatos = puede('ordenes', 'editar') && usuario?.rol !== 'tecnico';
+    const puedeProforma  = puedeAlguno('proformas_mecanica:crear', 'proformas_colisiones:crear');
     const navigate = useNavigate();
 
     const [ordenes, setOrdenes] = useState([]);
@@ -53,16 +57,16 @@ export default function OrdenesTrabajo() {
     const [historialCargando, setHistorialCargando] = useState({});
 
     const SKY = '#0ea5e9'; const SKY_DEEP = '#0284c7';
-    const SKY_PALE = isDark ? 'rgba(14,165,233,0.10)' : 'rgba(14,165,233,0.05)';
-    const SKY_BDR  = isDark ? 'rgba(56,189,248,0.22)' : 'rgba(14,165,233,0.18)';
+    const SKY_PALE = isDark ? 'rgba(14,165,233,0.10)' : 'rgba(14,165,233,0.12)';
+    const SKY_BDR  = isDark ? 'rgba(56,189,248,0.22)' : 'rgba(14,165,233,0.35)';
     const txt    = isDark ? '#f1f5f9' : '#0f172a';
     const txtSf  = isDark ? '#cbd5e1' : '#334155';
     const mut    = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
-    const bdr    = isDark ? 'rgba(148,163,184,0.18)' : 'rgba(15,23,42,0.07)';
+    const bdr    = isDark ? 'rgba(148,163,184,0.18)' : '#b6c3d3';
     const card   = isDark ? 'rgba(255,255,255,0.025)' : '#ffffff';
     const cardSh = isDark
         ? '0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 40px -16px rgba(0,0,0,0.55)'
-        : '0 4px 16px -4px rgba(15,23,42,0.08), 0 2px 4px -2px rgba(15,23,42,0.04)';
+        : '0 1px 2px rgba(15,23,42,0.06), 0 8px 22px -8px rgba(15,23,42,0.20)';
     const inputBg = isDark ? '#0b1220' : '#fafcff';
 
     const cargar = useCallback(async (q = '', grupo = filtroGrupo) => {
@@ -88,9 +92,8 @@ export default function OrdenesTrabajo() {
 
     // Determina si el usuario actual puede cambiar estado de una orden concreta
     const puedeCambiarEstado = (orden) => {
-        if (esAdmin) return true;
-        if (esTecnico && orden.tecnico_id === usuario?.id) return true;
-        return false;
+        if (puedeAprobar) return true;
+        return puede('ordenes', 'editar') && orden.tecnico_id === usuario?.id;
     };
 
     const cambiarEstado = async (id, nuevo, extra = {}) => {
@@ -164,7 +167,7 @@ export default function OrdenesTrabajo() {
             {/* Header */}
             <div className="ot-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
                 <div>
-                    <div className="SS SWAP-chip" style={{ marginBottom: 8 }}>
+                    <div className="ssswap-chip" style={{ marginBottom: 8 }}>
                         <span className="dot" />
                         <span>SS SWAP · TALLER · ORDENES DE TRABAJO</span>
                     </div>
@@ -173,7 +176,7 @@ export default function OrdenesTrabajo() {
                         Control de reparaciones vinculadas a clientes y vehiculos
                     </p>
                 </div>
-                {(esAdmin || esRecepcionista) && (
+                {puedeCrear && (
                     <button onClick={() => setModal({ open: true, data: null, clientePre: undefined })}
                         style={{ display: 'inline-flex', alignItems: 'center', gap: 8,
                             fontFamily: "'Bebas Neue'", fontSize: '.78rem', letterSpacing: '.14em',
@@ -342,26 +345,26 @@ export default function OrdenesTrabajo() {
                                             {puedeEste && o.estado === 'en_progreso' && (
                                                 <EstBtn color="#10b981" label="Marcar entregado" onClick={() => cambiarEstado(o.id, 'completado')} />
                                             )}
-                                            {/* Cancelar: solo admin */}
-                                            {esAdmin && o.estado === 'pendiente' && (
+                                            {/* Cancelar: permiso "Cambiar estado de cualquier orden" */}
+                                            {puedeAprobar && o.estado === 'pendiente' && (
                                                 <EstBtn color="#ef4444" label="Cancelar" onClick={() => cambiarEstado(o.id, 'cancelado')} />
                                             )}
-                                            {/* Editar: admin y recepcionista pueden editar datos / asignar técnico */}
-                                            {(esAdmin || esRecepcionista) && o.estado !== 'completado' && o.estado !== 'cancelado' && (
+                                            {/* Editar datos / asignar tecnico */}
+                                            {puedeEditarDatos && o.estado !== 'completado' && o.estado !== 'cancelado' && (
                                                 <button onClick={() => setModal({ open: true, data: o })}
                                                     style={{ background: 'none', border: `1px solid ${bdr}`, borderRadius: 8, padding: '7px 12px', cursor: 'pointer', color: SKY_DEEP, display: 'flex', alignItems: 'center', gap: 6, fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.14em' }}>
                                                     <IconEdit /> EDITAR / ASIGNAR
                                                 </button>
                                             )}
-                                            {/* Generar Proforma: mismo criterio de permisos que Proformas (soloStaff) */}
-                                            {o.vehiculo_id && (
+                                            {/* Generar Proforma: requiere crear proformas */}
+                                            {o.vehiculo_id && puedeProforma && (
                                                 <button onClick={() => navigate(`/dashboard/proformas/nueva?desde_orden=${o.id}`)}
                                                     style={{ background: 'none', border: `1px solid ${bdr}`, borderRadius: 8, padding: '7px 12px', cursor: 'pointer', color: '#8b5cf6', display: 'flex', alignItems: 'center', gap: 6, fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.14em' }}>
                                                     <IconFileText /> GENERAR PROFORMA
                                                 </button>
                                             )}
-                                            {/* Eliminar: solo admin */}
-                                            {esAdmin && (
+                                            {/* Eliminar: permiso de eliminar ordenes */}
+                                            {puedeEliminar && (
                                                 <button onClick={() => eliminarOrden(o)}
                                                     style={{ marginLeft: 'auto', background: 'none', border: `1px solid ${bdr}`, borderRadius: 8, padding: '7px 12px', cursor: 'pointer', color: '#ef4444', display: 'flex', alignItems: 'center', gap: 6, fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.14em' }}>
                                                     <IconTrash /> ELIMINAR
@@ -511,7 +514,7 @@ function ModalCliente({ onClose, onCreado, isDark }) {
     const SKY = '#0ea5e9'; const SKY_DEEP = '#0284c7';
     const txt = isDark ? '#f1f5f9' : '#0f172a';
     const mut = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
-    const bdr = isDark ? 'rgba(148,163,184,0.18)' : 'rgba(15,23,42,0.10)';
+    const bdr = isDark ? 'rgba(148,163,184,0.18)' : '#b6c3d3';
     const inputBg = isDark ? '#0b1220' : '#f8fafc';
     const boxBg = isDark ? '#0a0f1c' : '#ffffff';
     const inputSt = { width: '100%', boxSizing: 'border-box', padding: '10px 13px', borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: txt, fontFamily: "'Outfit'", fontSize: '.88rem', outline: 'none' };
@@ -614,7 +617,7 @@ function ModalOrden({ data, clientePre, onClose, onGuardar, onNuevoCliente, isDa
     const SKY = '#0ea5e9'; const SKY_DEEP = '#0284c7';
     const txt = isDark ? '#f1f5f9' : '#0f172a';
     const mut = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
-    const bdr = isDark ? 'rgba(148,163,184,0.18)' : 'rgba(15,23,42,0.10)';
+    const bdr = isDark ? 'rgba(148,163,184,0.18)' : '#b6c3d3';
     const inputBg = isDark ? '#0b1220' : '#f8fafc';
     const boxBg = isDark ? '#0a0f1c' : '#ffffff';
     const inputSt = { width: '100%', boxSizing: 'border-box', padding: '10px 13px', borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: txt, fontFamily: "'Outfit'", fontSize: '.88rem', outline: 'none' };
@@ -627,8 +630,8 @@ function ModalOrden({ data, clientePre, onClose, onGuardar, onNuevoCliente, isDa
                 setForm(f => ({ ...f, cliente_id: clientePre.id }));
             }
         }).catch(() => {});
-        // Cargar tecnicos activos
-        api.get('/users?rol=tecnico&estado=activo').then(r => {
+        // Cargar tecnicos activos (lista minima; no requiere gestionar usuarios)
+        api.get('/users/tecnicos').then(r => {
             setTecnicos(r.data.usuarios || []);
         }).catch(() => {});
     }, []);

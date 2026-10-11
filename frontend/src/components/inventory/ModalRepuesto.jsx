@@ -9,7 +9,8 @@ import { useTheme } from '../../context/ThemeContext';
 import { resolveImagenSrc, fileToDataUrl, comprimirImagen } from '../../utils/imagen';
 
 const EMPTY = {
-    codigo: '',
+    codigo: '',            // referencia interna: la genera el sistema
+    codigo_proveedor: '',  // codigo del proveedor / fabricante (manual)
     nombre: '',
     descripcion: '',
     categoria_id: '',
@@ -44,7 +45,7 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
 
     const txt     = isDark ? '#f1f5f9'                : '#0f172a';
     const mut     = isDark ? 'rgba(241,245,249,0.55)' : 'rgba(15,23,42,0.55)';
-    const bdr     = isDark ? 'rgba(148,163,184,0.18)' : 'rgba(15,23,42,0.10)';
+    const bdr     = isDark ? 'rgba(148,163,184,0.18)' : '#b6c3d3';
     const inputBg = isDark ? '#0b1220'                : '#f8fafc';
     const boxBg   = isDark ? '#0a0f1c'                : '#ffffff';
 
@@ -77,6 +78,7 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
             const imagen = repuesto.imagen_url || repuesto.imagen || repuesto.foto_url || repuesto.foto || '';
             const nextForm = {
                 codigo: repuesto.codigo || '',
+                codigo_proveedor: repuesto.codigo_proveedor || '',
                 nombre: repuesto.nombre || '',
                 descripcion: repuesto.descripcion || '',
                 categoria_id: repuesto.categoria_id || '',
@@ -119,7 +121,9 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
     const handleSubmit = async (e) => {
         e.preventDefault();
         setSaving(true);
-        await onGuardar({ ...form, imagen_url: form.imagen_url || '' });
+        // La referencia interna no se envia: la genera (y la conserva) el servidor.
+        const { codigo, ...datos } = form;
+        await onGuardar({ ...datos, codigo_proveedor: (form.codigo_proveedor || '').trim(), imagen_url: form.imagen_url || '' });
         setSaving(false);
     };
 
@@ -155,14 +159,21 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
 
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 13 }}>
-                        {/* Codigo */}
+                        {/* Referencia interna (automatica) */}
                         <div>
-                            <label style={labelSt}>CODIGO *</label>
-                            <input name="codigo" value={form.codigo} onChange={handleChange}
-                                onFocus={onFocus} onBlur={onBlur}
-                                required disabled={esEdicion}
-                                placeholder="ACE-MOT-5W30"
-                                style={{ ...inputSt, opacity: esEdicion ? .5 : 1, textTransform: 'uppercase' }} />
+                            <label style={labelSt}>CÓDIGO DE REFERENCIA INTERNO</label>
+                            <input value={esEdicion ? form.codigo : 'Se genera automáticamente'} readOnly disabled
+                                title="Lo genera el sistema al guardar; es el único código que aparece en proformas"
+                                style={{ ...inputSt, opacity: .6, fontStyle: esEdicion ? 'normal' : 'italic' }} />
+                        </div>
+
+                        {/* Codigo del proveedor / fabricante */}
+                        <div>
+                            <label style={labelSt}>CÓDIGO DE PROVEEDOR / FABRICANTE</label>
+                            <input name="codigo_proveedor" value={form.codigo_proveedor} onChange={handleChange}
+                                onFocus={onFocus} onBlur={onBlur} maxLength={100}
+                                placeholder="Opcional (ej. 90915-YZZE1)"
+                                style={inputSt} />
                         </div>
 
                         {/* Unidad */}
@@ -202,7 +213,7 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
 
                         {/* Imagen */}
                         <div style={{ gridColumn: '1/-1' }}>
-                            <label className="SS SWAP-label">FOTO DEL REPUESTO</label>
+                            <label className="ssswap-label">FOTO DEL REPUESTO</label>
                             <div style={{ display: 'grid', gridTemplateColumns: '108px 1fr', gap: 12, alignItems: 'stretch' }}>
                                 <div style={{ minHeight: 108, borderRadius: 14, border: `1px dashed ${bdr}`, background: isDark ? 'rgba(255,255,255,.025)' : 'rgba(124,58,237,.035)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', color: mut }}>
                                     {preview ? (
@@ -215,8 +226,8 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
                                     )}
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                    <input className="SS SWAP-input" type="file" accept="image/*" onChange={handleImagenFile} style={{ ...inputSt, padding: '9px 12px' }} />
-                                    <input className="SS SWAP-input" name="imagen_url" value={urlValue} onChange={handleChange}
+                                    <input className="ssswap-input" type="file" accept="image/*" onChange={handleImagenFile} style={{ ...inputSt, padding: '9px 12px' }} />
+                                    <input className="ssswap-input" name="imagen_url" value={urlValue} onChange={handleChange}
                                         placeholder="O pega una URL/ruta de imagen..." style={inputSt} />
                                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
                                         <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.68rem', color: mut }}>

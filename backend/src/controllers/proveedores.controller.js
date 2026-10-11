@@ -7,6 +7,7 @@
  * por lo que viven en su propia tabla en vez de reutilizar `usuarios`.
  */
 const pool = require('../config/db');
+const { errorBD } = require('../utils/erroresBD');
 const { registrarAccionBitacora } = require('../services/ordenesHistorial.service');
 
 // ─────────────────────────────────────────────────────────────
@@ -65,6 +66,7 @@ const listarProveedores = async (req, res) => {
         });
     } catch (err) {
         console.error('Error listarProveedores:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener proveedores.' });
     }
 };
@@ -88,6 +90,7 @@ const obtenerProveedor = async (req, res) => {
         return res.json({ proveedor: { ...proveedor, contactos } });
     } catch (err) {
         console.error('Error obtenerProveedor:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener el proveedor.' });
     }
 };
@@ -120,6 +123,7 @@ const crearProveedor = async (req, res) => {
         return res.status(201).json({ proveedor });
     } catch (err) {
         console.error('Error crearProveedor:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al crear el proveedor.' });
     }
 };
@@ -155,6 +159,7 @@ const actualizarProveedor = async (req, res) => {
         return res.json({ proveedor: rows[0] });
     } catch (err) {
         console.error('Error actualizarProveedor:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al actualizar el proveedor.' });
     }
 };
@@ -175,6 +180,7 @@ const eliminarProveedor = async (req, res) => {
         return res.json({ mensaje: 'Proveedor desactivado correctamente.' });
     } catch (err) {
         console.error('Error eliminarProveedor:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al desactivar el proveedor.' });
     }
 };
@@ -198,6 +204,7 @@ const listarContactos = async (req, res) => {
         return res.json({ contactos: rows, total: rows.length });
     } catch (err) {
         console.error('Error listarContactos:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener contactos.' });
     }
 };
@@ -232,6 +239,7 @@ const crearContacto = async (req, res) => {
         return res.status(201).json({ contacto: rows[0] });
     } catch (err) {
         console.error('Error crearContacto:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al crear el contacto.' });
     }
 };
@@ -263,6 +271,7 @@ const actualizarContacto = async (req, res) => {
         return res.json({ contacto: rows[0] });
     } catch (err) {
         console.error('Error actualizarContacto:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al actualizar el contacto.' });
     }
 };
@@ -282,6 +291,7 @@ const cambiarEstadoContacto = async (req, res) => {
         return res.json({ contacto: rows[0] });
     } catch (err) {
         console.error('Error cambiarEstadoContacto:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al cambiar el estado del contacto.' });
     }
 };
@@ -297,6 +307,7 @@ const eliminarContacto = async (req, res) => {
         return res.json({ mensaje: 'Contacto eliminado correctamente.' });
     } catch (err) {
         console.error('Error eliminarContacto:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al eliminar el contacto.' });
     }
 };

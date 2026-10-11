@@ -1,14 +1,19 @@
 /**
  * SS SWAP - Enrutador de Proformas (/api/proformas)
  *
- * Igual criterio de permisos que Ordenes de Trabajo (soloStaff: admin +
- * tecnico + recepcionista) para todo el modulo, EXCEPTO eliminar, que
- * queda restringido a 'administrador' — es un documento comercial que se
- * entrega al cliente, mas sensible que una orden interna.
+ * Dos módulos de permisos según el tipo de la proforma:
+ *  - proformas_mecanica   (tipo 'mecanica')
+ *  - proformas_colisiones (tipo 'pintura' = Colisiones / Pintura)
+ * Cada ruta exige primero la acción en ALGUNO de los dos módulos y luego,
+ * leyendo el tipo real de la proforma en la BD, en el que corresponde.
+ * Aprobar/rechazar, convertir en OT y confirmar materiales = "aprobar";
+ * PDF/Excel = "exportar". Devolver una salida al inventario es un permiso
+ * de inventario (registros_inventario: aprobar).
  */
 const express = require('express');
 const router  = express.Router();
-const { verificarToken, soloStaff, verificarRol } = require('../middleware/auth.middleware');
+const { verificarToken, soloStaff, requierePermiso, requiereAlguno } = require('../middleware/auth.middleware');
+const { tipoDelCuerpo, tipoDeProforma, accionCambioEstadoProforma } = require('../middleware/permisosRecurso.middleware');
 
 const {
     listarProformas, obtenerProforma, crearProforma, actualizarProforma,
@@ -18,21 +23,24 @@ const {
 
 const { descargarPdf, descargarExcel } = require('../controllers/proformasExport.controller');
 
+/** La accion en alguno de los dos modulos de proformas. */
+const alguna = (...acciones) => requiereAlguno(...acciones.flatMap(a => [['proformas_mecanica', a], ['proformas_colisiones', a]]));
+
 router.use(verificarToken, soloStaff);
 
-router.get('/desde-orden/:ordenId', generarDesdeOrden);
+router.get('/desde-orden/:ordenId', alguna('crear'), generarDesdeOrden);
 
-router.get('/',                       listarProformas);
-router.get('/:id',                    obtenerProforma);
-router.post('/',                      crearProforma);
-router.put('/:id',                    actualizarProforma);
-router.patch('/:id/estado',           cambiarEstadoProforma);
-router.post('/:id/duplicar',          duplicarProforma);
-router.post('/:id/convertir-orden',   convertirAOrden);
-router.post('/:id/confirmar-uso',     confirmarUso);
-router.post('/:id/revertir-salida', verificarRol('administrador'), revertirSalida);
-router.get('/:id/pdf',                descargarPdf);
-router.get('/:id/excel',              descargarExcel);
-router.delete('/:id', verificarRol('administrador'), eliminarProforma);
+router.get('/',                     alguna('ver'), listarProformas);
+router.get('/:id',                  alguna('ver'),      tipoDeProforma('ver'),      obtenerProforma);
+router.post('/',                    alguna('crear'),    tipoDelCuerpo('crear'),     crearProforma);
+router.put('/:id',                  alguna('editar'),   tipoDeProforma('editar'),   actualizarProforma);
+router.patch('/:id/estado',         alguna('editar', 'aprobar'), tipoDeProforma(accionCambioEstadoProforma), cambiarEstadoProforma);
+router.post('/:id/duplicar',        alguna('crear'),    tipoDeProforma('crear'),    duplicarProforma);
+router.post('/:id/convertir-orden', alguna('aprobar'),  tipoDeProforma('aprobar'),  convertirAOrden);
+router.post('/:id/confirmar-uso',   alguna('aprobar'),  tipoDeProforma('aprobar'),  confirmarUso);
+router.post('/:id/revertir-salida', requierePermiso('registros_inventario', 'aprobar'), revertirSalida);
+router.get('/:id/pdf',              alguna('exportar'), tipoDeProforma('exportar'), descargarPdf);
+router.get('/:id/excel',            alguna('exportar'), tipoDeProforma('exportar'), descargarExcel);
+router.delete('/:id',               alguna('eliminar'), tipoDeProforma('eliminar'), eliminarProforma);
 
 module.exports = router;

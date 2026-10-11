@@ -6,7 +6,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, ROLES_STAFF } from '../../context/AuthContext';
 import logoImg from '../../assets/logo.png';
 import './Navbar.css';
 
@@ -27,7 +27,9 @@ export default function Navbar() {
 
     useEffect(() => {
         const onScroll = () => setScrolled(window.scrollY > 40);
-        window.addEventListener('scroll', onScroll);
+        onScroll();
+        // passive: el navegador no espera a este listener para desplazar la pagina.
+        window.addEventListener('scroll', onScroll, { passive: true });
         return () => window.removeEventListener('scroll', onScroll);
     }, []);
 
@@ -42,7 +44,7 @@ export default function Navbar() {
     const handleLogout = () => { logout(); navigate('/'); };
 
     const esCliente = usuario && usuario.rol === 'cliente';
-    const esAdmin   = usuario && ['administrador','tecnico','recepcionista'].includes(usuario.rol);
+    const esAdmin   = usuario && ROLES_STAFF.includes(usuario.rol);
 
     return (
         <>

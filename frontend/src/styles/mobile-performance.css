@@ -1,0 +1,78 @@
+/**
+ * SS SWAP - Ajustes de rendimiento para telefonos y tablets
+ *
+ * En moviles la app se "trababa" al abrir/cerrar menus y modales. Las causas
+ * principales eran efectos que la GPU de un telefono no maneja con fluidez:
+ *
+ *  1. backdrop-filter: blur(...) en fondos de modales, menus y encabezados.
+ *     Desenfocar en tiempo real todo lo que hay detras de un elemento a
+ *     pantalla completa es de lo mas costoso que puede hacer un navegador
+ *     movil, y se recalcula en cada frame de la animacion de apertura.
+ *  2. Animaciones infinitas decorativas (brillos, orbes, particulas, textos
+ *     con degradado en movimiento) que repintan la pantalla sin parar.
+ *  3. Filas de tablas/listas que entran animadas una por una: con muchas
+ *     filas son decenas de animaciones simultaneas al abrir cada pagina.
+ *
+ * Aqui se desactivan SOLO en pantallas tactiles / angostas; en computador
+ * se ven exactamente igual que antes. Se usa !important porque muchos de
+ * estos estilos vienen inline o de hojas que se cargan despues.
+ */
+
+@media (max-width: 768px), (hover: none) and (pointer: coarse) {
+
+    /* 1. Sin desenfoque de fondo (incluye estilos inline backdropFilter) */
+    *, *::before, *::after {
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+    }
+
+    /* Sin el blur, algunos fondos semitransparentes se oscurecen un poco
+       para que el contenido siga leyendose bien. */
+    .modal-backdrop      { background: rgba(15,23,42,.72) !important; }
+    .nav-menu-overlay    { background: rgba(0,0,0,.6) !important; }
+    .pub-nav.scrolled    { background: rgba(12,15,20,.97) !important; }
+    .hero-glass-badge    { background: rgba(10,12,15,.85) !important; }
+    .pr-toolbar-sticky   { background: rgba(8,8,10,.98) !important; }
+
+    /* 2. Animaciones decorativas infinitas */
+    .nav-logo-wrap::before,
+    .nav-tagline,
+    .grad-text-rainbow,
+    .auth-rainbow-heading,
+    .auth-logo-ring,
+    .auth-logo-img,
+    .hero-video-scan,
+    .hero-glass-badge,
+    .hero-orb-1,
+    .hero-orb-2,
+    .pc-taller-glow,
+    .appointments-hero::after,
+    .ns-hero-photo-wrap img,
+    .swapbot-launcher {
+        animation: none !important;
+    }
+    .particles-field { display: none !important; }
+
+    /* 3. Entrada escalonada de filas, tarjetas y menu lateral */
+    .inv-row, .u-row, .v-row, .mov-row, .bit-row, .svc-row,
+    .reg-item, .appointments-card, .dash-card, .pc-card,
+    .sb-group, .sb-item {
+        animation: none !important;
+    }
+
+    /* Los :hover que "levantan" tarjetas se quedan pegados tras un toque en
+       pantallas tactiles y provocan repintados innecesarios. */
+    .dash-card:hover, .pc-card:hover, .appointments-card:hover, .inv-kpi:hover {
+        transform: none !important;
+    }
+}
+
+/* Usuarios que pidieron "reducir movimiento" en su sistema: sin animaciones. */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

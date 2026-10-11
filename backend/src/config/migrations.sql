@@ -67,7 +67,7 @@ SELECT 'SS SWAP Ponciano Alto',
        'Av. Real Audiencia y Manuel Cordova Galarza',
        'Quito',
        '+593 99 123 4567',
-       'contacto@SS SWAP.com',
+       'contacto@ssswap.com',
        'Lun-Vie 8:00-18:00 · Sab 8:00-14:00',
        'Sucursal principal: diagnostico computarizado, mecanica general, alineacion y balanceo.',
        TRUE, TRUE
@@ -1088,3 +1088,892 @@ COMMENT ON TABLE pagos_cliente IS 'Pagos/abonos a una cuenta por cobrar. Nunca s
 COMMENT ON COLUMN ordenes_trabajo.numero IS 'Numero visible OT-000123, generado a partir del id.';
 COMMENT ON TABLE cat_areas_inventario IS 'Catalogo de areas de inventario. Agregar una fila crea un nuevo inventario.';
 COMMENT ON TABLE cat_metodos_pago IS 'Catalogo de metodos de pago y los datos obligatorios de cada uno.';
+
+-- ============================================================
+-- Sprint 16: Robustez de la base de datos
+--   16.1 Correccion de correos demo con espacio ("@SS SWAP.com")
+--   16.2 Modulo de Caja (tablas que usaba caja.controller.js)
+--   16.3 Indices en todas las claves foraneas que no tenian
+--   16.4 Reglas de validacion (CHECK) + validar las NOT VALID previas
+--   16.5 Unicidad: una sola sucursal principal, RUC de proveedor unico
+--
+-- Bloque 100% ADITIVO e IDEMPOTENTE. Las restricciones nuevas se crean
+-- NOT VALID (no fallan si hubiera datos antiguos fuera de regla) y luego
+-- se intenta validarlas; si un dato viejo no cumple, solo se avisa.
+-- ============================================================
+
+-- ── 16.1 Correos demo dañados por un buscar/reemplazar ──────────
+UPDATE usuarios u SET email = REPLACE(u.email, '@SS SWAP.com', '@ssswap.com')
+WHERE u.email LIKE '%@SS SWAP.com'
+  AND NOT EXISTS (SELECT 1 FROM usuarios x WHERE x.email = REPLACE(u.email, '@SS SWAP.com', '@ssswap.com'));
+UPDATE sucursales  SET email = REPLACE(email, '@SS SWAP.com', '@ssswap.com') WHERE email LIKE '%@SS SWAP.com';
+UPDATE proveedores SET email = REPLACE(email, '@SS SWAP.com', '@ssswap.com') WHERE email LIKE '%@SS SWAP.com';
+
+-- ── 16.2 Caja diaria: sesiones (apertura/cierre) y movimientos ──
+CREATE TABLE IF NOT EXISTS caja_sesiones (
+    id                    SERIAL PRIMARY KEY,
+    sucursal_id           INTEGER REFERENCES sucursales(id) ON DELETE SET NULL,
+    usuario_apertura_id   INTEGER NOT NULL REFERENCES usuarios(id),
+    usuario_cierre_id     INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+    estado                VARCHAR(10) NOT NULL DEFAULT 'abierta' CHECK (estado IN ('abierta','cerrada')),
+    monto_apertura        NUMERIC(10,2) NOT NULL DEFAULT 0 CHECK (monto_apertura >= 0),
+    monto_cierre_esperado NUMERIC(10,2),
+    monto_cierre_real     NUMERIC(10,2) CHECK (monto_cierre_real IS NULL OR monto_cierre_real >= 0),
+    diferencia            NUMERIC(10,2),
+    notas_apertura        TEXT,
+    notas_cierre          TEXT,
+    fecha_apertura        TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    fecha_cierre          TIMESTAMP WITH TIME ZONE,
+    created_at            TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at            TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    CONSTRAINT caja_sesiones_cierre_coherente CHECK (estado = 'abierta' OR fecha_cierre IS NOT NULL)
+);
+-- Solo puede haber UNA caja abierta a la vez (protege contra dobles clics).
+CREATE UNIQUE INDEX IF NOT EXISTS uq_caja_sesion_abierta ON caja_sesiones ((estado)) WHERE estado = 'abierta';
+CREATE INDEX IF NOT EXISTS idx_caja_sesiones_fecha    ON caja_sesiones(fecha_apertura DESC);
+CREATE INDEX IF NOT EXISTS idx_caja_sesiones_sucursal ON caja_sesiones(sucursal_id);
+CREATE INDEX IF NOT EXISTS idx_caja_sesiones_usuario  ON caja_sesiones(usuario_apertura_id);
+
+CREATE TABLE IF NOT EXISTS caja_movimientos (
+    id              SERIAL PRIMARY KEY,
+    caja_sesion_id  INTEGER NOT NULL REFERENCES caja_sesiones(id) ON DELETE RESTRICT,
+    usuario_id      INTEGER NOT NULL REFERENCES usuarios(id),
+    tipo            VARCHAR(10) NOT NULL CHECK (tipo IN ('ingreso','egreso')),
+    concepto        VARCHAR(255) NOT NULL,
+    monto           NUMERIC(10,2) NOT NULL CONSTRAINT caja_movimientos_monto_check CHECK (monto > 0),
+    metodo_pago     VARCHAR(30) NOT NULL DEFAULT 'efectivo' REFERENCES cat_metodos_pago(codigo) ON UPDATE CASCADE,
+    referencia      VARCHAR(100),
+    created_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_caja_mov_sesion  ON caja_movimientos(caja_sesion_id);
+CREATE INDEX IF NOT EXISTS idx_caja_mov_usuario ON caja_movimientos(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_caja_mov_fecha   ON caja_movimientos(created_at DESC);
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_updated_at_caja_sesiones') THEN
+        CREATE TRIGGER set_updated_at_caja_sesiones
+            BEFORE UPDATE ON caja_sesiones FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
+    END IF;
+END $$;
+
+COMMENT ON TABLE caja_sesiones IS 'Apertura/cierre de caja diaria. Solo una sesion abierta a la vez (uq_caja_sesion_abierta).';
+COMMENT ON TABLE caja_movimientos IS 'Ingresos y egresos de efectivo registrados durante una sesion de caja.';
+
+-- ── 16.3 Indices en claves foraneas (JOINs y borrados mas rapidos) ─
+CREATE INDEX IF NOT EXISTS idx_citas_usuario              ON citas(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_citas_servicio             ON citas(servicio_id);
+CREATE INDEX IF NOT EXISTS idx_citas_vehiculo             ON citas(vehiculo_id);
+CREATE INDEX IF NOT EXISTS idx_compras_usuario            ON compras_proveedor(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_cuentas_cobrar_usuario     ON cuentas_cobrar(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_gastos_usuario             ON gastos_proveedor(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_movfin_compra              ON movimientos_financieros_proveedor(compra_id);
+CREATE INDEX IF NOT EXISTS idx_movfin_gasto               ON movimientos_financieros_proveedor(gasto_id);
+CREATE INDEX IF NOT EXISTS idx_movfin_usuario             ON movimientos_financieros_proveedor(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_mov_compra                 ON movimientos_inventario(compra_id);
+CREATE INDEX IF NOT EXISTS idx_mov_proforma_item          ON movimientos_inventario(proforma_item_id);
+CREATE INDEX IF NOT EXISTS idx_ordenes_historial_usuario  ON ordenes_historial(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_ordenes_usuario            ON ordenes_trabajo(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_pagos_cliente_usuario      ON pagos_cliente(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_pagos_cliente_anulado_por  ON pagos_cliente(anulado_por);
+CREATE INDEX IF NOT EXISTS idx_proformas_sucursal         ON proformas(sucursal_id);
+CREATE INDEX IF NOT EXISTS idx_proformas_usuario          ON proformas(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_proformas_descontado_por   ON proformas(inventario_descontado_por);
+CREATE INDEX IF NOT EXISTS idx_repuestos_categoria        ON repuestos(categoria_id);
+CREATE INDEX IF NOT EXISTS idx_categorias_repuesto_area   ON categorias_repuesto(area);
+CREATE INDEX IF NOT EXISTS idx_solicitudes_repuesto       ON solicitudes_producto(repuesto_id);
+CREATE INDEX IF NOT EXISTS idx_solicitudes_usuario        ON solicitudes_producto(usuario_id);
+-- El panel del cliente, citas y solicitudes buscan la ficha por LOWER(email).
+CREATE INDEX IF NOT EXISTS idx_clientes_email_lower       ON clientes(LOWER(email));
+
+-- ── 16.4 Reglas de validacion ───────────────────────────────────
+DO $$
+DECLARE
+    r RECORD;
+BEGIN
+    FOR r IN SELECT * FROM (VALUES
+        ('repuestos',               'repuestos_precios_no_negativos',    'precio_compra >= 0 AND precio_venta >= 0 AND stock_minimo >= 0'),
+        ('tipos_servicio',          'tipos_servicio_valores_validos',    'precio_base >= 0 AND (duracion_estimada_min IS NULL OR duracion_estimada_min > 0)'),
+        ('vehiculos',               'vehiculos_anio_valido',             'anio IS NULL OR anio BETWEEN 1900 AND 2100'),
+        ('ordenes_trabajo',         'ordenes_trabajo_km_no_negativo',    'kilometraje IS NULL OR kilometraje >= 0'),
+        ('citas',                   'citas_horario_valido',              'hora_fin > hora_inicio'),
+        ('cuentas_cobrar',          'cuentas_cobrar_vencimiento_valido', 'fecha_vencimiento IS NULL OR fecha_vencimiento >= fecha'),
+        ('compras_proveedor',       'compras_proveedor_montos_validos',  'subtotal >= 0 AND iva >= 0 AND total >= 0'),
+        ('compras_proveedor_items', 'compras_items_recibido_valido',     'cantidad_recibida <= cantidad AND precio_unitario >= 0')
+    ) AS t(tabla, nombre, expr)
+    LOOP
+        IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = r.nombre) THEN
+            EXECUTE format('ALTER TABLE %I ADD CONSTRAINT %I CHECK (%s) NOT VALID', r.tabla, r.nombre, r.expr);
+        END IF;
+    END LOOP;
+
+    -- Validar contra los datos existentes todas las restricciones que
+    -- sigan NOT VALID (incluidas las de sprints anteriores).
+    FOR r IN SELECT conrelid::regclass::text AS tabla, conname AS nombre
+             FROM pg_constraint
+             WHERE NOT convalidated AND contype IN ('c','f')
+               AND connamespace = 'public'::regnamespace
+    LOOP
+        BEGIN
+            EXECUTE format('ALTER TABLE %s VALIDATE CONSTRAINT %I', r.tabla, r.nombre);
+        EXCEPTION WHEN OTHERS THEN
+            RAISE NOTICE 'Restriccion % en % queda NOT VALID: hay datos antiguos que no la cumplen (%).', r.nombre, r.tabla, SQLERRM;
+        END;
+    END LOOP;
+END $$;
+
+-- ── 16.5 Unicidad ───────────────────────────────────────────────
+-- Una sola sucursal principal (el controller ya desmarca la anterior).
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'uq_sucursal_principal')
+       AND (SELECT COUNT(*) FROM sucursales WHERE es_principal) <= 1 THEN
+        CREATE UNIQUE INDEX uq_sucursal_principal ON sucursales ((es_principal)) WHERE es_principal;
+    END IF;
+END $$;
+-- RUC de proveedor unico (si se informa). Se crea solo si no hay duplicados.
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'uq_proveedores_ruc')
+       AND NOT EXISTS (SELECT 1 FROM proveedores WHERE NULLIF(TRIM(ruc), '') IS NOT NULL
+                       GROUP BY TRIM(ruc) HAVING COUNT(*) > 1) THEN
+        CREATE UNIQUE INDEX uq_proveedores_ruc ON proveedores ((TRIM(ruc))) WHERE NULLIF(TRIM(ruc), '') IS NOT NULL;
+    END IF;
+END $$;
+
+-- ============================================================
+-- Sprint 17: Finanzas del taller (cuanto dinero hay y por que)
+--
+-- Idea: NO se duplica informacion. El dinero que ya registra el sistema
+-- (pagos de clientes, pagos a proveedores, gastos pagados, caja) se lee
+-- tal cual; solo se agregan las piezas que faltaban:
+--   17.1 cuentas_dinero         donde esta la plata (caja, banco...)
+--   17.2 cat_categorias_dinero  clasificacion de ingresos/egresos
+--   17.3 movimientos_dinero     otros ingresos/egresos + transferencias
+--   17.4 empleados_perfil / pagos_empleados   nomina
+--   17.5 v_flujo_dinero         TODO el dinero que entra y sale, unificado
+-- Bloque 100% ADITIVO e IDEMPOTENTE.
+-- ============================================================
+
+-- ── 17.1 Cuentas de dinero ──────────────────────────────────────
+CREATE TABLE IF NOT EXISTS cuentas_dinero (
+    id                  SERIAL PRIMARY KEY,
+    nombre              VARCHAR(100) NOT NULL UNIQUE,
+    tipo                VARCHAR(10) NOT NULL CHECK (tipo IN ('caja','banco','otro')),
+    banco               VARCHAR(100),
+    numero_cuenta       VARCHAR(40),
+    saldo_inicial       NUMERIC(12,2) NOT NULL DEFAULT 0,
+    fecha_saldo_inicial DATE NOT NULL DEFAULT CURRENT_DATE,
+    predeterminada      BOOLEAN NOT NULL DEFAULT FALSE,
+    activa              BOOLEAN NOT NULL DEFAULT TRUE,
+    notas               TEXT,
+    created_at          TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at          TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    CONSTRAINT cuentas_dinero_predeterminada_activa CHECK (NOT predeterminada OR activa)
+);
+-- Una cuenta predeterminada por tipo: el efectivo cae en la caja
+-- predeterminada y los demas metodos en el banco predeterminado.
+CREATE UNIQUE INDEX IF NOT EXISTS uq_cuenta_dinero_predeterminada ON cuentas_dinero (tipo) WHERE predeterminada;
+COMMENT ON TABLE cuentas_dinero IS 'Donde esta el dinero del taller. saldo = saldo_inicial + flujo (v_flujo_dinero) desde fecha_saldo_inicial.';
+COMMENT ON COLUMN cuentas_dinero.saldo_inicial IS 'Dinero que habia al INICIO del dia fecha_saldo_inicial (antes de registrar movimientos en el sistema).';
+
+INSERT INTO cuentas_dinero (nombre, tipo, predeterminada, notas)
+SELECT 'Caja principal', 'caja', TRUE, 'Efectivo del taller. Recibe todo lo cobrado/pagado en efectivo.'
+WHERE NOT EXISTS (SELECT 1 FROM cuentas_dinero WHERE tipo = 'caja' AND predeterminada);
+INSERT INTO cuentas_dinero (nombre, tipo, predeterminada, notas)
+SELECT 'Banco principal', 'banco', TRUE, 'Recibe transferencias, tarjetas y cheques.'
+WHERE NOT EXISTS (SELECT 1 FROM cuentas_dinero WHERE tipo = 'banco' AND predeterminada);
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_updated_at_cuentas_dinero') THEN
+        CREATE TRIGGER set_updated_at_cuentas_dinero
+            BEFORE UPDATE ON cuentas_dinero FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
+    END IF;
+END $$;
+
+-- Las tablas de dinero existentes pueden indicar su cuenta; si no la
+-- indican, se asigna por metodo de pago (ver cuenta_dinero_por_metodo).
+ALTER TABLE pagos_cliente                     ADD COLUMN IF NOT EXISTS cuenta_dinero_id INTEGER REFERENCES cuentas_dinero(id) ON DELETE SET NULL;
+ALTER TABLE gastos_proveedor                  ADD COLUMN IF NOT EXISTS cuenta_dinero_id INTEGER REFERENCES cuentas_dinero(id) ON DELETE SET NULL;
+ALTER TABLE movimientos_financieros_proveedor ADD COLUMN IF NOT EXISTS cuenta_dinero_id INTEGER REFERENCES cuentas_dinero(id) ON DELETE SET NULL;
+ALTER TABLE caja_movimientos                  ADD COLUMN IF NOT EXISTS cuenta_dinero_id INTEGER REFERENCES cuentas_dinero(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_pagos_cliente_cuenta_dinero ON pagos_cliente(cuenta_dinero_id);
+CREATE INDEX IF NOT EXISTS idx_gastos_cuenta_dinero        ON gastos_proveedor(cuenta_dinero_id);
+CREATE INDEX IF NOT EXISTS idx_movfin_cuenta_dinero        ON movimientos_financieros_proveedor(cuenta_dinero_id);
+CREATE INDEX IF NOT EXISTS idx_caja_mov_cuenta_dinero      ON caja_movimientos(cuenta_dinero_id);
+
+CREATE OR REPLACE FUNCTION cuenta_dinero_por_metodo(p_metodo TEXT) RETURNS INTEGER
+LANGUAGE sql STABLE AS $$
+    SELECT id FROM cuentas_dinero
+    WHERE predeterminada
+      AND tipo = CASE WHEN p_metodo IS NULL OR p_metodo = 'efectivo' THEN 'caja' ELSE 'banco' END
+    LIMIT 1
+$$;
+
+-- ── 17.2 Categorias de ingresos / egresos ───────────────────────
+CREATE TABLE IF NOT EXISTS cat_categorias_dinero (
+    codigo  VARCHAR(30) PRIMARY KEY,
+    nombre  VARCHAR(80) NOT NULL,
+    tipo    VARCHAR(10) NOT NULL CHECK (tipo IN ('ingreso','egreso','ambos')),
+    manual  BOOLEAN NOT NULL DEFAULT TRUE,   -- FALSE = la genera el sistema (no se elige a mano)
+    color   VARCHAR(9) NOT NULL DEFAULT '#64748b',
+    orden   SMALLINT NOT NULL DEFAULT 0
+);
+INSERT INTO cat_categorias_dinero (codigo, nombre, tipo, manual, color, orden) VALUES
+    ('cobro_clientes',     'Cobros a clientes',          'ingreso', FALSE, '#10b981', 1),
+    ('anticipo_cliente',   'Anticipos de clientes',      'ingreso', TRUE,  '#34d399', 2),
+    ('venta_repuestos',    'Venta de repuestos',         'ingreso', TRUE,  '#22c55e', 3),
+    ('aporte_capital',     'Aporte del dueño / capital', 'ingreso', TRUE,  '#0ea5e9', 4),
+    ('prestamo_recibido',  'Préstamo recibido',          'ingreso', TRUE,  '#6366f1', 5),
+    ('otros_ingresos',     'Otros ingresos',             'ingreso', TRUE,  '#14b8a6', 6),
+    ('caja_ingreso',       'Ingreso de caja',            'ingreso', FALSE, '#2dd4bf', 7),
+    ('nomina',             'Sueldos y pagos a empleados','egreso',  FALSE, '#f59e0b', 20),
+    ('pago_proveedores',   'Pagos a proveedores',        'egreso',  FALSE, '#ef4444', 21),
+    ('gastos_operativos',  'Gastos (módulo proveedores)','egreso',  FALSE, '#f97316', 22),
+    ('arriendo',           'Arriendo del local',         'egreso',  TRUE,  '#e11d48', 23),
+    ('servicios_basicos',  'Luz, agua, internet',        'egreso',  TRUE,  '#fb7185', 24),
+    ('impuestos',          'Impuestos y permisos',       'egreso',  TRUE,  '#a855f7', 25),
+    ('mantenimiento',      'Mantenimiento del local',    'egreso',  TRUE,  '#d946ef', 26),
+    ('herramientas',       'Herramientas y equipos',     'egreso',  TRUE,  '#8b5cf6', 27),
+    ('publicidad',         'Publicidad',                 'egreso',  TRUE,  '#ec4899', 28),
+    ('pago_prestamo',      'Pago de préstamo',           'egreso',  TRUE,  '#7c3aed', 29),
+    ('retiro_dueno',       'Retiro del dueño',           'egreso',  TRUE,  '#0284c7', 30),
+    ('otros_egresos',      'Otros egresos',              'egreso',  TRUE,  '#94a3b8', 31),
+    ('caja_egreso',        'Egreso de caja',             'egreso',  FALSE, '#fdba74', 32),
+    ('ajuste_caja',        'Ajuste por conteo de caja',  'ambos',   FALSE, '#64748b', 40),
+    ('transferencia',      'Transferencia entre cuentas','ambos',   FALSE, '#475569', 41)
+ON CONFLICT (codigo) DO NOTHING;
+
+-- ── 17.3 Otros ingresos/egresos y transferencias ────────────────
+CREATE TABLE IF NOT EXISTS movimientos_dinero (
+    id                SERIAL PRIMARY KEY,
+    tipo              VARCHAR(10) NOT NULL CHECK (tipo IN ('ingreso','egreso')),
+    categoria         VARCHAR(30) NOT NULL REFERENCES cat_categorias_dinero(codigo) ON UPDATE CASCADE,
+    monto             NUMERIC(12,2) NOT NULL CONSTRAINT movimientos_dinero_monto_check CHECK (monto > 0),
+    fecha             DATE NOT NULL DEFAULT CURRENT_DATE,
+    cuenta_dinero_id  INTEGER NOT NULL REFERENCES cuentas_dinero(id),
+    metodo_pago       VARCHAR(30) NOT NULL DEFAULT 'efectivo' REFERENCES cat_metodos_pago(codigo) ON UPDATE CASCADE,
+    descripcion       VARCHAR(255) NOT NULL,
+    referencia        VARCHAR(100),
+    transferencia_id  UUID,                     -- par egreso/ingreso de una transferencia
+    caja_sesion_id    INTEGER REFERENCES caja_sesiones(id) ON DELETE SET NULL,
+    usuario_id        INTEGER NOT NULL REFERENCES usuarios(id),
+    anulado_at        TIMESTAMP WITH TIME ZONE,
+    anulado_por       INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+    motivo_anulacion  VARCHAR(255),
+    created_at        TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_movdin_fecha         ON movimientos_dinero(fecha DESC);
+CREATE INDEX IF NOT EXISTS idx_movdin_cuenta        ON movimientos_dinero(cuenta_dinero_id);
+CREATE INDEX IF NOT EXISTS idx_movdin_categoria     ON movimientos_dinero(categoria);
+CREATE INDEX IF NOT EXISTS idx_movdin_transferencia ON movimientos_dinero(transferencia_id);
+CREATE INDEX IF NOT EXISTS idx_movdin_usuario       ON movimientos_dinero(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_movdin_caja_sesion   ON movimientos_dinero(caja_sesion_id);
+COMMENT ON TABLE movimientos_dinero IS 'Ingresos/egresos que no nacen de otro modulo (arriendo, luz, aporte del dueño...), transferencias entre cuentas y ajustes de caja. Nunca se borran: se anulan.';
+
+-- ── 17.4 Nomina ─────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS empleados_perfil (
+    usuario_id      INTEGER PRIMARY KEY REFERENCES usuarios(id) ON DELETE CASCADE,
+    cargo           VARCHAR(80),
+    sueldo_base     NUMERIC(10,2) NOT NULL DEFAULT 0 CHECK (sueldo_base >= 0),
+    frecuencia_pago VARCHAR(10) NOT NULL DEFAULT 'mensual' CHECK (frecuencia_pago IN ('mensual','quincenal','semanal')),
+    fecha_ingreso   DATE,
+    banco           VARCHAR(100),
+    numero_cuenta   VARCHAR(40),
+    tipo_cuenta     VARCHAR(20) CHECK (tipo_cuenta IS NULL OR tipo_cuenta IN ('ahorros','corriente')),
+    en_nomina       BOOLEAN NOT NULL DEFAULT TRUE,
+    notas           TEXT,
+    created_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+COMMENT ON COLUMN empleados_perfil.sueldo_base IS 'Sueldo MENSUAL acordado. La frecuencia solo indica cada cuanto se paga.';
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_updated_at_empleados_perfil') THEN
+        CREATE TRIGGER set_updated_at_empleados_perfil
+            BEFORE UPDATE ON empleados_perfil FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
+    END IF;
+END $$;
+
+CREATE TABLE IF NOT EXISTS pagos_empleados (
+    id                SERIAL PRIMARY KEY,
+    usuario_id        INTEGER NOT NULL REFERENCES usuarios(id),
+    tipo              VARCHAR(15) NOT NULL DEFAULT 'sueldo'
+                      CHECK (tipo IN ('sueldo','anticipo','bono','comision','horas_extra','liquidacion','otro')),
+    periodo           DATE NOT NULL,             -- primer dia del mes al que corresponde
+    monto_bruto       NUMERIC(10,2) NOT NULL CHECK (monto_bruto > 0),
+    descuentos        NUMERIC(10,2) NOT NULL DEFAULT 0 CHECK (descuentos >= 0),
+    monto_neto        NUMERIC(10,2) GENERATED ALWAYS AS (monto_bruto - descuentos) STORED,
+    fecha             DATE NOT NULL DEFAULT CURRENT_DATE,
+    cuenta_dinero_id  INTEGER NOT NULL REFERENCES cuentas_dinero(id),
+    metodo_pago       VARCHAR(30) NOT NULL DEFAULT 'transferencia' REFERENCES cat_metodos_pago(codigo) ON UPDATE CASCADE,
+    referencia        VARCHAR(100),
+    notas             TEXT,
+    registrado_por    INTEGER NOT NULL REFERENCES usuarios(id),
+    anulado_at        TIMESTAMP WITH TIME ZONE,
+    anulado_por       INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+    motivo_anulacion  VARCHAR(255),
+    created_at        TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    CONSTRAINT pagos_empleados_descuento_valido CHECK (descuentos < monto_bruto),
+    CONSTRAINT pagos_empleados_periodo_mes CHECK (EXTRACT(DAY FROM periodo) = 1)
+);
+CREATE INDEX IF NOT EXISTS idx_pagos_emp_usuario   ON pagos_empleados(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_pagos_emp_periodo   ON pagos_empleados(periodo);
+CREATE INDEX IF NOT EXISTS idx_pagos_emp_fecha     ON pagos_empleados(fecha DESC);
+CREATE INDEX IF NOT EXISTS idx_pagos_emp_cuenta    ON pagos_empleados(cuenta_dinero_id);
+CREATE INDEX IF NOT EXISTS idx_pagos_emp_registro  ON pagos_empleados(registrado_por);
+COMMENT ON TABLE pagos_empleados IS 'Pagos a empleados (sueldo, anticipo, bono...). Sale dinero por monto_neto. Nunca se borran: se anulan.';
+
+-- ── 17.5 Flujo de dinero unificado ─────────────────────────────
+-- Una fila por cada entrada/salida REAL de dinero, venga de donde venga.
+-- Las compras a proveedores NO son salida de dinero (son deuda): sale
+-- dinero cuando se registra el pago/abono. Igual los pagares: entra
+-- dinero cuando el cliente paga.
+CREATE OR REPLACE VIEW v_flujo_dinero AS
+SELECT 'pago_cliente'::text AS origen, p.id AS origen_id, p.fecha, p.created_at AS momento,
+       'ingreso'::text AS tipo, 'cobro_clientes'::text AS categoria, p.monto,
+       p.metodo_pago, COALESCE(p.cuenta_dinero_id, cuenta_dinero_por_metodo(p.metodo_pago)) AS cuenta_dinero_id,
+       ('Pago: ' || cc.concepto)::text AS descripcion, COALESCE(p.numero_comprobante, p.referencia)::text AS referencia,
+       c.nombre::text AS tercero
+FROM pagos_cliente p
+JOIN cuentas_cobrar cc ON cc.id = p.cuenta_id
+JOIN clientes c ON c.id = cc.cliente_id
+WHERE p.anulado_at IS NULL
+UNION ALL
+SELECT 'pago_proveedor', m.id, m.created_at::date, m.created_at,
+       'egreso', 'pago_proveedores', m.monto,
+       m.metodo_pago, COALESCE(m.cuenta_dinero_id, cuenta_dinero_por_metodo(m.metodo_pago)),
+       COALESCE(m.descripcion, INITCAP(m.tipo) || ' a proveedor'), m.referencia, pr.nombre_comercial
+FROM movimientos_financieros_proveedor m
+JOIN proveedores pr ON pr.id = m.proveedor_id
+WHERE m.tipo IN ('pago','abono') AND m.estado = 'confirmado'
+UNION ALL
+SELECT 'gasto', g.id, g.fecha, g.created_at,
+       'egreso', 'gastos_operativos', g.monto,
+       g.metodo_pago, COALESCE(g.cuenta_dinero_id, cuenta_dinero_por_metodo(g.metodo_pago)),
+       g.descripcion, g.numero_comprobante, pr.nombre_comercial
+FROM gastos_proveedor g
+LEFT JOIN proveedores pr ON pr.id = g.proveedor_id
+WHERE g.estado = 'pagado'
+UNION ALL
+SELECT 'caja', cm.id, cm.created_at::date, cm.created_at,
+       cm.tipo, CASE cm.tipo WHEN 'ingreso' THEN 'caja_ingreso' ELSE 'caja_egreso' END, cm.monto,
+       cm.metodo_pago, COALESCE(cm.cuenta_dinero_id, cuenta_dinero_por_metodo(cm.metodo_pago)),
+       cm.concepto, cm.referencia, NULL
+FROM caja_movimientos cm
+UNION ALL
+SELECT 'pago_empleado', pe.id, pe.fecha, pe.created_at,
+       'egreso', 'nomina', pe.monto_neto,
+       pe.metodo_pago, pe.cuenta_dinero_id,
+       (INITCAP(REPLACE(pe.tipo, '_', ' ')) || ' ' || TO_CHAR(pe.periodo, 'MM/YYYY')), pe.referencia, u.nombre
+FROM pagos_empleados pe
+JOIN usuarios u ON u.id = pe.usuario_id
+WHERE pe.anulado_at IS NULL
+UNION ALL
+SELECT 'movimiento', md.id, md.fecha, md.created_at,
+       md.tipo, md.categoria, md.monto,
+       md.metodo_pago, md.cuenta_dinero_id,
+       md.descripcion, md.referencia, NULL
+FROM movimientos_dinero md
+WHERE md.anulado_at IS NULL;
+
+COMMENT ON VIEW v_flujo_dinero IS 'Todo el dinero que entra y sale del taller: pagos de clientes, pagos a proveedores, gastos pagados, caja, nomina y otros movimientos.';
+
+-- ============================================================
+-- Sprint 18: Pedidos de la tienda en linea (solicitudes_producto)
+-- Antes el cliente solo abria WhatsApp y el pedido no quedaba en ningun
+-- lado. Ahora el pedido se registra, el personal lo atiende y al
+-- entregarlo sale del inventario (origen 'venta') y, si se cobro, entra
+-- el dinero en Finanzas (categoria 'venta_repuestos').
+-- Bloque 100% ADITIVO e IDEMPOTENTE.
+-- ============================================================
+INSERT INTO cat_origenes_movimiento (codigo, nombre, tipo_permitido, registrable_manual, descripcion) VALUES
+    ('venta', 'Salida por venta a cliente', 'salida', FALSE, 'Entrega de un pedido de la tienda en linea')
+ON CONFLICT (codigo) DO NOTHING;
+
+-- El CHECK original de origen no incluia 'venta': se reemplaza solo si hace falta.
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'movimientos_inventario_origen_check'
+               AND pg_get_constraintdef(oid) NOT LIKE '%venta%') THEN
+        ALTER TABLE movimientos_inventario DROP CONSTRAINT movimientos_inventario_origen_check;
+        ALTER TABLE movimientos_inventario ADD CONSTRAINT movimientos_inventario_origen_check
+            CHECK (origen IN ('manual','compra','proforma','ajuste','devolucion','venta'));
+    END IF;
+END $$;
+
+ALTER TABLE solicitudes_producto ADD COLUMN IF NOT EXISTS atendida_por      INTEGER REFERENCES usuarios(id) ON DELETE SET NULL;
+ALTER TABLE solicitudes_producto ADD COLUMN IF NOT EXISTS atendida_at       TIMESTAMP WITH TIME ZONE;
+ALTER TABLE solicitudes_producto ADD COLUMN IF NOT EXISTS movimiento_id     INTEGER REFERENCES movimientos_inventario(id) ON DELETE SET NULL;
+ALTER TABLE solicitudes_producto ADD COLUMN IF NOT EXISTS cobro_id          INTEGER REFERENCES movimientos_dinero(id) ON DELETE SET NULL;
+ALTER TABLE solicitudes_producto ADD COLUMN IF NOT EXISTS motivo_cancelacion VARCHAR(255);
+CREATE INDEX IF NOT EXISTS idx_solicitudes_atendida_por ON solicitudes_producto(atendida_por);
+CREATE INDEX IF NOT EXISTS idx_solicitudes_movimiento   ON solicitudes_producto(movimiento_id);
+CREATE INDEX IF NOT EXISTS idx_solicitudes_cobro        ON solicitudes_producto(cobro_id);
+COMMENT ON TABLE solicitudes_producto IS 'Pedidos de la tienda en linea. Al atenderse: salida de inventario (movimiento_id, origen venta) y cobro opcional en Finanzas (cobro_id).';
+
+-- ============================================================
+-- Sprint 19: Compras a credito/contado y cuadre de caja por denominaciones
+-- * compras_proveedor.forma_pago: 'contado' (se paga al registrar la compra,
+--   genera un movimiento 'pago') o 'credito' (vence a los 15 dias; el
+--   panel avisa cuando faltan 3 dias o menos).
+-- * caja_sesiones.denominaciones_*: conteo de billetes y monedas al abrir
+--   y al cerrar ({"20": 4, "0.25": 8, ...}).
+-- Bloque 100% ADITIVO e IDEMPOTENTE.
+-- ============================================================
+ALTER TABLE compras_proveedor ADD COLUMN IF NOT EXISTS forma_pago        VARCHAR(10) NOT NULL DEFAULT 'credito';
+ALTER TABLE compras_proveedor ADD COLUMN IF NOT EXISTS fecha_vencimiento DATE;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'compras_proveedor_forma_pago_check') THEN
+        ALTER TABLE compras_proveedor ADD CONSTRAINT compras_proveedor_forma_pago_check CHECK (forma_pago IN ('contado','credito'));
+    END IF;
+END $$;
+-- Compras a credito ya existentes: vencen 15 dias despues de la solicitud.
+UPDATE compras_proveedor SET fecha_vencimiento = fecha_solicitud + 15
+WHERE forma_pago = 'credito' AND fecha_vencimiento IS NULL;
+CREATE INDEX IF NOT EXISTS idx_compras_vencimiento ON compras_proveedor(fecha_vencimiento) WHERE forma_pago = 'credito';
+
+ALTER TABLE caja_sesiones ADD COLUMN IF NOT EXISTS denominaciones_apertura JSONB;
+ALTER TABLE caja_sesiones ADD COLUMN IF NOT EXISTS denominaciones_cierre   JSONB;
+
+-- ============================================================
+-- Sprint 20: Pagarés al 100%, anticipo por tipo de trabajo y
+--            código de proveedor en el inventario
+--
+-- 20.1 cuentas_cobrar.anticipo_requerido / fecha_pago_completo.
+-- 20.2 CORRECCION de los pagares automaticos antiguos: guardaban solo el
+--      70% como monto_total, asi que al pagar ese 70% la deuda quedaba
+--      "pagada" aunque faltaba el 30%. Ahora monto_total = 100% del total
+--      de la proforma y el 70% queda como anticipo REQUERIDO (solo en
+--      Colisiones/Pintura; en Mecanica el anticipo pasa a ser el de la
+--      proforma, 0 por defecto). Los pagos registrados NO se tocan.
+-- 20.3 Estado recalculado desde los pagos activos ('vencido' ya no se
+--      guarda: se calcula con la fecha limite al consultar).
+-- 20.4 Proformas: anticipo = anticipo requerido (70% en colisiones) y
+--      saldo = total (el anticipo no es dinero recibido).
+-- 20.5 Inventario: codigo = referencia interna (se genera sola en los
+--      productos nuevos); codigo_proveedor = codigo del proveedor/fabricante.
+--
+-- Bloque ADITIVO e IDEMPOTENTE (se puede correr varias veces).
+-- ============================================================
+
+-- ── 20.1 Columnas nuevas del pagare ──────────────────────────
+ALTER TABLE cuentas_cobrar ADD COLUMN IF NOT EXISTS anticipo_requerido NUMERIC(10,2) NOT NULL DEFAULT 0;
+ALTER TABLE cuentas_cobrar ADD COLUMN IF NOT EXISTS fecha_pago_completo TIMESTAMP WITH TIME ZONE;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'cuentas_cobrar_anticipo_valido') THEN
+        ALTER TABLE cuentas_cobrar ADD CONSTRAINT cuentas_cobrar_anticipo_valido
+            CHECK (anticipo_requerido >= 0 AND anticipo_requerido <= monto_total + 0.01) NOT VALID;
+    END IF;
+END $$;
+
+-- ── 20.2 Pagares automaticos antiguos: monto_total pasa a ser el 100% ──
+-- Condicion idempotente: solo filas cuyo monto_total sigue siendo el
+-- porcentaje del total (despues de corregirlas, monto_total = monto_base).
+UPDATE cuentas_cobrar cc
+SET anticipo_requerido = CASE WHEN p.tipo = 'pintura' THEN ROUND(cc.monto_base * 0.70, 2)
+                              ELSE LEAST(COALESCE(p.anticipo, 0), cc.monto_base) END,
+    porcentaje         = CASE WHEN p.tipo = 'pintura' THEN 70 ELSE NULL END,
+    monto_total        = cc.monto_base,
+    concepto           = REPLACE(cc.concepto, 'Pagaré 70%', CASE WHEN p.tipo = 'pintura' THEN 'Pagaré colisiones (anticipo 70%)' ELSE 'Pagaré mecánica' END)
+FROM proformas p
+WHERE p.id = cc.proforma_id
+  AND cc.origen = 'automatico'
+  AND cc.monto_base IS NOT NULL AND cc.porcentaje IS NOT NULL
+  AND cc.monto_total + 0.005 < cc.monto_base
+  AND ABS(cc.monto_total - ROUND(cc.monto_base * cc.porcentaje / 100, 2)) < 0.02;
+
+-- ── 20.3 Estado y fecha de pago completo desde los pagos activos ──
+UPDATE cuentas_cobrar cc
+SET monto_pagado = x.pagado
+FROM (SELECT cuenta_id, COALESCE(SUM(monto), 0) AS pagado FROM pagos_cliente WHERE anulado_at IS NULL GROUP BY cuenta_id) x
+WHERE x.cuenta_id = cc.id AND ABS(cc.monto_pagado - x.pagado) >= 0.005;
+
+UPDATE cuentas_cobrar
+SET estado = CASE WHEN monto_pagado + 0.005 >= monto_total THEN 'pagado'
+                  WHEN monto_pagado > 0.005 THEN 'parcial' ELSE 'pendiente' END
+WHERE estado <> 'anulado'
+  AND estado IS DISTINCT FROM (CASE WHEN monto_pagado + 0.005 >= monto_total THEN 'pagado'
+                                    WHEN monto_pagado > 0.005 THEN 'parcial' ELSE 'pendiente' END);
+
+UPDATE cuentas_cobrar cc
+SET fecha_pago_completo = COALESCE((SELECT MAX(pc.created_at) FROM pagos_cliente pc WHERE pc.cuenta_id = cc.id AND pc.anulado_at IS NULL), cc.updated_at)
+WHERE cc.estado = 'pagado' AND cc.fecha_pago_completo IS NULL;
+UPDATE cuentas_cobrar SET fecha_pago_completo = NULL
+WHERE estado IN ('pendiente', 'parcial') AND fecha_pago_completo IS NOT NULL;
+
+-- ── 20.4 Proformas: anticipo requerido y saldo ──
+UPDATE proformas SET anticipo = ROUND(total * 0.70, 2)
+WHERE tipo = 'pintura' AND ABS(anticipo - ROUND(total * 0.70, 2)) >= 0.005;
+UPDATE proformas SET anticipo = total WHERE tipo = 'mecanica' AND anticipo > total;
+UPDATE proformas SET saldo = total WHERE ABS(saldo - total) >= 0.005;
+
+-- ── 20.5 Inventario: codigo de proveedor + secuencia de referencias ──
+ALTER TABLE repuestos ADD COLUMN IF NOT EXISTS codigo_proveedor VARCHAR(100);
+CREATE INDEX IF NOT EXISTS idx_repuestos_codigo_proveedor ON repuestos(codigo_proveedor);
+CREATE SEQUENCE IF NOT EXISTS repuestos_referencia_seq;
+
+COMMENT ON TABLE cuentas_cobrar IS 'Pagares / cuentas por cobrar. monto_total = 100% de la deuda. anticipo_requerido = anticipo programado (70% en colisiones, 0 o el indicado en mecanica); solo los pagos registrados cuentan como pagado.';
+COMMENT ON COLUMN cuentas_cobrar.monto_base IS 'Total de la proforma/orden (100%). En pagares automaticos coincide con monto_total.';
+COMMENT ON COLUMN cuentas_cobrar.anticipo_requerido IS 'Anticipo requerido/programado. NO es dinero recibido.';
+COMMENT ON COLUMN cuentas_cobrar.fecha_pago_completo IS 'Momento en que los pagos registrados cubrieron el total.';
+COMMENT ON COLUMN cuentas_cobrar.estado IS 'Estado guardado (pendiente/parcial/pagado/anulado). "vencido" se calcula al consultar con fecha_vencimiento.';
+COMMENT ON COLUMN proformas.anticipo IS 'Anticipo REQUERIDO: 70% del total en colisiones/pintura; opcional en mecanica. No es un pago recibido.';
+COMMENT ON COLUMN proformas.saldo IS 'Saldo de la proforma antes de pagos (= total). Lo pagado se registra en el pagare (cuentas_cobrar).';
+COMMENT ON COLUMN repuestos.codigo IS 'Codigo de referencia INTERNO (unico). Se genera automaticamente y es el unico que aparece en proformas.';
+COMMENT ON COLUMN repuestos.codigo_proveedor IS 'Codigo del proveedor o fabricante (solo inventario; no se imprime en proformas).';
+
+-- ============================================================
+-- Sprint 21: Superadministrador y permisos personalizados
+--
+-- 21.1 Roles nuevos: 'superadministrador' (control total, solo se concede
+--      con el script de servidor "npm run superadmin") e 'interno'
+--      (personal con acceso a medida). Trigger que impide crear, promover,
+--      degradar o borrar un superadministrador desde la aplicacion.
+-- 21.2 usuarios.token_version (invalida sesiones al desactivar/restablecer),
+--      permisos_inicializados y ultimo_acceso.
+-- 21.3 permisos_catalogo (modulo x accion) y usuario_permisos.
+-- 21.4 Plantillas por rol: las cuentas de personal EXISTENTES reciben
+--      exactamente el acceso que ya tenian (una sola vez por cuenta).
+-- 21.5 auditoria_seguridad: registro de solo-insercion (no UPDATE/DELETE).
+--
+-- 100% aditivo e idempotente. El catalogo y las plantillas se generan
+-- desde backend/src/config/permisos.js (una prueba verifica que coincidan).
+-- ============================================================
+
+-- ── 21.1 Roles ──
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'usuarios_rol_check'
+          AND pg_get_constraintdef(oid) LIKE '%superadministrador%'
+    ) THEN
+        ALTER TABLE usuarios DROP CONSTRAINT IF EXISTS usuarios_rol_check;
+        ALTER TABLE usuarios ADD CONSTRAINT usuarios_rol_check
+            CHECK (rol IN ('superadministrador','administrador','tecnico','recepcionista','interno','cliente'));
+    END IF;
+END $$;
+
+-- Solo una sesion que active "ssswap.gestion_superadmin" (el script de
+-- servidor) puede crear, promover, degradar o borrar superadministradores.
+CREATE OR REPLACE FUNCTION proteger_rol_superadmin()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF COALESCE(current_setting('ssswap.gestion_superadmin', true), '') = 'on' THEN
+        RETURN COALESCE(NEW, OLD);
+    END IF;
+    IF TG_OP = 'INSERT' AND NEW.rol = 'superadministrador' THEN
+        RAISE EXCEPTION 'El rol superadministrador solo se asigna desde el servidor.' USING ERRCODE = '42501';
+    ELSIF TG_OP = 'UPDATE' AND (NEW.rol = 'superadministrador') IS DISTINCT FROM (OLD.rol = 'superadministrador') THEN
+        RAISE EXCEPTION 'El rol superadministrador solo se cambia desde el servidor.' USING ERRCODE = '42501';
+    ELSIF TG_OP = 'DELETE' AND OLD.rol = 'superadministrador' THEN
+        RAISE EXCEPTION 'Un superadministrador no se puede eliminar desde la aplicacion.' USING ERRCODE = '42501';
+    END IF;
+    RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_proteger_rol_superadmin ON usuarios;
+CREATE TRIGGER trg_proteger_rol_superadmin
+    BEFORE INSERT OR UPDATE OF rol OR DELETE ON usuarios
+    FOR EACH ROW EXECUTE FUNCTION proteger_rol_superadmin();
+
+-- ── 21.2 Sesiones ──
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS token_version INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS permisos_inicializados BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS ultimo_acceso TIMESTAMP WITH TIME ZONE;
+COMMENT ON COLUMN usuarios.token_version IS 'Se incrementa al desactivar, cambiar rol o restablecer acceso: invalida todos los JWT emitidos antes.';
+COMMENT ON COLUMN usuarios.permisos_inicializados IS 'TRUE cuando la cuenta ya recibio su plantilla de permisos (o el superadministrador la configuro). Evita volver a otorgar permisos revocados.';
+
+-- ── 21.3 Catalogo y asignaciones ──
+CREATE TABLE IF NOT EXISTS permisos_catalogo (
+    modulo          VARCHAR(50)  NOT NULL,
+    accion          VARCHAR(20)  NOT NULL,
+    modulo_nombre   VARCHAR(100) NOT NULL,
+    accion_nombre   VARCHAR(100) NOT NULL,
+    grupo           VARCHAR(50)  NOT NULL,
+    orden           INTEGER      NOT NULL DEFAULT 0,
+    solo_superadmin BOOLEAN      NOT NULL DEFAULT FALSE,
+    PRIMARY KEY (modulo, accion)
+);
+COMMENT ON TABLE permisos_catalogo IS 'Modulos del panel y acciones que se pueden autorizar. Fuente: backend/src/config/permisos.js.';
+
+-- CATALOGO_INICIO (generado desde permisos.js)
+INSERT INTO permisos_catalogo (modulo, accion, modulo_nombre, accion_nombre, grupo, orden, solo_superadmin) VALUES
+    ('dashboard', 'ver', 'Panel principal', 'Ver', 'Panel', 1, FALSE),
+    ('inventario_mecanica', 'ver', 'Inventario de mecánica', 'Ver', 'Inventario', 2, FALSE),
+    ('inventario_mecanica', 'crear', 'Inventario de mecánica', 'Crear', 'Inventario', 3, FALSE),
+    ('inventario_mecanica', 'editar', 'Inventario de mecánica', 'Editar', 'Inventario', 4, FALSE),
+    ('inventario_mecanica', 'eliminar', 'Inventario de mecánica', 'Eliminar', 'Inventario', 5, FALSE),
+    ('inventario_colisiones', 'ver', 'Inventario de colisiones / pintura', 'Ver', 'Inventario', 6, FALSE),
+    ('inventario_colisiones', 'crear', 'Inventario de colisiones / pintura', 'Crear', 'Inventario', 7, FALSE),
+    ('inventario_colisiones', 'editar', 'Inventario de colisiones / pintura', 'Editar', 'Inventario', 8, FALSE),
+    ('inventario_colisiones', 'eliminar', 'Inventario de colisiones / pintura', 'Eliminar', 'Inventario', 9, FALSE),
+    ('registros_inventario', 'ver', 'Entradas y salidas de inventario', 'Ver registros', 'Inventario', 10, FALSE),
+    ('registros_inventario', 'crear', 'Entradas y salidas de inventario', 'Registrar entradas / salidas', 'Inventario', 11, FALSE),
+    ('registros_inventario', 'aprobar', 'Entradas y salidas de inventario', 'Devolver salidas al inventario', 'Inventario', 12, FALSE),
+    ('pedidos_tienda', 'ver', 'Pedidos de la tienda', 'Ver', 'Inventario', 13, FALSE),
+    ('pedidos_tienda', 'editar', 'Pedidos de la tienda', 'Atender / cancelar', 'Inventario', 14, FALSE),
+    ('ordenes', 'ver', 'Órdenes de trabajo', 'Ver', 'Taller', 15, FALSE),
+    ('ordenes', 'crear', 'Órdenes de trabajo', 'Crear', 'Taller', 16, FALSE),
+    ('ordenes', 'editar', 'Órdenes de trabajo', 'Editar', 'Taller', 17, FALSE),
+    ('ordenes', 'eliminar', 'Órdenes de trabajo', 'Eliminar', 'Taller', 18, FALSE),
+    ('ordenes', 'asignar', 'Órdenes de trabajo', 'Asignar técnico', 'Taller', 19, FALSE),
+    ('ordenes', 'aprobar', 'Órdenes de trabajo', 'Cambiar estado de cualquier orden', 'Taller', 20, FALSE),
+    ('proformas_mecanica', 'ver', 'Proformas de mecánica', 'Ver', 'Taller', 21, FALSE),
+    ('proformas_mecanica', 'crear', 'Proformas de mecánica', 'Crear', 'Taller', 22, FALSE),
+    ('proformas_mecanica', 'editar', 'Proformas de mecánica', 'Editar', 'Taller', 23, FALSE),
+    ('proformas_mecanica', 'eliminar', 'Proformas de mecánica', 'Eliminar', 'Taller', 24, FALSE),
+    ('proformas_mecanica', 'exportar', 'Proformas de mecánica', 'Descargar PDF / Excel', 'Taller', 25, FALSE),
+    ('proformas_mecanica', 'aprobar', 'Proformas de mecánica', 'Aprobar, rechazar, convertir en OT y confirmar materiales', 'Taller', 26, FALSE),
+    ('proformas_colisiones', 'ver', 'Proformas de colisiones / pintura', 'Ver', 'Taller', 27, FALSE),
+    ('proformas_colisiones', 'crear', 'Proformas de colisiones / pintura', 'Crear', 'Taller', 28, FALSE),
+    ('proformas_colisiones', 'editar', 'Proformas de colisiones / pintura', 'Editar', 'Taller', 29, FALSE),
+    ('proformas_colisiones', 'eliminar', 'Proformas de colisiones / pintura', 'Eliminar', 'Taller', 30, FALSE),
+    ('proformas_colisiones', 'exportar', 'Proformas de colisiones / pintura', 'Descargar PDF / Excel', 'Taller', 31, FALSE),
+    ('proformas_colisiones', 'aprobar', 'Proformas de colisiones / pintura', 'Aprobar, rechazar, convertir en OT y confirmar materiales', 'Taller', 32, FALSE),
+    ('citas', 'ver', 'Citas', 'Ver', 'Taller', 33, FALSE),
+    ('citas', 'editar', 'Citas', 'Confirmar / cambiar estado', 'Taller', 34, FALSE),
+    ('clientes', 'ver', 'Clientes', 'Ver', 'Clientes', 35, FALSE),
+    ('clientes', 'crear', 'Clientes', 'Crear', 'Clientes', 36, FALSE),
+    ('clientes', 'editar', 'Clientes', 'Editar', 'Clientes', 37, FALSE),
+    ('clientes', 'eliminar', 'Clientes', 'Eliminar', 'Clientes', 38, FALSE),
+    ('vehiculos', 'ver', 'Vehículos', 'Ver', 'Clientes', 39, FALSE),
+    ('vehiculos', 'crear', 'Vehículos', 'Crear', 'Clientes', 40, FALSE),
+    ('vehiculos', 'editar', 'Vehículos', 'Editar', 'Clientes', 41, FALSE),
+    ('vehiculos', 'eliminar', 'Vehículos', 'Eliminar', 'Clientes', 42, FALSE),
+    ('cuentas_cobrar', 'ver', 'Pagarés y cuentas por cobrar', 'Ver', 'Clientes', 43, FALSE),
+    ('cuentas_cobrar', 'crear', 'Pagarés y cuentas por cobrar', 'Crear', 'Clientes', 44, FALSE),
+    ('cuentas_cobrar', 'editar', 'Pagarés y cuentas por cobrar', 'Editar (vencimiento, datos)', 'Clientes', 45, FALSE),
+    ('cuentas_cobrar', 'eliminar', 'Pagarés y cuentas por cobrar', 'Eliminar / anular / reabrir', 'Clientes', 46, FALSE),
+    ('pagos_clientes', 'crear', 'Registro de pagos de clientes', 'Registrar pagos', 'Clientes', 47, FALSE),
+    ('pagos_clientes', 'eliminar', 'Registro de pagos de clientes', 'Anular pagos', 'Clientes', 48, FALSE),
+    ('caja', 'ver', 'Caja diaria', 'Ver', 'Finanzas', 49, FALSE),
+    ('caja', 'crear', 'Caja diaria', 'Registrar movimientos de caja', 'Finanzas', 50, FALSE),
+    ('caja', 'aprobar', 'Caja diaria', 'Abrir y cerrar caja', 'Finanzas', 51, FALSE),
+    ('finanzas', 'ver', 'Finanzas, cuentas y nómina', 'Ver', 'Finanzas', 52, FALSE),
+    ('finanzas', 'crear', 'Finanzas, cuentas y nómina', 'Crear', 'Finanzas', 53, FALSE),
+    ('finanzas', 'editar', 'Finanzas, cuentas y nómina', 'Editar', 'Finanzas', 54, FALSE),
+    ('finanzas', 'eliminar', 'Finanzas, cuentas y nómina', 'Anular movimientos / pagos', 'Finanzas', 55, FALSE),
+    ('proveedores', 'ver', 'Proveedores, compras y gastos', 'Ver', 'Proveedores', 56, FALSE),
+    ('proveedores', 'crear', 'Proveedores, compras y gastos', 'Crear', 'Proveedores', 57, FALSE),
+    ('proveedores', 'editar', 'Proveedores, compras y gastos', 'Editar', 'Proveedores', 58, FALSE),
+    ('proveedores', 'eliminar', 'Proveedores, compras y gastos', 'Eliminar', 'Proveedores', 59, FALSE),
+    ('estadisticas', 'ver', 'Reportes y estadísticas', 'Ver', 'Reportes', 60, FALSE),
+    ('servicios', 'ver', 'Servicios del taller', 'Ver', 'Ajustes', 61, FALSE),
+    ('servicios', 'crear', 'Servicios del taller', 'Crear', 'Ajustes', 62, FALSE),
+    ('servicios', 'editar', 'Servicios del taller', 'Editar', 'Ajustes', 63, FALSE),
+    ('servicios', 'eliminar', 'Servicios del taller', 'Eliminar', 'Ajustes', 64, FALSE),
+    ('sucursales', 'ver', 'Sucursales', 'Ver', 'Ajustes', 65, FALSE),
+    ('sucursales', 'crear', 'Sucursales', 'Crear', 'Ajustes', 66, FALSE),
+    ('sucursales', 'editar', 'Sucursales', 'Editar', 'Ajustes', 67, FALSE),
+    ('sucursales', 'eliminar', 'Sucursales', 'Eliminar', 'Ajustes', 68, FALSE),
+    ('bitacora', 'ver', 'Bitácora de operaciones', 'Ver', 'Ajustes', 69, FALSE),
+    ('usuarios', 'ver', 'Gestión de usuarios y permisos', 'Ver', 'Seguridad', 70, TRUE),
+    ('usuarios', 'crear', 'Gestión de usuarios y permisos', 'Crear', 'Seguridad', 71, TRUE),
+    ('usuarios', 'editar', 'Gestión de usuarios y permisos', 'Editar', 'Seguridad', 72, TRUE),
+    ('auditoria', 'ver', 'Auditoría de seguridad', 'Ver', 'Seguridad', 73, TRUE)
+ON CONFLICT (modulo, accion) DO UPDATE SET
+    modulo_nombre = EXCLUDED.modulo_nombre, accion_nombre = EXCLUDED.accion_nombre,
+    grupo = EXCLUDED.grupo, orden = EXCLUDED.orden, solo_superadmin = EXCLUDED.solo_superadmin;
+-- CATALOGO_FIN
+
+CREATE TABLE IF NOT EXISTS usuario_permisos (
+    usuario_id   INTEGER     NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    modulo       VARCHAR(50) NOT NULL,
+    accion       VARCHAR(20) NOT NULL,
+    otorgado_por INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+    created_at   TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    PRIMARY KEY (usuario_id, modulo, accion),
+    FOREIGN KEY (modulo, accion) REFERENCES permisos_catalogo(modulo, accion) ON UPDATE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_usuario_permisos_otorgado ON usuario_permisos(otorgado_por);
+COMMENT ON TABLE usuario_permisos IS 'Permiso (modulo, accion) concedido a una cuenta de personal. El superadministrador no necesita filas: tiene todo.';
+
+-- ── 21.4 Plantillas por rol para las cuentas existentes (una sola vez) ──
+-- PLANTILLAS_INICIO (generado desde permisos.js)
+INSERT INTO usuario_permisos (usuario_id, modulo, accion)
+SELECT u.id, t.modulo, t.accion
+FROM usuarios u
+JOIN (VALUES
+    ('administrador', 'dashboard', 'ver'),
+    ('administrador', 'inventario_mecanica', 'ver'),
+    ('administrador', 'inventario_mecanica', 'crear'),
+    ('administrador', 'inventario_mecanica', 'editar'),
+    ('administrador', 'inventario_mecanica', 'eliminar'),
+    ('administrador', 'inventario_colisiones', 'ver'),
+    ('administrador', 'inventario_colisiones', 'crear'),
+    ('administrador', 'inventario_colisiones', 'editar'),
+    ('administrador', 'inventario_colisiones', 'eliminar'),
+    ('administrador', 'registros_inventario', 'ver'),
+    ('administrador', 'registros_inventario', 'crear'),
+    ('administrador', 'registros_inventario', 'aprobar'),
+    ('administrador', 'pedidos_tienda', 'ver'),
+    ('administrador', 'pedidos_tienda', 'editar'),
+    ('administrador', 'ordenes', 'ver'),
+    ('administrador', 'ordenes', 'crear'),
+    ('administrador', 'ordenes', 'editar'),
+    ('administrador', 'ordenes', 'eliminar'),
+    ('administrador', 'ordenes', 'asignar'),
+    ('administrador', 'ordenes', 'aprobar'),
+    ('administrador', 'proformas_mecanica', 'ver'),
+    ('administrador', 'proformas_mecanica', 'crear'),
+    ('administrador', 'proformas_mecanica', 'editar'),
+    ('administrador', 'proformas_mecanica', 'eliminar'),
+    ('administrador', 'proformas_mecanica', 'exportar'),
+    ('administrador', 'proformas_mecanica', 'aprobar'),
+    ('administrador', 'proformas_colisiones', 'ver'),
+    ('administrador', 'proformas_colisiones', 'crear'),
+    ('administrador', 'proformas_colisiones', 'editar'),
+    ('administrador', 'proformas_colisiones', 'eliminar'),
+    ('administrador', 'proformas_colisiones', 'exportar'),
+    ('administrador', 'proformas_colisiones', 'aprobar'),
+    ('administrador', 'citas', 'ver'),
+    ('administrador', 'citas', 'editar'),
+    ('administrador', 'clientes', 'ver'),
+    ('administrador', 'clientes', 'crear'),
+    ('administrador', 'clientes', 'editar'),
+    ('administrador', 'clientes', 'eliminar'),
+    ('administrador', 'vehiculos', 'ver'),
+    ('administrador', 'vehiculos', 'crear'),
+    ('administrador', 'vehiculos', 'editar'),
+    ('administrador', 'vehiculos', 'eliminar'),
+    ('administrador', 'cuentas_cobrar', 'ver'),
+    ('administrador', 'cuentas_cobrar', 'crear'),
+    ('administrador', 'cuentas_cobrar', 'editar'),
+    ('administrador', 'cuentas_cobrar', 'eliminar'),
+    ('administrador', 'pagos_clientes', 'crear'),
+    ('administrador', 'pagos_clientes', 'eliminar'),
+    ('administrador', 'caja', 'ver'),
+    ('administrador', 'caja', 'crear'),
+    ('administrador', 'caja', 'aprobar'),
+    ('administrador', 'finanzas', 'ver'),
+    ('administrador', 'finanzas', 'crear'),
+    ('administrador', 'finanzas', 'editar'),
+    ('administrador', 'finanzas', 'eliminar'),
+    ('administrador', 'proveedores', 'ver'),
+    ('administrador', 'proveedores', 'crear'),
+    ('administrador', 'proveedores', 'editar'),
+    ('administrador', 'proveedores', 'eliminar'),
+    ('administrador', 'estadisticas', 'ver'),
+    ('administrador', 'servicios', 'ver'),
+    ('administrador', 'servicios', 'crear'),
+    ('administrador', 'servicios', 'editar'),
+    ('administrador', 'servicios', 'eliminar'),
+    ('administrador', 'sucursales', 'ver'),
+    ('administrador', 'sucursales', 'crear'),
+    ('administrador', 'sucursales', 'editar'),
+    ('administrador', 'sucursales', 'eliminar'),
+    ('administrador', 'bitacora', 'ver'),
+    ('recepcionista', 'dashboard', 'ver'),
+    ('recepcionista', 'inventario_mecanica', 'ver'),
+    ('recepcionista', 'inventario_colisiones', 'ver'),
+    ('recepcionista', 'registros_inventario', 'ver'),
+    ('recepcionista', 'registros_inventario', 'crear'),
+    ('recepcionista', 'pedidos_tienda', 'ver'),
+    ('recepcionista', 'pedidos_tienda', 'editar'),
+    ('recepcionista', 'ordenes', 'ver'),
+    ('recepcionista', 'ordenes', 'crear'),
+    ('recepcionista', 'ordenes', 'editar'),
+    ('recepcionista', 'ordenes', 'asignar'),
+    ('recepcionista', 'proformas_mecanica', 'ver'),
+    ('recepcionista', 'proformas_mecanica', 'crear'),
+    ('recepcionista', 'proformas_mecanica', 'editar'),
+    ('recepcionista', 'proformas_mecanica', 'exportar'),
+    ('recepcionista', 'proformas_mecanica', 'aprobar'),
+    ('recepcionista', 'proformas_colisiones', 'ver'),
+    ('recepcionista', 'proformas_colisiones', 'crear'),
+    ('recepcionista', 'proformas_colisiones', 'editar'),
+    ('recepcionista', 'proformas_colisiones', 'exportar'),
+    ('recepcionista', 'proformas_colisiones', 'aprobar'),
+    ('recepcionista', 'citas', 'ver'),
+    ('recepcionista', 'citas', 'editar'),
+    ('recepcionista', 'clientes', 'ver'),
+    ('recepcionista', 'clientes', 'crear'),
+    ('recepcionista', 'clientes', 'editar'),
+    ('recepcionista', 'clientes', 'eliminar'),
+    ('recepcionista', 'vehiculos', 'ver'),
+    ('recepcionista', 'vehiculos', 'crear'),
+    ('recepcionista', 'vehiculos', 'editar'),
+    ('recepcionista', 'cuentas_cobrar', 'ver'),
+    ('recepcionista', 'cuentas_cobrar', 'crear'),
+    ('recepcionista', 'cuentas_cobrar', 'editar'),
+    ('recepcionista', 'pagos_clientes', 'crear'),
+    ('recepcionista', 'caja', 'ver'),
+    ('recepcionista', 'caja', 'crear'),
+    ('recepcionista', 'caja', 'aprobar'),
+    ('tecnico', 'dashboard', 'ver'),
+    ('tecnico', 'inventario_mecanica', 'ver'),
+    ('tecnico', 'inventario_mecanica', 'crear'),
+    ('tecnico', 'inventario_mecanica', 'editar'),
+    ('tecnico', 'inventario_colisiones', 'ver'),
+    ('tecnico', 'inventario_colisiones', 'crear'),
+    ('tecnico', 'inventario_colisiones', 'editar'),
+    ('tecnico', 'registros_inventario', 'ver'),
+    ('tecnico', 'registros_inventario', 'crear'),
+    ('tecnico', 'pedidos_tienda', 'ver'),
+    ('tecnico', 'pedidos_tienda', 'editar'),
+    ('tecnico', 'ordenes', 'ver'),
+    ('tecnico', 'ordenes', 'editar'),
+    ('tecnico', 'proformas_mecanica', 'ver'),
+    ('tecnico', 'proformas_mecanica', 'crear'),
+    ('tecnico', 'proformas_mecanica', 'editar'),
+    ('tecnico', 'proformas_mecanica', 'exportar'),
+    ('tecnico', 'proformas_mecanica', 'aprobar'),
+    ('tecnico', 'proformas_colisiones', 'ver'),
+    ('tecnico', 'proformas_colisiones', 'crear'),
+    ('tecnico', 'proformas_colisiones', 'editar'),
+    ('tecnico', 'proformas_colisiones', 'exportar'),
+    ('tecnico', 'proformas_colisiones', 'aprobar'),
+    ('tecnico', 'citas', 'ver'),
+    ('tecnico', 'citas', 'editar'),
+    ('tecnico', 'clientes', 'crear'),
+    ('tecnico', 'vehiculos', 'ver'),
+    ('tecnico', 'vehiculos', 'crear'),
+    ('tecnico', 'vehiculos', 'editar')
+) AS t(rol, modulo, accion) ON t.rol = u.rol
+WHERE u.permisos_inicializados = FALSE
+ON CONFLICT DO NOTHING;
+-- PLANTILLAS_FIN
+
+UPDATE usuarios SET permisos_inicializados = TRUE
+WHERE permisos_inicializados = FALSE AND rol IN ('administrador','tecnico','recepcionista','interno');
+
+-- ── 21.5 Auditoria de seguridad (solo insercion) ──
+-- Sin llave foranea a usuarios a proposito: el registro debe sobrevivir
+-- intacto aunque la cuenta se elimine (se guarda una copia del correo).
+CREATE TABLE IF NOT EXISTS auditoria_seguridad (
+    id           BIGSERIAL PRIMARY KEY,
+    created_at   TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    actor_id     INTEGER,
+    actor_email  VARCHAR(150),
+    actor_rol    VARCHAR(20),
+    accion       VARCHAR(60)  NOT NULL,
+    recurso_tipo VARCHAR(40),
+    recurso_id   VARCHAR(60),
+    resultado    VARCHAR(12)  NOT NULL DEFAULT 'exito' CHECK (resultado IN ('exito','denegado','error')),
+    detalle      JSONB,
+    ip           VARCHAR(64)
+);
+CREATE INDEX IF NOT EXISTS idx_auditoria_fecha   ON auditoria_seguridad(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_auditoria_actor   ON auditoria_seguridad(actor_id);
+CREATE INDEX IF NOT EXISTS idx_auditoria_recurso ON auditoria_seguridad(recurso_tipo, recurso_id);
+CREATE INDEX IF NOT EXISTS idx_auditoria_accion  ON auditoria_seguridad(accion);
+COMMENT ON TABLE auditoria_seguridad IS 'Registro de seguridad: usuarios, permisos, roles, accesos denegados. Nunca guarda contrasenas ni tokens. No admite UPDATE ni DELETE.';
+
+CREATE OR REPLACE FUNCTION auditoria_solo_insercion()
+RETURNS TRIGGER AS $$
+BEGIN
+    RAISE EXCEPTION 'La auditoria de seguridad no se puede modificar ni borrar.' USING ERRCODE = '42501';
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_auditoria_solo_insercion ON auditoria_seguridad;
+CREATE TRIGGER trg_auditoria_solo_insercion
+    BEFORE UPDATE OR DELETE ON auditoria_seguridad
+    FOR EACH ROW EXECUTE FUNCTION auditoria_solo_insercion();

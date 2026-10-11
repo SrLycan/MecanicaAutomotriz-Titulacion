@@ -2,172 +2,257 @@
  * SS SWAP - Generacion de PDF de Proformas
  *
  * Se usa pdfkit (documento generado con control de coordenadas, no una
- * conversion de HTML) precisamente para evitar los problemas que pidio
- * evitar el usuario: texto cortado, columnas desbordadas, tablas partidas
- * mal, encabezados aislados. Cada tabla se dibuja con dibujarTabla(), que
- * mide el espacio restante en la pagina ANTES de dibujar cada fila y crea
- * una pagina nueva (repitiendo el encabezado de la tabla) si no alcanza.
+ * conversion de HTML) para evitar texto cortado, columnas desbordadas,
+ * tablas partidas mal o encabezados aislados. Cada tabla se dibuja con
+ * dibujarTabla(), que mide el espacio restante en la pagina ANTES de cada
+ * fila y crea una pagina nueva (repitiendo el encabezado) si no alcanza.
+ *
+ * Sprint 20 (rediseño):
+ *  - Fuente Unicode incrustada (DejaVu Sans, licencia libre en
+ *    assets/fonts). Las fuentes estandar de pdfkit (Helvetica) solo
+ *    codifican Latin-1: cualquier caracter fuera de ese juego (tildes
+ *    "descompuestas" al copiar/pegar, comillas tipograficas, emojis...)
+ *    salia como basura ilegible, p. ej. en los datos del vehiculo.
+ *    Ademas todo texto pasa por limpiarTexto() (NFC + sin caracteres de
+ *    control/ancho cero).
+ *  - Encabezado con el nombre comercial "SS Swap - SSarango Sosa
+ *    Intercambio Inteligente" y el logotipo original; numero de proforma
+ *    destacado sin recuadros.
+ *  - Tablas con el CODIGO DE REFERENCIA INTERNO del inventario (nunca el
+ *    codigo del proveedor/fabricante).
+ *  - Resumen economico con las reglas de reglasPago.js: anticipo requerido
+ *    solo cuando aplica (70% en colisiones), total pagado real (pagos
+ *    registrados en el pagare) y saldo pendiente.
+ *  - Pie con "Pagina N de M" (dos pasadas: la primera solo cuenta paginas).
  */
 const PDFDocument = require('pdfkit');
 const path = require('path');
 const fs = require('fs');
+const { Writable } = require('stream');
 const { construirDiagrama, etiquetaZona, CARROCERIAS } = require('../shared/vehiculoDiagramas');
+const { porcentajeAnticipo, resumenDeuda } = require('./reglasPago');
 
+const NOMBRE_COMERCIAL = 'SS Swap - SSarango Sosa Intercambio Inteligente';
 const LOGO_PATH = path.join(__dirname, '..', 'assets', 'logo.png');
+const FUENTE_REGULAR = path.join(__dirname, '..', 'assets', 'fonts', 'DejaVuSans.ttf');
+const FUENTE_NEGRITA = path.join(__dirname, '..', 'assets', 'fonts', 'DejaVuSans-Bold.ttf');
 const MARGIN = 40;
 const COLOR_TXT = '#0f172a';
 const COLOR_MUT = '#64748b';
-const COLOR_SKY = '#0284c7';
+const COLOR_AZUL = '#0b4f7c';      // azul corporativo (titulos y separadores)
+const COLOR_AZUL_MEDIO = '#0284c7';
 const COLOR_BORDE = '#cbd5e1';
-const COLOR_HEAD_BG = '#e0f2fe';
+const COLOR_HEAD_BG = '#e8f1f8';
+const COLOR_PANEL = '#f8fafc';
 
-const money = (v) => `$${Number(v || 0).toFixed(2)}`;
-const fecha = (v) => v ? new Date(v).toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' }) : '—';
+// Si las fuentes Unicode no estan (instalacion incompleta) se cae a las
+// estandar para no romper la descarga.
+const FUENTES_UNICODE = fs.existsSync(FUENTE_REGULAR) && fs.existsSync(FUENTE_NEGRITA);
+const F = { normal: FUENTES_UNICODE ? 'SS-Regular' : 'Helvetica', negrita: FUENTES_UNICODE ? 'SS-Bold' : 'Helvetica-Bold' };
+
+const money = (v) => `$${Number(v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const fecha = (v) => {
+    if (!v) return '—';
+    const m = String(v).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+    return new Date(v).toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' });
+};
+/** Normaliza texto para el PDF: NFC, sin caracteres de control ni de ancho cero. */
+function limpiarTexto(v) {
+    if (v === null || v === undefined) return '';
+    return String(v).normalize('NFC')
+        .replace(/[​-‍⁠﻿]/g, '')
+        .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
+        .replace(/[ \t]+/g, ' ')
+        .trim();
+}
+const cant = (n) => (Number(n) % 1 === 0 ? String(Number(n)) : Number(n).toFixed(2));
 
 /**
- * Asegura espacio en la pagina actual; si no alcanza, dibuja el pie de
- * pagina de la pagina que se esta abandonando (usando doc.__piePagina,
- * fijado por generarProformaPdf) y recien ahi crea la siguiente.
- *
- * NOTA TECNICA: se dibuja el pie ANTES de pasar de pagina, en vez del
- * patron habitual de pdfkit (bufferPages + bufferedPageRange +
- * switchToPage al final para volver atras). Ese patron se probo primero
- * pero en este entorno el conteo de bufferedPageRange() quedaba
- * desincronizado del total real de paginas del archivo final (se
- * verifico generando PDFs de mas de una pagina y confirmando con
- * PyMuPDF que el pie aparecia en las paginas equivocadas). Dibujar el
- * pie al momento de abandonar cada pagina es inmune a ese problema
- * porque nunca necesita "volver" a una pagina ya cerrada.
+ * Asegura espacio en la pagina actual; si no alcanza, dibuja el pie de la
+ * pagina que se abandona (doc.__piePagina) y recien ahi crea la siguiente.
+ * (Dibujar el pie al abandonar cada pagina evita depender de
+ * bufferedPageRange/switchToPage, que resultaron poco fiables aqui.)
  */
 function asegurarEspacio(doc, alturaNecesaria, onNuevaPagina) {
     const limite = doc.page.height - doc.page.margins.bottom;
     if (doc.y + alturaNecesaria > limite) {
         if (doc.__piePagina) doc.__piePagina();
         doc.addPage();
+        if (doc.__encabezadoContinuacion) doc.__encabezadoContinuacion();
         if (onNuevaPagina) onNuevaPagina();
     }
 }
 
-/** Dibuja una tabla con encabezado repetido automaticamente al cambiar de pagina. */
+/** Alto real de un texto con el ancho dado (para filas de altura variable). */
+function altoTexto(doc, texto, ancho, fuente, tam) {
+    doc.font(fuente).fontSize(tam);
+    return doc.heightOfString(texto || ' ', { width: ancho });
+}
+
+/** Tabla con encabezado repetido al cambiar de pagina y filas de alto variable. */
 function dibujarTabla(doc, { columnas, filas, tituloSeccion, filaTotal }) {
     const anchoTotal = columnas.reduce((s, c) => s + c.ancho, 0);
     const x0 = doc.page.margins.left;
 
     const dibujarEncabezadoSeccion = () => {
         if (tituloSeccion) {
-            doc.font('Helvetica-Bold').fontSize(10).fillColor('#fff');
             const y = doc.y;
-            doc.rect(x0, y, anchoTotal, 18).fill(COLOR_SKY);
-            doc.fillColor('#fff').text(tituloSeccion, x0 + 6, y + 4, { width: anchoTotal - 12 });
+            doc.rect(x0, y, anchoTotal, 18).fill(COLOR_AZUL);
+            doc.font(F.negrita).fontSize(8.5).fillColor('#fff').text(tituloSeccion, x0 + 8, y + 5, { width: anchoTotal - 16, lineBreak: false });
             doc.y = y + 18;
         }
         const y = doc.y;
         doc.rect(x0, y, anchoTotal, 16).fill(COLOR_HEAD_BG);
         let x = x0;
-        doc.font('Helvetica-Bold').fontSize(8).fillColor(COLOR_SKY);
+        doc.font(F.negrita).fontSize(7).fillColor(COLOR_AZUL);
         columnas.forEach(c => {
-            doc.text(c.titulo, x + 4, y + 4, { width: c.ancho - 8, align: c.align || 'left' });
+            doc.text(c.titulo, x + 5, y + 5, { width: c.ancho - 10, align: c.align || 'left', lineBreak: false });
             x += c.ancho;
         });
         doc.y = y + 16;
     };
 
-    // Titulo (18) + encabezado (16) + al menos una fila (16): evita dejar un
-    // titulo de seccion "huerfano" al pie de la pagina.
-    asegurarEspacio(doc, 56, null);
+    // Titulo + encabezado + al menos una fila: evita un titulo "huerfano".
+    asegurarEspacio(doc, 60, null);
     dibujarEncabezadoSeccion();
 
-    doc.font('Helvetica').fontSize(8.5).fillColor(COLOR_TXT);
     filas.forEach((fila, i) => {
-        asegurarEspacio(doc, 18, dibujarEncabezadoSeccion);
+        // La descripcion puede ocupar varias lineas: se mide antes de dibujar.
+        const altos = columnas.map(c => altoTexto(doc, limpiarTexto(fila[c.campo]), c.ancho - 10, F.normal, 8));
+        const altoFila = Math.max(16, Math.max(...altos) + 8);
+        asegurarEspacio(doc, altoFila + 2, dibujarEncabezadoSeccion);
         const y = doc.y;
-        if (i % 2 === 1) doc.rect(x0, y, anchoTotal, 16).fill('#f8fafc');
-        doc.fillColor(COLOR_TXT);
+        if (i % 2 === 1) doc.rect(x0, y, anchoTotal, altoFila).fill(COLOR_PANEL);
         let x = x0;
         columnas.forEach(c => {
-            const val = fila[c.campo] !== undefined && fila[c.campo] !== null ? String(fila[c.campo]) : '';
-            doc.text(val, x + 4, y + 4, { width: c.ancho - 8, align: c.align || 'left', ellipsis: true });
+            doc.font(c.negrita ? F.negrita : F.normal).fontSize(8).fillColor(c.color || COLOR_TXT)
+                .text(limpiarTexto(fila[c.campo]), x + 5, y + 4, { width: c.ancho - 10, align: c.align || 'left' });
             x += c.ancho;
         });
-        doc.y = y + 16;
+        doc.y = y + altoFila;
     });
 
-    // Linea inferior de la tabla
     doc.moveTo(x0, doc.y).lineTo(x0 + anchoTotal, doc.y).strokeColor(COLOR_BORDE).lineWidth(0.5).stroke();
 
     if (filaTotal) {
         asegurarEspacio(doc, 20, dibujarEncabezadoSeccion);
         const y = doc.y;
-        doc.rect(x0, y, anchoTotal, 18).fill('#f1f5f9');
-        doc.font('Helvetica-Bold').fontSize(9).fillColor(COLOR_TXT);
-        doc.text(filaTotal.etiqueta, x0 + 6, y + 4, { width: anchoTotal - 100 - 12 });
-        doc.text(filaTotal.valor, x0 + anchoTotal - 100, y + 4, { width: 94, align: 'right' });
-        doc.y = y + 18;
+        doc.font(F.negrita).fontSize(8.5).fillColor(COLOR_TXT);
+        doc.text(filaTotal.etiqueta, x0 + 8, y + 5, { width: anchoTotal - 130, lineBreak: false });
+        doc.text(filaTotal.valor, x0 + anchoTotal - 120, y + 5, { width: 114, align: 'right', lineBreak: false });
+        doc.y = y + 20;
     }
+    doc.moveDown(0.7);
+}
+
+/** Encabezado de la primera pagina: logo + nombre comercial + numero de proforma. */
+function dibujarEncabezado(doc, proforma) {
+    const anchoUtil = doc.page.width - MARGIN * 2;
+    const yInicio = MARGIN;
+    let logoAncho = 0;
+    if (fs.existsSync(LOGO_PATH)) {
+        try { doc.image(LOGO_PATH, MARGIN, yInicio, { fit: [78, 56] }); logoAncho = 90; } catch { /* logo opcional */ }
+    }
+
+    const bloqueDerAncho = 170;
+    const empresaX = MARGIN + logoAncho;
+    const empresaAncho = anchoUtil - logoAncho - bloqueDerAncho - 12;
+
+    doc.font(F.negrita).fontSize(13).fillColor(COLOR_AZUL)
+        .text(NOMBRE_COMERCIAL, empresaX, yInicio + 2, { width: empresaAncho });
+    let y = doc.y + 3;
+    doc.font(F.normal).fontSize(7.8).fillColor(COLOR_MUT);
+    const sucursal = limpiarTexto(proforma.sucursal_nombre);
+    if (sucursal) { doc.text(`Sucursal: ${sucursal}`, empresaX, y, { width: empresaAncho }); y = doc.y + 1; }
+    if (proforma.sucursal_direccion) { doc.text(limpiarTexto(proforma.sucursal_direccion), empresaX, y, { width: empresaAncho }); y = doc.y + 1; }
+    const contacto = [proforma.sucursal_telefono, proforma.sucursal_email].map(limpiarTexto).filter(Boolean).join('   ·   ');
+    if (contacto) { doc.text(contacto, empresaX, y, { width: empresaAncho }); y = doc.y; }
+    const yFinEmpresa = doc.y;
+
+    // Bloque derecho: tipo de documento, numero y fechas (sin recuadros).
+    const bx = MARGIN + anchoUtil - bloqueDerAncho;
+    doc.font(F.negrita).fontSize(7.5).fillColor(COLOR_MUT).text('PROFORMA N.º', bx, yInicio + 2, { width: bloqueDerAncho, align: 'right' });
+    doc.font(F.negrita).fontSize(15).fillColor(COLOR_AZUL).text(limpiarTexto(proforma.numero), bx, doc.y + 1, { width: bloqueDerAncho, align: 'right' });
+    doc.font(F.normal).fontSize(8).fillColor(COLOR_TXT);
+    doc.text(`Fecha de emisión: ${fecha(proforma.fecha_emision)}`, bx, doc.y + 4, { width: bloqueDerAncho, align: 'right' });
+    if (proforma.fecha_validez) doc.text(`Válida hasta: ${fecha(proforma.fecha_validez)}`, bx, doc.y + 1, { width: bloqueDerAncho, align: 'right' });
+    const ordenRef = proforma.orden_generada_id || proforma.orden_id;
+    if (ordenRef) doc.text(`Orden de trabajo: OT-${String(ordenRef).padStart(6, '0')}`, bx, doc.y + 1, { width: bloqueDerAncho, align: 'right' });
+    const yFinDer = doc.y;
+
+    doc.y = Math.max(yInicio + 58, yFinEmpresa, yFinDer) + 10;
+    doc.moveTo(MARGIN, doc.y).lineTo(MARGIN + anchoUtil, doc.y).strokeColor(COLOR_AZUL).lineWidth(1.6).stroke();
+    doc.y += 10;
+
+    // Titulo del tipo de trabajo
+    doc.font(F.negrita).fontSize(10.5).fillColor(COLOR_TXT)
+        .text(proforma.tipo === 'pintura' ? 'PROFORMA — COLISIONES / PINTURA Y CARROCERÍA' : 'PROFORMA — MECÁNICA GENERAL', MARGIN, doc.y, { width: anchoUtil });
     doc.moveDown(0.6);
 }
 
-function dibujarEncabezado(doc, proforma) {
+/** Encabezado reducido de las paginas siguientes. */
+function dibujarEncabezadoContinuacion(doc, proforma) {
     const anchoUtil = doc.page.width - MARGIN * 2;
-    let logoAlto = 0;
-    if (fs.existsSync(LOGO_PATH)) {
-        try { doc.image(LOGO_PATH, MARGIN, doc.y, { width: 70 }); logoAlto = 55; } catch { /* logo opcional */ }
-    }
+    const y = MARGIN - 6;
+    doc.font(F.negrita).fontSize(8).fillColor(COLOR_AZUL).text(NOMBRE_COMERCIAL, MARGIN, y, { width: anchoUtil / 2, lineBreak: false });
+    doc.font(F.normal).fontSize(8).fillColor(COLOR_MUT).text(`${limpiarTexto(proforma.numero)} (continuación)`, MARGIN + anchoUtil / 2, y, { width: anchoUtil / 2, align: 'right', lineBreak: false });
+    doc.moveTo(MARGIN, y + 13).lineTo(MARGIN + anchoUtil, y + 13).strokeColor(COLOR_BORDE).lineWidth(0.6).stroke();
+    doc.y = y + 22;
+}
 
-    const empresaX = MARGIN + (logoAlto ? 84 : 0);
-    const empresaAncho = anchoUtil - (logoAlto ? 84 : 0) - 180;
-    const yInicio = doc.y;
-
-    doc.font('Helvetica-Bold').fontSize(13).fillColor(COLOR_TXT)
-        .text(proforma.sucursal_nombre || 'SS SWAP — Mecánica Automotriz', empresaX, yInicio, { width: empresaAncho });
-    doc.font('Helvetica').fontSize(8.5).fillColor(COLOR_MUT);
-    if (proforma.sucursal_direccion) doc.text(proforma.sucursal_direccion, empresaX, doc.y + 2, { width: empresaAncho });
-    const contacto = [proforma.sucursal_telefono, proforma.sucursal_email].filter(Boolean).join('  ·  ');
-    if (contacto) doc.text(contacto, empresaX, doc.y + 1, { width: empresaAncho });
-
-    // Caja de numero/fecha a la derecha
-    const cajaAncho = 170;
-    const cajaX = MARGIN + anchoUtil - cajaAncho;
-    doc.rect(cajaX, yInicio, cajaAncho, 62).fillAndStroke(COLOR_HEAD_BG, COLOR_BORDE);
-    doc.font('Helvetica-Bold').fontSize(12).fillColor(COLOR_SKY).text(proforma.numero, cajaX, yInicio + 8, { width: cajaAncho, align: 'center' });
-    doc.font('Helvetica').fontSize(8).fillColor(COLOR_TXT);
-    doc.text(`Emisión: ${fecha(proforma.fecha_emision)}`, cajaX + 8, yInicio + 30, { width: cajaAncho - 16 });
-    doc.text(`Validez: ${fecha(proforma.fecha_validez)}`, cajaX + 8, yInicio + 44, { width: cajaAncho - 16 });
-
-    doc.y = Math.max(yInicio + Math.max(logoAlto, 62) + 10, doc.y + 10);
-    doc.moveTo(MARGIN, doc.y).lineTo(MARGIN + anchoUtil, doc.y).strokeColor(COLOR_SKY).lineWidth(1.5).stroke();
-    doc.moveDown(0.8);
+/** Panel con titulo y filas "Etiqueta: valor". Devuelve la altura usada. */
+function dibujarPanelDatos(doc, { x, y, ancho, titulo, filas, dibujar = true, altoFijo = null }) {
+    const etiquetaAncho = 62;
+    let alto = 22;
+    const medidas = filas.map(([, v]) => altoTexto(doc, v, ancho - etiquetaAncho - 20, F.normal, 8.3));
+    alto += medidas.reduce((s, h) => s + h + 3, 0) + 6;
+    if (!dibujar) return alto;
+    if (altoFijo) alto = altoFijo;
+    doc.roundedRect(x, y, ancho, alto, 4).fillAndStroke(COLOR_PANEL, COLOR_BORDE);
+    doc.font(F.negrita).fontSize(8).fillColor(COLOR_AZUL).text(titulo, x + 10, y + 7, { width: ancho - 20, lineBreak: false });
+    let yy = y + 22;
+    filas.forEach(([k, v], i) => {
+        doc.font(F.negrita).fontSize(7.6).fillColor(COLOR_MUT).text(k, x + 10, yy + 0.5, { width: etiquetaAncho, lineBreak: false });
+        doc.font(F.normal).fontSize(8.3).fillColor(COLOR_TXT).text(v, x + 10 + etiquetaAncho, yy, { width: ancho - etiquetaAncho - 20 });
+        yy += medidas[i] + 3;
+    });
+    return alto;
 }
 
 function dibujarBloqueClienteVehiculo(doc, proforma) {
     const anchoUtil = doc.page.width - MARGIN * 2;
-    const colAncho = anchoUtil / 2 - 8;
-    const yInicio = doc.y;
+    const colAncho = (anchoUtil - 12) / 2;
+    const L = limpiarTexto;
 
-    doc.font('Helvetica-Bold').fontSize(9).fillColor(COLOR_SKY).text('CLIENTE', MARGIN, yInicio);
-    doc.font('Helvetica').fontSize(9).fillColor(COLOR_TXT);
-    doc.text(proforma.cliente_nombre || '—', MARGIN, doc.y + 3, { width: colAncho });
-    if (proforma.cliente_ruc) doc.text(`RUC/CI: ${proforma.cliente_ruc}`, MARGIN, doc.y + 1, { width: colAncho });
-    if (proforma.cliente_direccion) doc.text(proforma.cliente_direccion, MARGIN, doc.y + 1, { width: colAncho });
-    const contactoCli = [proforma.cliente_telefono, proforma.cliente_email].filter(Boolean).join('  ·  ');
-    if (contactoCli) doc.text(contactoCli, MARGIN, doc.y + 1, { width: colAncho });
-    const yFinIzq = doc.y;
+    // Solo se muestran los datos que existen (no se inventa informacion).
+    const filasCliente = [
+        ['Nombre', L(proforma.cliente_nombre) || '—'],
+        ['RUC / C.I.', L(proforma.cliente_ruc)],
+        ['Teléfono', L(proforma.cliente_telefono)],
+        ['Correo', L(proforma.cliente_email)],
+        ['Dirección', L(proforma.cliente_direccion)],
+    ].filter(([k, v]) => k === 'Nombre' || v);
+    const filasVehiculo = [
+        ['Marca', L(proforma.vehiculo_marca) || '—'],
+        ['Modelo', L(proforma.vehiculo_modelo)],
+        ['Tipo', L(proforma.vehiculo_tipo)],
+        ['Color', L(proforma.vehiculo_color)],
+        ['Año', proforma.vehiculo_anio ? String(proforma.vehiculo_anio) : ''],
+        ['Placa', L(proforma.vehiculo_placa)],
+        ['VIN', L(proforma.vehiculo_vin)],
+    ].filter(([k, v]) => k === 'Marca' || v);
 
-    const xDer = MARGIN + colAncho + 16;
-    doc.font('Helvetica-Bold').fontSize(9).fillColor(COLOR_SKY).text('VEHÍCULO', xDer, yInicio);
-    doc.font('Helvetica').fontSize(9).fillColor(COLOR_TXT);
-    const veh = [proforma.vehiculo_marca, proforma.vehiculo_modelo].filter(Boolean).join(' ') || '—';
-    doc.text(veh, xDer, doc.y === yInicio ? yInicio + 14 : yInicio + 14, { width: colAncho });
-    doc.y = yInicio + 14 + 12;
-    const linea2 = [proforma.vehiculo_tipo, proforma.vehiculo_color, proforma.vehiculo_anio ? `Año ${proforma.vehiculo_anio}` : null].filter(Boolean).join('  ·  ');
-    if (linea2) doc.text(linea2, xDer, doc.y, { width: colAncho });
-    const linea3 = [proforma.vehiculo_placa ? `Placa: ${proforma.vehiculo_placa}` : null, proforma.vehiculo_vin ? `VIN: ${proforma.vehiculo_vin}` : null].filter(Boolean).join('  ·  ');
-    if (linea3) doc.text(linea3, xDer, doc.y + 1, { width: colAncho });
-    const yFinDer = doc.y;
-
-    doc.y = Math.max(yFinIzq, yFinDer) + 10;
-    doc.moveTo(MARGIN, doc.y).lineTo(doc.page.width - MARGIN, doc.y).strokeColor(COLOR_BORDE).lineWidth(0.5).stroke();
-    doc.moveDown(0.7);
+    const alto = Math.max(
+        dibujarPanelDatos(doc, { ancho: colAncho, titulo: 'CLIENTE', filas: filasCliente, dibujar: false }),
+        dibujarPanelDatos(doc, { ancho: colAncho, titulo: 'VEHÍCULO', filas: filasVehiculo, dibujar: false })
+    );
+    asegurarEspacio(doc, alto + 10, null);
+    const y = doc.y;
+    // Ambos paneles con la misma altura para que queden alineados.
+    dibujarPanelDatos(doc, { x: MARGIN, y, ancho: colAncho, titulo: 'CLIENTE', filas: filasCliente, altoFijo: alto });
+    dibujarPanelDatos(doc, { x: MARGIN + colAncho + 12, y, ancho: colAncho, titulo: 'VEHÍCULO', filas: filasVehiculo, altoFijo: alto });
+    doc.y = y + alto + 14;
 }
 
 // Colores del pictograma en el PDF (misma paleta que el SVG del frontend).
@@ -179,11 +264,9 @@ const COLOR_ZONA = '#f8fafc';
 const COLOR_ZONA_DANADA = '#ef4444';
 
 /**
- * Pictograma vectorial de daños (proformas de Colisiones / Pintura). Usa
- * EXACTAMENTE los mismos paths SVG que el frontend (shared/vehiculoDiagramas)
- * dibujados con doc.path(): nitido a cualquier zoom, sin imagenes. Respeta
- * la paginacion: si no entra en la pagina actual, pasa a la siguiente con
- * el mismo mecanismo de pie de pagina (asegurarEspacio).
+ * Pictograma vectorial de daños (Colisiones / Pintura). Usa los mismos
+ * paths SVG que el frontend (shared/vehiculoDiagramas). Las zonas dañadas
+ * van en rojo a proposito: es la leyenda del diagrama, no un resaltado.
  */
 function dibujarPictograma(doc, proforma) {
     if (proforma.tipo !== 'pintura' || !proforma.carroceria_tipo) return;
@@ -199,9 +282,9 @@ function dibujarPictograma(doc, proforma) {
     const x0 = MARGIN;
     let y = doc.y;
     const etiquetaVeh = `${CARROCERIAS[proforma.carroceria_tipo].etiqueta}${proforma.carroceria_tipo === 'hatchback' || proforma.carroceria_tipo === 'pickup' ? ` · ${diagrama.puertas} puertas` : ''}`;
-    doc.rect(x0, y, anchoUtil, 18).fill(COLOR_SKY);
-    doc.font('Helvetica-Bold').fontSize(10).fillColor('#fff')
-        .text(`DAÑOS REPORTADOS — TIPO DE VEHÍCULO: ${etiquetaVeh.toUpperCase()}`, x0 + 6, y + 4, { width: anchoUtil - 12 });
+    doc.rect(x0, y, anchoUtil, 18).fill(COLOR_AZUL);
+    doc.font(F.negrita).fontSize(8.5).fillColor('#fff')
+        .text(`DAÑOS REPORTADOS — TIPO DE VEHÍCULO: ${etiquetaVeh.toUpperCase()}`, x0 + 8, y + 5, { width: anchoUtil - 16, lineBreak: false });
     y += 22;
 
     doc.save();
@@ -219,7 +302,7 @@ function dibujarPictograma(doc, proforma) {
     diagrama.decor.filter(d => d.sobre).forEach(d => {
         doc.path(d.d).lineWidth(trazo).fillColor(COLOR_DECOR[d.clase] || '#334155').strokeColor('#334155').fillAndStroke();
     });
-    doc.font('Helvetica-Bold').fontSize(11).fillColor(COLOR_MUT);
+    doc.font(F.negrita).fontSize(11).fillColor(COLOR_MUT);
     diagrama.textos.forEach(t => {
         const ancho = 220;
         const tx = t.anchor === 'middle' ? t.x - ancho / 2 : t.anchor === 'end' ? t.x - ancho : t.x;
@@ -228,14 +311,13 @@ function dibujarPictograma(doc, proforma) {
     doc.restore();
     doc.y = y + altoDiagrama + 6;
 
-    // Leyenda + lista de zonas afectadas (2 columnas)
     asegurarEspacio(doc, 30, null);
     doc.rect(x0, doc.y + 2, 8, 8).fill(COLOR_ZONA_DANADA);
-    doc.font('Helvetica-Bold').fontSize(9).fillColor(COLOR_TXT)
+    doc.font(F.negrita).fontSize(8.5).fillColor(COLOR_TXT)
         .text(`Zonas afectadas (${zonas.length})`, x0 + 13, doc.y + 1, { width: anchoUtil - 13 });
     doc.moveDown(0.3);
     if (!zonas.length) {
-        doc.font('Helvetica').fontSize(8.5).fillColor(COLOR_MUT).text('No se marcaron zonas en el pictograma.', x0, doc.y, { width: anchoUtil });
+        doc.font(F.normal).fontSize(8).fillColor(COLOR_MUT).text('No se marcaron zonas en el pictograma.', x0, doc.y, { width: anchoUtil });
     } else {
         const etiquetas = zonas.map(etiquetaZona);
         const mitad = Math.ceil(etiquetas.length / 2);
@@ -243,7 +325,7 @@ function dibujarPictograma(doc, proforma) {
         for (let i = 0; i < mitad; i++) {
             asegurarEspacio(doc, 13, null);
             const yFila = doc.y;
-            doc.font('Helvetica').fontSize(8.5).fillColor(COLOR_TXT);
+            doc.font(F.normal).fontSize(8).fillColor(COLOR_TXT);
             doc.text(`•  ${etiquetas[i]}`, x0 + 4, yFila, { width: colAncho, lineBreak: false, ellipsis: true });
             if (etiquetas[i + mitad]) doc.text(`•  ${etiquetas[i + mitad]}`, x0 + anchoUtil / 2 + 4, yFila, { width: colAncho, lineBreak: false, ellipsis: true });
             doc.y = yFila + 12;
@@ -252,163 +334,182 @@ function dibujarPictograma(doc, proforma) {
     if (proforma.danos_observaciones) {
         doc.moveDown(0.3);
         asegurarEspacio(doc, 30, null);
-        doc.font('Helvetica-Bold').fontSize(8.5).fillColor(COLOR_TXT).text('Observaciones de los daños:', x0, doc.y);
-        doc.font('Helvetica').fontSize(8.5).fillColor(COLOR_MUT).text(proforma.danos_observaciones, x0, doc.y + 2, { width: anchoUtil });
+        doc.font(F.negrita).fontSize(8).fillColor(COLOR_TXT).text('Observaciones de los daños:', x0, doc.y);
+        doc.font(F.normal).fontSize(8).fillColor(COLOR_MUT).text(limpiarTexto(proforma.danos_observaciones), x0, doc.y + 2, { width: anchoUtil });
     }
     doc.moveDown(0.8);
 }
 
+/** Resumen economico (totales) + condiciones de pago a la izquierda. */
 function dibujarResumenTotales(doc, proforma) {
     const anchoUtil = doc.page.width - MARGIN * 2;
-    const cajaAncho = 230;
+    const cajaAncho = 250;
     const x0 = MARGIN + anchoUtil - cajaAncho;
-
-    asegurarEspacio(doc, 160, null);
-    const y0 = doc.y;
 
     const lineas = [];
     if (proforma.tipo === 'mecanica') {
-        if (Number(proforma.subtotal_productos)) lineas.push(['Subtotal productos', proforma.subtotal_productos]);
-        if (Number(proforma.subtotal_servicios)) lineas.push(['Subtotal servicios', proforma.subtotal_servicios]);
+        if (Number(proforma.subtotal_productos)) lineas.push(['Productos / repuestos', proforma.subtotal_productos]);
+        if (Number(proforma.subtotal_servicios)) lineas.push(['Servicios / mano de obra', proforma.subtotal_servicios]);
     } else {
-        if (Number(proforma.subtotal_mano_obra)) lineas.push(['Total mano de obra', proforma.subtotal_mano_obra]);
-        if (Number(proforma.subtotal_pintura)) lineas.push(['Total pintura', proforma.subtotal_pintura]);
-        if (Number(proforma.subtotal_repuestos)) lineas.push(['Total repuestos', proforma.subtotal_repuestos]);
-        if (Number(proforma.subtotal_insumos)) lineas.push(['Total insumos', proforma.subtotal_insumos]);
+        if (Number(proforma.subtotal_mano_obra)) lineas.push(['Mano de obra / enderezado', proforma.subtotal_mano_obra]);
+        if (Number(proforma.subtotal_pintura)) lineas.push(['Pintura', proforma.subtotal_pintura]);
+        if (Number(proforma.subtotal_repuestos)) lineas.push(['Repuestos', proforma.subtotal_repuestos]);
+        if (Number(proforma.subtotal_insumos)) lineas.push(['Insumos', proforma.subtotal_insumos]);
     }
-    lineas.push(['Subtotal', proforma.subtotal]);
-    if (Number(proforma.descuento)) lineas.push(['Descuento', -proforma.descuento]);
-    lineas.push([`IVA (${Number(proforma.iva_porcentaje)}%)`, proforma.iva_valor]);
+    lineas.push(['Subtotal', proforma.subtotal, true]);
+    if (Number(proforma.descuento)) lineas.push(['Descuento', -Number(proforma.descuento)]);
+    if (Number(proforma.iva_porcentaje) || Number(proforma.iva_valor)) lineas.push([`IVA (${Number(proforma.iva_porcentaje)}%)`, proforma.iva_valor]);
 
-    const altoCaja = 26 + lineas.length * 15 + 42;
-    doc.rect(x0, y0, cajaAncho, altoCaja).fillAndStroke('#f8fafc', COLOR_BORDE);
+    // Condiciones de pago con valores reales (reglasPago): el anticipo es
+    // REQUERIDO; lo "pagado" son solo los pagos registrados en el pagare.
+    const pct = porcentajeAnticipo(proforma.tipo);
+    const deuda = resumenDeuda({
+        montoTotal: proforma.total,
+        montoPagado: proforma.pagare ? proforma.pagare.monto_pagado : 0,
+        anticipoRequerido: proforma.anticipo,
+    });
+    const pagos = [];
+    if (deuda.anticipo_requerido > 0) {
+        pagos.push([pct ? `Anticipo requerido (${pct}%)` : 'Anticipo requerido', deuda.anticipo_requerido]);
+        pagos.push([pct ? `Saldo restante (${100 - pct}%)` : 'Saldo después del anticipo', deuda.saldo_despues_anticipo]);
+    }
+    pagos.push(['Total pagado', deuda.pagado]);
+    pagos.push(['Saldo pendiente de pago', deuda.saldo, true]);
 
-    let y = y0 + 10;
-    doc.font('Helvetica').fontSize(9).fillColor(COLOR_TXT);
-    lineas.forEach(([label, val]) => {
-        doc.text(label, x0 + 12, y, { width: cajaAncho - 110 });
-        doc.text(money(val), x0 + 12, y, { width: cajaAncho - 24, align: 'right' });
+    const altoTotales = 12 + lineas.length * 15 + 28;
+    const altoPagos = 26 + pagos.length * 15 + 8;
+    asegurarEspacio(doc, altoTotales + altoPagos + 20, null);
+    const y0 = doc.y;
+
+    // Caja de totales
+    doc.roundedRect(x0, y0, cajaAncho, altoTotales, 4).fillAndStroke(COLOR_PANEL, COLOR_BORDE);
+    let y = y0 + 9;
+    lineas.forEach(([label, val, fuerte]) => {
+        doc.font(fuerte ? F.negrita : F.normal).fontSize(8.5).fillColor(COLOR_TXT);
+        doc.text(label, x0 + 12, y, { width: cajaAncho - 120, lineBreak: false });
+        doc.text(money(val), x0 + 12, y, { width: cajaAncho - 24, align: 'right', lineBreak: false });
         y += 15;
     });
+    doc.rect(x0, y + 1, cajaAncho, 24).fill(COLOR_AZUL);
+    doc.font(F.negrita).fontSize(10.5).fillColor('#fff');
+    doc.text('TOTAL', x0 + 12, y + 7, { width: cajaAncho - 120, lineBreak: false });
+    doc.text(money(proforma.total), x0 + 12, y + 7, { width: cajaAncho - 24, align: 'right', lineBreak: false });
 
-    doc.rect(x0, y + 2, cajaAncho, 22).fill(COLOR_SKY);
-    doc.font('Helvetica-Bold').fontSize(11).fillColor('#fff');
-    doc.text('TOTAL', x0 + 12, y + 8, { width: cajaAncho - 110 });
-    doc.text(money(proforma.total), x0 + 12, y + 8, { width: cajaAncho - 24, align: 'right' });
-    y += 28;
+    // Caja de condiciones de pago
+    const yp = y0 + altoTotales + 8;
+    doc.roundedRect(x0, yp, cajaAncho, altoPagos, 4).fillAndStroke('#ffffff', COLOR_BORDE);
+    doc.font(F.negrita).fontSize(7.8).fillColor(COLOR_AZUL)
+        .text(pct ? 'CONDICIONES DE PAGO — COLISIONES' : 'CONDICIONES DE PAGO — MECÁNICA GENERAL', x0 + 12, yp + 8, { width: cajaAncho - 24, lineBreak: false });
+    let yy = yp + 24;
+    pagos.forEach(([label, val, fuerte]) => {
+        doc.font(fuerte ? F.negrita : F.normal).fontSize(8.5).fillColor(COLOR_TXT);
+        doc.text(label, x0 + 12, yy, { width: cajaAncho - 120, lineBreak: false });
+        doc.text(money(val), x0 + 12, yy, { width: cajaAncho - 24, align: 'right', lineBreak: false });
+        yy += 15;
+    });
 
-    doc.font('Helvetica').fontSize(9).fillColor(COLOR_TXT);
-    doc.text('Anticipo', x0 + 12, y, { width: cajaAncho - 110 });
-    doc.text(money(proforma.anticipo), x0 + 12, y, { width: cajaAncho - 24, align: 'right' });
-    y += 15;
-    doc.font('Helvetica-Bold');
-    doc.text('Saldo pendiente', x0 + 12, y, { width: cajaAncho - 110 });
-    doc.text(money(proforma.saldo), x0 + 12, y, { width: cajaAncho - 24, align: 'right' });
+    // Nota aclaratoria a la izquierda de las cajas
+    const notaAncho = anchoUtil - cajaAncho - 18;
+    const nota = pct
+        ? `Trabajo de colisiones: se requiere un anticipo del ${pct}% (${money(deuda.anticipo_requerido)}) para iniciar y el ${100 - pct}% restante (${money(deuda.saldo_despues_anticipo)}) a la entrega. El anticipo figura como pagado únicamente cuando se registra el pago.`
+        : (deuda.anticipo_requerido > 0
+            ? `Mecánica general: anticipo acordado de ${money(deuda.anticipo_requerido)}. El valor pagado corresponde solo a pagos registrados.`
+            : 'Mecánica general: no se exige anticipo para iniciar el trabajo. El valor pagado corresponde solo a pagos registrados.');
+    doc.font(F.normal).fontSize(7.8).fillColor(COLOR_MUT).text(nota, MARGIN, y0 + 4, { width: notaAncho });
 
-    doc.y = y0 + altoCaja + 14;
+    doc.y = Math.max(yp + altoPagos, doc.y) + 14;
 }
 
 function dibujarNotasYFirma(doc, proforma) {
     const anchoUtil = doc.page.width - MARGIN * 2;
-    asegurarEspacio(doc, 120, null);
+    const bloques = [];
+    if (proforma.tipo === 'pintura' && proforma.garantia) bloques.push(['Garantía', proforma.garantia]);
+    if (proforma.tipo === 'pintura' && proforma.tiempo_estimado) bloques.push(['Tiempo estimado de trabajo', proforma.tiempo_estimado]);
+    if (proforma.observaciones) bloques.push(['Observaciones', proforma.observaciones]);
+    if (proforma.condiciones) bloques.push(['Forma de pago / condiciones', proforma.condiciones]);
 
-    if (proforma.tipo === 'pintura' && (proforma.garantia || proforma.tiempo_estimado)) {
-        doc.font('Helvetica-Bold').fontSize(8.5).fillColor(COLOR_TXT);
-        if (proforma.garantia) { doc.text(`Garantía: ${proforma.garantia}`, MARGIN, doc.y, { width: anchoUtil }); doc.moveDown(0.3); }
-        if (proforma.tiempo_estimado) { doc.text(`Tiempo estimado de trabajo: ${proforma.tiempo_estimado}`, MARGIN, doc.y, { width: anchoUtil }); doc.moveDown(0.3); }
-        doc.font('Helvetica');
-    }
-    if (proforma.observaciones) {
-        doc.font('Helvetica-Bold').fontSize(8.5).text('Observaciones:', MARGIN, doc.y);
-        doc.font('Helvetica').fontSize(8.5).fillColor(COLOR_MUT).text(proforma.observaciones, MARGIN, doc.y + 2, { width: anchoUtil });
-        doc.moveDown(0.4);
-    }
-    if (proforma.condiciones) {
-        doc.font('Helvetica-Bold').fontSize(8.5).fillColor(COLOR_TXT).text('Forma de pago / condiciones:', MARGIN, doc.y);
-        doc.font('Helvetica').fontSize(8.5).fillColor(COLOR_MUT).text(proforma.condiciones, MARGIN, doc.y + 2, { width: anchoUtil });
-        doc.moveDown(0.6);
-    }
+    bloques.forEach(([titulo, texto]) => {
+        const t = limpiarTexto(texto);
+        asegurarEspacio(doc, altoTexto(doc, t, anchoUtil, F.normal, 8) + 20, null);
+        doc.font(F.negrita).fontSize(8).fillColor(COLOR_TXT).text(`${titulo}:`, MARGIN, doc.y, { width: anchoUtil });
+        doc.font(F.normal).fontSize(8).fillColor(COLOR_MUT).text(t, MARGIN, doc.y + 1, { width: anchoUtil });
+        doc.moveDown(0.5);
+    });
 
     asegurarEspacio(doc, 70, null);
-    doc.moveDown(1.5);
+    doc.moveDown(2);
     const yFirma = doc.y;
-    const mitad = anchoUtil / 2 - 20;
-    doc.strokeColor(COLOR_BORDE).lineWidth(0.6);
+    const mitad = anchoUtil / 2 - 30;
+    doc.strokeColor(COLOR_TXT).lineWidth(0.6);
     doc.moveTo(MARGIN, yFirma).lineTo(MARGIN + mitad, yFirma).stroke();
     doc.moveTo(MARGIN + anchoUtil - mitad, yFirma).lineTo(MARGIN + anchoUtil, yFirma).stroke();
-    doc.font('Helvetica').fontSize(8).fillColor(COLOR_MUT);
-    doc.text(`Preparado por: ${proforma.usuario_nombre || ''}`, MARGIN, yFirma + 4, { width: mitad, align: 'center' });
-    doc.text('Firma del cliente', MARGIN + anchoUtil - mitad, yFirma + 4, { width: mitad, align: 'center' });
+    doc.font(F.normal).fontSize(7.8).fillColor(COLOR_MUT);
+    doc.text(`Elaborado por: ${limpiarTexto(proforma.usuario_nombre)}`, MARGIN, yFirma + 4, { width: mitad, align: 'center' });
+    doc.text('Firma y aceptación del cliente', MARGIN + anchoUtil - mitad, yFirma + 4, { width: mitad, align: 'center' });
+    doc.y = yFirma + 20;
 }
 
-/** Genera el PDF y lo escribe en `res` (stream). `proforma` debe incluir `items`. */
-function generarProformaPdf(proforma, res) {
-    const doc = new PDFDocument({ size: 'A4', margin: MARGIN });
-    doc.pipe(res);
+/** Dibuja el documento completo sobre `stream`. Devuelve el total de paginas. */
+function renderizar(proforma, stream, totalPaginas) {
+    const doc = new PDFDocument({
+        size: 'A4', margin: MARGIN, bufferPages: false,
+        info: { Title: `${proforma.numero} - ${NOMBRE_COMERCIAL}`, Author: NOMBRE_COMERCIAL, Subject: 'Proforma' },
+    });
+    if (FUENTES_UNICODE) {
+        doc.registerFont(F.normal, FUENTE_REGULAR);
+        doc.registerFont(F.negrita, FUENTE_NEGRITA);
+    }
+    doc.pipe(stream);
 
-    // Pie de pagina incremental (ver nota tecnica en asegurarEspacio): no
-    // conocemos el total de paginas de antemano, asi que se numera solo
-    // "Página N" (sin "de Y") — evita depender de mecanismos de pdfkit que
-    // resultaron poco fiables en este entorno para documentos largos.
     let numeroPagina = 1;
     doc.__piePagina = () => {
-        const y = doc.page.height - 26;
-        // El pie va DEBAJO de margins.bottom a proposito (fuera del area de
-        // contenido). Escribir ahi con el margen activo hace que pdfkit
-        // piense que el texto no entra y cree una pagina nueva el solo
-        // (bug detectado generando PDFs de varias paginas: aparecian el
-        // doble de paginas de las esperadas, con el pie en las pares). Se
-        // anula el margen inferior solo durante este texto puntual.
+        const y = doc.page.height - 28;
+        const anchoUtil = doc.page.width - MARGIN * 2;
+        // El pie va debajo de margins.bottom: se anula el margen solo para
+        // este texto (si no, pdfkit crea una pagina nueva el solo).
         const margenOriginal = doc.page.margins.bottom;
         doc.page.margins.bottom = 0;
-        doc.font('Helvetica').fontSize(7.5).fillColor(COLOR_MUT)
-            .text(`${proforma.numero}  ·  Página ${numeroPagina}`, MARGIN, y, { width: doc.page.width - MARGIN * 2, align: 'center', lineBreak: false });
+        doc.moveTo(MARGIN, y - 6).lineTo(MARGIN + anchoUtil, y - 6).strokeColor(COLOR_BORDE).lineWidth(0.5).stroke();
+        doc.font(F.normal).fontSize(7).fillColor(COLOR_MUT);
+        doc.text(`${NOMBRE_COMERCIAL}  ·  ${limpiarTexto(proforma.numero)}`, MARGIN, y, { width: anchoUtil * 0.7, lineBreak: false });
+        doc.text(totalPaginas ? `Página ${numeroPagina} de ${totalPaginas}` : `Página ${numeroPagina}`, MARGIN + anchoUtil * 0.7, y, { width: anchoUtil * 0.3, align: 'right', lineBreak: false });
         doc.page.margins.bottom = margenOriginal;
         numeroPagina++;
     };
+    doc.__encabezadoContinuacion = () => dibujarEncabezadoContinuacion(doc, proforma);
 
     dibujarEncabezado(doc, proforma);
-
-    doc.font('Helvetica-Bold').fontSize(11).fillColor(COLOR_TXT)
-        .text(proforma.tipo === 'pintura' ? 'PROFORMA — COLISIONES / PINTURA Y CARROCERÍA' : 'PROFORMA — SERVICIO MECÁNICO', MARGIN, doc.y);
-    const ordenRef = proforma.orden_generada_id || proforma.orden_id;
-    if (ordenRef) {
-        doc.font('Helvetica').fontSize(8.5).fillColor(COLOR_MUT)
-            .text(`Orden de trabajo: OT-${String(ordenRef).padStart(6, '0')}`, MARGIN, doc.y + 2);
-    }
-    doc.moveDown(0.6);
-
     dibujarBloqueClienteVehiculo(doc, proforma);
     dibujarPictograma(doc, proforma);
 
     const itemsPorCategoria = (cat) => (proforma.items || []).filter(i => i.categoria === cat);
+    // Solo el codigo de referencia INTERNO del inventario (nunca el del proveedor).
+    const codigoInterno = (it) => (it.referencia_tipo === 'repuesto' && it.repuesto_codigo ? it.repuesto_codigo : '—');
     const filasDe = (items) => items.map((it, i) => ({
-        item: i + 1, descripcion: it.descripcion, cantidad: Number(it.cantidad) % 1 === 0 ? Number(it.cantidad) : Number(it.cantidad).toFixed(2),
+        item: i + 1, codigo: codigoInterno(it), descripcion: it.descripcion, cantidad: cant(it.cantidad),
         precio: money(it.precio_unitario), subtotal: money(it.subtotal),
     }));
 
-    const colCantPrecio = [
+    // Ancho util A4 = 515pt
+    const colDetalle = [
         { titulo: '#', campo: 'item', ancho: 24, align: 'center' },
-        { titulo: 'DESCRIPCIÓN', campo: 'descripcion', ancho: 250 },
-        { titulo: 'CANT.', campo: 'cantidad', ancho: 50, align: 'center' },
-        { titulo: 'P. UNIT.', campo: 'precio', ancho: 65, align: 'right' },
-        { titulo: 'SUBTOTAL', campo: 'subtotal', ancho: 70, align: 'right' },
+        { titulo: 'CÓDIGO', campo: 'codigo', ancho: 72 },
+        { titulo: 'DESCRIPCIÓN', campo: 'descripcion', ancho: 211 },
+        { titulo: 'CANT.', campo: 'cantidad', ancho: 44, align: 'center' },
+        { titulo: 'P. UNITARIO', campo: 'precio', ancho: 78, align: 'right' },
+        { titulo: 'SUBTOTAL', campo: 'subtotal', ancho: 86, align: 'right', negrita: true },
     ];
     const colSimple = [
-        { titulo: 'ITEM', campo: 'item', ancho: 30, align: 'center' },
-        { titulo: 'DESCRIPCIÓN', campo: 'descripcion', ancho: 379 },
-        { titulo: 'VALOR', campo: 'precio', ancho: 100, align: 'right' },
+        { titulo: '#', campo: 'item', ancho: 24, align: 'center' },
+        { titulo: 'DESCRIPCIÓN', campo: 'descripcion', ancho: 405 },
+        { titulo: 'VALOR', campo: 'precio', ancho: 86, align: 'right', negrita: true },
     ];
 
     if (proforma.tipo === 'mecanica') {
         const productos = itemsPorCategoria('producto');
-        if (productos.length) {
-            dibujarTabla(doc, { tituloSeccion: 'PRODUCTOS / REPUESTOS', columnas: colCantPrecio, filas: filasDe(productos), filaTotal: { etiqueta: 'TOTAL PRODUCTOS', valor: money(proforma.subtotal_productos) } });
-        }
+        if (productos.length) dibujarTabla(doc, { tituloSeccion: 'PRODUCTOS / REPUESTOS', columnas: colDetalle, filas: filasDe(productos), filaTotal: { etiqueta: 'Total productos', valor: money(proforma.subtotal_productos) } });
         const servicios = itemsPorCategoria('servicio');
-        if (servicios.length) {
-            dibujarTabla(doc, { tituloSeccion: 'SERVICIOS / MANO DE OBRA', columnas: colCantPrecio, filas: filasDe(servicios), filaTotal: { etiqueta: 'TOTAL SERVICIOS', valor: money(proforma.subtotal_servicios) } });
-        }
+        if (servicios.length) dibujarTabla(doc, { tituloSeccion: 'SERVICIOS / MANO DE OBRA', columnas: colDetalle, filas: filasDe(servicios), filaTotal: { etiqueta: 'Total servicios', valor: money(proforma.subtotal_servicios) } });
     } else {
         const secciones = [
             ['mano_obra', 'MANO DE OBRA / ENDEREZADO', proforma.subtotal_mano_obra],
@@ -419,12 +520,12 @@ function generarProformaPdf(proforma, res) {
         secciones.forEach(([cat, titulo, tot]) => {
             const items = itemsPorCategoria(cat);
             if (!items.length) return;
-            const usaCantPrecio = cat === 'repuesto' || cat === 'insumo';
+            const detalle = cat === 'repuesto' || cat === 'insumo';
             dibujarTabla(doc, {
                 tituloSeccion: titulo,
-                columnas: usaCantPrecio ? colCantPrecio : colSimple,
-                filas: usaCantPrecio ? filasDe(items) : items.map((it, i) => ({ item: i + 1, descripcion: it.descripcion, precio: money(it.subtotal) })),
-                filaTotal: { etiqueta: `TOTAL ${titulo.split(' / ')[0]}`, valor: money(tot) },
+                columnas: detalle ? colDetalle : colSimple,
+                filas: detalle ? filasDe(items) : items.map((it, i) => ({ item: i + 1, descripcion: it.descripcion, precio: money(it.subtotal) })),
+                filaTotal: { etiqueta: `Total ${titulo.split(' / ')[0].toLowerCase()}`, valor: money(tot) },
             });
         });
     }
@@ -432,11 +533,19 @@ function generarProformaPdf(proforma, res) {
     dibujarResumenTotales(doc, proforma);
     dibujarNotasYFirma(doc, proforma);
 
-    // La ultima pagina nunca pasa por asegurarEspacio->addPage (no hay una
-    // pagina siguiente que la "abandone"), asi que se dibuja aqui aparte.
+    // La ultima pagina no pasa por asegurarEspacio->addPage: su pie va aqui.
     doc.__piePagina();
-
     doc.end();
+    return numeroPagina - 1;
 }
 
-module.exports = { generarProformaPdf };
+/** Stream que descarta todo (primera pasada: solo cuenta paginas). */
+const streamNulo = () => new Writable({ write(_c, _e, cb) { cb(); } });
+
+/** Genera el PDF y lo escribe en `res` (stream). `proforma` debe incluir `items`. */
+function generarProformaPdf(proforma, res) {
+    const totalPaginas = renderizar(proforma, streamNulo(), null);
+    renderizar(proforma, res, totalPaginas);
+}
+
+module.exports = { generarProformaPdf, limpiarTexto, NOMBRE_COMERCIAL };

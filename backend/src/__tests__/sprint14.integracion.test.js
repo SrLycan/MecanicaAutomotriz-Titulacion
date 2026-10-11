@@ -15,7 +15,8 @@
  *  1. Proforma de mecanica con 3 productos -> resta stock, movimientos,
  *     precio historico en estadisticas.
  *  2. Proforma de colisiones SUV con 3 zonas -> se conservan al reabrir/editar.
- *  3. Proforma de $1.000 convertida a OT -> pagare automatico de $700.
+ *  3. Proforma de $1.000 convertida a OT -> pagare automatico por el TOTAL
+ *     ($1.000; Sprint 20: mecanica sin anticipo obligatorio).
  *  4. Pago por transferencia con datos bancarios persistidos.
  *  5. Pago por cheque con datos persistidos.
  *  6. Reprocesar la misma salida -> NO descuenta de nuevo.
@@ -54,8 +55,11 @@ d('Sprint 14 - integracion con PostgreSQL', () => {
                ('Ricardo TEST14','test14-tec@x.test','x','tecnico')
              RETURNING id, nombre, rol`
         );
-        admin = { ...u.rows[0], email: 'test14-admin@x.test' };
-        tecnico = { ...u.rows[1], email: 'test14-tec@x.test' };
+        // Sprint 21: los permisos los adjunta verificarToken en cada peticion;
+        // aqui se llama al controlador directo, asi que se simulan con la plantilla del rol.
+        const { PLANTILLAS } = require('../config/permisos');
+        admin = { ...u.rows[0], email: 'test14-admin@x.test', permisos: PLANTILLAS.administrador };
+        tecnico = { ...u.rows[1], email: 'test14-tec@x.test', permisos: PLANTILLAS.tecnico };
         cliente = (await pool.query(`INSERT INTO clientes (nombre, cedula) VALUES ('Cliente TEST14', 'TEST14-CI') RETURNING *`)).rows[0];
         vehiculo = (await pool.query(`INSERT INTO vehiculos (cliente_id, placa, marca, modelo) VALUES ($1,'TST-1414','Suzuki','Grand Vitara') RETURNING *`, [cliente.id])).rows[0];
         const mk = async (codigo, nombre, area, stock, precio) => (await pool.query(
@@ -107,10 +111,11 @@ d('Sprint 14 - integracion con PostgreSQL', () => {
         const temprano = await call(proformas.confirmarUso, { usuario: tecnico, params: { id: proformaMec.id } });
         expect(temprano.statusCode).toBe(409);
 
-        expect((await call(proformas.cambiarEstadoProforma, { usuario: tecnico, params: { id: proformaMec.id }, body: { estado: 'aprobada' } })).statusCode).toBe(200);
-        const conf = await call(proformas.confirmarUso, { usuario: tecnico, params: { id: proformaMec.id } });
-        expect(conf.statusCode).toBe(201);
-        expect(conf.body.movimientos).toHaveLength(3);
+        // Al APROBAR se descuenta automaticamente (ya no hace falta confirmar a mano)
+        const aprob = await call(proformas.cambiarEstadoProforma, { usuario: tecnico, params: { id: proformaMec.id }, body: { estado: 'aprobada' } });
+        expect(aprob.statusCode).toBe(200);
+        expect(aprob.body.inventario).toEqual({ accion: 'descontado', productos: 3 });
+        expect(aprob.body.proforma.inventario_descontado_at).toBeTruthy();
 
         expect(await stock(rep.filtro.id)).toBe(8);
         expect(await stock(rep.aceite.id)).toBe(16);
@@ -138,17 +143,17 @@ d('Sprint 14 - integracion con PostgreSQL', () => {
         expect(otra.body.error).toMatch(/ya desconto/i);
         expect(await stock(rep.filtro.id)).toBe(8);
 
-        // Nueva proforma aprobada, dos confirmaciones simultaneas: solo una descuenta
+        // Nueva proforma: dos aprobaciones simultaneas solo descuentan UNA vez
         const p = (await call(proformas.crearProforma, { usuario: tecnico, body: base({ estado: 'emitida', items: [
             { categoria: 'producto', descripcion: 'Filtro', cantidad: 1, precio_unitario: 9.5, referencia_tipo: 'repuesto', referencia_id: rep.filtro.id },
         ] }) })).body.proforma;
-        await call(proformas.cambiarEstadoProforma, { usuario: tecnico, params: { id: p.id }, body: { estado: 'aprobada' } });
         const [a, b] = await Promise.all([
-            call(proformas.confirmarUso, { usuario: tecnico, params: { id: p.id } }),
-            call(proformas.confirmarUso, { usuario: tecnico, params: { id: p.id } }),
+            call(proformas.cambiarEstadoProforma, { usuario: tecnico, params: { id: p.id }, body: { estado: 'aprobada' } }),
+            call(proformas.cambiarEstadoProforma, { usuario: tecnico, params: { id: p.id }, body: { estado: 'aprobada' } }),
         ]);
-        expect([a.statusCode, b.statusCode].sort()).toEqual([201, 409]);
+        expect([a.statusCode, b.statusCode]).toEqual([200, 200]);
         expect(await stock(rep.filtro.id)).toBe(7);
+        expect((await call(proformas.confirmarUso, { usuario: tecnico, params: { id: p.id } })).statusCode).toBe(409);
 
         // Editar o eliminar una proforma que ya desconto queda bloqueado
         const edit = await call(proformas.actualizarProforma, { usuario: tecnico, params: { id: p.id }, body: base({ items: [{ categoria: 'servicio', descripcion: 'x', cantidad: 1, precio_unitario: 1 }] }) });
@@ -172,7 +177,12 @@ d('Sprint 14 - integracion con PostgreSQL', () => {
             { categoria: 'insumo', descripcion: 'Pintura', cantidad: 4.25, precio_unitario: 40, referencia_tipo: 'repuesto', referencia_id: rep.pintura.id },
             { categoria: 'mano_obra', descripcion: 'Enderezado', cantidad: 1, precio_unitario: 100 },
         ] }) })).body.proforma;
-        await call(proformas.cambiarEstadoProforma, { usuario: tecnico, params: { id: p.id }, body: { estado: 'aprobada' } });
+        // La aprobacion NO falla por falta de stock: queda pendiente y avisa
+        const aprob = await call(proformas.cambiarEstadoProforma, { usuario: tecnico, params: { id: p.id }, body: { estado: 'aprobada' } });
+        expect(aprob.statusCode).toBe(200);
+        expect(aprob.body.inventario.accion).toBe('pendiente');
+        expect(aprob.body.inventario.detalle.join(' ')).toMatch(/Pintura TEST14/);
+        expect(aprob.body.proforma.inventario_descontado_at).toBeNull();
         const r = await call(proformas.confirmarUso, { usuario: tecnico, params: { id: p.id } });
         expect(r.statusCode).toBe(409);
         expect(r.body.error).toMatch(/Stock insuficiente/);
@@ -187,6 +197,22 @@ d('Sprint 14 - integracion con PostgreSQL', () => {
         const ok = await call(inventario.registrarMovimiento, { usuario: tecnico, body: { repuesto_id: rep.pintura.id, tipo: 'salida', cantidad: 0.5, motivo: 'retoque' } });
         expect(ok.statusCode).toBe(201);
         expect(ok.body.stock_nuevo).toBe(3);
+    });
+
+    test('Rechazar una proforma aprobada devuelve el material al inventario automaticamente', async () => {
+        const antes = await stock(rep.bujia.id);
+        const p = (await call(proformas.crearProforma, { usuario: tecnico, body: base({ estado: 'emitida', items: [
+            { categoria: 'producto', descripcion: 'Bujia', cantidad: 2, precio_unitario: 6, referencia_tipo: 'repuesto', referencia_id: rep.bujia.id },
+        ] }) })).body.proforma;
+        await call(proformas.cambiarEstadoProforma, { usuario: tecnico, params: { id: p.id }, body: { estado: 'aprobada' } });
+        expect(await stock(rep.bujia.id)).toBe(antes - 2);
+
+        const rech = await call(proformas.cambiarEstadoProforma, { usuario: tecnico, params: { id: p.id }, body: { estado: 'rechazada' } });
+        expect(rech.statusCode).toBe(200);
+        expect(rech.body.inventario).toEqual({ accion: 'devuelto', productos: 1 });
+        expect(await stock(rep.bujia.id)).toBe(antes);
+        const dev = await call(inventario.listarMovimientos, { usuario: admin, query: { proforma: p.numero, page: 1 } });
+        expect(dev.body.movimientos.map(m => m.origen).sort()).toEqual(['devolucion', 'proforma']);
     });
 
     let proformaSuv;
@@ -219,7 +245,7 @@ d('Sprint 14 - integracion con PostgreSQL', () => {
     });
 
     let cuenta;
-    test('CASO 3: proforma de $1.000 convertida a OT genera pagare de $700 (sin duplicar)', async () => {
+    test('CASO 3: proforma de mecanica de $1.000 convertida a OT genera pagare por el total, sin anticipo (sin duplicar)', async () => {
         const p = (await call(proformas.crearProforma, { usuario: tecnico, body: base({ estado: 'emitida', items: [
             { categoria: 'servicio', descripcion: 'Reparacion', cantidad: 1, precio_unitario: 1000 },
         ] }) })).body.proforma;
@@ -229,10 +255,12 @@ d('Sprint 14 - integracion con PostgreSQL', () => {
         const det = await call(cuentas.obtenerCuenta, { usuario: admin, params: { id: conv.body.pagare.id } });
         cuenta = det.body.cuenta;
         expect(Number(cuenta.monto_base)).toBe(1000);
-        expect(Number(cuenta.porcentaje)).toBe(70);
-        expect(Number(cuenta.monto_total)).toBe(700);
+        expect(cuenta.porcentaje).toBeNull();              // mecanica: sin % de anticipo
+        expect(Number(cuenta.anticipo_requerido)).toBe(0);
+        expect(Number(cuenta.monto_total)).toBe(1000);     // Sprint 20: el pagare es el 100%
         expect(Number(cuenta.monto_pagado)).toBe(0);
-        expect(Number(cuenta.saldo)).toBe(700);
+        expect(Number(cuenta.saldo)).toBe(1000);
+        expect(cuenta.estado).toBe('pendiente');
         expect(cuenta.orden_numero).toBe(`OT-${String(conv.body.orden.id).padStart(6, '0')}`);
         expect(cuenta.proforma_numero).toBe(p.numero);
         expect(cuenta.vehiculo_placa).toBe('TST-1414');
@@ -240,7 +268,7 @@ d('Sprint 14 - integracion con PostgreSQL', () => {
 
         // No se duplica aunque se intente generar otra vez por la BD
         await expect(pool.query(
-            `INSERT INTO cuentas_cobrar (cliente_id, proforma_id, orden_id, concepto, monto_total, origen, usuario_id) VALUES ($1,$2,$3,'dup',700,'automatico',$4)`,
+            `INSERT INTO cuentas_cobrar (cliente_id, proforma_id, orden_id, concepto, monto_total, origen, usuario_id) VALUES ($1,$2,$3,'dup',1000,'automatico',$4)`,
             [cliente.id, p.id, conv.body.orden.id, admin.id])).rejects.toThrow(/uq_cuenta_auto/);
         // El monto de un pagare automatico no se edita a mano
         const ed = await call(cuentas.actualizarCuenta, { usuario: admin, params: { id: cuenta.id }, body: { concepto: 'x', monto_total: 500 } });
@@ -259,8 +287,8 @@ d('Sprint 14 - integracion con PostgreSQL', () => {
         const pago = det.pagos.find(x => x.metodo_pago === 'transferencia');
         expect(pago).toMatchObject({ banco: 'Banco Pichincha', numero_cuenta: '2200112233', tipo_cuenta: 'ahorros', titular: 'Cliente TEST14', numero_comprobante: 'TRX-998877', fecha_documento: '2026-10-05', notas: 'Abono 1', numero_cheque: null });
         expect(pago.detalle).toMatch(/Comprobante: TRX-998877/);
-        expect(Number(det.saldo)).toBe(500);
-        expect(Number(det.porcentaje_pagado)).toBeCloseTo(28.57, 2);
+        expect(Number(det.saldo)).toBe(800);
+        expect(Number(det.porcentaje_pagado)).toBe(20);
         expect(det.estado).toBe('parcial');
     });
 
@@ -273,8 +301,10 @@ d('Sprint 14 - integracion con PostgreSQL', () => {
         const pago = det.pagos.find(x => x.metodo_pago === 'cheque');
         expect(pago).toMatchObject({ banco: 'Banco Guayaquil', numero_cheque: '000123', numero_cuenta: '0099887766', titular: 'Cliente TEST14', fecha_documento: '2026-10-10', numero_comprobante: null });
         expect(Number(pago.monto)).toBe(500);
-        expect(det.estado).toBe('pagado');
-        expect(Number(det.saldo)).toBe(0);
+        // Sprint 20: $700 de $1.000 NO es "pagado" (antes lo era: bug del 70%)
+        expect(det.estado).toBe('parcial');
+        expect(Number(det.saldo)).toBe(300);
+        expect(Number(det.porcentaje_pagado)).toBe(70);
     });
 
     test('Area: el inventario se filtra por Mecanica / Colisiones y los movimientos heredan el area', async () => {
@@ -321,12 +351,12 @@ d('Sprint 14 - integracion con PostgreSQL', () => {
         expect(anulado.anulado_at).not.toBeNull();
         expect(anulado.motivo_anulacion).toBe('Cheque rebotado');
         expect(Number(desp.monto_pagado)).toBe(200);
-        expect(Number(desp.saldo)).toBe(500);
+        expect(Number(desp.saldo)).toBe(800);   // Sprint 20: el pagare es por el total ($1.000)
         expect(desp.estado).toBe('parcial');
         // anular dos veces -> 409
         expect((await call(cuentas.eliminarPago, { usuario: admin, params: { id: cuenta.id, pagoId: cheque.id }, body: {} })).statusCode).toBe(409);
         // una cuenta con pagos (aunque esten anulados) no se elimina
-        await expect(pool.query('DELETE FROM cuentas_cobrar WHERE id = $1', [cuenta.id])).rejects.toThrow(/violates foreign key/);
+        await expect(pool.query('DELETE FROM cuentas_cobrar WHERE id = $1', [cuenta.id])).rejects.toThrow(/foreign key/);
     });
 
     test('Sprint 15: cliente/vehiculo con historial no se eliminan; OT tiene numero; catalogos', async () => {
@@ -344,6 +374,6 @@ d('Sprint 14 - integracion con PostgreSQL', () => {
         // FK a catalogo: un area inexistente se rechaza en la BD
         await expect(pool.query(`UPDATE repuestos SET area = 'inexistente' WHERE codigo = 'TEST14-FIL'`)).rejects.toThrow(/fk_repuestos_area/);
         // Borrar un repuesto ya no borra en cascada sus movimientos
-        await expect(pool.query(`DELETE FROM repuestos WHERE codigo = 'TEST14-FIL'`)).rejects.toThrow(/violates foreign key/);
+        await expect(pool.query(`DELETE FROM repuestos WHERE codigo = 'TEST14-FIL'`)).rejects.toThrow(/foreign key/);
     });
 });

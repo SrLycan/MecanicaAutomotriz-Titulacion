@@ -6,6 +6,7 @@
  * agendamiento y grounding del chatbot.
  */
 const pool = require('../config/db');
+const { errorBD } = require('../utils/erroresBD');
 
 /** GET /api/servicios — Lista tipos de servicio con filtros opcionales por estado y búsqueda por nombre */
 const listarServicios = async (req, res) => {
@@ -28,6 +29,7 @@ const listarServicios = async (req, res) => {
         return res.json({ servicios: rows });
     } catch (err) {
         console.error('Error listarServicios:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener servicios.' });
     }
 };
@@ -57,6 +59,7 @@ const crearServicio = async (req, res) => {
         return res.status(201).json(rows[0]);
     } catch (err) {
         console.error('Error crearServicio:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al crear servicio.' });
     }
 };
@@ -76,6 +79,7 @@ const actualizarServicio = async (req, res) => {
         return res.json(rows[0]);
     } catch (err) {
         console.error('Error actualizarServicio:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al actualizar servicio.' });
     }
 };

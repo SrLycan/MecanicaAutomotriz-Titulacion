@@ -6,23 +6,25 @@
  */
 const express = require('express');
 const router  = express.Router();
-const { verificarToken, verificarRol } = require('../middleware/auth.middleware');
+const { verificarToken, requierePermiso } = require('../middleware/auth.middleware');
 
 const {
     listarCuentas, obtenerCuenta, crearCuenta, actualizarCuenta,
-    cambiarEstadoCuenta, registrarPago, eliminarPago, eliminarCuenta, resumenCuentas,
+    cambiarEstadoCuenta, registrarPago, eliminarPago, eliminarCuenta, resumenCuentas, alertasVencimiento,
 } = require('../controllers/cuentasCobrar.controller');
 
-router.use(verificarToken, verificarRol('administrador', 'recepcionista'));
+router.use(verificarToken);
 
-router.get('/resumen',              resumenCuentas);
-router.get('/',                     listarCuentas);
-router.get('/:id',                  obtenerCuenta);
-router.post('/',                    crearCuenta);
-router.put('/:id',                  actualizarCuenta);
-router.patch('/:id/estado',         cambiarEstadoCuenta);
-router.post('/:id/pagos',           registrarPago);
-router.delete('/:id/pagos/:pagoId', verificarRol('administrador'), eliminarPago);
-router.delete('/:id',               verificarRol('administrador'), eliminarCuenta);
+const ver = requierePermiso('cuentas_cobrar', 'ver');
+router.get('/resumen',              ver, resumenCuentas);
+router.get('/alertas',              ver, alertasVencimiento);
+router.get('/',                     ver, listarCuentas);
+router.get('/:id',                  ver, obtenerCuenta);
+router.post('/',                    requierePermiso('cuentas_cobrar', 'crear'),    crearCuenta);
+router.put('/:id',                  requierePermiso('cuentas_cobrar', 'editar'),   actualizarCuenta);
+router.patch('/:id/estado',         requierePermiso('cuentas_cobrar', 'eliminar'), cambiarEstadoCuenta); // anular / reabrir
+router.post('/:id/pagos',           requierePermiso('pagos_clientes', 'crear'),    registrarPago);
+router.delete('/:id/pagos/:pagoId', requierePermiso('pagos_clientes', 'eliminar'), eliminarPago);
+router.delete('/:id',               requierePermiso('cuentas_cobrar', 'eliminar'), eliminarCuenta);
 
 module.exports = router;

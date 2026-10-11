@@ -14,15 +14,15 @@
   --bg-deep:      #ffffff;
   --bg-input:     #f7f8fb;
   --bg-row-hover: rgba(43,92,133,0.04);
-  --bg-head:      rgba(43,92,133,0.03);
+  --bg-head:      rgba(43,92,133,0.10);
 
   --text:         #000000;
   --text-soft:    #0f172a;
   --text-muted:   #111827;
   --text-faint:   #334155;
 
-  --border:       rgba(16,21,28,0.09);
-  --border-soft:  rgba(16,21,28,0.06);
+  --border:       #b6c3d3;
+  --border-soft:  #cad5e1;
   --border-h:     rgba(43,92,133,0.40);
 
   /* Azul metálico — color de marca */
@@ -46,8 +46,8 @@
   --danger-bdr:   rgba(209,41,61,0.28);
 
   --shadow-xs:    0 1px 2px rgba(12,15,20,0.05);
-  --shadow-sm:    0 2px 8px -2px rgba(12,15,20,0.07), 0 1px 2px rgba(12,15,20,0.05);
-  --shadow:       0 4px 16px -4px rgba(12,15,20,0.09), 0 2px 4px -2px rgba(12,15,20,0.05);
+  --shadow-sm:    0 2px 8px -2px rgba(12,15,20,0.10), 0 1px 2px rgba(12,15,20,0.06);
+  --shadow:       0 1px 2px rgba(12,15,20,0.06), 0 8px 22px -8px rgba(12,15,20,0.20);
   --shadow-lg:    0 12px 36px -12px rgba(12,15,20,0.16), 0 4px 12px -4px rgba(12,15,20,0.07);
   --shadow-glow:  0 6px 22px -8px rgba(43,92,133,0.45);
 
@@ -222,7 +222,7 @@ img, svg, video { max-width: 100%; }
 }
 
 /* ── Input base ── */
-.SS SWAP-input {
+.ssswap-input {
   width: 100%; box-sizing: border-box;
   padding: 11px 14px; border-radius: 10px;
   border: 1px solid var(--border);
@@ -233,15 +233,15 @@ img, svg, video { max-width: 100%; }
   outline: none;
   transition: border-color .2s, box-shadow .2s, background .2s;
 }
-.SS SWAP-input:focus {
+.ssswap-input:focus {
   border-color: var(--accent-2);
   background: var(--bg);
   box-shadow: 0 0 0 4px rgba(43,92,133,0.12);
 }
-.SS SWAP-input::placeholder { color: var(--text-faint); }
+.ssswap-input::placeholder { color: var(--text-faint); }
 
 /* ── Label ── */
-.SS SWAP-label {
+.ssswap-label {
   display: block; margin-bottom: 6px;
   font-family: 'Sora', sans-serif;
   font-weight: 600;
@@ -253,21 +253,21 @@ img, svg, video { max-width: 100%; }
 }
 
 /* ── Card genérica ── */
-.SS SWAP-card {
+.ssswap-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 16px;
   box-shadow: var(--shadow);
   transition: border-color .25s, transform .25s, box-shadow .25s;
 }
-.SS SWAP-card.is-hoverable:hover {
+.ssswap-card.is-hoverable:hover {
   border-color: var(--accent-bdr);
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
 }
 
 /* ── Chip ── */
-.SS SWAP-chip {
+.ssswap-chip {
   display: inline-flex; align-items: center; gap: 7px;
   padding: 4px 11px; border-radius: 999px;
   background: var(--accent-pale);
@@ -278,7 +278,7 @@ img, svg, video { max-width: 100%; }
   text-transform: uppercase;
   color: var(--accent);
 }
-.SS SWAP-chip > .dot {
+.ssswap-chip > .dot {
   width: 6px; height: 6px; border-radius: 50%;
   background: var(--accent-2);
   box-shadow: 0 0 8px var(--accent-2);
@@ -320,7 +320,7 @@ img, svg, video { max-width: 100%; }
 }
 
 /* ── Divisor decorativo ── */
-.SS SWAP-divider {
+.ssswap-divider {
   height: 1px;
   background: linear-gradient(90deg, var(--border), transparent);
 }

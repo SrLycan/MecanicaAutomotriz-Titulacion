@@ -7,6 +7,7 @@
  * MongoDB Atlas (progresión de órdenes y conversaciones con SWAPBot).
  */
 const pool = require('../config/db');
+const { errorBD } = require('../utils/erroresBD');
 const { obtenerHistorialPorOrden }   = require('../services/ordenesHistorial.service');
 const { obtenerHistorialPorCliente } = require('../services/chatbotConversacion.service');
 
@@ -21,7 +22,7 @@ const miActividad = async (req, res) => {
     try {
         // 1. Buscar el cliente vinculado al email del usuario
         const { rows: clienteRows } = await pool.query(
-            'SELECT id FROM clientes WHERE email = $1 LIMIT 1',
+            'SELECT id FROM clientes WHERE LOWER(email) = LOWER($1) ORDER BY id LIMIT 1',
             [email]
         );
         const cliente = clienteRows[0] || null;
@@ -73,6 +74,7 @@ const miActividad = async (req, res) => {
         });
     } catch (err) {
         console.error('Error miActividad:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener actividad.' });
     }
 };
@@ -88,7 +90,7 @@ const miHistorialOrden = async (req, res) => {
     const { email } = req.usuario;
 
     try {
-        const { rows: clienteRows } = await pool.query('SELECT id FROM clientes WHERE email = $1 LIMIT 1', [email]);
+        const { rows: clienteRows } = await pool.query('SELECT id FROM clientes WHERE LOWER(email) = LOWER($1) ORDER BY id LIMIT 1', [email]);
         const cliente = clienteRows[0];
         if (!cliente) return res.status(404).json({ error: 'No se encontro un cliente vinculado a esta cuenta.' });
 
@@ -102,6 +104,7 @@ const miHistorialOrden = async (req, res) => {
         return res.json({ historial });
     } catch (err) {
         console.error('Error miHistorialOrden:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener el historial de la orden.' });
     }
 };
@@ -115,7 +118,7 @@ const miHistorialChat = async (req, res) => {
     const { email } = req.usuario;
 
     try {
-        const { rows: clienteRows } = await pool.query('SELECT id FROM clientes WHERE email = $1 LIMIT 1', [email]);
+        const { rows: clienteRows } = await pool.query('SELECT id FROM clientes WHERE LOWER(email) = LOWER($1) ORDER BY id LIMIT 1', [email]);
         const cliente = clienteRows[0];
         if (!cliente) return res.json({ conversaciones: [] });
 
@@ -123,6 +126,7 @@ const miHistorialChat = async (req, res) => {
         return res.json({ conversaciones });
     } catch (err) {
         console.error('Error miHistorialChat:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener el historial de conversaciones.' });
     }
 };

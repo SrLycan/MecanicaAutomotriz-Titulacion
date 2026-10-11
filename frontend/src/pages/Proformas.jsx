@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
+import { avisarInventario } from '../utils/avisoInventario';
 import { useConfirm } from '../components/common/ConfirmDialog';
 import Paginador from '../components/proveedores/Paginador';
 import './Proformas.css';
@@ -25,21 +26,23 @@ const TIPO_LABEL = { mecanica: 'Mecánica', pintura: 'Colisiones / Pintura' };
 const CARROCERIA_LABEL = { pickup: 'Pickup', hatchback: 'Hatchback', sedan: 'Sedán', suv: 'SUV' };
 
 export default function Proformas() {
-    const { usuario, tieneRol } = useAuth();
+    const { usuario, puede, puedeAlguno } = useAuth();
     const { isDark } = useTheme();
     const navigate = useNavigate();
     const confirm = useConfirm();
-    const esAdmin = tieneRol('administrador');
+    // Permiso segun el tipo de la proforma (mecanica / colisiones-pintura).
+    const pp = (p, accion) => puede(p.tipo === 'pintura' ? 'proformas_colisiones' : 'proformas_mecanica', accion);
+    const puedeCrear = puedeAlguno('proformas_mecanica:crear', 'proformas_colisiones:crear');
 
     const SKY = '#0ea5e9'; const SKY_DEEP = '#0284c7';
-    const SKY_PALE = isDark ? 'rgba(14,165,233,0.10)' : 'rgba(14,165,233,0.05)';
+    const SKY_PALE = isDark ? 'rgba(14,165,233,0.10)' : 'rgba(14,165,233,0.12)';
     const txt = isDark ? '#f1f5f9' : '#0f172a';
     const txtSf = isDark ? '#cbd5e1' : '#334155';
     const mut = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
-    const bdr = isDark ? 'rgba(148,163,184,0.18)' : 'rgba(15,23,42,0.07)';
+    const bdr = isDark ? 'rgba(148,163,184,0.18)' : '#b6c3d3';
     const card = isDark ? 'rgba(255,255,255,0.025)' : '#ffffff';
     const inputBg = isDark ? '#0b1220' : '#f8fafc';
-    const cardSh = isDark ? '0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 40px -16px rgba(0,0,0,0.55)' : '0 4px 16px -4px rgba(15,23,42,0.08), 0 2px 4px -2px rgba(15,23,42,0.04)';
+    const cardSh = isDark ? '0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 40px -16px rgba(0,0,0,0.55)' : '0 1px 2px rgba(15,23,42,0.06), 0 8px 22px -8px rgba(15,23,42,0.20)';
     const theme = { txt, txtSf, mut, bdr, card };
 
     const [proformas, setProformas] = useState([]);
@@ -87,9 +90,13 @@ export default function Proformas() {
     };
 
     const cambiarEstado = async (p, estado) => {
+        if (p.inventario_descontado_at && estado !== 'aprobada'
+            && !(await confirm({ title: 'Cambiar estado', confirmLabel: 'Cambiar', danger: false,
+                message: `La proforma ${p.numero} ya descontó material del inventario. Al pasarla a "${estado}" ese material volverá al stock. ¿Continuar?` }))) return;
         try {
-            await api.patch(`/proformas/${p.id}/estado`, { estado });
-            toast.success('Estado actualizado.');
+            const { data } = await api.patch(`/proformas/${p.id}/estado`, { estado });
+            toast.success(`Proforma ${p.numero}: ${estado}.`);
+            avisarInventario(data.inventario);
             cargar();
         } catch (err) { toast.error(err.response?.data?.error || 'Error al cambiar el estado.'); }
     };
@@ -110,17 +117,19 @@ export default function Proformas() {
         <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1500, '--pf-bdr': bdr, '--pf-sky': SKY_DEEP }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
                 <div>
-                    <div className="SS SWAP-chip" style={{ marginBottom: 8 }}>
+                    <div className="ssswap-chip" style={{ marginBottom: 8 }}>
                         <span className="dot" />
                         <span>SS SWAP · PROFORMAS</span>
                     </div>
                     <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.6rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>Proformas</h1>
                     <p style={{ fontFamily: "'Outfit'", fontSize: '.85rem', color: mut, marginTop: 6 }}>Mecánica y Colisiones / Pintura — numeración automática</p>
                 </div>
+                {puedeCrear && (
                 <button onClick={() => navigate('/dashboard/proformas/nueva')}
                     style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: "'Bebas Neue'", fontSize: '.8rem', letterSpacing: '.14em', color: '#fff', background: `linear-gradient(135deg, ${SKY_DEEP}, ${SKY})`, border: 'none', borderRadius: 11, padding: '12px 22px', cursor: 'pointer' }}>
                     <IconPlus /> NUEVA PROFORMA
                 </button>
+                )}
             </div>
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'flex-end', marginBottom: 18 }}>
@@ -185,7 +194,7 @@ export default function Proformas() {
                                     </td>
                                     <td style={{ color: txt, fontWeight: 600 }}>${Number(p.total).toFixed(2)}</td>
                                     <td>
-                                        <select value={p.estado} onChange={e => cambiarEstado(p, e.target.value)} disabled={p.estado === 'convertida'}
+                                        <select value={p.estado} onChange={e => cambiarEstado(p, e.target.value)} disabled={p.estado === 'convertida' || !(pp(p, 'editar') || pp(p, 'aprobar'))}
                                             className="pf-badge" style={{ background: `${ESTADO_COLOR[p.estado]}18`, border: `1px solid ${ESTADO_COLOR[p.estado]}44`, color: ESTADO_COLOR[p.estado], cursor: p.estado === 'convertida' ? 'default' : 'pointer' }}>
                                             {ESTADOS.map(e => <option key={e} value={e} disabled={e === 'convertida'}>{e.toUpperCase()}</option>)}
                                         </select>
@@ -193,13 +202,13 @@ export default function Proformas() {
                                     <td>
                                         <div style={{ display: 'flex', gap: 5, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                                             <Link to={`/dashboard/proformas/${p.id}`} className="pf-icon-btn" style={{ color: SKY_DEEP }} title="Ver"><IconEye /></Link>
-                                            {p.estado !== 'convertida' && !p.inventario_descontado_at && (
+                                            {pp(p, 'editar') && p.estado !== 'convertida' && !p.inventario_descontado_at && (
                                                 <Link to={`/dashboard/proformas/${p.id}/editar`} className="pf-icon-btn" style={{ color: SKY_DEEP }} title="Editar"><IconEdit /></Link>
                                             )}
-                                            <button className="pf-icon-btn" style={{ color: SKY_DEEP }} title="Duplicar" onClick={() => duplicar(p)}><IconCopy /></button>
-                                            <button className="pf-icon-btn" style={{ color: SKY_DEEP }} title="Descargar PDF" onClick={() => descargar(p, 'pdf')}><IconDownload /></button>
-                                            <button className="pf-icon-btn" style={{ color: SKY_DEEP }} title="Descargar Excel" onClick={() => descargar(p, 'excel')}><IconFileSpread /></button>
-                                            {esAdmin && p.estado !== 'convertida' && !p.inventario_descontado_at && (
+                                            {pp(p, 'crear') && <button className="pf-icon-btn" style={{ color: SKY_DEEP }} title="Duplicar" onClick={() => duplicar(p)}><IconCopy /></button>}
+                                            {pp(p, 'exportar') && <button className="pf-icon-btn" style={{ color: SKY_DEEP }} title="Descargar PDF" onClick={() => descargar(p, 'pdf')}><IconDownload /></button>}
+                                            {pp(p, 'exportar') && <button className="pf-icon-btn" style={{ color: SKY_DEEP }} title="Descargar Excel" onClick={() => descargar(p, 'excel')}><IconFileSpread /></button>}
+                                            {pp(p, 'eliminar') && p.estado !== 'convertida' && !p.inventario_descontado_at && (
                                                 <button className="pf-icon-btn" style={{ color: '#ef4444' }} title="Eliminar" onClick={() => eliminar(p)}><IconTrash /></button>
                                             )}
                                         </div>

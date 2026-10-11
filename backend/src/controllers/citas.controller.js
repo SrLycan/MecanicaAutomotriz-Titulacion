@@ -8,6 +8,7 @@
  * - Restricciones de negocio: días hábiles, validación de franjas horarias y capacidad por turno.
  */
 const pool = require('../config/db');
+const { errorBD } = require('../utils/erroresBD');
 
 // Vehiculos que el taller puede atender en simultaneo por sucursal (simula bahias/elevadores)
 // Una cita por bahia: no se permiten servicios que se crucen.
@@ -102,6 +103,7 @@ const disponibilidad = async (req, res) => {
         return res.json({ abierto: true, duracion_min: duracion, capacidad_por_turno: CAPACIDAD_POR_TURNO, slots });
     } catch (err) {
         console.error('Error disponibilidad:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al calcular la disponibilidad.' });
     }
 };
@@ -130,7 +132,7 @@ const crearCita = async (req, res) => {
     if (!horario) return res.status(400).json({ error: 'El taller no atiende los domingos.' });
 
     try {
-        const { rows: cliRows } = await pool.query('SELECT id FROM clientes WHERE email = $1', [email]);
+        const { rows: cliRows } = await pool.query('SELECT id FROM clientes WHERE LOWER(email) = LOWER($1) ORDER BY id LIMIT 1', [email]);
         const cliente = cliRows[0];
         if (!cliente)
             return res.status(409).json({ error: 'Tu cuenta aun no esta vinculada a un cliente del taller. Visita una sucursal o contacta a recepcion para completar tu registro.' });
@@ -164,8 +166,9 @@ const crearCita = async (req, res) => {
         }
 
         const horaFin = aHHMM(finMin);
-        const client  = await pool.connect();
+        let client;
         try {
+            client = await pool.connect();
             await client.query('BEGIN');
 
             // Evita que dos solicitudes simultaneas reserven el mismo turno.
@@ -191,13 +194,14 @@ const crearCita = async (req, res) => {
             await client.query('COMMIT');
             return res.status(201).json({ cita: rows[0] });
         } catch (err) {
-            await client.query('ROLLBACK');
+            await client?.query('ROLLBACK');
             throw err;
         } finally {
-            client.release();
+            client?.release();
         }
     } catch (err) {
         console.error('Error crearCita:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al agendar la cita.' });
     }
 };
@@ -214,7 +218,7 @@ const misCitas = async (req, res) => {
         req.query.orden === 'fecha_asc' ? 'c.fecha ASC, c.hora_inicio ASC' :
         'c.fecha DESC, c.hora_inicio DESC';
     try {
-        const { rows: cliRows } = await pool.query('SELECT id FROM clientes WHERE email = $1', [email]);
+        const { rows: cliRows } = await pool.query('SELECT id FROM clientes WHERE LOWER(email) = LOWER($1) ORDER BY id LIMIT 1', [email]);
         const cliente = cliRows[0];
         if (!cliente) return res.json({ citas: [] });
 
@@ -234,6 +238,7 @@ const misCitas = async (req, res) => {
         return res.json({ citas: rows });
     } catch (err) {
         console.error('Error misCitas:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener tus citas.' });
     }
 };
@@ -282,7 +287,7 @@ const cancelarCita = async (req, res) => {
         const { rows } = await pool.query(
             `UPDATE citas SET estado = 'cancelada'
              WHERE id = $1 AND estado IN ('pendiente','confirmada')
-               AND cliente_id = (SELECT id FROM clientes WHERE email = $2)
+               AND cliente_id = (SELECT id FROM clientes WHERE LOWER(email) = LOWER($2) ORDER BY id LIMIT 1)
              RETURNING *`,
             [id, email]
         );
@@ -290,6 +295,7 @@ const cancelarCita = async (req, res) => {
         return res.json({ cita: rows[0] });
     } catch (err) {
         console.error('Error cancelarCita:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al cancelar la cita.' });
     }
 };

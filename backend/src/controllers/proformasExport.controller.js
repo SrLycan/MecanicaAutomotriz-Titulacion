@@ -29,9 +29,18 @@ async function obtenerProformaCompleta(id) {
     );
     const proforma = rows[0];
     if (!proforma) return null;
-    const { rows: items } = await pool.query('SELECT * FROM proforma_items WHERE proforma_id = $1 ORDER BY categoria, orden_linea', [id]);
+    // Solo el codigo de referencia INTERNO (r.codigo); el del proveedor no se consulta.
+    const { rows: items } = await pool.query(
+        `SELECT i.*, r.codigo AS repuesto_codigo
+         FROM proforma_items i
+         LEFT JOIN repuestos r ON i.referencia_tipo = 'repuesto' AND r.id = i.referencia_id
+         WHERE i.proforma_id = $1 ORDER BY i.categoria, i.orden_linea, i.id`, [id]);
     const { rows: zonas } = await pool.query('SELECT zona FROM proforma_zonas_danadas WHERE proforma_id = $1 ORDER BY id', [id]);
-    return { ...proforma, items, zonas_danadas: zonas.map(z => z.zona) };
+    // Pagos reales: los registrados en el pagare de esta proforma (si existe).
+    const { rows: pagare } = await pool.query(
+        `SELECT id, monto_total, monto_pagado, anticipo_requerido FROM cuentas_cobrar
+         WHERE proforma_id = $1 AND estado <> 'anulado' ORDER BY (origen = 'automatico') DESC, id LIMIT 1`, [id]);
+    return { ...proforma, items, zonas_danadas: zonas.map(z => z.zona), pagare: pagare[0] || null };
 }
 
 // GET /api/proformas/:id/pdf

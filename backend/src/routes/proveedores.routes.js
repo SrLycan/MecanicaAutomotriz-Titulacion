@@ -12,7 +12,7 @@
  */
 const express = require('express');
 const router  = express.Router();
-const { verificarToken, verificarRol } = require('../middleware/auth.middleware');
+const { verificarToken, permisoPorMetodo } = require('../middleware/auth.middleware');
 
 const {
     listarProveedores, obtenerProveedor, crearProveedor, actualizarProveedor, eliminarProveedor,
@@ -24,7 +24,7 @@ const {
 } = require('../controllers/gastosProveedor.controller');
 
 const {
-    listarCompras, obtenerCompra, crearCompra, actualizarCompra, cambiarEstadoCompra, eliminarCompra,
+    alertasCredito, listarCompras, obtenerCompra, crearCompra, actualizarCompra, cambiarEstadoCompra, eliminarCompra,
 } = require('../controllers/comprasProveedor.controller');
 
 const {
@@ -32,7 +32,8 @@ const {
 } = require('../controllers/movimientosFinancieros.controller');
 
 // Todas las rutas de este modulo requieren estar autenticado como administrador
-router.use(verificarToken, verificarRol('administrador'));
+// GET = ver, POST = crear, PUT/PATCH = editar, DELETE = eliminar (modulo "proveedores").
+router.use(verificarToken, permisoPorMetodo('proveedores'));
 
 // ── Proveedores ──────────────────────────────────────────────
 router.get('/proveedores',        listarProveedores);
@@ -57,6 +58,7 @@ router.delete('/gastos/:id', eliminarGasto);
 
 // ── Compras ──────────────────────────────────────────────────
 router.get('/compras',              listarCompras);
+router.get('/compras/alertas-credito', alertasCredito);
 router.get('/compras/:id',          obtenerCompra);
 router.post('/compras',             crearCompra);
 router.put('/compras/:id',          actualizarCompra);

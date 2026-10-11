@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { useConfirm } from '../common/ConfirmDialog';
 import Paginador from './Paginador';
+import { useAuth } from '../../context/AuthContext';
 
 function IconPlus()  { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>; }
 function IconEdit()  { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>; }
@@ -19,6 +20,7 @@ const ESTADO_COLOR = { pendiente: '#f59e0b', pagado: '#10b981', anulado: '#ef444
 const EMPTY = { proveedor_id: '', categoria: 'otros', descripcion: '', monto: '', fecha: '', metodo_pago: 'efectivo', estado: 'pagado', numero_comprobante: '', observaciones: '' };
 
 export default function GastosTab({ theme, proveedores }) {
+    const { puede } = useAuth();
     const confirm = useConfirm();
     const { txt, txtSf, mut, bdr, card, cardSh, inputBg, SKY, SKY_DEEP, SKY_PALE, labelSt, inputSt } = theme;
     const [gastos, setGastos]   = useState([]);
@@ -105,10 +107,10 @@ export default function GastosTab({ theme, proveedores }) {
                     <label style={labelSt}>HASTA</label>
                     <input type="date" style={filtroSel} value={filtros.fecha_fin} onChange={e => setFiltros({ ...filtros, fecha_fin: e.target.value })} />
                 </div>
-                <button onClick={() => setModal({ open: true, data: null })}
+                {puede('proveedores', 'crear') && <button onClick={() => setModal({ open: true, data: null })}
                     style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.14em', color: '#fff', background: `linear-gradient(135deg, ${SKY_DEEP}, ${SKY})`, border: 'none', borderRadius: 11, padding: '10px 20px', cursor: 'pointer', height: 38 }}>
                     <IconPlus /> NUEVO GASTO
-                </button>
+                </button>}
             </div>
 
             <p style={{ fontFamily: "'Outfit'", fontSize: '.82rem', color: mut, marginBottom: 12 }}>
@@ -147,9 +149,9 @@ export default function GastosTab({ theme, proveedores }) {
                                     </td>
                                     <td>
                                         <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                                            <button className="prov-icon-btn" style={{ color: SKY_DEEP }} onClick={() => setModal({ open: true, data: g })}><IconEdit /></button>
+                                            {puede('proveedores', 'editar') && <button className="prov-icon-btn" style={{ color: SKY_DEEP }} onClick={() => setModal({ open: true, data: g })}><IconEdit /></button>}
                                             {g.estado !== 'pagado' && (
-                                                <button className="prov-icon-btn" style={{ color: '#ef4444' }} onClick={() => eliminar(g)}><IconTrash /></button>
+                                                puede('proveedores', 'eliminar') && <button className="prov-icon-btn" style={{ color: '#ef4444' }} onClick={() => eliminar(g)}><IconTrash /></button>
                                             )}
                                         </div>
                                     </td>

@@ -5,17 +5,17 @@
  */
 const express = require('express');
 const router  = express.Router();
-const { verificarToken, verificarRol } = require('../middleware/auth.middleware');
+const { verificarToken, requierePermiso } = require('../middleware/auth.middleware');
 const {
     obtenerSesionActual, abrirCaja, cerrarCaja, registrarMovimientoCaja, listarHistorial,
 } = require('../controllers/caja.controller');
 
-router.use(verificarToken, verificarRol('administrador', 'recepcionista'));
+router.use(verificarToken);
 
-router.get('/actual',       obtenerSesionActual);
-router.post('/apertura',    abrirCaja);
-router.post('/cierre',      cerrarCaja);
-router.post('/movimientos', registrarMovimientoCaja);
-router.get('/historial',    listarHistorial);
+router.get('/actual',       requierePermiso('caja', 'ver'),     obtenerSesionActual);
+router.post('/apertura',    requierePermiso('caja', 'aprobar'), abrirCaja);
+router.post('/cierre',      requierePermiso('caja', 'aprobar'), cerrarCaja);
+router.post('/movimientos', requierePermiso('caja', 'crear'),   registrarMovimientoCaja);
+router.get('/historial',    requierePermiso('caja', 'ver'),     listarHistorial);
 
 module.exports = router;

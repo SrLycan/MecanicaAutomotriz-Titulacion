@@ -28,7 +28,7 @@ export default function Bitacora() {
 
     const txt   = isDark ? '#f1f5f9' : '#0f172a';
     const mut   = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
-    const bdr   = isDark ? 'rgba(148,163,184,0.18)' : 'rgba(15,23,42,0.07)';
+    const bdr   = isDark ? 'rgba(148,163,184,0.18)' : '#b6c3d3';
     const card  = isDark ? 'rgba(255,255,255,0.025)' : '#ffffff';
     const pale  = isDark ? 'rgba(99,102,241,0.10)' : 'rgba(99,102,241,0.06)';
 

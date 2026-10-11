@@ -306,3 +306,27 @@ body { background: #050505; color: #fff; }
 @media (max-width: 1100px) { .sp-grid { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 720px)  { .sp-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 460px)  { .sp-grid { grid-template-columns: 1fr; } }
+
+/* Carrusel horizontal de especialidades (servicios del catalogo) */
+.sp-carrusel { position: relative; padding: 0 30px; }
+.sp-track {
+    display: flex; gap: 18px; overflow-x: auto; scroll-snap-type: x mandatory;
+    padding: 10px 2px 14px; scrollbar-width: none;
+}
+.sp-track::-webkit-scrollbar { display: none; }
+.sp-track .sp-card { flex: 0 0 calc((100% - 54px) / 4); scroll-snap-align: start; }
+.sp-card-title + .sp-card-more { margin-top: 12px; }
+.sp-flecha {
+    position: absolute; top: 50%; transform: translateY(-50%); z-index: 5;
+    width: 46px; height: 46px; border-radius: 50%; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; background: rgba(10,10,10,.85); border: 1px solid rgba(59,123,171,.45);
+    box-shadow: 0 10px 24px -10px rgba(0,0,0,.8); transition: background .2s, opacity .2s, border-color .2s;
+}
+.sp-flecha:hover:not(:disabled) { background: #3b7bab; border-color: #3b7bab; }
+.sp-flecha:disabled { opacity: .25; cursor: default; }
+.sp-flecha-izq { left: 0; }
+.sp-flecha-der { right: 0; }
+@media (max-width: 1100px) { .sp-track .sp-card { flex-basis: calc((100% - 36px) / 3); } }
+@media (max-width: 720px)  { .sp-track .sp-card { flex-basis: calc((100% - 18px) / 2); } }
+@media (max-width: 460px)  { .sp-carrusel { padding: 0; } .sp-track .sp-card { flex-basis: 82%; } .sp-flecha-izq { left: 4px; } .sp-flecha-der { right: 4px; } }

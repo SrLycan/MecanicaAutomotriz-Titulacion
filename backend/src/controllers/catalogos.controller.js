@@ -6,6 +6,7 @@
  * movimiento). Solo lectura.
  */
 const pool = require('../config/db');
+const { errorBD } = require('../utils/erroresBD');
 
 const obtenerCatalogos = async (_req, res) => {
     try {
@@ -23,6 +24,7 @@ const obtenerCatalogos = async (_req, res) => {
         });
     } catch (err) {
         console.error('Error obtenerCatalogos:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener los catálogos. ¿Se corrió la migración del Sprint 15?' });
     }
 };

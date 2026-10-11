@@ -482,6 +482,7 @@ export default function Productos() {
                         estaLogueado={!!usuario}
                         onVolver={() => setProductoActivo(null)}
                         onIrALogin={() => navigate('/auth?modo=login')}
+                        onPedidoRegistrado={(sol) => setSolicitudes(prev => [sol, ...prev])}
                     />
                 </section>
             ) : (
@@ -681,7 +682,8 @@ export default function Productos() {
                                                 <div key={s.id} style={{ background: 'linear-gradient(180deg, #141414 0%, #0e0e0e 100%)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 12, padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
                                                     <div>
                                                         <p style={{ fontFamily: "'Outfit'", fontWeight: 600, color: '#fff', fontSize: '.88rem' }}>{s.repuesto_nombre} <span style={{ color: 'rgba(255,255,255,.5)', fontWeight: 400 }}>× {s.cantidad}</span></p>
-                                                        <p style={{ fontFamily: "'Outfit'", fontSize: '.75rem', color: 'rgba(255,255,255,.5)' }}>${(parseFloat(s.precio_unitario) * s.cantidad).toFixed(2)} · {new Date(s.created_at).toLocaleDateString('es-EC', { day: '2-digit', month: 'short' })}</p>
+                                                        <p style={{ fontFamily: "'Outfit'", fontSize: '.75rem', color: 'rgba(255,255,255,.5)' }}>Pedido #{s.id} · ${(parseFloat(s.precio_unitario) * s.cantidad).toFixed(2)} · {new Date(s.created_at).toLocaleDateString('es-EC', { day: '2-digit', month: 'short' })}</p>
+                                                        {s.estado === 'cancelada' && s.motivo_cancelacion && <p style={{ fontFamily: "'Outfit'", fontSize: '.72rem', color: '#f87171' }}>Motivo: {s.motivo_cancelacion}</p>}
                                                     </div>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                                         <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.14em', padding: '3px 9px', borderRadius: 999, background: est.bg, color: est.color, border: `1px solid ${est.bdr}` }}>{est.label}</span>
@@ -712,17 +714,36 @@ export default function Productos() {
 }
 
 /* Detalle + solicitud */
-function ProductoDetalle({ producto, esCliente, estaLogueado, onVolver, onIrALogin }) {
+function ProductoDetalle({ producto, esCliente, estaLogueado, onVolver, onIrALogin, onPedidoRegistrado }) {
     const [cantidad, setCantidad] = useState(1);
     const [notas, setNotas]       = useState('');
+    const [enviando, setEnviando] = useState(false);
 
     const cambiarCantidad = (delta) => {
         setCantidad(c => Math.max(1, Math.min(producto.stock_actual, c + delta)));
     };
 
-    const solicitar = () => {
-        const detalle = `Hola, quiero comprar este producto:%0A%0A*${producto.nombre}*%0ACódigo: ${producto.codigo || 'N/A'}%0ACantidad: ${cantidad}%0APrecio referencial: $${Number(producto.precio_venta || 0).toFixed(2)}${notas.trim() ? `%0AConsulta: ${encodeURIComponent(notas.trim())}` : ''}`;
-        window.open(`https://wa.me/593963863847?text=${detalle}`, '_blank', 'noopener,noreferrer');
+    // 1) Registra el pedido en el sistema (el taller lo ve en "Pedidos de la
+    //    tienda" y lo entrega descontando el inventario); 2) abre WhatsApp con
+    //    el numero de pedido para coordinar pago y entrega.
+    const solicitar = async () => {
+        // La ventana se abre antes del await para que el navegador no la bloquee.
+        // (con 'noopener' window.open devuelve null, por eso se corta el opener a mano)
+        const ventana = window.open('', '_blank');
+        if (ventana) ventana.opener = null;
+        setEnviando(true);
+        let numero = null;
+        try {
+            const { data } = await api.post('/solicitudes/productos', { repuesto_id: producto.id, cantidad, notas: notas.trim() || undefined });
+            numero = data.solicitud.id;
+            onPedidoRegistrado?.({ ...data.solicitud, repuesto_nombre: producto.nombre });
+            toast.success(`Pedido #${numero} registrado. El taller lo verá enseguida.`);
+        } catch (err) {
+            toast.error(err.response?.data?.error || 'No se pudo registrar el pedido; igual puedes coordinarlo por WhatsApp.');
+        } finally { setEnviando(false); }
+        const detalle = `Hola, quiero comprar este producto:%0A%0A${numero ? `*Pedido #${numero}*%0A` : ''}*${encodeURIComponent(producto.nombre)}*%0ACódigo: ${producto.codigo || 'N/A'}%0ACantidad: ${cantidad}%0APrecio referencial: $${Number(producto.precio_venta || 0).toFixed(2)}${notas.trim() ? `%0AConsulta: ${encodeURIComponent(notas.trim())}` : ''}`;
+        const url = `https://wa.me/593963863847?text=${detalle}`;
+        if (ventana) ventana.location.href = url; else window.open(url, '_blank', 'noopener,noreferrer');
     };
 
     return (
@@ -777,11 +798,11 @@ function ProductoDetalle({ producto, esCliente, estaLogueado, onVolver, onIrALog
                                 <p className="pr-label">Notas para el taller (opcional)</p>
                                 <textarea className="pr-input" style={{ resize: 'vertical', minHeight: 64, marginBottom: 18 }} value={notas} onChange={e => setNotas(e.target.value)} placeholder="Ej. lo necesito para el viernes" maxLength={300} />
 
-                                <button className="ps-btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={solicitar}>
-                                    <span>Comprar por WhatsApp</span>
+                                <button className="ps-btn-primary" style={{ width: '100%', justifyContent: 'center', opacity: enviando ? .6 : 1 }} onClick={solicitar} disabled={enviando}>
+                                    <span>{enviando ? 'Registrando pedido...' : 'Pedir y coordinar por WhatsApp'}</span>
                                 </button>
                                 <p style={{ fontFamily: "'Outfit'", fontSize: '.72rem', color: 'rgba(255,255,255,.3)', marginTop: 10, textAlign: 'center' }}>
-                                    Se abrirá WhatsApp con el producto y la cantidad seleccionada para coordinar la compra directamente con el taller.
+                                    Tu pedido queda registrado en el taller y se abrirá WhatsApp con su número para coordinar el pago y la entrega. Puedes ver su estado abajo en "Mis solicitudes".
                                 </p>
                             </>
                         )}

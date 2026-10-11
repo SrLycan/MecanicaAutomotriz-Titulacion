@@ -24,7 +24,7 @@ export default function ModalMovimiento({ repuesto, onGuardado, onCerrar }) {
 
     const txt     = isDark ? '#f1f5f9'                : '#0f172a';
     const mut     = isDark ? 'rgba(241,245,249,0.55)' : 'rgba(15,23,42,0.55)';
-    const bdr     = isDark ? 'rgba(148,163,184,0.18)' : 'rgba(15,23,42,0.10)';
+    const bdr     = isDark ? 'rgba(148,163,184,0.18)' : '#b6c3d3';
     const inputBg = isDark ? '#0b1220'                : '#f8fafc';
     const boxBg   = isDark ? '#0a0f1c'                : '#ffffff';
     const previewBg = isDark ? 'rgba(14,165,233,0.05)' : 'rgba(14,165,233,0.04)';

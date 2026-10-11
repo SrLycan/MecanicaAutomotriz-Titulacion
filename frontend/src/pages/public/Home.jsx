@@ -3,11 +3,12 @@
  * Presenta la propuesta de valor del taller: video hero en vivo, servicios destacados,
  * reparación de colisiones, especialidades mecánicas, testimonios e integración de mapa.
  */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../../components/public/Navbar';
 import Footer from '../../components/public/Footer';
 import api from '../../services/api';
+import { resolveImagenSrc } from '../../utils/imagen';
 import colisionesImg from "../../assets/colisiones.png";
 import bannerGrandeImg from "../../assets/bannergrande.png";
 import './Home.css';
@@ -22,22 +23,52 @@ const STATS = [
     { valor: '24/7',   label: 'Atención y servicio' },
 ];
 
-const ESPECIALIDADES = [
-    { titulo: 'Motor y Distribución',      desc: 'Reconstrucción, cambio de correas y diagnóstico de fallas complejas del motor.', img: '/servicios/motor.png', color: '#3b7bab' },
-    { titulo: 'Frenos y Discos',           desc: 'Pastillas, discos y sistema hidráulico revisados con precisión milimétrica.',    img: '/servicios/frenos.png', color: '#4a83b3' },
-    { titulo: 'Diagnóstico Computarizado', desc: 'Escáner OBD2 de última generación para leer cada código de falla sin adivinar.',  img: '/servicios/diagnostico.png', color: '#6f8ba3' },
-    { titulo: 'Colisiones',                desc: 'Enderezada de carrocería, masilla y pintura con acabado de fábrica.',              img: '/servicios/colisiones.png', color: '#57708a' },
-    { titulo: 'Cambio de Aceite',          desc: 'Aceite, filtros y fluidos con productos certificados por el fabricante.',          img: '/servicios/aceite.png', color: '#7fabce' },
-    { titulo: 'Suspensión',                desc: 'Amortiguadores, rótulas y terminales para un manejo suave y seguro.',              img: '/servicios/suspension.png', color: '#3a4149' },
-    { titulo: 'Electricidad Automotriz',   desc: 'Batería, alternador, arranque y cableado. Fallas eléctricas resueltas a fondo.',    img: '/servicios/electronica.png', color: '#3b7bab' },
-    { titulo: 'Alineación y Balanceo',     desc: 'Alineación láser y balanceo de ruedas para un desgaste uniforme del neumático.',    img: '/servicios/alineacion.png', color: '#4a83b3' },
+// Las especialidades salen del catalogo de servicios (GET /api/servicios):
+// al crear/editar/desactivar un servicio en el panel, el inicio se actualiza solo.
+// Si el servicio no tiene imagen propia se usa una foto generica segun su nombre.
+const COLORES_ESP = ['#3b7bab', '#4a83b3', '#6f8ba3', '#57708a', '#7fabce'];
+const FOTOS_ESP = [
+    { match: /motor|distribuc|correa/i,                  img: '/servicios/motor.png' },
+    { match: /freno|disco|pastilla/i,                    img: '/servicios/frenos.png' },
+    { match: /diagn|escaner|computari|obd/i,             img: '/servicios/diagnostico.png' },
+    { match: /colisi|pintura|carrocer|latoner|enderez/i, img: '/servicios/colisiones.png' },
+    { match: /aceite|lubric|filtro|mantenimiento/i,      img: '/servicios/aceite.png' },
+    { match: /suspens|amortigu|rotula/i,                 img: '/servicios/suspension.png' },
+    { match: /electr|bater|alternador|arranque/i,        img: '/servicios/electronica.png' },
+    { match: /alinea|balanceo|neum|llanta/i,             img: '/servicios/alineacion.png' },
 ];
+const fotoServicio = (s) => s.imagen_url
+    ? resolveImagenSrc(s.imagen_url)
+    : (FOTOS_ESP.find(f => f.match.test(s.nombre || ''))?.img || '');
+
 
 export default function Home() {
     const [sucursales, setSucursales] = useState([]);
+    const [servicios, setServicios]   = useState([]);
+    const carruselRef = useRef(null);
+    const [flechas, setFlechas] = useState({ izq: false, der: false });
     useEffect(() => {
         api.get('/sucursales/public').then(r => setSucursales(r.data.sucursales || [])).catch(() => {});
+        api.get('/servicios', { params: { activo: 'true' } }).then(r => setServicios(r.data.servicios || [])).catch(() => {});
     }, []);
+
+    // Habilita/deshabilita las flechas segun la posicion del carrusel.
+    const actualizarFlechas = useCallback(() => {
+        const el = carruselRef.current;
+        if (!el) return;
+        setFlechas({ izq: el.scrollLeft > 4, der: el.scrollLeft + el.clientWidth < el.scrollWidth - 4 });
+    }, []);
+    useEffect(() => {
+        actualizarFlechas();
+        window.addEventListener('resize', actualizarFlechas);
+        return () => window.removeEventListener('resize', actualizarFlechas);
+    }, [servicios, actualizarFlechas]);
+
+    // Desplaza el carrusel casi el ancho visible (una "pagina" de tarjetas).
+    const moverCarrusel = (dir) => {
+        const el = carruselRef.current;
+        if (el) el.scrollBy({ left: dir * el.clientWidth * 0.9, behavior: 'smooth' });
+    };
 
     useEffect(() => {
         const els = document.querySelectorAll('.reveal');
@@ -51,7 +82,7 @@ export default function Home() {
         }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
         els.forEach(el => io.observe(el));
         return () => io.disconnect();
-    }, [sucursales]);
+    }, [sucursales, servicios]);
 
     return (
         <div style={{ background: '#050505', minHeight: '100vh', color: '#fff' }}>
@@ -268,28 +299,46 @@ export default function Home() {
                     </p>
                 </div>
 
-                <div className="sp-grid">
-                    {ESPECIALIDADES.map((s, i) => (
-                        <div key={s.titulo} className="sp-card reveal" style={{ transitionDelay: `${(i % 4) * 60}ms` }}>
-                            <img
-                                className="sp-card-img"
-                                src={s.img}
-                                alt={s.titulo}
-                                loading="lazy"
-                                onError={e => { e.currentTarget.style.display = 'none'; }}
-                            />
-                            <div className="sp-card-overlay" />
-                            <div className="sp-card-body">
-                                <h3 className="sp-card-title">{s.titulo}</h3>
-                                <p className="sp-card-desc">{s.desc}</p>
-                                <Link to="/servicios" className="sp-card-more" style={{ color: s.color, textDecoration: 'none' }}>
-                                    Ver mas
-                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
-                                </Link>
-                            </div>
+                {servicios.length === 0 ? (
+                    <p style={{ textAlign: 'center', fontFamily: "'Outfit'", color: 'rgba(255,255,255,.45)' }}>Pronto publicaremos nuestros servicios.</p>
+                ) : (
+                    <div className="sp-carrusel">
+                        <button type="button" className="sp-flecha sp-flecha-izq" aria-label="Servicios anteriores" disabled={!flechas.izq} onClick={() => moverCarrusel(-1)}>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+                        </button>
+                        <div className="sp-track" ref={carruselRef} onScroll={actualizarFlechas}>
+                            {servicios.map((s, i) => {
+                                const color = COLORES_ESP[i % COLORES_ESP.length];
+                                const img = fotoServicio(s);
+                                return (
+                                    <div key={s.id} className="sp-card">
+                                        {img && (
+                                            <img
+                                                className="sp-card-img"
+                                                src={img}
+                                                alt={s.nombre}
+                                                loading="lazy"
+                                                onError={e => { e.currentTarget.style.display = 'none'; }}
+                                            />
+                                        )}
+                                        <div className="sp-card-overlay" />
+                                        <div className="sp-card-body">
+                                            <h3 className="sp-card-title">{s.nombre}</h3>
+                                            {s.descripcion && <p className="sp-card-desc">{s.descripcion}</p>}
+                                            <Link to="/servicios" className="sp-card-more" style={{ color, textDecoration: 'none' }}>
+                                                Ver mas
+                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                                            </Link>
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
-                    ))}
-                </div>
+                        <button type="button" className="sp-flecha sp-flecha-der" aria-label="Servicios siguientes" disabled={!flechas.der} onClick={() => moverCarrusel(1)}>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                        </button>
+                    </div>
+                )}
             </section>
 
             {/* ════════════════════════════════════════════════════════

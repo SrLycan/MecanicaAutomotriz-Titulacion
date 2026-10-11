@@ -9,9 +9,22 @@
  * para no duplicar esa logica de concurrencia.
  */
 const pool = require('../config/db');
+const { errorBD } = require('../utils/erroresBD');
 const { registrarAccionBitacora } = require('../services/ordenesHistorial.service');
 
 const ESTADOS = ['pendiente', 'solicitada', 'en_proceso', 'recibida', 'cancelada'];
+const FORMAS_PAGO = ['contado', 'credito'];
+const METODOS = ['efectivo', 'transferencia', 'tarjeta', 'cheque', 'otro'];
+/** Las compras a credito siempre vencen a los 15 dias; se avisa cuando faltan 3 o menos. */
+const DIAS_CREDITO = 15;
+const DIAS_AVISO   = 3;
+
+/** Columnas calculadas: lo pagado (pagos/abonos confirmados), saldo y dias para el vencimiento. */
+const PAGADO_SQL = `(SELECT COALESCE(SUM(m.monto), 0) FROM movimientos_financieros_proveedor m
+     WHERE m.compra_id = c.id AND m.tipo IN ('pago','abono') AND m.estado = 'confirmado')`;
+const COLS_PAGO = `${PAGADO_SQL} AS pagado,
+    GREATEST(c.total - ${PAGADO_SQL}, 0) AS saldo,
+    (c.fecha_vencimiento - CURRENT_DATE) AS dias_para_vencer`;
 
 /** Recalcula subtotal/iva/total de una compra a partir de sus items (IVA 15% Ecuador). */
 const IVA_TASA = 0.15;
@@ -37,7 +50,7 @@ async function recalcularTotales(client, compraId) {
 // Filtros: proveedor_id, estado, fecha_inicio, fecha_fin, page, limit
 // ─────────────────────────────────────────────────────────────
 const listarCompras = async (req, res) => {
-    const { proveedor_id, estado, fecha_inicio, fecha_fin, page = 1, limit = 20 } = req.query;
+    const { proveedor_id, estado, forma_pago, fecha_inicio, fecha_fin, page = 1, limit = 20 } = req.query;
 
     const pageNum  = Math.max(1, parseInt(page) || 1);
     const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 20));
@@ -48,13 +61,15 @@ const listarCompras = async (req, res) => {
 
     if (proveedor_id) { params.push(proveedor_id); where += ` AND c.proveedor_id = $${params.length}`; }
     if (estado)       { params.push(estado);        where += ` AND c.estado = $${params.length}`; }
+    if (forma_pago)   { params.push(forma_pago);    where += ` AND c.forma_pago = $${params.length}`; }
     if (fecha_inicio) { params.push(fecha_inicio);  where += ` AND c.fecha_solicitud >= $${params.length}`; }
     if (fecha_fin)    { params.push(fecha_fin);     where += ` AND c.fecha_solicitud <= $${params.length}`; }
 
     const countQuery = `SELECT COUNT(*) AS total FROM compras_proveedor c ${where}`;
     const dataQuery  = `
         SELECT c.*, p.nombre_comercial AS proveedor_nombre, u.nombre AS usuario_nombre,
-               (SELECT COUNT(*) FROM compras_proveedor_items i WHERE i.compra_id = c.id) AS total_items
+               (SELECT COUNT(*) FROM compras_proveedor_items i WHERE i.compra_id = c.id) AS total_items,
+               ${COLS_PAGO}
         FROM compras_proveedor c
         LEFT JOIN proveedores p ON p.id = c.proveedor_id
         LEFT JOIN usuarios    u ON u.id = c.usuario_id
@@ -72,6 +87,7 @@ const listarCompras = async (req, res) => {
         return res.json({ compras: rows, total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) });
     } catch (err) {
         console.error('Error listarCompras:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener compras.' });
     }
 };
@@ -84,7 +100,7 @@ const obtenerCompra = async (req, res) => {
     const { id } = req.params;
     try {
         const { rows } = await pool.query(
-            `SELECT c.*, p.nombre_comercial AS proveedor_nombre, u.nombre AS usuario_nombre
+            `SELECT c.*, p.nombre_comercial AS proveedor_nombre, u.nombre AS usuario_nombre, ${COLS_PAGO}
              FROM compras_proveedor c
              LEFT JOIN proveedores p ON p.id = c.proveedor_id
              LEFT JOIN usuarios    u ON u.id = c.usuario_id
@@ -105,6 +121,7 @@ const obtenerCompra = async (req, res) => {
         return res.json({ compra: { ...compra, items } });
     } catch (err) {
         console.error('Error obtenerCompra:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener la compra.' });
     }
 };
@@ -112,13 +129,18 @@ const obtenerCompra = async (req, res) => {
 // ─────────────────────────────────────────────────────────────
 // CREAR (con items)
 // POST /api/proveedores/compras   (admin)
-// body: { proveedor_id, fecha_solicitud, notas, items: [{repuesto_id?, descripcion, cantidad, precio_unitario}] }
+// body: { proveedor_id, fecha_solicitud, notas, forma_pago, metodo_pago?, referencia_pago?,
+//         items: [{repuesto_id?, descripcion, cantidad, precio_unitario}] }
+// forma_pago 'contado' registra el pago completo en ese momento (sale dinero
+// de la cuenta segun metodo_pago); 'credito' vence a los 15 dias.
 // ─────────────────────────────────────────────────────────────
 const crearCompra = async (req, res) => {
-    const { proveedor_id, fecha_solicitud, notas, items } = req.body;
+    const { proveedor_id, fecha_solicitud, notas, items, forma_pago = 'credito', metodo_pago = 'efectivo', referencia_pago } = req.body;
     const usuario_id = req.usuario.id;
 
     if (!proveedor_id) return res.status(400).json({ error: 'proveedor_id es requerido.' });
+    if (!FORMAS_PAGO.includes(forma_pago)) return res.status(400).json({ error: "forma_pago debe ser 'contado' o 'credito'." });
+    if (forma_pago === 'contado' && !METODOS.includes(metodo_pago)) return res.status(400).json({ error: 'Metodo de pago invalido.' });
     if (!Array.isArray(items) || items.length === 0) {
         return res.status(400).json({ error: 'La compra debe incluir al menos un item.' });
     }
@@ -130,8 +152,9 @@ const crearCompra = async (req, res) => {
         }
     }
 
-    const client = await pool.connect();
+    let client;
     try {
+        client = await pool.connect();
         await client.query('BEGIN');
 
         const { rows: provRows } = await client.query('SELECT id FROM proveedores WHERE id = $1 AND activo = TRUE', [proveedor_id]);
@@ -152,10 +175,11 @@ const crearCompra = async (req, res) => {
         }
 
         const { rows: compraRows } = await client.query(
-            `INSERT INTO compras_proveedor (proveedor_id, usuario_id, fecha_solicitud, notas)
-             VALUES ($1,$2,COALESCE($3, CURRENT_DATE),$4)
+            `INSERT INTO compras_proveedor (proveedor_id, usuario_id, fecha_solicitud, notas, forma_pago, fecha_vencimiento)
+             VALUES ($1,$2,COALESCE($3::date, CURRENT_DATE),$4,$5::varchar,
+                     CASE WHEN $5::varchar = 'credito' THEN COALESCE($3::date, CURRENT_DATE) + $6::int END)
              RETURNING *`,
-            [proveedor_id, usuario_id, fecha_solicitud || null, notas || null]
+            [proveedor_id, usuario_id, fecha_solicitud || null, notas || null, forma_pago, DIAS_CREDITO]
         );
         const compra = compraRows[0];
 
@@ -180,22 +204,33 @@ const crearCompra = async (req, res) => {
             [proveedor_id, compra.id, `Orden de compra #${compra.id}`, totales.total, usuario_id]
         );
 
+        // Compra al contado: el pago sale en este mismo momento.
+        if (forma_pago === 'contado' && totales.total > 0) {
+            await client.query(
+                `INSERT INTO movimientos_financieros_proveedor
+                    (proveedor_id, tipo, compra_id, descripcion, monto, metodo_pago, referencia, estado, usuario_id)
+                 VALUES ($1,'pago',$2,$3,$4,$5,$6,'confirmado',$7)`,
+                [proveedor_id, compra.id, `Pago al contado compra #${compra.id}`, totales.total, metodo_pago, referencia_pago?.trim() || null, usuario_id]
+            );
+        }
+
         await client.query('COMMIT');
 
         registrarAccionBitacora({
             entidad_tipo: 'compra', entidad_id: compra.id, accion: 'creada',
             usuario_id, usuario_nombre: req.usuario.nombre,
-            detalle: `Compra #${compra.id} a proveedor por $${totales.total} creada.`,
+            detalle: `Compra #${compra.id} a proveedor por $${totales.total} creada (${forma_pago}).`,
         });
 
         const { rows: items_final } = await pool.query('SELECT * FROM compras_proveedor_items WHERE compra_id = $1 ORDER BY id ASC', [compra.id]);
         return res.status(201).json({ compra: { ...compra, ...totales, items: items_final } });
     } catch (err) {
-        await client.query('ROLLBACK');
+        await client?.query('ROLLBACK');
         console.error('Error crearCompra:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al registrar la compra.' });
     } finally {
-        client.release();
+        client?.release();
     }
 };
 
@@ -222,6 +257,7 @@ const actualizarCompra = async (req, res) => {
         return res.json({ compra: rows[0] });
     } catch (err) {
         console.error('Error actualizarCompra:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al actualizar la compra.' });
     }
 };
@@ -250,8 +286,9 @@ const cambiarEstadoCompra = async (req, res) => {
         return res.status(400).json({ error: `Estado invalido. Valores permitidos: ${ESTADOS.join(', ')}.` });
     }
 
-    const client = await pool.connect();
+    let client;
     try {
+        client = await pool.connect();
         await client.query('BEGIN');
 
         const { rows: compraRows } = await client.query('SELECT * FROM compras_proveedor WHERE id = $1 FOR UPDATE', [id]);
@@ -352,11 +389,12 @@ const cambiarEstadoCompra = async (req, res) => {
 
         return res.json({ compra: rows[0], stock_actualizado: stockActualizado });
     } catch (err) {
-        await client.query('ROLLBACK');
+        await client?.query('ROLLBACK');
         console.error('Error cambiarEstadoCompra:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al cambiar el estado de la compra.' });
     } finally {
-        client.release();
+        client?.release();
     }
 };
 
@@ -366,8 +404,9 @@ const cambiarEstadoCompra = async (req, res) => {
 // ─────────────────────────────────────────────────────────────
 const eliminarCompra = async (req, res) => {
     const { id } = req.params;
-    const client = await pool.connect();
+    let client;
     try {
+        client = await pool.connect();
         await client.query('BEGIN');
         const { rows: compraRows } = await client.query('SELECT estado FROM compras_proveedor WHERE id = $1', [id]);
         if (!compraRows[0]) {
@@ -385,14 +424,45 @@ const eliminarCompra = async (req, res) => {
         await client.query('COMMIT');
         return res.json({ mensaje: 'Compra eliminada correctamente.' });
     } catch (err) {
-        await client.query('ROLLBACK');
+        await client?.query('ROLLBACK');
         console.error('Error eliminarCompra:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al eliminar la compra.' });
     } finally {
-        client.release();
+        client?.release();
+    }
+};
+
+// ─────────────────────────────────────────────────────────────
+// ALERTAS DE CREDITO
+// GET /api/proveedores/compras/alertas-credito
+// Compras a credito con saldo pendiente que vencen en 3 dias o menos
+// (incluye las ya vencidas). Se usa para el aviso del panel.
+// ─────────────────────────────────────────────────────────────
+const alertasCredito = async (req, res) => {
+    try {
+        const { rows } = await pool.query(
+            `SELECT * FROM (
+                SELECT c.id, c.proveedor_id, c.fecha_solicitud, c.fecha_vencimiento, c.total, c.estado,
+                       p.nombre_comercial AS proveedor_nombre, ${COLS_PAGO}
+                FROM compras_proveedor c
+                JOIN proveedores p ON p.id = c.proveedor_id
+                WHERE c.forma_pago = 'credito' AND c.estado <> 'cancelada'
+                  AND c.fecha_vencimiento <= CURRENT_DATE + $1::int
+             ) x
+             WHERE x.saldo > 0.005
+             ORDER BY x.fecha_vencimiento ASC, x.id ASC`,
+            [DIAS_AVISO]
+        );
+        return res.json({ alertas: rows, dias_aviso: DIAS_AVISO });
+    } catch (err) {
+        console.error('Error alertasCredito:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
+        return res.status(500).json({ error: 'Error al obtener las alertas de credito.' });
     }
 };
 
 module.exports = {
+    alertasCredito,
     listarCompras, obtenerCompra, crearCompra, actualizarCompra, cambiarEstadoCompra, eliminarCompra,
 };

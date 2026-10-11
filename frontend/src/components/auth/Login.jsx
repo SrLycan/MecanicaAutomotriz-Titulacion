@@ -2,7 +2,7 @@
  * SS SWAP - Formulario de Inicio de Sesión del Personal (Login)
  * Provee interfaz para inicio de sesión del staff administrativo/técnico
  * con soporte de tema oscuro/claro y accesos de prueba.
- * Los estilos visuales viven en la hoja de estilos global (SS SWAP-label, etc.).
+ * Los estilos visuales viven en la hoja de estilos global (ssswap-label, etc.).
  */
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -11,9 +11,9 @@ import { useTheme } from '../../context/ThemeContext';
 import toast from 'react-hot-toast';
 
 const DEMO_USERS = [
-    { rol: 'administrador', email: 'admin@SS SWAP.com',     password: 'Admin@SS SWAP2026', label: 'Administrador' },
-    { rol: 'tecnico',       email: 'tecnico@SS SWAP.com',   password: 'Tecnico@2026',    label: 'Tecnico'       },
-    { rol: 'recepcionista', email: 'recepcion@SS SWAP.com', password: 'Recepcion@2026',  label: 'Recepcionista' },
+    { rol: 'administrador', email: 'admin@ssswap.com',      password: 'AdminSS2026',      label: 'Administrador' },
+    { rol: 'tecnico',       email: 'tecnico@ssswap.com',    password: 'Tecnico@2026',     label: 'Tecnico'       },
+    { rol: 'recepcionista', email: 'recepcion@ssswap.com',  password: 'Recepcion@2026',   label: 'Recepcionista' },
 ];
 
 export default function Login() {
@@ -59,12 +59,12 @@ export default function Login() {
                     </div>
                     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                         <div>
-                            <label className="SS SWAP-label">CORREO ELECTRONICO</label>
-                            <input className="SS SWAP-input" type="email" name="email" value={form.email} onChange={handleChange} placeholder="usuario@SS SWAP.com" required style={{ background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(124,58,237,0.04)', border: `1px solid ${bdr}`, color: txt }} />
+                            <label className="ssswap-label">CORREO ELECTRONICO</label>
+                            <input className="ssswap-input" type="email" name="email" value={form.email} onChange={handleChange} placeholder="usuario@ssswap.com" required style={{ background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(124,58,237,0.04)', border: `1px solid ${bdr}`, color: txt }} />
                         </div>
                         <div>
-                            <label className="SS SWAP-label">CONTRASEÑA</label>
-                            <input className="SS SWAP-input" type="password" name="password" value={form.password} onChange={handleChange} placeholder="••••••••" required style={{ background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(124,58,237,0.04)', border: `1px solid ${bdr}`, color: txt }} />
+                            <label className="ssswap-label">CONTRASEÑA</label>
+                            <input className="ssswap-input" type="password" name="password" value={form.password} onChange={handleChange} placeholder="••••••••" required style={{ background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(124,58,237,0.04)', border: `1px solid ${bdr}`, color: txt }} />
                         </div>
                         <button type="submit" className="btn-primary" disabled={loading} style={{ width: '100%', justifyContent: 'center', padding: '12px', marginTop: 4, fontSize: '.82rem' }}>
                             <span>{loading ? 'Verificando...' : 'Iniciar Sesion'}</span>

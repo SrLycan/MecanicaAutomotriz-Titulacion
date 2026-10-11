@@ -4,10 +4,10 @@
  */
 const express = require('express');
 const router  = express.Router();
-const { verificarToken, verificarRol } = require('../middleware/auth.middleware');
+const { verificarToken, requierePermiso } = require('../middleware/auth.middleware');
 const { productosMasVendidos, serviciosMasSolicitados, crecimiento, estadisticasProformas } = require('../controllers/estadisticas.controller');
 
-router.use(verificarToken, verificarRol('administrador'));
+router.use(verificarToken, requierePermiso('estadisticas', 'ver'));
 
 router.get('/productos-mas-vendidos',   productosMasVendidos);
 router.get('/servicios-mas-solicitados', serviciosMasSolicitados);

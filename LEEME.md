@@ -1,3 +1,85 @@
+> 📘 **¿Cómo se usa el programa?** Lee la guía paso a paso para el personal:
+> [GUIA_DE_USO.md](GUIA_DE_USO.md) (registros, inventario, proformas, cobros, proveedores, caja y finanzas).
+> Este archivo (LEEME) es el registro técnico de cambios para quien mantiene el sistema.
+
+---
+
+# SS SWAP — Sprint 21: Superadministrador y permisos personalizados
+
+## 1. Base de datos (OBLIGATORIO antes de desplegar el código nuevo)
+Corre el bloque **"Sprint 21"** del final de `backend/src/config/migrations.sql`
+(aditivo e idempotente; con `RUN_MIGRATIONS=true` se aplica solo al arrancar).
+Para Supabase está listo `Downloads/ssswap/supabase_sprint21.sql` (mismo bloque, en BEGIN/COMMIT).
+**Sin esta migración el backend nuevo responde 500**: cada petición lee `usuario_permisos`.
+
+- Roles nuevos `superadministrador` e `interno` (CHECK de `usuarios.rol`).
+- `usuarios.token_version` (invalida sesiones), `permisos_inicializados`, `ultimo_acceso`.
+- `permisos_catalogo` (módulo × acción) y `usuario_permisos` (permisos de cada cuenta).
+- Las cuentas de personal existentes reciben **exactamente el acceso que ya tenían** (plantilla de su rol), una sola vez.
+- `auditoria_seguridad`: registro de solo inserción (un trigger rechaza UPDATE/DELETE).
+- Trigger `proteger_rol_superadmin`: nadie crea, promueve, degrada ni borra un superadministrador
+  desde la aplicación; solo una sesión que active `ssswap.gestion_superadmin` (el script de servidor).
+
+## 2. Primer superadministrador (solo desde el servidor)
+No hay contraseñas por defecto ni forma de obtener el rol desde la web. Desde `backend/`:
+
+```
+npm run superadmin -- --promover --email dueno@ssswap.com           # cuenta de personal existente
+npm run superadmin -- --crear --email dueno@ssswap.com --nombre "Nombre Apellido"   # cuenta nueva
+npm run superadmin -- --listar
+npm run superadmin -- --revocar --email persona@ssswap.com          # vuelve a administrador
+```
+
+`--crear` muestra una contraseña temporal UNA sola vez; se cambia en el panel desde
+**Mi cuenta** (clic en el nombre, arriba a la derecha). Usa el `.env` de la BD a la que apunte
+(para Supabase: correr en una máquina con el `.env` de producción). No hay variables de entorno nuevas.
+
+## 3. Cómo funciona
+- **Permisos por módulo y acción** (`backend/src/config/permisos.js`): ver, crear, editar, eliminar,
+  exportar y aprobar, solo donde la operación existe. Inventario y proformas se separan por área/tipo
+  (mecánica vs. colisiones/pintura) y el backend lee el área/tipo REAL del registro en la BD.
+- **Backend**: `verificarToken` relee en cada petición la cuenta (activa, rol, `token_version`) y sus
+  permisos; `requierePermiso` / `requiereAlguno` protegen cada endpoint. Revocar un permiso surte
+  efecto en la siguiente petición; desactivar, cambiar rol o restablecer el acceso cierra las sesiones.
+- **Gestión** (`/dashboard/usuarios`, solo superadmin): crear cuentas, editar, activar/desactivar,
+  restablecer acceso (contraseña temporal), cerrar sesiones, permisos con plantillas e historial.
+  `/dashboard/auditoria`: registro de seguridad (incluye accesos denegados).
+- **Frontend**: menú, rutas, botones y dashboard según permisos; URL directa sin permiso →
+  `/dashboard/acceso-denegado`. El personal con sesión que abre la web pública es llevado a su panel;
+  clientes y visitantes usan la web igual que antes.
+- El **administrador común** ya no gestiona usuarios (ni clientes del portal): eso es del superadmin.
+- Agregar un módulo futuro: definirlo en `permisos.js`, protegerlo con `requierePermiso`, regenerar las
+  filas con `node src/config/permisosSql.js` y copiarlas a la migración (la prueba `permisos.catalogo` lo exige).
+
+## 4. Pruebas
+- `npm test` (backend): unitarias del middleware y del catálogo.
+- `PG_INTEGRATION=1 DB_NAME=ssswap_test npx jest` (¡nunca contra producción!): incluye
+  `sprint21.permisos.integracion` con peticiones HTTP reales (escenarios A–F).
+- `CI=true npm test` (frontend): rutas protegidas, web pública y menú dinámico.
+
+---
+
+# SS SWAP — Sprint 19: compras a crédito/contado, alertas de vencimiento y cuadre de caja
+
+## 1. Base de datos
+Corre el bloque **"Sprint 19"** del final de `backend/src/config/migrations.sql`
+(aditivo e idempotente). Con `RUN_MIGRATIONS=true` se aplica solo al arrancar; en
+Supabase hay que correrlo a mano.
+
+- `compras_proveedor.forma_pago` ('contado' | 'credito') y `fecha_vencimiento` (solicitud + 15 días).
+- `caja_sesiones.denominaciones_apertura` / `denominaciones_cierre` (JSONB con el conteo de billetes y monedas).
+
+## 2. Cambios
+- Compra al contado: genera el pago en el momento (en efectivo sale de la caja).
+- `GET /api/proveedores/compras/alertas-credito`: compras a crédito con saldo que vencen en ≤ 3 días;
+  aviso en Proveedores, número en el menú y mensaje emergente al entrar.
+- Pagos/abonos de una compra no pueden superar su saldo.
+- Caja: apertura y cierre con conteo de billetes/monedas y "Reporte de cuadre"
+  (efectivo + otros medios del día).
+- Modo claro: bordes y sombras más marcados en todo el panel.
+
+---
+
 # SS SWAP — Sprint 15: base de datos reforzada + menú lateral tipo acordeón
 
 ## 1. Base de datos (correr en Supabase)

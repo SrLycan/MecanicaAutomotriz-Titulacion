@@ -18,11 +18,14 @@
  * que ya se uso en compras_proveedor con recalcularTotales().
  */
 const pool = require('../config/db');
+const { errorBD } = require('../utils/erroresBD');
 const { registrarAccionBitacora } = require('../services/ordenesHistorial.service');
 const { TIPOS_CARROCERIA, normalizarPuertas, zonasValidas, etiquetaZona, CARROCERIAS } = require('../shared/vehiculoDiagramas');
-const { confirmarUsoProforma, revertirSalidaProforma, ErrorNegocio, formatoOrden } = require('../services/inventarioProforma.service');
+const { confirmarUsoProforma, revertirSalidaProforma, descontarInventarioAutomatico, ErrorNegocio, formatoOrden } = require('../services/inventarioProforma.service');
 const { generarPagareAutomatico, sincronizarPagareConProforma, buscarPagareActivo } = require('../services/pagare.service');
+const { calcularAnticipoRequerido, resumenDeuda, SQL_ESTADO_EFECTIVO } = require('../services/reglasPago');
 const { cantidadValida } = require('../utils/numeros');
+const { tiposProformaPermitidos } = require('../middleware/auth.middleware');
 
 const TIPOS = ['mecanica', 'pintura'];
 const ESTADOS = ['borrador', 'emitida', 'aprobada', 'rechazada', 'vencida', 'convertida'];
@@ -39,8 +42,14 @@ const CAMPO_SUBTOTAL = {
     repuesto: 'subtotal_repuestos', insumo: 'subtotal_insumos',
 };
 
-/** Calcula todos los subtotales/totales a partir de los items — nunca se confia en el frontend. */
-function calcularTotales(items, descuento, ivaPorcentaje, anticipo) {
+/**
+ * Calcula todos los subtotales/totales a partir de los items — nunca se confia en el frontend.
+ * `anticipo` = anticipo REQUERIDO segun el tipo de trabajo (reglasPago.js):
+ * Colisiones 70% fijo; Mecanica el indicado (0 por defecto). No es dinero
+ * recibido, por eso `saldo` (lo que falta cobrar de la proforma) arranca en
+ * el total: solo los pagos registrados en el pagare lo reducen.
+ */
+function calcularTotales(items, descuento, ivaPorcentaje, anticipo, tipo) {
     const porCategoria = { producto: 0, servicio: 0, mano_obra: 0, pintura: 0, repuesto: 0, insumo: 0 };
     let subtotal = 0;
     for (const it of items) {
@@ -52,8 +61,8 @@ function calcularTotales(items, descuento, ivaPorcentaje, anticipo) {
     const baseImponible = Math.max(0, subtotal - descuentoNum);
     const ivaValor = Math.round(baseImponible * (parseFloat(ivaPorcentaje) || 0) / 100 * 100) / 100;
     const total = Math.round((baseImponible + ivaValor) * 100) / 100;
-    const anticipoNum = Math.max(0, parseFloat(anticipo) || 0);
-    const saldo = Math.round((total - anticipoNum) * 100) / 100;
+    const anticipoNum = calcularAnticipoRequerido(tipo, total, anticipo);
+    const saldo = total;
     return {
         subtotal_productos: porCategoria.producto, subtotal_servicios: porCategoria.servicio,
         subtotal_mano_obra: porCategoria.mano_obra, subtotal_pintura: porCategoria.pintura,
@@ -139,6 +148,7 @@ function responderError(res, err, mensajeGenerico) {
         return res.status(409).json({ error: 'Stock insuficiente: la operacion dejaria el inventario en negativo.' });
     }
     console.error(mensajeGenerico, err);
+    const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
     return res.status(500).json({ error: mensajeGenerico });
 }
 
@@ -159,6 +169,9 @@ const listarProformas = async (req, res) => {
         where += ` AND (p.numero ILIKE $${params.length} OR p.cliente_nombre ILIKE $${params.length} OR p.vehiculo_placa ILIKE $${params.length})`;
     }
     if (tipo && TIPOS.includes(tipo))     { params.push(tipo);   where += ` AND p.tipo = $${params.length}`; }
+    // Permisos: solo los tipos de proforma que el usuario puede ver.
+    const tiposVisibles = tiposProformaPermitidos(req.usuario, 'ver');
+    if (tiposVisibles.length < TIPOS.length) { params.push(tiposVisibles); where += ` AND p.tipo = ANY($${params.length})`; }
     if (estado && ESTADOS.includes(estado)) { params.push(estado); where += ` AND p.estado = $${params.length}`; }
     if (fecha_inicio) { params.push(fecha_inicio); where += ` AND p.fecha_emision >= $${params.length}`; }
     if (fecha_fin)    { params.push(fecha_fin);    where += ` AND p.fecha_emision <= $${params.length}`; }
@@ -186,6 +199,7 @@ const listarProformas = async (req, res) => {
         return res.json({ proformas: rows, total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) });
     } catch (err) {
         console.error('Error listarProformas:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener proformas.' });
     }
 };
@@ -228,7 +242,8 @@ const obtenerProforma = async (req, res) => {
              WHERE m.proforma_id = $1 ORDER BY m.created_at, m.id`,
             [id]
         );
-        const pagare = await buscarPagareActivo(pool, { proformaId: proforma.id, ordenId: null });
+        const pagareBase = await buscarPagareActivo(pool, { proformaId: proforma.id, ordenId: null });
+        const pagare = pagareBase && (await pool.query(`SELECT cc.*, ${SQL_ESTADO_EFECTIVO} AS estado_efectivo FROM cuentas_cobrar cc WHERE cc.id = $1`, [pagareBase.id])).rows[0];
         let descontadoPor = null;
         if (proforma.inventario_descontado_por) {
             const { rows: uRows } = await pool.query('SELECT nombre FROM usuarios WHERE id = $1', [proforma.inventario_descontado_por]);
@@ -243,10 +258,13 @@ const obtenerProforma = async (req, res) => {
             movimientos_inventario: salidas.map(numNorm),
             inventario_descontado_por_nombre: descontadoPor,
             orden_numero: formatoOrden(proforma.orden_generada_id || proforma.orden_id),
-            pagare: pagare ? { id: pagare.id, monto_total: pagare.monto_total, monto_pagado: pagare.monto_pagado, estado: pagare.estado, porcentaje: pagare.porcentaje } : null,
+            pagare: pagare ? { id: pagare.id, monto_total: pagare.monto_total, monto_pagado: pagare.monto_pagado, estado: pagare.estado_efectivo,
+                porcentaje: pagare.porcentaje, anticipo_requerido: pagare.anticipo_requerido, fecha_vencimiento: pagare.fecha_vencimiento,
+                ...resumenDeuda({ montoTotal: pagare.monto_total, montoPagado: pagare.monto_pagado, anticipoRequerido: pagare.anticipo_requerido }) } : null,
         } });
     } catch (err) {
         console.error('Error obtenerProforma:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener la proforma.' });
     }
 };
@@ -278,8 +296,9 @@ const crearProforma = async (req, res) => {
         return res.status(400).json({ error: 'Una proforma solo puede crearse como "borrador" o "emitida".' });
     }
 
-    const client = await pool.connect();
+    let client;
     try {
+        client = await pool.connect();
         await client.query('BEGIN');
 
         const { rows: clienteRows } = await client.query('SELECT * FROM clientes WHERE id = $1', [cliente_id]);
@@ -302,7 +321,7 @@ const crearProforma = async (req, res) => {
 
         const cliente = clienteRows[0];
         const vehiculo = vehiculoRows[0];
-        const totales = calcularTotales(items, descuento, iva_porcentaje, anticipo);
+        const totales = calcularTotales(items, descuento, iva_porcentaje, anticipo, tipo);
 
         // Numeracion atomica: nextval nunca repite un valor aunque el resto
         // de la transaccion falle despues (no hace ROLLBACK de secuencias).
@@ -370,10 +389,10 @@ const crearProforma = async (req, res) => {
         const { rows: items_final } = await pool.query('SELECT * FROM proforma_items WHERE proforma_id = $1 ORDER BY categoria, orden_linea', [proforma.id]);
         return res.status(201).json({ proforma: { ...proforma, items: items_final, zonas_danadas: danos.zonas } });
     } catch (err) {
-        await client.query('ROLLBACK');
+        await client?.query('ROLLBACK');
         return responderError(res, err, 'Error al crear la proforma.');
     } finally {
-        client.release();
+        client?.release();
     }
 };
 
@@ -401,8 +420,9 @@ const actualizarProforma = async (req, res) => {
     const errorItems = validarItems(tipo, items);
     if (errorItems) return res.status(400).json({ error: errorItems });
 
-    const client = await pool.connect();
+    let client;
     try {
+        client = await pool.connect();
         await client.query('BEGIN');
 
         const { rows: actualRows } = await client.query('SELECT estado, total, inventario_descontado_at FROM proformas WHERE id = $1 FOR UPDATE', [id]);
@@ -413,7 +433,7 @@ const actualizarProforma = async (req, res) => {
         }
         if (actualRows[0].inventario_descontado_at) {
             await client.query('ROLLBACK');
-            return res.status(409).json({ error: 'Esta proforma ya desconto productos del inventario y no se puede editar. Un administrador puede revertir la salida si es necesario.' });
+            return res.status(409).json({ error: 'Esta proforma ya desconto productos del inventario y no se puede editar. Para corregirla, cambiala a "borrador": el material vuelve solo al inventario.' });
         }
         const errorRepuestos = await validarRepuestosDeItems(client, items);
         if (errorRepuestos) { await client.query('ROLLBACK'); return res.status(400).json({ error: errorRepuestos }); }
@@ -427,7 +447,7 @@ const actualizarProforma = async (req, res) => {
             if (!sucRows[0]) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Sucursal no encontrada.' }); }
         }
 
-        const totales = calcularTotales(items, descuento, iva_porcentaje, anticipo);
+        const totales = calcularTotales(items, descuento, iva_porcentaje, anticipo, tipo);
 
         const { rows } = await client.query(
             `UPDATE proformas SET
@@ -490,10 +510,10 @@ const actualizarProforma = async (req, res) => {
         const { rows: items_final } = await pool.query('SELECT * FROM proforma_items WHERE proforma_id = $1 ORDER BY categoria, orden_linea', [id]);
         return res.json({ proforma: { ...proforma, items: items_final, zonas_danadas: danos.zonas } });
     } catch (err) {
-        await client.query('ROLLBACK');
+        await client?.query('ROLLBACK');
         return responderError(res, err, 'Error al actualizar la proforma.');
     } finally {
-        client.release();
+        client?.release();
     }
 };
 
@@ -507,20 +527,34 @@ const cambiarEstadoProforma = async (req, res) => {
     if (!estado || !ESTADOS.includes(estado)) return res.status(400).json({ error: `Estado invalido. Valores permitidos: ${ESTADOS.join(', ')}.` });
     if (estado === 'convertida') return res.status(400).json({ error: 'El estado "convertida" solo se asigna automaticamente al convertir la proforma en orden de trabajo.' });
 
-    const client = await pool.connect();
+    let client;
     try {
+        client = await pool.connect();
         await client.query('BEGIN');
         const { rows: actualRows } = await client.query('SELECT * FROM proformas WHERE id = $1 FOR UPDATE', [id]);
         const actual = actualRows[0];
         if (!actual) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Proforma no encontrada.' }); }
         if (actual.estado === 'convertida') { await client.query('ROLLBACK'); return res.status(409).json({ error: 'Esta proforma ya fue convertida a orden de trabajo y no puede cambiar de estado.' }); }
+        // Si la proforma ya desconto inventario y deja de estar aprobada
+        // (rechazada, vencida, vuelve a borrador...), el material vuelve
+        // automaticamente al inventario con un movimiento de devolucion.
+        let devolucion = null;
         if (actual.inventario_descontado_at && estado !== 'aprobada') {
-            await client.query('ROLLBACK');
-            return res.status(409).json({ error: 'Esta proforma ya desconto inventario: no puede volver a otro estado. Un administrador puede revertir primero la salida de inventario.' });
+            devolucion = await revertirSalidaProforma(client, id, req.usuario, `Proforma pasa a "${estado}"`);
         }
 
         const { rows } = await client.query('UPDATE proformas SET estado = $1 WHERE id = $2 RETURNING *', [estado, id]);
-        const proforma = rows[0];
+        let proforma = rows[0];
+
+        // Al aprobar se descuentan automaticamente del inventario los
+        // productos vinculados (si falta stock, queda pendiente y se avisa).
+        let inventario = null;
+        if (estado === 'aprobada') {
+            inventario = await descontarInventarioAutomatico(client, id, req.usuario);
+            if (inventario.descontado && !inventario.ya_estaba) {
+                proforma = (await client.query('SELECT * FROM proformas WHERE id = $1', [id])).rows[0];
+            }
+        }
 
         // Proforma creada desde una OT existente que se aprueba -> pagare 70%.
         let pagare = null;
@@ -548,6 +582,15 @@ const cambiarEstadoProforma = async (req, res) => {
             metadata: { numero: actual.numero, estado_anterior: actual.estado, estado_nuevo: estado },
         });
         if (pagare?.creada) registrarBitacoraPagare(req, pagare.cuenta, proforma, proforma.orden_id);
+        if (inventario?.movimientos?.length) registrarBitacoraSalida(req, proforma, inventario.movimientos);
+        if (devolucion?.devoluciones?.length) {
+            registrarAccionBitacora({
+                entidad_tipo: 'inventario', entidad_id: Number(id), accion: 'devolucion_por_proforma',
+                usuario_id: req.usuario.id, usuario_nombre: req.usuario.nombre,
+                detalle: `Devolucion automatica al inventario: la proforma ${actual.numero} paso a "${estado}" (${devolucion.devoluciones.length} producto(s)).`,
+                metadata: { proforma_id: Number(id), movimientos: devolucion.devoluciones.map(d => d.id) },
+            });
+        }
         if (pagareAnulado) {
             registrarAccionBitacora({
                 entidad_tipo: 'cuenta_cobrar', entidad_id: pagareAnulado, accion: 'anulada_automaticamente',
@@ -557,21 +600,51 @@ const cambiarEstadoProforma = async (req, res) => {
             });
         }
 
-        return res.json({ proforma, pagare: pagare?.cuenta || null });
+        return res.json({
+            proforma, pagare: pagare?.cuenta || null,
+            inventario: resumenInventario(inventario, devolucion),
+        });
     } catch (err) {
-        await client.query('ROLLBACK');
+        await client?.query('ROLLBACK');
         return responderError(res, err, 'Error al cambiar el estado de la proforma.');
     } finally {
-        client.release();
+        client?.release();
     }
 };
+
+/** Bitacora de una salida de inventario por proforma (manual o automatica). */
+function registrarBitacoraSalida(req, proforma, movimientos) {
+    const resumen = movimientos.map(m => `${m.repuesto_nombre} x${Number(m.cantidad)}`).join(', ');
+    const ordenId = proforma.orden_generada_id || proforma.orden_id;
+    registrarAccionBitacora({
+        entidad_tipo: 'inventario', entidad_id: proforma.id, accion: 'salida_por_proforma',
+        usuario_id: req.usuario.id, usuario_nombre: req.usuario.nombre,
+        detalle: `Salida de inventario por proforma ${proforma.numero}${ordenId ? ` (${formatoOrden(ordenId)})` : ''} · ${proforma.cliente_nombre} · ${[proforma.vehiculo_marca, proforma.vehiculo_modelo, proforma.vehiculo_placa].filter(Boolean).join(' ')}: ${resumen}.`,
+        metadata: {
+            proforma_id: proforma.id, proforma_numero: proforma.numero, orden_id: ordenId || null,
+            cliente_id: proforma.cliente_id, vehiculo_id: proforma.vehiculo_id,
+            movimientos: movimientos.map(m => ({ movimiento_id: m.id, repuesto_id: m.repuesto_id, producto: m.repuesto_nombre, cantidad: Number(m.cantidad), area: m.area, precio_unitario: Number(m.precio_unitario) })),
+        },
+    });
+}
+
+/** Resumen para el frontend de lo que paso con el inventario al cambiar de estado. */
+function resumenInventario(inventario, devolucion) {
+    if (devolucion?.devoluciones?.length) return { accion: 'devuelto', productos: devolucion.devoluciones.length };
+    if (!inventario || inventario.ya_estaba) return null;
+    if (inventario.sin_items) return { accion: 'sin_items' };
+    if (inventario.descontado) return { accion: 'descontado', productos: inventario.movimientos.length };
+    return { accion: 'pendiente', motivo: inventario.motivo, detalle: inventario.detalle };
+}
 
 function registrarBitacoraPagare(req, cuenta, proforma, ordenId) {
     registrarAccionBitacora({
         entidad_tipo: 'cuenta_cobrar', entidad_id: cuenta.id, accion: 'creada_automatica',
         usuario_id: req.usuario.id, usuario_nombre: req.usuario.nombre,
-        detalle: `Pagare #${cuenta.id} generado automaticamente: ${Number(cuenta.porcentaje)}% de $${Number(cuenta.monto_base).toFixed(2)} = $${Number(cuenta.monto_total).toFixed(2)} · ${formatoOrden(ordenId) || 'sin OT'} · ${proforma.numero} · ${proforma.cliente_nombre}.`,
-        metadata: { cuenta_id: cuenta.id, proforma_id: proforma.id, proforma_numero: proforma.numero, orden_id: ordenId || null, cliente_id: proforma.cliente_id, vehiculo_id: proforma.vehiculo_id, monto_base: Number(cuenta.monto_base), porcentaje: Number(cuenta.porcentaje), monto_total: Number(cuenta.monto_total) },
+        detalle: `Pagare #${cuenta.id} generado automaticamente por el total de $${Number(cuenta.monto_total).toFixed(2)}`
+            + (Number(cuenta.anticipo_requerido) > 0 ? ` (anticipo requerido $${Number(cuenta.anticipo_requerido).toFixed(2)}${cuenta.porcentaje ? ` = ${Number(cuenta.porcentaje)}%` : ''})` : ' (sin anticipo obligatorio)')
+            + ` · ${formatoOrden(ordenId) || 'sin OT'} · ${proforma.numero} · ${proforma.cliente_nombre}.`,
+        metadata: { cuenta_id: cuenta.id, proforma_id: proforma.id, proforma_numero: proforma.numero, orden_id: ordenId || null, cliente_id: proforma.cliente_id, vehiculo_id: proforma.vehiculo_id, monto_total: Number(cuenta.monto_total), anticipo_requerido: Number(cuenta.anticipo_requerido), porcentaje: cuenta.porcentaje ? Number(cuenta.porcentaje) : null },
     });
 }
 
@@ -581,8 +654,9 @@ function registrarBitacoraPagare(req, cuenta, proforma, ordenId) {
 // ─────────────────────────────────────────────────────────────
 const duplicarProforma = async (req, res) => {
     const { id } = req.params;
-    const client = await pool.connect();
+    let client;
     try {
+        client = await pool.connect();
         await client.query('BEGIN');
         const { rows: origRows } = await client.query('SELECT * FROM proformas WHERE id = $1', [id]);
         const original = origRows[0];
@@ -621,7 +695,7 @@ const duplicarProforma = async (req, res) => {
                 original.descuento, original.iva_porcentaje, original.anticipo,
                 original.subtotal_productos, original.subtotal_servicios, original.subtotal_mano_obra,
                 original.subtotal_pintura, original.subtotal_repuestos, original.subtotal_insumos,
-                original.subtotal, original.iva_valor, original.total, original.saldo,
+                original.subtotal, original.iva_valor, original.total, original.total, // la copia no hereda pagos: saldo = total
                 original.carroceria_tipo, original.carroceria_puertas, original.danos_observaciones,
             ]
         );
@@ -647,10 +721,10 @@ const duplicarProforma = async (req, res) => {
         const { rows: items_final } = await pool.query('SELECT * FROM proforma_items WHERE proforma_id = $1 ORDER BY categoria, orden_linea', [nueva.id]);
         return res.status(201).json({ proforma: { ...nueva, items: items_final } });
     } catch (err) {
-        await client.query('ROLLBACK');
+        await client?.query('ROLLBACK');
         return responderError(res, err, 'Error al duplicar la proforma.');
     } finally {
-        client.release();
+        client?.release();
     }
 };
 
@@ -735,6 +809,7 @@ const generarDesdeOrden = async (req, res) => {
         });
     } catch (err) {
         console.error('Error generarDesdeOrden:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al generar la proforma desde la orden.' });
     }
 };
@@ -745,8 +820,9 @@ const generarDesdeOrden = async (req, res) => {
 // ─────────────────────────────────────────────────────────────
 const convertirAOrden = async (req, res) => {
     const { id } = req.params;
-    const client = await pool.connect();
+    let client;
     try {
+        client = await pool.connect();
         await client.query('BEGIN');
         const { rows: profRows } = await client.query('SELECT * FROM proformas WHERE id = $1 FOR UPDATE', [id]);
         const proforma = profRows[0];
@@ -774,6 +850,8 @@ const convertirAOrden = async (req, res) => {
         // Si la proforma ya habia descontado inventario, esas salidas quedan
         // ahora ligadas tambien a la OT generada (trazabilidad completa).
         await client.query('UPDATE movimientos_inventario SET orden_id = $1 WHERE proforma_id = $2 AND orden_id IS NULL', [orden.id, id]);
+        // Si aun no lo habia hecho, convertir en orden descuenta el material.
+        const inventario = await descontarInventarioAutomatico(client, id, req.usuario);
 
         // Pagare automatico del 70% (no duplica si ya existe uno).
         const pagare = await generarPagareAutomatico(client, { proforma: convRows[0], ordenId: orden.id, usuario: req.usuario });
@@ -787,13 +865,17 @@ const convertirAOrden = async (req, res) => {
             metadata: { numero: proforma.numero, orden_id: orden.id, pagare_id: pagare.cuenta?.id || null },
         });
         if (pagare.creada) registrarBitacoraPagare(req, pagare.cuenta, convRows[0], orden.id);
+        if (inventario.movimientos?.length) registrarBitacoraSalida(req, convRows[0], inventario.movimientos);
 
-        return res.status(201).json({ orden, proforma_id: proforma.id, pagare: pagare.cuenta, pagare_creado: pagare.creada, pagare_motivo: pagare.motivo || null });
+        return res.status(201).json({
+            orden, proforma_id: proforma.id, pagare: pagare.cuenta, pagare_creado: pagare.creada, pagare_motivo: pagare.motivo || null,
+            inventario: resumenInventario(inventario, null),
+        });
     } catch (err) {
-        await client.query('ROLLBACK');
+        await client?.query('ROLLBACK');
         return responderError(res, err, 'Error al convertir la proforma en orden de trabajo.');
     } finally {
-        client.release();
+        client?.release();
     }
 };
 
@@ -806,24 +888,14 @@ const convertirAOrden = async (req, res) => {
 // ─────────────────────────────────────────────────────────────
 const confirmarUso = async (req, res) => {
     const { id } = req.params;
-    const client = await pool.connect();
+    let client;
     try {
+        client = await pool.connect();
         await client.query('BEGIN');
         const { proforma, movimientos } = await confirmarUsoProforma(client, id, req.usuario);
         await client.query('COMMIT');
 
-        const resumen = movimientos.map(m => `${m.repuesto_nombre} x${Number(m.cantidad)}`).join(', ');
-        const ordenId = proforma.orden_generada_id || proforma.orden_id;
-        registrarAccionBitacora({
-            entidad_tipo: 'inventario', entidad_id: proforma.id, accion: 'salida_por_proforma',
-            usuario_id: req.usuario.id, usuario_nombre: req.usuario.nombre,
-            detalle: `Salida de inventario por proforma ${proforma.numero}${ordenId ? ` (${formatoOrden(ordenId)})` : ''} · ${proforma.cliente_nombre} · ${[proforma.vehiculo_marca, proforma.vehiculo_modelo, proforma.vehiculo_placa].filter(Boolean).join(' ')}: ${resumen}.`,
-            metadata: {
-                proforma_id: proforma.id, proforma_numero: proforma.numero, orden_id: ordenId || null,
-                cliente_id: proforma.cliente_id, vehiculo_id: proforma.vehiculo_id,
-                movimientos: movimientos.map(m => ({ movimiento_id: m.id, repuesto_id: m.repuesto_id, producto: m.repuesto_nombre, cantidad: Number(m.cantidad), area: m.area, precio_unitario: Number(m.precio_unitario) })),
-            },
-        });
+        registrarBitacoraSalida(req, proforma, movimientos);
 
         return res.status(201).json({
             mensaje: `Inventario descontado: ${movimientos.length} producto(s).`,
@@ -831,10 +903,10 @@ const confirmarUso = async (req, res) => {
             movimientos: movimientos.map(m => ({ ...m, cantidad: Number(m.cantidad), stock_anterior: Number(m.stock_anterior), stock_nuevo: Number(m.stock_nuevo) })),
         });
     } catch (err) {
-        await client.query('ROLLBACK');
+        await client?.query('ROLLBACK');
         return responderError(res, err, 'Error al descontar el inventario de la proforma.');
     } finally {
-        client.release();
+        client?.release();
     }
 };
 
@@ -846,8 +918,9 @@ const revertirSalida = async (req, res) => {
     const { id } = req.params;
     const motivo = typeof req.body?.motivo === 'string' ? req.body.motivo.trim().slice(0, 200) : '';
     if (!motivo) return res.status(400).json({ error: 'Indica el motivo de la devolucion al inventario.' });
-    const client = await pool.connect();
+    let client;
     try {
+        client = await pool.connect();
         await client.query('BEGIN');
         const { proforma, devoluciones } = await revertirSalidaProforma(client, id, req.usuario, motivo);
         await client.query('COMMIT');
@@ -860,10 +933,10 @@ const revertirSalida = async (req, res) => {
         });
         return res.json({ mensaje: 'Salida revertida: el stock fue devuelto al inventario.', proforma, devoluciones: devoluciones.length });
     } catch (err) {
-        await client.query('ROLLBACK');
+        await client?.query('ROLLBACK');
         return responderError(res, err, 'Error al revertir la salida de inventario.');
     } finally {
-        client.release();
+        client?.release();
     }
 };
 

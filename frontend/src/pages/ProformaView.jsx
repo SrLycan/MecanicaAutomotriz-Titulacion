@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
+import { avisarInventario } from '../utils/avisoInventario';
 import { useConfirm } from '../components/common/ConfirmDialog';
 import { DIAGRAMAS, CARROCERIAS } from '../components/proformas/vehiculo';
 import './Proformas.css';
@@ -19,24 +20,26 @@ const ESTADO_COLOR = { borrador: '#64748b', emitida: '#0ea5e9', aprobada: '#10b9
 const TIPO_LABEL = { mecanica: 'Mecánica', pintura: 'Colisiones / Pintura y Carrocería' };
 const fmtCant = (n) => (Number(n) % 1 === 0 ? String(Number(n)) : Number(n).toFixed(2));
 const fmtFecha = (v) => (v ? new Date(v).toLocaleString('es-EC', { dateStyle: 'short', timeStyle: 'short' }) : '—');
+const ESTADO_PAGO_LABEL = { pendiente: 'Pendiente de pago', parcial: 'Pago parcial', vencido: 'Vencido', pagado: 'Pagado', anulado: 'Anulado' };
 const CATEGORIA_LABEL = { producto: 'Productos / Repuestos', servicio: 'Servicios / Mano de obra', mano_obra: 'Mano de obra / Enderezado', pintura: 'Pintura', repuesto: 'Repuestos', insumo: 'Insumos' };
 
 export default function ProformaView() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { tieneRol } = useAuth();
+    const { puede } = useAuth();
     const { isDark } = useTheme();
     const confirm = useConfirm();
-    const esAdmin = tieneRol('administrador');
-    const veCuentas = tieneRol('administrador', 'recepcionista');
+    // Devolver material al inventario es un permiso de inventario; ver el pagare, de cartera.
+    const puedeDevolver = puede('registros_inventario', 'aprobar');
+    const veCuentas = puede('cuentas_cobrar', 'ver');
 
-    const SKY_DEEP = '#0284c7'; const SKY_PALE = isDark ? 'rgba(14,165,233,0.10)' : 'rgba(14,165,233,0.05)';
+    const SKY_DEEP = '#0284c7'; const SKY_PALE = isDark ? 'rgba(14,165,233,0.10)' : 'rgba(14,165,233,0.12)';
     const txt = isDark ? '#f1f5f9' : '#0f172a';
     const txtSf = isDark ? '#cbd5e1' : '#334155';
     const mut = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
-    const bdr = isDark ? 'rgba(148,163,184,0.18)' : 'rgba(15,23,42,0.07)';
+    const bdr = isDark ? 'rgba(148,163,184,0.18)' : '#b6c3d3';
     const card = isDark ? 'rgba(255,255,255,0.025)' : '#ffffff';
-    const cardSh = isDark ? '0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 40px -16px rgba(0,0,0,0.55)' : '0 4px 16px -4px rgba(15,23,42,0.08), 0 2px 4px -2px rgba(15,23,42,0.04)';
+    const cardSh = isDark ? '0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 40px -16px rgba(0,0,0,0.55)' : '0 1px 2px rgba(15,23,42,0.06), 0 8px 22px -8px rgba(15,23,42,0.20)';
 
     const [proforma, setProforma] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -69,17 +72,31 @@ export default function ProformaView() {
     };
 
     const convertirAOrden = async () => {
-        if (!(await confirm({ title: 'Convertir a orden de trabajo', confirmLabel: 'Convertir', message: `¿Convertir la proforma ${proforma.numero} en una orden de trabajo? La proforma quedará marcada como "convertida" y se generará automáticamente el pagaré del 70% (${'$'}${(Number(proforma.total) * 0.7).toFixed(2)}).` }))) return;
+        const reglaPago = proforma.tipo === 'pintura'
+            ? `por el total de $${Number(proforma.total).toFixed(2)} con un anticipo requerido del 70% ($${Number(proforma.anticipo).toFixed(2)})`
+            : `por el total de $${Number(proforma.total).toFixed(2)}${Number(proforma.anticipo) > 0 ? ` (anticipo requerido $${Number(proforma.anticipo).toFixed(2)})` : ', sin anticipo obligatorio'}`;
+        if (!(await confirm({ title: 'Convertir a orden de trabajo', confirmLabel: 'Convertir', danger: false, message: `¿Convertir la proforma ${proforma.numero} en una orden de trabajo? La proforma quedará marcada como "convertida" y se generará el pagaré ${reglaPago}${(proforma.items || []).some(i => i.referencia_tipo === 'repuesto' && i.referencia_id) && !proforma.inventario_descontado_at ? '; además se descontarán del inventario los productos vinculados' : ''}.` }))) return;
         setConvirtiendo(true);
         try {
             const { data } = await api.post(`/proformas/${id}/convertir-orden`);
             const ot = `OT-${String(data.orden.id).padStart(6, '0')}`;
             toast.success(data.pagare_creado
-                ? `Orden ${ot} creada. Pagaré automático #${data.pagare.id} por $${Number(data.pagare.monto_total).toFixed(2)} (70%).`
+                ? `Orden ${ot} creada. Pagaré #${data.pagare.id} por $${Number(data.pagare.monto_total).toFixed(2)}${Number(data.pagare.anticipo_requerido) > 0 ? ` (anticipo requerido $${Number(data.pagare.anticipo_requerido).toFixed(2)})` : ''}.`
                 : `Orden ${ot} creada.${data.pagare_motivo ? ` ${data.pagare_motivo}` : ''}`, { duration: 6000 });
+            avisarInventario(data.inventario);
             cargar();
         } catch (err) { toast.error(err.response?.data?.error || 'Error al convertir la proforma.'); }
         finally { setConvirtiendo(false); }
+    };
+
+    const cambiarEstado = async (estado, mensaje) => {
+        if (!(await confirm({ title: 'Cambiar estado', confirmLabel: 'Confirmar', danger: estado === 'rechazada', message: mensaje }))) return;
+        try {
+            const { data } = await api.patch(`/proformas/${id}/estado`, { estado });
+            toast.success(`Proforma ${estado}.`);
+            avisarInventario(data.inventario);
+            cargar();
+        } catch (err) { toast.error(err.response?.data?.error || 'Error al cambiar el estado.'); }
     };
 
     const confirmarUso = async () => {
@@ -116,6 +133,8 @@ export default function ProformaView() {
     const categorias = proforma.tipo === 'mecanica' ? ['producto', 'servicio'] : ['mano_obra', 'pintura', 'repuesto', 'insumo'];
     const itemsInventario = (proforma.items || []).filter(i => i.referencia_tipo === 'repuesto' && i.referencia_id);
     const descontado = Boolean(proforma.inventario_descontado_at);
+    // Permiso sobre ESTA proforma segun su tipo (mecanica / colisiones-pintura).
+    const pf = (accion) => puede(proforma.tipo === 'pintura' ? 'proformas_colisiones' : 'proformas_mecanica', accion);
     const puedeDescontar = ['aprobada', 'convertida'].includes(proforma.estado);
     const Diagrama = proforma.carroceria_tipo ? DIAGRAMAS[proforma.carroceria_tipo] : null;
     const ordenId = proforma.orden_generada_id || proforma.orden_id;
@@ -125,7 +144,7 @@ export default function ProformaView() {
         <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1000 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 22, flexWrap: 'wrap', gap: 14 }}>
                 <div>
-                    <div className="SS SWAP-chip" style={{ marginBottom: 8 }}><span className="dot" /><span>SS SWAP · PROFORMAS</span></div>
+                    <div className="ssswap-chip" style={{ marginBottom: 8 }}><span className="dot" /><span>SS SWAP · PROFORMAS</span></div>
                     <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.4rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>{proforma.numero}</h1>
                     <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 8 }}>
                         <span className="pf-badge" style={{ background: `${ESTADO_COLOR[proforma.estado]}18`, border: `1px solid ${ESTADO_COLOR[proforma.estado]}44`, color: ESTADO_COLOR[proforma.estado] }}>{proforma.estado.toUpperCase()}</span>
@@ -133,12 +152,20 @@ export default function ProformaView() {
                     </div>
                 </div>
                 <div className="no-print" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    {proforma.estado !== 'convertida' && !descontado && (
+                    {pf('editar') && proforma.estado !== 'convertida' && !descontado && (
                         <button onClick={() => navigate(`/dashboard/proformas/${id}/editar`)} style={btnSec(bdr, txt)}><IconEdit /> EDITAR</button>
                     )}
-                    <button onClick={() => descargar('pdf')} style={btnSec(bdr, txt)}><IconDownload /> PDF</button>
-                    <button onClick={() => descargar('excel')} style={btnSec(bdr, txt)}><IconDownload /> EXCEL</button>
-                    {proforma.estado !== 'convertida' && (
+                    {pf('exportar') && <button onClick={() => descargar('pdf')} style={btnSec(bdr, txt)}><IconDownload /> PDF</button>}
+                    {pf('exportar') && <button onClick={() => descargar('excel')} style={btnSec(bdr, txt)}><IconDownload /> EXCEL</button>}
+                    {pf('aprobar') && ['borrador', 'emitida', 'rechazada', 'vencida'].includes(proforma.estado) && (
+                        <button onClick={() => cambiarEstado('aprobada', `¿Aprobar la proforma ${proforma.numero}?${itemsInventario.length ? ` Se descontarán del inventario ${itemsInventario.length} producto(s) y quedarán en Inventario › Registros.` : ''}`)}
+                            style={btnPrim('#10b981')}>✔ APROBAR</button>
+                    )}
+                    {pf('aprobar') && proforma.estado === 'aprobada' && (
+                        <button onClick={() => cambiarEstado('rechazada', `¿Marcar la proforma ${proforma.numero} como rechazada?${descontado ? ' El material descontado volverá al inventario.' : ''}`)}
+                            style={btnSec(bdr, '#ef4444')}>RECHAZAR</button>
+                    )}
+                    {pf('aprobar') && proforma.estado !== 'convertida' && (
                         <button onClick={convertirAOrden} disabled={convirtiendo} style={btnPrim(SKY_DEEP)}><IconRefresh /> {convirtiendo ? 'CONVIRTIENDO...' : 'CONVERTIR A ORDEN'}</button>
                     )}
                     {ordenId && (
@@ -196,6 +223,9 @@ export default function ProformaView() {
                                 {list.map(it => (
                                     <tr key={it.id} style={{ borderColor: bdr }}>
                                         <td style={{ color: txt }}>
+                                            {it.referencia_tipo === 'repuesto' && it.repuesto_codigo && (
+                                                <code style={{ fontSize: '.72rem', fontWeight: 600, color: SKY_DEEP, marginRight: 8 }}>{it.repuesto_codigo}</code>
+                                            )}
                                             {it.descripcion}
                                             {it.referencia_tipo === 'repuesto' && it.referencia_id && (
                                                 <span className="pf-badge" style={{ marginLeft: 8, background: 'rgba(14,165,233,0.10)', border: '1px solid rgba(14,165,233,0.3)', color: SKY_DEEP }}>
@@ -224,17 +254,17 @@ export default function ProformaView() {
                                 {descontado
                                     ? <>✔ Descontado el {fmtFecha(proforma.inventario_descontado_at)} por <strong>{proforma.inventario_descontado_por_nombre || '—'}</strong></>
                                     : puedeDescontar
-                                        ? `${itemsInventario.length} producto(s) vinculados al inventario pendientes de descontar.`
-                                        : `${itemsInventario.length} producto(s) vinculados al inventario. Aprueba la proforma para poder confirmar el uso de materiales.`}
+                                        ? `${itemsInventario.length} producto(s) vinculados al inventario. No se pudieron descontar al aprobar (falta stock): repón el stock y confírmalo aquí.`
+                                        : `${itemsInventario.length} producto(s) vinculados al inventario. Se descontarán automáticamente al APROBAR la proforma o convertirla en orden.`}
                             </p>
                         </div>
-                        {!descontado && (
+                        {!descontado && pf('aprobar') && (
                             <button onClick={confirmarUso} disabled={!puedeDescontar || descontando}
                                 style={{ ...btnPrim(puedeDescontar ? '#10b981' : '#94a3b8'), cursor: puedeDescontar ? 'pointer' : 'not-allowed' }}>
                                 {descontando ? 'DESCONTANDO...' : 'CONFIRMAR USO DE MATERIALES'}
                             </button>
                         )}
-                        {descontado && esAdmin && !mostrarReversion && (
+                        {descontado && puedeDevolver && !mostrarReversion && (
                             <button onClick={() => setMostrarReversion(true)} style={btnSec(bdr, '#ef4444')}>DEVOLVER AL INVENTARIO</button>
                         )}
                     </div>
@@ -275,26 +305,35 @@ export default function ProformaView() {
                 </div>
             )}
 
-            {/* ── Pagaré automático (70%) ── */}
+            {/* ── Pagaré de la proforma (100% de la deuda) ── */}
             {proforma.pagare && (
                 <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, padding: 16, boxShadow: cardSh, marginBottom: 18, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
-                    <div style={{ fontFamily: "'Outfit'", fontSize: '.84rem', color: txtSf }}>
-                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.78rem', letterSpacing: '.14em', color: SKY_DEEP }}>PAGARÉ #{proforma.pagare.id} · {Number(proforma.pagare.porcentaje || 70)}%</p>
-                        A cobrar <strong style={{ color: txt }}>${Number(proforma.pagare.monto_total).toFixed(2)}</strong> · Pagado ${Number(proforma.pagare.monto_pagado).toFixed(2)} ·
-                        Saldo <strong style={{ color: '#ef4444' }}>${(Number(proforma.pagare.monto_total) - Number(proforma.pagare.monto_pagado)).toFixed(2)}</strong> · {proforma.pagare.estado.toUpperCase()}
+                    <div style={{ fontFamily: "'Outfit'", fontSize: '.84rem', color: txtSf, flex: 1, minWidth: 260 }}>
+                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.78rem', letterSpacing: '.14em', color: SKY_DEEP }}>PAGARÉ #{proforma.pagare.id} · {(ESTADO_PAGO_LABEL[proforma.pagare.estado] || proforma.pagare.estado).toUpperCase()}</p>
+                        Total <strong style={{ color: txt }}>${Number(proforma.pagare.total).toFixed(2)}</strong> · Pagado <strong style={{ color: '#10b981' }}>${Number(proforma.pagare.pagado).toFixed(2)}</strong> ·
+                        Saldo <strong style={{ color: proforma.pagare.saldo > 0 ? '#ef4444' : txt }}>${Number(proforma.pagare.saldo).toFixed(2)}</strong>
+                        {proforma.pagare.anticipo_requerido > 0 && <> · Anticipo requerido ${Number(proforma.pagare.anticipo_requerido).toFixed(2)} ({proforma.pagare.anticipo_cubierto ? 'recibido' : 'por cobrar'})</>}
+                        <div style={{ height: 6, borderRadius: 999, background: bdr, overflow: 'hidden', marginTop: 6 }}>
+                            <div style={{ width: `${proforma.pagare.porcentaje_pagado}%`, height: '100%', background: '#10b981' }} />
+                        </div>
                     </div>
                     {veCuentas && <Link to={`/dashboard/clientes?tab=pagare&cuenta=${proforma.pagare.id}`} style={{ ...btnSec(bdr, txt), textDecoration: 'none' }}>VER PAGARÉ</Link>}
                 </div>
             )}
 
-            <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, padding: 20, boxShadow: cardSh, marginBottom: 18, maxWidth: 360, marginLeft: 'auto' }}>
+            <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, padding: 20, boxShadow: cardSh, marginBottom: 18, maxWidth: 380, marginLeft: 'auto' }}>
                 <ResumenLinea label="Subtotal" val={proforma.subtotal} mut={mut} txt={txt} />
                 {Number(proforma.descuento) > 0 && <ResumenLinea label="Descuento" val={-proforma.descuento} mut={mut} txt={txt} />}
                 <ResumenLinea label={`IVA (${Number(proforma.iva_porcentaje)}%)`} val={proforma.iva_valor} mut={mut} txt={txt} />
                 <div style={{ borderTop: `1px solid ${bdr}`, margin: '8px 0' }} />
                 <ResumenLinea label="TOTAL" val={proforma.total} mut={txt} txt={SKY_DEEP} grande />
-                <ResumenLinea label="Anticipo" val={proforma.anticipo} mut={mut} txt={txt} />
-                <ResumenLinea label="Saldo pendiente" val={proforma.saldo} mut={txt} txt={txt} negrita />
+                {Number(proforma.anticipo) > 0 && <ResumenLinea label={proforma.tipo === 'pintura' ? 'Anticipo requerido (70%)' : 'Anticipo requerido'} val={proforma.anticipo} mut={mut} txt={txt} />}
+                {Number(proforma.anticipo) > 0 && <ResumenLinea label={proforma.tipo === 'pintura' ? 'Saldo restante (30%)' : 'Saldo después del anticipo'} val={Number(proforma.total) - Number(proforma.anticipo)} mut={mut} txt={txt} />}
+                <ResumenLinea label="Total pagado" val={proforma.pagare ? proforma.pagare.pagado : 0} mut={mut} txt="#10b981" />
+                <ResumenLinea label="Saldo pendiente de pago" val={proforma.pagare ? proforma.pagare.saldo : proforma.total} mut={txt} txt={txt} negrita />
+                {proforma.tipo !== 'pintura' && !(Number(proforma.anticipo) > 0) && (
+                    <p style={{ fontFamily: "'Outfit'", fontSize: '.74rem', color: mut, marginTop: 6 }}>Mecánica general: sin anticipo obligatorio.</p>
+                )}
             </div>
 
             {(proforma.observaciones || proforma.condiciones || proforma.garantia || proforma.tiempo_estimado) && (

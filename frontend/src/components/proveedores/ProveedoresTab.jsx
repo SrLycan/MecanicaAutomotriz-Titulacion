@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { useConfirm } from '../common/ConfirmDialog';
+import { useAuth } from '../../context/AuthContext';
 
 function IconPlus()  { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>; }
 function IconEdit()  { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>; }
@@ -20,6 +21,7 @@ const EMPTY_CONT = { nombre: '', cargo: '', telefono: '', email: '', es_principa
 const CATEGORIAS = ['Repuestos', 'Insumos', 'Herramientas', 'Servicios', 'Materiales', 'Otros'];
 
 export default function ProveedoresTab({ theme, proveedores, loading, cargarProveedores, busqueda, setBusqueda }) {
+    const { puede } = useAuth();
     const confirm = useConfirm();
     const { txt, txtSf, mut, bdr, card, cardSh, inputBg, SKY, SKY_DEEP, SKY_PALE, SKY_BDR } = theme;
     const [modal, setModal]         = useState({ open: false, data: null });
@@ -56,10 +58,10 @@ export default function ProveedoresTab({ theme, proveedores, loading, cargarProv
                     placeholder="Buscar por nombre, razon social o RUC..."
                     style={{ flex: 1, minWidth: 220, maxWidth: 340, padding: '10px 13px', borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: txt, fontFamily: "'Outfit'", fontSize: '.85rem', outline: 'none' }}
                 />
-                <button onClick={() => setModal({ open: true, data: null })}
+                {puede('proveedores', 'crear') && <button onClick={() => setModal({ open: true, data: null })}
                     style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.14em', color: '#fff', background: `linear-gradient(135deg, ${SKY_DEEP}, ${SKY})`, border: 'none', borderRadius: 11, padding: '10px 20px', cursor: 'pointer' }}>
                     <IconPlus /> NUEVO PROVEEDOR
-                </button>
+                </button>}
             </div>
 
             {loading ? (
@@ -102,9 +104,9 @@ export default function ProveedoresTab({ theme, proveedores, loading, cargarProv
                                     <td>
                                         <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                                             <button className="prov-icon-btn" title="Contactos" style={{ color: SKY_DEEP }} onClick={() => setModalCont({ open: true, proveedor: p })}><IconUsers /></button>
-                                            <button className="prov-icon-btn" title="Editar" style={{ color: SKY_DEEP }} onClick={() => setModal({ open: true, data: p })}><IconEdit /></button>
+                                            {puede('proveedores', 'editar') && <button className="prov-icon-btn" title="Editar" style={{ color: SKY_DEEP }} onClick={() => setModal({ open: true, data: p })}><IconEdit /></button>}
                                             {p.activo && (
-                                                <button className="prov-icon-btn" title="Desactivar" style={{ color: '#ef4444' }} onClick={() => desactivar(p)}><IconTrash /></button>
+                                                puede('proveedores', 'eliminar') && <button className="prov-icon-btn" title="Desactivar" style={{ color: '#ef4444' }} onClick={() => desactivar(p)}><IconTrash /></button>
                                             )}
                                         </div>
                                     </td>
@@ -207,6 +209,7 @@ function ModalProveedor({ theme, data, onClose, onGuardar }) {
 }
 
 function ModalContactos({ theme, proveedor, onClose }) {
+    const { puede } = useAuth();
     const { txt, txtSf, mut, bdr, inputBg, boxBg, SKY, SKY_DEEP, SKY_PALE, SKY_BDR, labelSt, inputSt } = theme;
     const confirm = useConfirm();
     const [contactos, setContactos] = useState(proveedor.contactos || []);
@@ -284,8 +287,8 @@ function ModalContactos({ theme, proveedor, onClose }) {
                                     </p>
                                 </div>
                                 <div style={{ display: 'flex', gap: 6 }}>
-                                    <button className="prov-icon-btn" style={{ color: SKY_DEEP }} onClick={() => editar(c)}><IconEdit /></button>
-                                    <button className="prov-icon-btn" style={{ color: '#ef4444' }} onClick={() => eliminar(c)}><IconTrash /></button>
+                                    {puede('proveedores', 'editar') && <button className="prov-icon-btn" style={{ color: SKY_DEEP }} onClick={() => editar(c)}><IconEdit /></button>}
+                                    {puede('proveedores', 'eliminar') && <button className="prov-icon-btn" style={{ color: '#ef4444' }} onClick={() => eliminar(c)}><IconTrash /></button>}
                                 </div>
                             </div>
                         ))}

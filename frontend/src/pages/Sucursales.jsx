@@ -6,6 +6,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { useConfirm } from '../components/common/ConfirmDialog';
@@ -24,6 +25,7 @@ const EMPTY = { nombre: '', direccion: '', ciudad: '', telefono: '', email: '', 
 
 export default function Sucursales() {
     const confirm = useConfirm();
+    const { puede } = useAuth();
     const { isDark } = useTheme();
     const [sucursales, setSucursales] = useState([]);
     const [loading, setLoading]       = useState(true);
@@ -31,16 +33,16 @@ export default function Sucursales() {
 
     // Paleta
     const SKY = '#0ea5e9'; const SKY_DEEP = '#0284c7';
-    const SKY_PALE = isDark ? 'rgba(14,165,233,0.10)' : 'rgba(14,165,233,0.05)';
-    const SKY_BDR  = isDark ? 'rgba(56,189,248,0.22)' : 'rgba(14,165,233,0.18)';
+    const SKY_PALE = isDark ? 'rgba(14,165,233,0.10)' : 'rgba(14,165,233,0.12)';
+    const SKY_BDR  = isDark ? 'rgba(56,189,248,0.22)' : 'rgba(14,165,233,0.35)';
     const txt    = isDark ? '#f1f5f9' : '#0f172a';
     const txtSf  = isDark ? '#cbd5e1' : '#334155';
     const mut    = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
-    const bdr    = isDark ? 'rgba(148,163,184,0.18)' : 'rgba(15,23,42,0.07)';
+    const bdr    = isDark ? 'rgba(148,163,184,0.18)' : '#b6c3d3';
     const card   = isDark ? 'rgba(255,255,255,0.025)' : '#ffffff';
     const cardSh = isDark
         ? '0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 40px -16px rgba(0,0,0,0.55)'
-        : '0 4px 16px -4px rgba(15,23,42,0.08), 0 2px 4px -2px rgba(15,23,42,0.04)';
+        : '0 1px 2px rgba(15,23,42,0.06), 0 8px 22px -8px rgba(15,23,42,0.20)';
 
     const cargar = async () => {
         setLoading(true);
@@ -81,7 +83,7 @@ export default function Sucursales() {
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 22, flexWrap: 'wrap', gap: 12 }}>
                 <div>
-                    <div className="SS SWAP-chip" style={{ marginBottom: 8 }}>
+                    <div className="ssswap-chip" style={{ marginBottom: 8 }}>
                         <span className="dot" />
                         <span>SS SWAP · ADMIN · SUCURSALES</span>
                     </div>
@@ -90,10 +92,10 @@ export default function Sucursales() {
                         Gestion de ubicaciones · Visibles en la pagina principal
                     </p>
                 </div>
-                <button onClick={() => setModal({ open: true, data: null })}
+                {puede('sucursales', 'crear') && <button onClick={() => setModal({ open: true, data: null })}
                     style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: "'Bebas Neue'", fontSize: '.78rem', letterSpacing: '.14em', color: '#fff', background: `linear-gradient(135deg, ${SKY_DEEP}, ${SKY})`, border: 'none', borderRadius: 11, padding: '11px 22px', cursor: 'pointer', boxShadow: `0 6px 18px -6px ${SKY}` }}>
                     <IconPlus /> NUEVA SUCURSAL
-                </button>
+                </button>}
             </div>
 
             {loading ? (
@@ -141,16 +143,16 @@ export default function Sucursales() {
                                     {s.ciudad && <p style={{ fontFamily: "'Outfit'", fontSize: '.78rem', color: mut, marginTop: 2 }}>{s.ciudad}</p>}
                                 </div>
                                 <div style={{ display: 'flex', gap: 6 }}>
-                                    <button onClick={() => setModal({ open: true, data: s })}
+                                    {puede('sucursales', 'editar') && <button onClick={() => setModal({ open: true, data: s })}
                                             title="Editar"
                                             style={{ background: 'none', border: `1px solid ${bdr}`, borderRadius: 8, padding: 7, cursor: 'pointer', color: SKY_DEEP, display: 'flex' }}>
                                         <IconEdit />
-                                    </button>
-                                    <button onClick={() => eliminar(s)}
+                                    </button>}
+                                    {puede('sucursales', 'eliminar') && <button onClick={() => eliminar(s)}
                                             title="Eliminar"
                                             style={{ background: 'none', border: `1px solid ${bdr}`, borderRadius: 8, padding: 7, cursor: 'pointer', color: '#ef4444', display: 'flex' }}>
                                         <IconTrash />
-                                    </button>
+                                    </button>}
                                 </div>
                             </div>
 
@@ -201,7 +203,7 @@ function ModalSucursal({ data, onClose, onGuardar }) {
     const SKY = '#0ea5e9'; const SKY_DEEP = '#0284c7';
     const txt = isDark ? '#f1f5f9' : '#0f172a';
     const mut = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
-    const bdr = isDark ? 'rgba(148,163,184,0.18)' : 'rgba(15,23,42,0.10)';
+    const bdr = isDark ? 'rgba(148,163,184,0.18)' : '#b6c3d3';
     const inputBg = isDark ? '#0b1220' : '#f8fafc';
     const boxBg = isDark ? '#0a0f1c' : '#ffffff';
 
@@ -263,7 +265,7 @@ function ModalSucursal({ data, onClose, onGuardar }) {
                         </div>
                         <div style={{ gridColumn: '1/-1' }}>
                             <label style={labelSt}>EMAIL</label>
-                            <input type="email" name="email" value={form.email || ''} onChange={onChange} placeholder="sucursal@SS SWAP.com" style={inputSt} />
+                            <input type="email" name="email" value={form.email || ''} onChange={onChange} placeholder="sucursal@ssswap.com" style={inputSt} />
                         </div>
                         <div style={{ gridColumn: '1/-1' }}>
                             <label style={labelSt}>HORARIO</label>

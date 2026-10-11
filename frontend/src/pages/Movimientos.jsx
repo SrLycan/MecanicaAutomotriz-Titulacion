@@ -26,6 +26,7 @@ export function clasificarMovimiento(m) {
     if (m.origen === 'compra') return { label: 'ENTRADA POR COMPRA', color: '#10b981' };
     if (m.origen === 'ajuste') return { label: m.tipo === 'entrada' ? 'AJUSTE (+)' : 'AJUSTE (−)', color: '#8b5cf6' };
     if (m.origen === 'devolucion') return { label: 'DEVOLUCIÓN', color: '#0ea5e9' };
+    if (m.origen === 'venta') return { label: 'VENTA A CLIENTE', color: '#e11d48' };
     return m.tipo === 'entrada' ? { label: 'ENTRADA MANUAL', color: '#10b981' } : { label: 'SALIDA MANUAL', color: '#ef4444' };
 }
 const fmtCant = (n) => (Number(n) % 1 === 0 ? String(Number(n)) : Number(n).toFixed(2));
@@ -49,13 +50,13 @@ export default function Movimientos() {
     const txtSf   = isDark ? '#cbd5e1' : '#334155';
     const mut     = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
     const faint   = isDark ? 'rgba(241,245,249,0.38)' : '#94a3b8';
-    const bdr     = isDark ? 'rgba(148,163,184,0.18)' : 'rgba(15,23,42,0.07)';
+    const bdr     = isDark ? 'rgba(148,163,184,0.18)' : '#b6c3d3';
     const card    = isDark ? 'rgba(255,255,255,0.025)' : '#ffffff';
     const cardSh  = isDark
         ? '0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 40px -16px rgba(0,0,0,0.55)'
-        : '0 4px 16px -4px rgba(15,23,42,0.08), 0 2px 4px -2px rgba(15,23,42,0.04)';
+        : '0 1px 2px rgba(15,23,42,0.06), 0 8px 22px -8px rgba(15,23,42,0.20)';
     const inputBg = isDark ? '#0b1220' : '#fafcff';
-    const headBg  = isDark ? 'rgba(14,165,233,0.06)' : 'rgba(14,165,233,0.025)';
+    const headBg  = isDark ? 'rgba(14,165,233,0.06)' : 'rgba(14,165,233,0.12)';
 
     const construirParams = (f, pg, limit = POR_PAGINA) => {
         const params = new URLSearchParams();
@@ -127,7 +128,7 @@ export default function Movimientos() {
         <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1500 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 18, flexWrap: 'wrap', gap: 12 }}>
                 <div>
-                    <div className="SS SWAP-chip" style={{ marginBottom: 8 }}><span className="dot" /><span>SS SWAP · TRAZABILIDAD</span></div>
+                    <div className="ssswap-chip" style={{ marginBottom: 8 }}><span className="dot" /><span>SS SWAP · TRAZABILIDAD</span></div>
                     <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.6rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>Registros de inventario</h1>
                     <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.85rem', color: mut, marginTop: 6 }}>
                         Qué pasó con cada producto: entradas, salidas, compras, ajustes, devoluciones y salidas por proforma
@@ -160,6 +161,7 @@ export default function Movimientos() {
                             <option value="entrada|manual">Entrada manual</option>
                             <option value="salida|manual">Salida manual</option>
                             <option value="salida|proforma">Salida por proforma</option>
+                            <option value="salida|venta">Venta a cliente (tienda)</option>
                             <option value="entrada|compra">Entrada por compra</option>
                             <option value="|ajuste">Ajuste de inventario</option>
                             <option value="entrada|devolucion">Devolución</option>

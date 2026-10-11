@@ -24,14 +24,20 @@ const EMPTY = {
     carroceria_tipo: '', carroceria_puertas: null, zonas_danadas: [], danos_observaciones: '',
 };
 
-function calcularTotalesPreview(items, descuento, ivaPorcentaje, anticipo) {
+// Mismas reglas que el servidor (backend/src/services/reglasPago.js):
+// Colisiones/Pintura exige un anticipo del 70%; Mecanica general no exige
+// anticipo (el campo es opcional). El anticipo es un monto REQUERIDO, no un
+// pago recibido: lo pagado se registra en el pagaré.
+const PCT_ANTICIPO = { pintura: 70 };
+function calcularTotalesPreview(items, descuento, ivaPorcentaje, anticipo, tipo) {
     const subtotal = items.reduce((s, it) => s + (parseFloat(it.cantidad) || 0) * (parseFloat(it.precio_unitario) || 0), 0);
     const desc = Math.max(0, parseFloat(descuento) || 0);
     const base = Math.max(0, subtotal - desc);
-    const iva = base * (parseFloat(ivaPorcentaje) || 0) / 100;
-    const total = base + iva;
-    const ant = Math.max(0, parseFloat(anticipo) || 0);
-    return { subtotal, iva, total, saldo: total - ant };
+    const iva = Math.round(base * (parseFloat(ivaPorcentaje) || 0)) / 100;
+    const total = Math.round((base + iva) * 100) / 100;
+    const pct = PCT_ANTICIPO[tipo];
+    const ant = pct ? Math.round(total * pct) / 100 : Math.min(total, Math.max(0, parseFloat(anticipo) || 0));
+    return { subtotal, iva, total, anticipo: ant, pct, restante: Math.round((total - ant) * 100) / 100 };
 }
 
 export default function ProformaForm() {
@@ -43,13 +49,13 @@ export default function ProformaForm() {
     const esEdicion = Boolean(id);
 
     const SKY = '#0ea5e9'; const SKY_DEEP = '#0284c7';
-    const SKY_PALE = isDark ? 'rgba(14,165,233,0.10)' : 'rgba(14,165,233,0.05)';
+    const SKY_PALE = isDark ? 'rgba(14,165,233,0.10)' : 'rgba(14,165,233,0.12)';
     const txt = isDark ? '#f1f5f9' : '#0f172a';
     const mut = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
-    const bdr = isDark ? 'rgba(148,163,184,0.18)' : 'rgba(15,23,42,0.07)';
+    const bdr = isDark ? 'rgba(148,163,184,0.18)' : '#b6c3d3';
     const card = isDark ? 'rgba(255,255,255,0.025)' : '#ffffff';
     const inputBg = isDark ? '#0b1220' : '#f8fafc';
-    const cardSh = isDark ? '0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 40px -16px rgba(0,0,0,0.55)' : '0 4px 16px -4px rgba(15,23,42,0.08), 0 2px 4px -2px rgba(15,23,42,0.04)';
+    const cardSh = isDark ? '0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 40px -16px rgba(0,0,0,0.55)' : '0 1px 2px rgba(15,23,42,0.06), 0 8px 22px -8px rgba(15,23,42,0.20)';
     const inputSt = { width: '100%', boxSizing: 'border-box', padding: '10px 13px', borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: txt, fontFamily: "'Outfit'", fontSize: '.86rem', outline: 'none' };
     const labelSt = { display: 'block', marginBottom: 6, fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.2em', color: SKY_DEEP };
     const theme = { txt, txtSf: txt, mut, bdr, inputSt, labelSt, SKY, SKY_DEEP, SKY_PALE };
@@ -158,7 +164,7 @@ export default function ProformaForm() {
 
     const onField = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-    const totales = useMemo(() => calcularTotalesPreview(items, form.descuento, form.iva_porcentaje, form.anticipo), [items, form.descuento, form.iva_porcentaje, form.anticipo]);
+    const totales = useMemo(() => calcularTotalesPreview(items, form.descuento, form.iva_porcentaje, form.anticipo, form.tipo), [items, form.descuento, form.iva_porcentaje, form.anticipo, form.tipo]);
 
     const guardar = async (e) => {
         e.preventDefault();
@@ -190,7 +196,7 @@ export default function ProformaForm() {
 
     return (
         <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1100 }}>
-            <div className="SS SWAP-chip" style={{ marginBottom: 8 }}><span className="dot" /><span>SS SWAP · PROFORMAS</span></div>
+            <div className="ssswap-chip" style={{ marginBottom: 8 }}><span className="dot" /><span>SS SWAP · PROFORMAS</span></div>
             <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.4rem', letterSpacing: '.04em', color: txt, lineHeight: 1, marginBottom: 22 }}>
                 {esEdicion ? 'Editar Proforma' : 'Nueva Proforma'}
             </h1>
@@ -323,16 +329,31 @@ export default function ProformaForm() {
                             <input type="number" min="0" step="0.01" name="iva_porcentaje" value={form.iva_porcentaje} onChange={onField} style={inputSt} />
                         </div>
                         <div>
-                            <label style={labelSt}>ANTICIPO ($)</label>
-                            <input type="number" min="0" step="0.01" name="anticipo" value={form.anticipo} onChange={onField} style={inputSt} />
+                            {totales.pct ? (
+                                <>
+                                    <label style={labelSt}>ANTICIPO REQUERIDO ({totales.pct}%) — COLISIONES</label>
+                                    <input type="text" value={`$${totales.anticipo.toFixed(2)}`} readOnly title="En colisiones el anticipo es siempre el 70% del total" style={{ ...inputSt, opacity: .8, cursor: 'not-allowed' }} />
+                                </>
+                            ) : (
+                                <>
+                                    <label style={labelSt}>ANTICIPO REQUERIDO ($) — OPCIONAL</label>
+                                    <input type="number" min="0" step="0.01" max={totales.total || undefined} name="anticipo" value={form.anticipo} onChange={onField} placeholder="0 = sin anticipo" style={inputSt} />
+                                </>
+                            )}
                         </div>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 22, fontFamily: "'Outfit'", fontSize: '.88rem', color: txt, flexWrap: 'wrap' }}>
                         <span>Subtotal: <strong>${totales.subtotal.toFixed(2)}</strong></span>
                         <span>IVA: <strong>${totales.iva.toFixed(2)}</strong></span>
                         <span>Total: <strong style={{ color: SKY_DEEP }}>${totales.total.toFixed(2)}</strong></span>
-                        <span>Saldo: <strong>${totales.saldo.toFixed(2)}</strong></span>
+                        {totales.anticipo > 0 && <span>Anticipo requerido: <strong>${totales.anticipo.toFixed(2)}</strong></span>}
+                        {totales.anticipo > 0 && <span>Saldo restante{totales.pct ? ` (${100 - totales.pct}%)` : ''}: <strong>${totales.restante.toFixed(2)}</strong></span>}
                     </div>
+                    <p style={{ fontFamily: "'Outfit'", fontSize: '.76rem', color: mut, marginTop: 8, textAlign: 'right' }}>
+                        {totales.pct
+                            ? 'Colisiones: se exige un anticipo del 70% y el 30% restante a la entrega. El anticipo cuenta como pagado solo cuando se registra el pago en el pagaré.'
+                            : 'Mecánica general: no se exige anticipo para iniciar el trabajo. Los pagos se registran en el pagaré.'}
+                    </p>
                 </div>
 
                 {/* ── Observaciones / condiciones ── */}

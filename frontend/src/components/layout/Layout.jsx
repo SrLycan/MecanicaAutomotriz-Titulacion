@@ -1,71 +1,83 @@
 /**
  * SS SWAP - Componente de Estructura Principal del Panel Administrativo (Layout)
- * Provee la barra lateral colapsable, menú de navegación según rol del usuario,
- * encabezado con selector de tema, datos de sesión y área principal con salida de rutas (Outlet).
+ * Provee la barra lateral colapsable, menú de navegación según los PERMISOS del
+ * usuario (solo aparecen los módulos que puede abrir), encabezado con selector
+ * de tema, datos de sesión (nombre y rol), "Mi cuenta" y área principal (Outlet).
  * Los estilos de animaciones/clases auxiliares viven en Layout.css.
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
+import CargandoPagina from '../common/CargandoPagina';
+import ModalMiCuenta from './ModalMiCuenta';
 import './Layout.css';
 
 // Icono exclusivo de Proveedores (solo administradores)
 function IconTruck() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>; }
+function IconMoney() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>; }
 function IconChart() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>; }
 
-// Menú lateral tipo ACORDEÓN (igual al modelo pedido): cada sección se
-// despliega al hacer clic y muestra sus opciones; solo una abierta a la vez.
-// Cada opción lleva directo a la vista correspondiente (?tab= / ?rol= /
-// ?area=). Roles: cada grupo e hijo declara quién lo ve; un grupo sin
-// hijos visibles no se muestra.
-const STAFF = ['administrador', 'tecnico', 'recepcionista'];
-const ADMIN = ['administrador'];
-const ADMIN_RECEP = ['administrador', 'recepcionista'];
+// Menú lateral tipo ACORDEÓN: cada sección se despliega al hacer clic y
+// muestra sus opciones; solo una abierta a la vez. Cada opción lleva directo
+// a la vista correspondiente (?tab= / ?rol= / ?area=).
+// Permisos: cada opción declara el permiso que necesita ('modulo:accion' o
+// lista, basta uno). Un grupo sin opciones visibles no se muestra. Las
+// opciones "soloSuperadmin" solo las ve el superadministrador.
+const INV_VER = ['inventario_mecanica:ver', 'inventario_colisiones:ver'];
+const PROF_VER = ['proformas_mecanica:ver', 'proformas_colisiones:ver'];
+const PROF_CREAR = ['proformas_mecanica:crear', 'proformas_colisiones:crear'];
 const NAV_GROUPS = [
-    { id: 'panel', label: 'Panel', icon: IconDash, to: '/dashboard', roles: STAFF },
-    { id: 'inventario', label: 'Inventario', icon: IconInv, roles: STAFF, badgeStock: true, children: [
-        { to: '/dashboard/inventario',                 label: 'Inventario Mecánica', roles: STAFF },
-        { to: '/dashboard/inventario?area=colisiones', label: 'Colisiones / Pintura', roles: STAFF },
-        { to: '/dashboard/registrar',   label: 'Registrar movimiento', roles: STAFF },
-        { to: '/dashboard/movimientos', label: 'Registros', roles: STAFF },
+    { id: 'panel', label: 'Panel', icon: IconDash, to: '/dashboard' },
+    { id: 'inventario', label: 'Inventario', icon: IconInv, badgeStock: true, children: [
+        { to: '/dashboard/inventario',                 label: 'Inventario Mecánica', permiso: 'inventario_mecanica:ver' },
+        { to: '/dashboard/inventario?area=colisiones', label: 'Colisiones / Pintura', permiso: 'inventario_colisiones:ver' },
+        { to: '/dashboard/registrar',   label: 'Registrar movimiento', permiso: 'registros_inventario:crear' },
+        { to: '/dashboard/movimientos', label: 'Registros', permiso: 'registros_inventario:ver' },
+        { to: '/dashboard/pedidos',     label: 'Pedidos de la tienda', permiso: 'pedidos_tienda:ver' },
     ] },
-    { id: 'taller', label: 'Taller', icon: IconOrden, roles: STAFF, children: [
-        { to: '/dashboard/ordenes',          label: 'Órdenes de trabajo', roles: STAFF },
-        { to: '/dashboard/proformas',        label: 'Proformas', roles: STAFF, prefijo: true },
-        { to: '/dashboard/proformas/nueva',  label: 'Nueva proforma', roles: STAFF },
-        { to: '/dashboard/citas',            label: 'Citas', roles: STAFF },
+    { id: 'taller', label: 'Taller', icon: IconOrden, children: [
+        { to: '/dashboard/ordenes',          label: 'Órdenes de trabajo', permiso: 'ordenes:ver' },
+        { to: '/dashboard/proformas',        label: 'Proformas', permiso: PROF_VER, prefijo: true },
+        { to: '/dashboard/proformas/nueva',  label: 'Nueva proforma', permiso: PROF_CREAR },
+        { to: '/dashboard/citas',            label: 'Citas', permiso: 'citas:ver' },
     ] },
-    { id: 'clientes', label: 'Clientes', icon: IconClient, roles: STAFF, children: [
-        { to: '/dashboard/clientes',            label: 'Visualizar', roles: ADMIN_RECEP },
-        { to: '/dashboard/vehiculos',           label: 'Vehículos', roles: STAFF },
-        { to: '/dashboard/clientes?tab=pagare', label: 'Pagaré / Cartera', roles: ADMIN_RECEP },
+    { id: 'clientes', label: 'Clientes', icon: IconClient, badgePagare: true, children: [
+        { to: '/dashboard/clientes',            label: 'Visualizar', permiso: 'clientes:ver' },
+        { to: '/dashboard/vehiculos',           label: 'Vehículos', permiso: 'vehiculos:ver' },
+        { to: '/dashboard/clientes?tab=pagare', label: 'Pagaré / Cartera', permiso: 'cuentas_cobrar:ver' },
     ] },
-    { id: 'proveedores', label: 'Proveedores', icon: IconTruck, roles: ADMIN, children: [
-        { to: '/dashboard/proveedores',               label: 'Visualizar', roles: ADMIN },
-        { to: '/dashboard/proveedores?tab=compras',   label: 'Compras', roles: ADMIN },
-        { to: '/dashboard/proveedores?tab=gastos',    label: 'Gastos', roles: ADMIN },
-        { to: '/dashboard/proveedores?tab=historial', label: 'Pagos / Historial', roles: ADMIN },
+    { id: 'proveedores', label: 'Proveedores', icon: IconTruck, badgeCredito: true, children: [
+        { to: '/dashboard/proveedores',               label: 'Visualizar', permiso: 'proveedores:ver' },
+        { to: '/dashboard/proveedores?tab=compras',   label: 'Compras', permiso: 'proveedores:ver' },
+        { to: '/dashboard/proveedores?tab=gastos',    label: 'Gastos', permiso: 'proveedores:ver' },
+        { to: '/dashboard/proveedores?tab=historial', label: 'Pagos / Historial', permiso: 'proveedores:ver' },
     ] },
-    { id: 'usuarios', label: 'Usuarios', icon: IconUsers, roles: ADMIN, children: [
-        { to: '/dashboard/usuarios',                   label: 'Todos los usuarios', roles: ADMIN },
-        { to: '/dashboard/usuarios?rol=administrador', label: 'Administradores', roles: ADMIN },
-        { to: '/dashboard/usuarios?rol=tecnico',       label: 'Técnicos', roles: ADMIN },
-        { to: '/dashboard/usuarios?rol=recepcionista', label: 'Recepcionistas', roles: ADMIN },
-        { to: '/dashboard/usuarios?rol=cliente',       label: 'Clientes (portal)', roles: ADMIN },
+    { id: 'finanzas', label: 'Finanzas', icon: IconMoney, children: [
+        { to: '/dashboard/finanzas',                  label: 'Resumen / ¿Cuánto hay?', permiso: 'finanzas:ver' },
+        { to: '/dashboard/caja',                      label: 'Caja diaria', permiso: 'caja:ver' },
+        { to: '/dashboard/finanzas?tab=movimientos',  label: 'Movimientos de dinero', permiso: 'finanzas:ver' },
+        { to: '/dashboard/finanzas?tab=nomina',       label: 'Nómina / Empleados', permiso: 'finanzas:ver' },
+        { to: '/dashboard/finanzas?tab=cuentas',      label: 'Cuentas (caja / bancos)', permiso: 'finanzas:ver' },
     ] },
-    { id: 'graficas', label: 'Gráficas', icon: IconChart, roles: ADMIN, children: [
-        { to: '/dashboard/graficas',                  label: 'Productos', roles: ADMIN },
-        { to: '/dashboard/graficas?tab=servicios',    label: 'Servicios', roles: ADMIN },
-        { to: '/dashboard/graficas?tab=proformas',    label: 'Proformas', roles: ADMIN },
-        { to: '/dashboard/graficas?tab=crecimiento',  label: 'Crecimiento', roles: ADMIN },
+    { id: 'graficas', label: 'Gráficas', icon: IconChart, children: [
+        { to: '/dashboard/graficas',                  label: 'Productos', permiso: 'estadisticas:ver' },
+        { to: '/dashboard/graficas?tab=servicios',    label: 'Servicios', permiso: 'estadisticas:ver' },
+        { to: '/dashboard/graficas?tab=proformas',    label: 'Proformas', permiso: 'estadisticas:ver' },
+        { to: '/dashboard/graficas?tab=crecimiento',  label: 'Crecimiento', permiso: 'estadisticas:ver' },
     ] },
-    { id: 'ajustes', label: 'Ajustes', icon: IconSvc, roles: ADMIN, children: [
-        { to: '/dashboard/servicios',  label: 'Servicios del taller', roles: ADMIN },
-        { to: '/dashboard/sucursales', label: 'Sucursales', roles: ADMIN },
-        { to: '/dashboard/bitacora',   label: 'Bitácora', roles: ADMIN },
+    { id: 'ajustes', label: 'Ajustes', icon: IconSvc, children: [
+        { to: '/dashboard/servicios',  label: 'Servicios del taller', permiso: 'servicios:ver' },
+        { to: '/dashboard/sucursales', label: 'Sucursales', permiso: 'sucursales:ver' },
+        { to: '/dashboard/bitacora',   label: 'Bitácora', permiso: 'bitacora:ver' },
+    ] },
+    { id: 'seguridad', label: 'Usuarios y permisos', icon: IconUsers, children: [
+        { to: '/dashboard/usuarios',            label: 'Todos los usuarios', soloSuperadmin: true },
+        { to: '/dashboard/usuarios?rol=staff',  label: 'Personal del taller', soloSuperadmin: true },
+        { to: '/dashboard/usuarios?rol=cliente', label: 'Clientes (portal)', soloSuperadmin: true },
+        { to: '/dashboard/auditoria',           label: 'Auditoría', soloSuperadmin: true },
     ] },
 ];
 
@@ -86,11 +98,11 @@ function puntajeRuta(to, location, hermanos, prefijo) {
     return (exacta ? 10 : 1) + [...params.keys()].length;
 }
 
-const ROL_COLOR = { administrador: '#7fabce', tecnico: '#1a8f5c', recepcionista: '#c9821a' };
+const ROL_COLOR = { superadministrador: '#a855f7', administrador: '#7fabce', tecnico: '#1a8f5c', recepcionista: '#c9821a', interno: '#6366f1' };
 const GOLD = '#3b7bab';
 const GOLD_LIGHT = '#7fabce';
 const GOLD_DEEP = '#1b3a57';
-const ROL_LABEL = { administrador: 'ADMIN', tecnico: 'TECNICO', recepcionista: 'RECEPCION' };
+const ROL_LABEL = { superadministrador: 'SUPERADMIN', administrador: 'ADMIN', tecnico: 'TECNICO', recepcionista: 'RECEPCION', interno: 'PERSONAL' };
 
 function IconDash() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>; }
 function IconInv()  { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>; }
@@ -100,7 +112,7 @@ function IconOrden(){ return <svg width="16" height="16" viewBox="0 0 24 24" fil
 function IconSvc()  { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>; }
 
 export default function Layout() {
-    const { usuario, logout, tieneRol } = useAuth();
+    const { usuario, logout, puede, puedeAlguno, esSuperadmin } = useAuth();
     const { isDark, toggle } = useTheme();
     const navigate = useNavigate();
     const location = useLocation();
@@ -108,28 +120,86 @@ export default function Layout() {
     const [mobileOpen, setMobileOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
     const [bajoStockCount, setBajoStockCount] = useState(0);
+    const [creditosPorVencer, setCreditosPorVencer] = useState(0);
+    const [pagaresVencidos, setPagaresVencidos] = useState(0);
+    const [miCuenta, setMiCuenta] = useState(false);
 
     useEffect(() => {
-        const handleResize = () => setIsMobile(window.innerWidth <= 768);
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
+        // matchMedia solo avisa al cruzar los 768px; el evento 'resize' se
+        // disparaba sin parar en moviles al mostrar/ocultar la barra del navegador.
+        const mq = window.matchMedia('(max-width: 768px)');
+        const onChange = () => setIsMobile(mq.matches);
+        onChange();
+        if (mq.addEventListener) mq.addEventListener('change', onChange);
+        else mq.addListener(onChange);
+        return () => {
+            if (mq.removeEventListener) mq.removeEventListener('change', onChange);
+            else mq.removeListener(onChange);
+        };
     }, []);
 
     // Cerrar drawer al navegar en móvil
     useEffect(() => { setMobileOpen(false); }, [location.pathname, location.search]);
 
-    // Fetch low stock count for sidebar badge
+    // Insignia de stock bajo (solo si puede ver el inventario de mecanica; las
+    // alertas de stock no aplican a Colisiones / Pintura).
+    const veStock = puede('inventario_mecanica', 'ver');
     useEffect(() => {
-        api.get('/inventory/repuestos?bajo_stock=true')
+        if (!veStock) { setBajoStockCount(0); return undefined; }
+        const revisar = () => api.get('/inventory/repuestos?bajo_stock=true')
             .then(r => setBajoStockCount(r.data.total || 0))
             .catch(() => {});
-        const interval = setInterval(() => {
-            api.get('/inventory/repuestos?bajo_stock=true')
-                .then(r => setBajoStockCount(r.data.total || 0))
-                .catch(() => {});
-        }, 30000);
+        revisar();
+        const interval = setInterval(revisar, 30000);
         return () => clearInterval(interval);
-    }, []);
+    }, [veStock]);
+
+    // Compras a credito que vencen en 3 dias o menos (quien ve Proveedores).
+    // La primera vez en la sesion del navegador tambien sale un aviso emergente.
+    const veProveedores = puede('proveedores', 'ver');
+    useEffect(() => {
+        if (!veProveedores) { setCreditosPorVencer(0); return undefined; }
+        const revisar = () => api.get('/proveedores/compras/alertas-credito')
+            .then(({ data }) => {
+                const alertas = data.alertas || [];
+                setCreditosPorVencer(alertas.length);
+                let avisado = false;
+                try { avisado = sessionStorage.getItem('ssswap_aviso_creditos') === '1'; } catch { /* sin storage */ }
+                if (alertas.length && !avisado) {
+                    const vencidas = alertas.filter(a => Number(a.dias_para_vencer) < 0).length;
+                    toast(`${alertas.length} compra(s) a crédito por pagar${vencidas ? ` (${vencidas} vencida(s))` : ' en 3 días o menos'}. Revisa Proveedores › Compras.`, { icon: '⚠️', duration: 8000 });
+                    try { sessionStorage.setItem('ssswap_aviso_creditos', '1'); } catch { /* sin storage */ }
+                }
+            })
+            .catch(() => {});
+        revisar();
+        const interval = setInterval(revisar, 120000);
+        return () => clearInterval(interval);
+    }, [veProveedores, location.pathname, location.search]);
+
+    // Pagares de clientes vencidos con saldo (quien ve la cartera). Mismo
+    // mecanismo que las compras a credito: insignia en el menu + aviso unico
+    // por sesion. Un pagare pagado por completo nunca cuenta como vencido.
+    const veCartera = puede('cuentas_cobrar', 'ver');
+    useEffect(() => {
+        if (!veCartera) { setPagaresVencidos(0); return undefined; }
+        const revisar = () => api.get('/cuentas-cobrar/alertas')
+            .then(({ data }) => {
+                const vencidas = (data.alertas || []).filter(a => a.tipo_alerta === 'vencido');
+                setPagaresVencidos(vencidas.length);
+                let avisado = false;
+                try { avisado = sessionStorage.getItem('ssswap_aviso_pagares') === '1'; } catch { /* sin storage */ }
+                if (vencidas.length && !avisado) {
+                    const total = vencidas.reduce((s, a) => s + Number(a.saldo), 0);
+                    toast(`${vencidas.length} pagaré(s) de clientes vencido(s) · $${total.toFixed(2)} pendiente. Revisa Clientes › Pagaré / Cartera.`, { icon: '⏰', duration: 8000 });
+                    try { sessionStorage.setItem('ssswap_aviso_pagares', '1'); } catch { /* sin storage */ }
+                }
+            })
+            .catch(() => {});
+        revisar();
+        const interval = setInterval(revisar, 120000);
+        return () => clearInterval(interval);
+    }, [veCartera, location.pathname, location.search]);
 
     const SKY      = GOLD;
     const SKY_DEEP = GOLD_DEEP;
@@ -139,15 +209,15 @@ export default function Layout() {
     const sbBdr   = 'rgba(127,171,206,0.20)';
     const mainBg  = isDark ? '#050a14' : '#ffffff';
     const hdrBg   = isDark ? 'rgba(10,15,28,0.78)' : 'rgba(255,255,255,0.92)';
-    const hdrBdr  = isDark ? 'rgba(127,171,206,0.16)' : 'rgba(15,23,42,0.06)';
+    const hdrBdr  = isDark ? 'rgba(127,171,206,0.16)' : '#b6c3d3';
     const txt     = isDark ? '#f1f5f9' : '#020617';
     const mut     = isDark ? 'rgba(241,245,249,0.55)' : '#111827';
     const navMut  = 'rgba(203,213,225,0.55)';
 
     const handleLogout = () => { logout(); toast.success('Sesion cerrada'); navigate('/admin/login'); };
+    const opcionVisible = (c) => (c.soloSuperadmin ? esSuperadmin : (!c.permiso || puedeAlguno(c.permiso)));
     const grupos = NAV_GROUPS
-        .filter(g => tieneRol(...g.roles))
-        .map(g => g.children ? { ...g, children: g.children.filter(c => tieneRol(...c.roles)) } : g)
+        .map(g => g.children ? { ...g, children: g.children.filter(opcionVisible) } : g)
         .filter(g => !g.children || g.children.length > 0);
 
     // Opcion activa = la de mayor puntaje entre todas (la mas especifica)
@@ -177,7 +247,9 @@ export default function Layout() {
     const crumb = (() => {
         if (location.pathname.endsWith('/inventario'))   return 'Inventario';
         if (location.pathname.endsWith('/movimientos'))  return 'Registros de inventario';
-        if (location.pathname.endsWith('/usuarios'))     return 'Usuarios';
+        if (location.pathname.endsWith('/usuarios'))     return 'Usuarios y permisos';
+        if (location.pathname.endsWith('/auditoria'))    return 'Auditoría';
+        if (location.pathname.endsWith('/acceso-denegado')) return 'Acceso denegado';
         if (location.pathname.endsWith('/clientes'))     return 'Clientes';
         if (location.pathname.endsWith('/ordenes'))      return 'Ordenes';
         if (location.pathname.endsWith('/citas'))        return 'Citas';
@@ -187,6 +259,9 @@ export default function Layout() {
         if (location.pathname.endsWith('/bitacora'))     return 'Bitácora';
         if (location.pathname.endsWith('/proveedores'))  return 'Proveedores';
         if (location.pathname.endsWith('/graficas'))     return 'Gráficas';
+        if (location.pathname.endsWith('/finanzas'))     return 'Finanzas';
+        if (location.pathname.endsWith('/caja'))         return 'Caja diaria';
+        if (location.pathname.endsWith('/pedidos'))      return 'Pedidos de la tienda';
         if (location.pathname.includes('/proformas')) {
             if (location.pathname.endsWith('/nueva'))   return 'Nueva Proforma';
             if (location.pathname.endsWith('/editar'))  return 'Editar Proforma';
@@ -200,12 +275,12 @@ export default function Layout() {
     const sidebarWidth = isMobile ? 232 : (collapsed ? 68 : 232);
 
     return (
-        <div style={{ display: 'flex', height: '100vh', background: mainBg, overflow: 'hidden' }}>
+        <div className="layout-root" style={{ display: 'flex', background: mainBg, overflow: 'hidden' }}>
 
             {/* ── Mobile overlay ── */}
             {isMobile && mobileOpen && (
                 <div onClick={() => setMobileOpen(false)}
-                    style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 19, backdropFilter: 'blur(2px)' }} />
+                    style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 19 }} />
             )}
 
             {/* ── Sidebar ── */}
@@ -213,7 +288,10 @@ export default function Layout() {
                 width: sidebarWidth,
                 background: sbBg,
                 display: 'flex', flexDirection: 'column',
-                transition: 'width .28s cubic-bezier(.4,0,.2,1), transform .28s cubic-bezier(.4,0,.2,1)',
+                // En movil solo se anima transform (lo mueve la GPU); animar width
+                // obliga a recalcular el layout de toda la pagina en cada frame.
+                transition: isMobile ? 'transform .26s cubic-bezier(.4,0,.2,1)' : 'width .28s cubic-bezier(.4,0,.2,1)',
+                willChange: isMobile ? 'transform' : undefined,
                 flexShrink: 0,
                 borderRight: `1px solid ${sbBdr}`,
                 overflow: 'hidden',
@@ -276,6 +354,12 @@ export default function Layout() {
                                     }}>
                                     <span className="sb-icon" style={{ flexShrink: 0, display: 'flex', color: grupoActivo ? GOLD_LIGHT : 'inherit', position: 'relative' }}>
                                         <g.icon />
+                                        {g.badgeCredito && creditosPorVencer > 0 && (
+                                            <span title="Compras a crédito por vencer" style={{ position: 'absolute', top: -6, right: -8, minWidth: 16, height: 16, borderRadius: 999, background: '#f59e0b', color: '#fff', fontSize: '.5rem', fontFamily: "'Bebas Neue'", display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px', boxShadow: '0 2px 6px rgba(245,158,11,.55)' }}>{creditosPorVencer}</span>
+                                        )}
+                                        {g.badgePagare && pagaresVencidos > 0 && (
+                                            <span title="Pagarés de clientes vencidos" style={{ position: 'absolute', top: -6, right: -8, minWidth: 16, height: 16, borderRadius: 999, background: '#ef4444', color: '#fff', fontSize: '.5rem', fontFamily: "'Bebas Neue'", display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px', boxShadow: '0 2px 6px rgba(239,68,68,.55)' }}>{pagaresVencidos}</span>
+                                        )}
                                         {g.badgeStock && bajoStockCount > 0 && (
                                             <span style={{ position: 'absolute', top: -6, right: -8, minWidth: 16, height: 16, borderRadius: 999, background: '#ef4444', color: '#fff', fontSize: '.5rem', fontFamily: "'Bebas Neue'", display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px', boxShadow: '0 2px 6px rgba(239,68,68,.55)' }}>{bajoStockCount}</span>
                                         )}
@@ -337,13 +421,13 @@ export default function Layout() {
                     borderBottom: `1px solid ${hdrBdr}`,
                     padding: '0 32px', height: 64,
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    flexShrink: 0, backdropFilter: 'blur(14px)', position: 'relative', zIndex: 5,
+                    flexShrink: 0, position: 'relative', zIndex: 5,
                 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         {/* Hamburger — mobile only */}
                         {isMobile && (
                             <button onClick={() => setMobileOpen(o => !o)}
-                                style={{ background: 'none', border: `1px solid ${isDark ? 'rgba(127,171,206,0.20)' : 'rgba(15,23,42,0.10)'}`, borderRadius: 8, padding: '6px 8px', cursor: 'pointer', color: mut, display: 'flex', marginRight: 4 }}>
+                                style={{ background: 'none', border: `1px solid ${isDark ? 'rgba(127,171,206,0.20)' : '#b6c3d3'}`, borderRadius: 8, padding: '6px 8px', cursor: 'pointer', color: mut, display: 'flex', marginRight: 4 }}>
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
                             </button>
                         )}
@@ -361,11 +445,14 @@ export default function Layout() {
                             }
                         </button>
 
-                        {/* User pill */}
-                        <div className="hdr-pill" style={{
+                        {/* User pill: nombre + rol; abre "Mi cuenta" */}
+                        <button type="button" className="hdr-pill" onClick={() => setMiCuenta(true)} title="Mi cuenta (cambiar contraseña)"
+                            aria-label={`Mi cuenta: ${usuario?.nombre || ''}, ${ROL_LABEL[usuario?.rol] || usuario?.rol || ''}`}
+                            style={{
+                            cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit',
                             display: 'flex', alignItems: 'center', gap: 10,
                             padding: '6px 12px 6px 6px',
-                            border: `1px solid ${isDark ? 'rgba(127,171,206,0.20)' : 'rgba(15,23,42,0.10)'}`,
+                            border: `1px solid ${isDark ? 'rgba(127,171,206,0.20)' : '#b6c3d3'}`,
                             borderRadius: 999,
                             background: isDark ? 'rgba(127,171,206,0.06)' : '#ffffff',
                         }}>
@@ -381,7 +468,7 @@ export default function Layout() {
                                 <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.9rem', color: txt, lineHeight: 1 }}>{usuario?.nombre}</p>
                                 <p style={{ fontFamily: "'Sora'", fontWeight: 600, fontSize: '.7rem', letterSpacing: '.08em', color: ROL_COLOR[usuario?.rol] || SKY, lineHeight: 1.5 }}>{ROL_LABEL[usuario?.rol] || usuario?.rol}</p>
                             </div>
-                        </div>
+                        </button>
 
                         {/* Logout */}
                         <button onClick={handleLogout} className="btn-icon"
@@ -396,9 +483,14 @@ export default function Layout() {
 
                 {/* Content */}
                 <main className="main-content-pad" style={{ flex: 1, overflowY: 'auto', padding: '32px 36px', animation: 'fadeIn .35s ease', background: mainBg }}>
-                    <Outlet />
+                    {/* Suspense aqui: al cambiar de pagina solo el contenido muestra
+                        el indicador de carga; menu y encabezado se quedan quietos. */}
+                    <Suspense fallback={<CargandoPagina />}>
+                        <Outlet />
+                    </Suspense>
                 </main>
             </div>
+            {miCuenta && <ModalMiCuenta onClose={() => setMiCuenta(false)} />}
         </div>
     );
 }

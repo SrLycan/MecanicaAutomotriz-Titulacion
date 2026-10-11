@@ -7,11 +7,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import useParamUrl from '../hooks/useParamUrl';
 import toast from 'react-hot-toast';
-import { useTheme } from '../context/ThemeContext';
+import { useTemaPanel } from '../components/finanzas/tema';
 import api from '../services/api';
 import ProveedoresTab from '../components/proveedores/ProveedoresTab';
 import GastosTab from '../components/proveedores/GastosTab';
-import ComprasTab from '../components/proveedores/ComprasTab';
+import ComprasTab, { textoVencimiento } from '../components/proveedores/ComprasTab';
 import HistorialTab from '../components/proveedores/HistorialTab';
 import './Proveedores.css';
 
@@ -29,6 +29,33 @@ const PERIODOS = [
     { id: 'anio', label: 'Año' },
 ];
 
+/** Aviso de compras a credito que vencen en 3 dias o menos (o ya vencidas). */
+function AvisoCreditos({ alertas, onVer }) {
+    if (!alertas.length) return null;
+    const vencidas = alertas.filter(a => Number(a.dias_para_vencer) < 0).length;
+    const color = vencidas ? '#ef4444' : '#f59e0b';
+    const totalSaldo = alertas.reduce((s, a) => s + Number(a.saldo), 0);
+    return (
+        <div role="alert" style={{ display: 'flex', gap: 14, alignItems: 'flex-start', flexWrap: 'wrap', background: `${color}14`, border: `1px solid ${color}66`, borderLeft: `4px solid ${color}`, borderRadius: 12, padding: '14px 16px', marginBottom: 20 }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <div style={{ flex: 1, minWidth: 220 }}>
+                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1rem', letterSpacing: '.06em', color }}>
+                    {alertas.length} compra{alertas.length !== 1 ? 's' : ''} a crédito por pagar · ${totalSaldo.toFixed(2)}
+                </p>
+                <ul style={{ margin: '6px 0 0', paddingLeft: 18, fontFamily: "'Outfit'", fontSize: '.84rem', color: 'inherit' }}>
+                    {alertas.slice(0, 6).map(a => (
+                        <li key={a.id}>
+                            <strong>#{a.id} {a.proveedor_nombre}</strong> — saldo ${Number(a.saldo).toFixed(2)} · <span style={{ color: Number(a.dias_para_vencer) < 0 ? '#ef4444' : undefined, fontWeight: 600 }}>{textoVencimiento(a.dias_para_vencer)}</span>
+                        </li>
+                    ))}
+                    {alertas.length > 6 && <li>y {alertas.length - 6} más…</li>}
+                </ul>
+            </div>
+            <button onClick={onVer} style={{ fontFamily: "'Bebas Neue'", fontSize: '.72rem', letterSpacing: '.14em', background: color, color: '#fff', border: 'none', borderRadius: 9, padding: '9px 14px', cursor: 'pointer', alignSelf: 'center' }}>VER COMPRAS</button>
+        </div>
+    );
+}
+
 function ResumenCard({ label, value, color, theme }) {
     const { card, bdr, cardSh, mut, txt } = theme;
     return (
@@ -40,32 +67,24 @@ function ResumenCard({ label, value, color, theme }) {
 }
 
 export default function Proveedores() {
-    const { isDark } = useTheme();
+    const theme = useTemaPanel();
+    const { txt, mut, bdr, card, SKY, SKY_DEEP } = theme;
     const [tab, setTab] = useParamUrl('tab', 'proveedores', TABS.map(t => t.id));
     const [periodo, setPeriodo] = useState('todo');
     const [resumen, setResumen] = useState(null);
     const [proveedores, setProveedores] = useState([]);
     const [loadingProv, setLoadingProv] = useState(true);
     const [busqueda, setBusqueda] = useState('');
+    const [alertas, setAlertas] = useState([]);
 
-    // ── Paleta compartida (misma que Sucursales/Clientes) ──────
-    const SKY = '#0ea5e9'; const SKY_DEEP = '#0284c7';
-    const SKY_PALE = isDark ? 'rgba(14,165,233,0.10)' : 'rgba(14,165,233,0.05)';
-    const SKY_BDR  = isDark ? 'rgba(56,189,248,0.22)' : 'rgba(14,165,233,0.18)';
-    const txt   = isDark ? '#f1f5f9' : '#0f172a';
-    const txtSf = isDark ? '#cbd5e1' : '#334155';
-    const mut   = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
-    const bdr   = isDark ? 'rgba(148,163,184,0.18)' : 'rgba(15,23,42,0.07)';
-    const card  = isDark ? 'rgba(255,255,255,0.025)' : '#ffffff';
-    const boxBg = isDark ? '#0a0f1c' : '#ffffff';
-    const inputBg = isDark ? '#0b1220' : '#f8fafc';
-    const cardSh = isDark
-        ? '0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 40px -16px rgba(0,0,0,0.55)'
-        : '0 4px 16px -4px rgba(15,23,42,0.08), 0 2px 4px -2px rgba(15,23,42,0.04)';
-    const inputSt = { width: '100%', boxSizing: 'border-box', padding: '10px 13px', borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: txt, fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.88rem', outline: 'none' };
-    const labelSt = { display: 'block', marginBottom: 6, fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.22em', color: SKY_DEEP };
+    const cargarAlertas = useCallback(async () => {
+        try {
+            const { data } = await api.get('/proveedores/compras/alertas-credito');
+            setAlertas(data.alertas || []);
+        } catch (err) { /* silencioso: el aviso es informativo */ }
+    }, []);
+    useEffect(() => { cargarAlertas(); }, [cargarAlertas, tab]);
 
-    const theme = { isDark, txt, txtSf, mut, bdr, card, boxBg, inputBg, cardSh, inputSt, labelSt, SKY, SKY_DEEP, SKY_PALE, SKY_BDR };
 
     const cargarProveedores = useCallback(async (q = busqueda) => {
         setLoadingProv(true);
@@ -101,7 +120,7 @@ export default function Proveedores() {
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
                 <div>
-                    <div className="SS SWAP-chip" style={{ marginBottom: 8 }}>
+                    <div className="ssswap-chip" style={{ marginBottom: 8 }}>
                         <span className="dot" />
                         <span>SS SWAP · ADMIN · PROVEEDORES</span>
                     </div>
@@ -119,6 +138,8 @@ export default function Proveedores() {
                     ))}
                 </div>
             </div>
+
+            <AvisoCreditos alertas={alertas} onVer={() => setTab('compras')} />
 
             {/* Resumen financiero */}
             {resumen && (
@@ -145,7 +166,7 @@ export default function Proveedores() {
                 <ProveedoresTab theme={theme} proveedores={proveedores} loading={loadingProv} cargarProveedores={cargarProveedores} busqueda={busqueda} setBusqueda={setBusqueda} />
             )}
             {tab === 'gastos' && <GastosTab theme={theme} proveedores={proveedores} />}
-            {tab === 'compras' && <ComprasTab theme={theme} proveedores={proveedores} />}
+            {tab === 'compras' && <ComprasTab theme={theme} proveedores={proveedores} onCambio={() => { cargarAlertas(); cargarResumen(); }} />}
             {tab === 'historial' && <HistorialTab theme={theme} proveedores={proveedores} />}
         </div>
     );
