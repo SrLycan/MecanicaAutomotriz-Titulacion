@@ -10,6 +10,7 @@
  */
 const pool = require('../config/db');
 const { getMongoDb } = require('../config/mongo');
+const { marcaEmpresa, filtroEmpresa } = require('./mongoEmpresa');
 
 /**
  * Registra una entrada en el historial de cambios de una orden.
@@ -32,6 +33,7 @@ const registrarHistorial = async ({
     }
     try {
         await db.collection('ordenes_historial').insertOne({
+            ...marcaEmpresa(),
             orden_id: Number(orden_id),
             entidad_tipo: 'orden', entidad_id: Number(orden_id),
             estado_anterior, estado_nuevo, progreso_anterior, progreso_nuevo,
@@ -67,6 +69,7 @@ const registrarAccionBitacora = async ({
     }
     try {
         await db.collection('ordenes_historial').insertOne({
+            ...marcaEmpresa(),
             orden_id: null,
             entidad_tipo, entidad_id: entidad_id !== null ? Number(entidad_id) : null,
             accion, detalle,
@@ -85,7 +88,7 @@ const obtenerHistorialPorOrden = async (ordenId) => {
     if (!db) return [];
     try {
         const docs = await db.collection('ordenes_historial')
-            .find({ orden_id: Number(ordenId) })
+            .find(await filtroEmpresa({ orden_id: Number(ordenId) }))
             .sort({ created_at: 1, _id: 1 })
             .toArray();
         return docs.map(formatearEntrada);
@@ -113,9 +116,10 @@ const listarHistorialGeneral = async ({ pagina = 1, porPagina = 20, tipo = 'orde
     try {
         // `entidad` (Sprint 14, opcional): filtra "Otras acciones" por un
         // entidad_tipo concreto (proforma, inventario, cuenta_cobrar, pago...).
-        const filtro = tipo === 'otras'
+        // Solo la empresa de la peticion (MongoDB no tiene RLS: se filtra aqui).
+        const filtro = await filtroEmpresa(tipo === 'otras'
             ? { entidad_tipo: entidad ? String(entidad) : { $exists: true, $ne: 'orden' } }
-            : { $or: [{ entidad_tipo: 'orden' }, { entidad_tipo: { $exists: false } }] };
+            : { $or: [{ entidad_tipo: 'orden' }, { entidad_tipo: { $exists: false } }] });
 
         const skip = (pagina - 1) * porPagina;
         const [docs, total] = await Promise.all([

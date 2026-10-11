@@ -9,7 +9,8 @@ const ExcelJS = require('exceljs');
 const { etiquetaZona, CARROCERIAS } = require('../shared/vehiculoDiagramas');
 const { porcentajeAnticipo, resumenDeuda } = require('./reglasPago');
 
-const NOMBRE_COMERCIAL = 'SS Swap - SSarango Sosa Intercambio Inteligente';
+// Nombre de la empresa dueña de la proforma (marcaEmpresa.js).
+const { marcaDe } = require('./marcaEmpresa');
 
 const FONT = 'Calibri';
 const AZUL = 'FF0284C7';
@@ -110,7 +111,8 @@ function escribirTablaSimple(sheet, filaInicio, colInicio, items, tituloTotal) {
 
 async function generarProformaExcel(proforma) {
     const wb = new ExcelJS.Workbook();
-    wb.creator = NOMBRE_COMERCIAL;
+    const marca = marcaDe(proforma);
+    wb.creator = marca.nombre;
     wb.created = new Date();
     const sheet = wb.addWorksheet('Proforma', { pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true, fitToWidth: 1 } });
     sheet.properties.defaultRowHeight = 16;
@@ -118,7 +120,7 @@ async function generarProformaExcel(proforma) {
 
     // ── Encabezado ──
     sheet.mergeCells('A1:F1');
-    estiloEncabezadoSeccion(sheet.getCell('A1'), NOMBRE_COMERCIAL);
+    estiloEncabezadoSeccion(sheet.getCell('A1'), marca.ruc ? `${marca.nombre}  ·  RUC ${marca.ruc}` : marca.nombre);
     sheet.getCell('A1').font = { name: FONT, bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
     sheet.getRow(1).height = 26;
     sheet.mergeCells('G1:L1');

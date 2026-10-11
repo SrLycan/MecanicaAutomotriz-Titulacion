@@ -32,8 +32,8 @@ const { Writable } = require('stream');
 const { construirDiagrama, etiquetaZona, CARROCERIAS } = require('../shared/vehiculoDiagramas');
 const { porcentajeAnticipo, resumenDeuda } = require('./reglasPago');
 
-const NOMBRE_COMERCIAL = 'SS Swap - SSarango Sosa Intercambio Inteligente';
-const LOGO_PATH = path.join(__dirname, '..', 'assets', 'logo.png');
+// Nombre, RUC y logo salen de la empresa dueña de la proforma (marcaEmpresa.js).
+const { marcaDe } = require('./marcaEmpresa');
 const FUENTE_REGULAR = path.join(__dirname, '..', 'assets', 'fonts', 'DejaVuSans.ttf');
 const FUENTE_NEGRITA = path.join(__dirname, '..', 'assets', 'fonts', 'DejaVuSans-Bold.ttf');
 const MARGIN = 40;
@@ -150,9 +150,10 @@ function dibujarTabla(doc, { columnas, filas, tituloSeccion, filaTotal }) {
 function dibujarEncabezado(doc, proforma) {
     const anchoUtil = doc.page.width - MARGIN * 2;
     const yInicio = MARGIN;
+    const marca = marcaDe(proforma);
     let logoAncho = 0;
-    if (fs.existsSync(LOGO_PATH)) {
-        try { doc.image(LOGO_PATH, MARGIN, yInicio, { fit: [78, 56] }); logoAncho = 90; } catch { /* logo opcional */ }
+    if (marca.logo) {
+        try { doc.image(marca.logo, MARGIN, yInicio, { fit: [78, 56] }); logoAncho = 90; } catch { /* logo opcional */ }
     }
 
     const bloqueDerAncho = 170;
@@ -160,9 +161,10 @@ function dibujarEncabezado(doc, proforma) {
     const empresaAncho = anchoUtil - logoAncho - bloqueDerAncho - 12;
 
     doc.font(F.negrita).fontSize(13).fillColor(COLOR_AZUL)
-        .text(NOMBRE_COMERCIAL, empresaX, yInicio + 2, { width: empresaAncho });
+        .text(limpiarTexto(marca.nombre), empresaX, yInicio + 2, { width: empresaAncho });
     let y = doc.y + 3;
     doc.font(F.normal).fontSize(7.8).fillColor(COLOR_MUT);
+    if (marca.ruc) { doc.text(`RUC: ${limpiarTexto(marca.ruc)}`, empresaX, y, { width: empresaAncho }); y = doc.y + 1; }
     const sucursal = limpiarTexto(proforma.sucursal_nombre);
     if (sucursal) { doc.text(`Sucursal: ${sucursal}`, empresaX, y, { width: empresaAncho }); y = doc.y + 1; }
     if (proforma.sucursal_direccion) { doc.text(limpiarTexto(proforma.sucursal_direccion), empresaX, y, { width: empresaAncho }); y = doc.y + 1; }
@@ -195,7 +197,7 @@ function dibujarEncabezado(doc, proforma) {
 function dibujarEncabezadoContinuacion(doc, proforma) {
     const anchoUtil = doc.page.width - MARGIN * 2;
     const y = MARGIN - 6;
-    doc.font(F.negrita).fontSize(8).fillColor(COLOR_AZUL).text(NOMBRE_COMERCIAL, MARGIN, y, { width: anchoUtil / 2, lineBreak: false });
+    doc.font(F.negrita).fontSize(8).fillColor(COLOR_AZUL).text(limpiarTexto(marcaDe(proforma).nombre), MARGIN, y, { width: anchoUtil / 2, lineBreak: false });
     doc.font(F.normal).fontSize(8).fillColor(COLOR_MUT).text(`${limpiarTexto(proforma.numero)} (continuación)`, MARGIN + anchoUtil / 2, y, { width: anchoUtil / 2, align: 'right', lineBreak: false });
     doc.moveTo(MARGIN, y + 13).lineTo(MARGIN + anchoUtil, y + 13).strokeColor(COLOR_BORDE).lineWidth(0.6).stroke();
     doc.y = y + 22;
@@ -453,7 +455,7 @@ function dibujarNotasYFirma(doc, proforma) {
 function renderizar(proforma, stream, totalPaginas) {
     const doc = new PDFDocument({
         size: 'A4', margin: MARGIN, bufferPages: false,
-        info: { Title: `${proforma.numero} - ${NOMBRE_COMERCIAL}`, Author: NOMBRE_COMERCIAL, Subject: 'Proforma' },
+        info: { Title: `${proforma.numero} - ${marcaDe(proforma).nombre}`, Author: marcaDe(proforma).nombre, Subject: 'Proforma' },
     });
     if (FUENTES_UNICODE) {
         doc.registerFont(F.normal, FUENTE_REGULAR);
@@ -471,7 +473,7 @@ function renderizar(proforma, stream, totalPaginas) {
         doc.page.margins.bottom = 0;
         doc.moveTo(MARGIN, y - 6).lineTo(MARGIN + anchoUtil, y - 6).strokeColor(COLOR_BORDE).lineWidth(0.5).stroke();
         doc.font(F.normal).fontSize(7).fillColor(COLOR_MUT);
-        doc.text(`${NOMBRE_COMERCIAL}  ·  ${limpiarTexto(proforma.numero)}`, MARGIN, y, { width: anchoUtil * 0.7, lineBreak: false });
+        doc.text(`${limpiarTexto(marcaDe(proforma).nombre)}  ·  ${limpiarTexto(proforma.numero)}`, MARGIN, y, { width: anchoUtil * 0.7, lineBreak: false });
         doc.text(totalPaginas ? `Página ${numeroPagina} de ${totalPaginas}` : `Página ${numeroPagina}`, MARGIN + anchoUtil * 0.7, y, { width: anchoUtil * 0.3, align: 'right', lineBreak: false });
         doc.page.margins.bottom = margenOriginal;
         numeroPagina++;
@@ -548,4 +550,4 @@ function generarProformaPdf(proforma, res) {
     renderizar(proforma, res, totalPaginas);
 }
 
-module.exports = { generarProformaPdf, limpiarTexto, NOMBRE_COMERCIAL };
+module.exports = { generarProformaPdf, limpiarTexto };

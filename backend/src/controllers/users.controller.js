@@ -1,9 +1,14 @@
 /**
  * SS SWAP - Controlador de Usuarios, Permisos y Perfil de Cuenta
  *
- * Gestión de usuarios (exclusiva del SUPERADMINISTRADOR, ver users.routes.js):
+ * Gestión de usuarios DE LA EMPRESA (permiso "usuarios", ver users.routes.js):
+ * - Cada empresa solo ve y modifica a su propio personal: todas las
+ *   consultas corren aisladas por empresa (Row Level Security), así que un
+ *   id de otra empresa simplemente "no existe" (404).
  * - Altas, edición, activación/desactivación y restablecimiento de acceso.
- * - Permisos individuales por módulo y acción (config/permisos.js).
+ * - Permisos individuales por módulo y acción (config/permisos.js). Quien
+ *   gestiona solo puede conceder o quitar los permisos que él mismo tiene
+ *   (el superadministrador, todos): nadie se da más poder creando otra cuenta.
  * - Cada cambio queda en auditoria_seguridad, dentro de la misma transacción.
  * - Nadie puede crear, promover, editar ni desactivar a un superadministrador
  *   desde la API (además lo impide un trigger en la BD).
@@ -20,6 +25,7 @@ const path   = require('path');
 const pool   = require('../config/db');
 const { errorBD } = require('../utils/erroresBD');
 const { firmarToken } = require('./auth.controller');
+const { esSuperadmin } = require('../middleware/auth.middleware');
 const { registrarAuditoria } = require('../services/auditoria.service');
 const {
     ROL_SUPERADMIN, ROLES_STAFF, ROLES_ASIGNABLES, ROLES_TODOS,
@@ -76,6 +82,22 @@ function normalizarPermisos(lista) {
         set.add(`${modulo}:${accion}`);
     }
     return { permisos: [...set].sort() };
+}
+
+/**
+ * Limita un conjunto de permisos deseados a lo que el actor puede conceder.
+ * Lo que el actor no tiene no lo puede dar ni quitar: se conserva como estaba.
+ * Devuelve { permisos, ignorados }.
+ */
+function limitarAlActor(actor, deseados, actuales = []) {
+    if (esSuperadmin(actor)) return { permisos: deseados, ignorados: [] };
+    const propios = new Set(actor.permisos || []);
+    const conservados = actuales.filter(p => !propios.has(p));
+    const concedidos = deseados.filter(p => propios.has(p));
+    return {
+        permisos: [...new Set([...conservados, ...concedidos])].sort(),
+        ignorados: deseados.filter(p => !propios.has(p)),
+    };
 }
 
 async function permisosDeUsuario(db, id) {
@@ -157,11 +179,17 @@ function validarDatosBasicos({ nombre, email, telefono, cedula }) {
 // CATALOGO DE PERMISOS
 // GET /api/users/catalogo-permisos   (superadmin)
 // ─────────────────────────────────────────────────────────────
-const catalogoPermisos = (_req, res) => res.json({
-    modulos: MODULOS.filter(m => !m.soloSuperadmin),
-    plantillas: PLANTILLAS,
-    roles: ROLES_ASIGNABLES,
-});
+const catalogoPermisos = (req, res) => {
+    const modulos = MODULOS.filter(m => !m.soloSuperadmin);
+    const todos = modulos.flatMap(m => m.acciones.map(a => `${m.codigo}:${a.codigo}`));
+    return res.json({
+        modulos,
+        plantillas: PLANTILLAS,
+        roles: ROLES_ASIGNABLES,
+        // Lo que ESTA persona puede conceder (el resto se muestra bloqueado).
+        concedibles: esSuperadmin(req.usuario) ? todos : todos.filter(p => (req.usuario.permisos || []).includes(p)),
+    });
+};
 
 // ─────────────────────────────────────────────────────────────
 // LISTAR USUARIOS
@@ -240,10 +268,11 @@ const crearUsuario = async (req, res) => {
 
     const esStaff = ROLES_STAFF.includes(rol);
     let listaPermisos = [];
+    let ignorados = [];
     if (esStaff) {
         const n = normalizarPermisos(permisos === undefined ? (PLANTILLAS[rol] || []) : permisos);
         if (n.error) return res.status(400).json({ error: n.error });
-        listaPermisos = n.permisos;
+        ({ permisos: listaPermisos, ignorados } = limitarAlActor(req.usuario, n.permisos));
     }
 
     const emailNorm = String(email).toLowerCase().trim();
@@ -271,6 +300,7 @@ const crearUsuario = async (req, res) => {
         return res.status(201).json({
             usuario,
             permisos: listaPermisos,
+            permisos_no_concedidos: ignorados,
             // Solo cuando la genero el servidor: el superadministrador la entrega en persona.
             password_temporal: password ? undefined : passwordFinal,
         });
@@ -342,7 +372,9 @@ const cambiarRol = async (req, res) => {
                 // Un cliente del portal nunca conserva permisos del panel.
                 cambiosPermisos = await guardarPermisos(client, id, [], req.usuario.id);
             } else if (aplicar_plantilla) {
-                cambiosPermisos = await guardarPermisos(client, id, [...(PLANTILLAS[rol] || [])].sort(), req.usuario.id);
+                const actuales = await permisosDeUsuario(client, id);
+                const { permisos } = limitarAlActor(req.usuario, [...(PLANTILLAS[rol] || [])].sort(), actuales);
+                cambiosPermisos = await guardarPermisos(client, id, permisos, req.usuario.id);
             }
             await registrarAuditoria({
                 req, accion: 'usuario.cambiar_rol', recursoTipo: 'usuario', recursoId: id,
@@ -409,14 +441,16 @@ const actualizarPermisos = async (req, res) => {
             if (!ROLES_STAFF.includes(r.usuario.rol))
                 fallar({ status: 400, error: 'Los clientes del portal no pueden tener permisos del panel.' });
 
-            const { agregados, revocados } = await guardarPermisos(client, id, n.permisos, req.usuario.id);
+            const actuales = await permisosDeUsuario(client, id);
+            const { permisos: finales, ignorados } = limitarAlActor(req.usuario, n.permisos, actuales);
+            const { agregados, revocados } = await guardarPermisos(client, id, finales, req.usuario.id);
             if (agregados.length || revocados.length) {
                 await registrarAuditoria({
                     req, accion: 'permisos.actualizar', recursoTipo: 'usuario', recursoId: id,
                     detalle: { email: r.usuario.email, otorgados: agregados, revocados },
                 }, client, true);
             }
-            return { permisos: await permisosDeUsuario(client, id), agregados, revocados };
+            return { permisos: await permisosDeUsuario(client, id), agregados, revocados, permisos_no_concedidos: ignorados };
         });
         return res.json(resultado);
     } catch (err) {
@@ -531,7 +565,7 @@ const listarTecnicos = async (_req, res) => {
 
 // ─────────────────────────────────────────────────────────────
 // AUDITORIA
-// GET /api/users/auditoria   (superadmin)
+// GET /api/users/auditoria   (permiso auditoria: solo la propia empresa)
 // query: accion, resultado, usuario_id (afectado), actor_id, q, desde, hasta, page, limit
 // ─────────────────────────────────────────────────────────────
 const listarAuditoria = async (req, res) => {

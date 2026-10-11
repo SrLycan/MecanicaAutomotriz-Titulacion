@@ -3,12 +3,14 @@
  *
  * - /me...: perfil propio (cualquier usuario autenticado).
  * - /tecnicos: lista para asignar órdenes (quien ve o asigna órdenes).
- * - Todo lo demás: EXCLUSIVO del superadministrador.
+ * - Todo lo demás: gestión del personal DE LA PROPIA EMPRESA con el permiso
+ *   "usuarios" (y "auditoria" para el historial). Las consultas corren
+ *   aisladas por empresa, así que nunca se ve ni se toca otra empresa.
  */
 const express = require('express');
 const router  = express.Router();
 const c = require('../controllers/users.controller');
-const { verificarToken, soloSuperadmin, requiereAlguno } = require('../middleware/auth.middleware');
+const { verificarToken, requierePermiso, requiereAlguno } = require('../middleware/auth.middleware');
 const { subirFotoPerfil } = require('../middleware/upload.middleware');
 
 // Perfil propio — cualquier usuario autenticado (cliente o staff).
@@ -20,19 +22,21 @@ router.post('/me/foto',      verificarToken, subirFotoPerfil, c.subirMiFoto);
 
 router.get('/tecnicos', verificarToken, requiereAlguno(['ordenes', 'ver'], ['ordenes', 'asignar']), c.listarTecnicos);
 
-// Superadministrador
-router.use(verificarToken, soloSuperadmin);
-router.get('/catalogo-permisos',     c.catalogoPermisos);
-router.get('/auditoria',             c.listarAuditoria);
-router.get('/',                      c.listarUsuarios);
-router.post('/',                     c.crearUsuario);
-router.get('/:id',                   c.obtenerUsuario);
-router.put('/:id',                   c.actualizarUsuario);
-router.put('/:id/rol',               c.cambiarRol);
-router.put('/:id/estado',            c.cambiarEstado);
-router.put('/:id/permisos',          c.actualizarPermisos);
-router.put('/:id/password',          c.cambiarPassword);
-router.post('/:id/cerrar-sesiones',  c.cerrarSesiones);
-router.delete('/:id',                c.eliminarUsuario);
+// Personal de la empresa
+router.use(verificarToken);
+const ver = requierePermiso('usuarios', 'ver');
+const editar = requierePermiso('usuarios', 'editar');
+router.get('/catalogo-permisos',     ver, c.catalogoPermisos);
+router.get('/auditoria',             requierePermiso('auditoria', 'ver'), c.listarAuditoria);
+router.get('/',                      ver, c.listarUsuarios);
+router.post('/',                     requierePermiso('usuarios', 'crear'), c.crearUsuario);
+router.get('/:id',                   ver, c.obtenerUsuario);
+router.put('/:id',                   editar, c.actualizarUsuario);
+router.put('/:id/rol',               editar, c.cambiarRol);
+router.put('/:id/estado',            editar, c.cambiarEstado);
+router.put('/:id/permisos',          editar, c.actualizarPermisos);
+router.put('/:id/password',          editar, c.cambiarPassword);
+router.post('/:id/cerrar-sesiones',  editar, c.cerrarSesiones);
+router.delete('/:id',                requierePermiso('usuarios', 'eliminar'), c.eliminarUsuario);
 
 module.exports = router;

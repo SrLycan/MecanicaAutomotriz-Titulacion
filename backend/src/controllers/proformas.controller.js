@@ -25,6 +25,7 @@ const { confirmarUsoProforma, revertirSalidaProforma, descontarInventarioAutomat
 const { generarPagareAutomatico, sincronizarPagareConProforma, buscarPagareActivo } = require('../services/pagare.service');
 const { calcularAnticipoRequerido, resumenDeuda, SQL_ESTADO_EFECTIVO } = require('../services/reglasPago');
 const { cantidadValida } = require('../utils/numeros');
+const { siguienteNumero } = require('../services/secuencias.service');
 const { tiposProformaPermitidos } = require('../middleware/auth.middleware');
 
 const TIPOS = ['mecanica', 'pintura'];
@@ -323,10 +324,9 @@ const crearProforma = async (req, res) => {
         const vehiculo = vehiculoRows[0];
         const totales = calcularTotales(items, descuento, iva_porcentaje, anticipo, tipo);
 
-        // Numeracion atomica: nextval nunca repite un valor aunque el resto
-        // de la transaccion falle despues (no hace ROLLBACK de secuencias).
-        const { rows: seqRows } = await client.query("SELECT nextval('proformas_numero_seq') AS n");
-        const numero = `PROFORMA-${String(seqRows[0].n).padStart(6, '0')}`;
+        // Numeracion por empresa: el contador se bloquea dentro de la
+        // transaccion, asi que nunca se repite un numero.
+        const numero = `PROFORMA-${String(await siguienteNumero(client, 'proformas')).padStart(6, '0')}`;
 
         const { rows: profRows } = await client.query(
             `INSERT INTO proformas (
@@ -664,8 +664,7 @@ const duplicarProforma = async (req, res) => {
 
         const { rows: itemRows } = await client.query('SELECT * FROM proforma_items WHERE proforma_id = $1 ORDER BY id', [id]);
 
-        const { rows: seqRows } = await client.query("SELECT nextval('proformas_numero_seq') AS n");
-        const numero = `PROFORMA-${String(seqRows[0].n).padStart(6, '0')}`;
+        const numero = `PROFORMA-${String(await siguienteNumero(client, 'proformas')).padStart(6, '0')}`;
 
         const { rows: nuevaRows } = await client.query(
             `INSERT INTO proformas (

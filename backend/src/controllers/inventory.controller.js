@@ -10,6 +10,7 @@ const pool = require('../config/db');
 const { errorBD } = require('../utils/erroresBD');
 const { normalizarCantidades, cantidadValida, redondear2 } = require('../utils/numeros');
 const { registrarAccionBitacora } = require('../services/ordenesHistorial.service');
+const { siguienteNumero } = require('../services/secuencias.service');
 const { areasRepuestosVisibles, areasInventarioPermitidas, esSuperadmin } = require('../middleware/auth.middleware');
 
 // Sprint 14: dos inventarios conceptuales sobre el MISMO catalogo.
@@ -42,15 +43,15 @@ const numeroONull = (v, porDefecto) => (v === '' || v == null ? porDefecto : red
 // Sprint 20: codigo de referencia INTERNO generado por el sistema
 // (MEC-000012, COL-000013...). Es el unico codigo que se imprime en
 // proformas; el del proveedor/fabricante se guarda aparte en
-// codigo_proveedor. Usa una secuencia (atomica entre usuarios) y, si el
+// codigo_proveedor. Usa el contador de la empresa (atomico entre usuarios) y, si el
 // codigo ya existiera por un registro antiguo cargado a mano, salta al
 // siguiente numero.
 const PREFIJO_AREA = { mecanica: 'MEC', colisiones: 'COL' };
 async function generarCodigoReferencia(client, area) {
     const prefijo = PREFIJO_AREA[area] || String(area || 'INV').replace(/[^a-z]/gi, '').slice(0, 3).toUpperCase() || 'INV';
     for (let intento = 0; intento < 20; intento++) {
-        const { rows } = await client.query("SELECT nextval('repuestos_referencia_seq') AS n");
-        const codigo = `${prefijo}-${String(rows[0].n).padStart(6, '0')}`;
+        const n = await siguienteNumero(client, 'repuestos_referencia');
+        const codigo = `${prefijo}-${String(n).padStart(6, '0')}`;
         const { rows: existe } = await client.query('SELECT 1 FROM repuestos WHERE codigo = $1', [codigo]);
         if (!existe[0]) return codigo;
     }

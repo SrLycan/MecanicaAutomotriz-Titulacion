@@ -10,6 +10,7 @@
  * limpiarDetalle() antes de escribirse.
  */
 const pool = require('../config/db');
+const { contextoActual, sinAislamiento } = require('../config/contexto');
 
 const CLAVES_SENSIBLES = /pass|token|secret|hash|authorization/i;
 
@@ -27,20 +28,30 @@ function limpiarDetalle(valor, profundidad = 0) {
  * (para que el registro se confirme junto con el cambio) o el pool.
  * Si `estricto` es false (por defecto) un fallo solo se reporta en consola:
  * la auditoría nunca debe tumbar la operación que la originó.
+ *
+ * Empresa del evento: la de la petición (la pone la base de datos), o
+ * `empresaId` explícito para eventos de la plataforma sobre una empresa.
+ * Sin empresa (superadministrador global) el evento queda como global.
  */
-async function registrarAuditoria({ req, actor, accion, recursoTipo = null, recursoId = null, resultado = 'exito', detalle = null }, db = pool, estricto = false) {
+async function registrarAuditoria({ req, actor, accion, recursoTipo = null, recursoId = null, resultado = 'exito', detalle = null, empresaId = null }, db = pool, estricto = false) {
     const quien = actor || req?.usuario || null;
-    try {
-        await db.query(
-            `INSERT INTO auditoria_seguridad (actor_id, actor_email, actor_rol, accion, recurso_tipo, recurso_id, resultado, detalle, ip)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+    const ctx = contextoActual();
+    // Sin empresa en la peticion no hay fila de empresa donde escribir: el
+    // evento se guarda como evento de la plataforma.
+    const global = db === pool && ctx && !ctx.sistema && !ctx.empresaId;
+    const insertar = () => db.query(
+            `INSERT INTO auditoria_seguridad (actor_id, actor_email, actor_rol, accion, recurso_tipo, recurso_id, resultado, detalle, ip, empresa_id)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, COALESCE($10::int, empresa_actual()))`,
             [
                 quien?.id ?? null, quien?.email ?? null, quien?.rol ?? null,
                 accion, recursoTipo, recursoId == null ? null : String(recursoId), resultado,
                 detalle ? JSON.stringify(limpiarDetalle(detalle)) : null,
                 req?.ip ? String(req.ip).slice(0, 64) : null,
+                empresaId,
             ]
         );
+    try {
+        await (global ? sinAislamiento(insertar) : insertar());
     } catch (err) {
         if (estricto) throw err;
         console.error('[auditoria] No se pudo registrar:', accion, err.message);

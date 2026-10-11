@@ -5,6 +5,11 @@
  * panel de clientes y del panel del personal (staff), la validación de estados
  * de cuenta (activo, suspendido, bloqueado) y el registro de clientes con
  * vinculación automática a la tabla 'clientes'.
+ *
+ * Multiempresa: el correo es único en toda la plataforma, así que el login
+ * busca la cuenta en todas las empresas (sinAislamiento) y la sesión queda
+ * en la empresa de esa cuenta. El registro público crea clientes de la
+ * empresa dueña de la web pública (SS SWAP).
  */
 const bcrypt = require('bcryptjs');
 const jwt    = require('jsonwebtoken');
@@ -13,6 +18,9 @@ const { errorBD } = require('../utils/erroresBD');
 const { registrarIntento, registrarIntentoIp } = require('../middleware/loginThrottle.middleware');
 const { ROLES_STAFF, ROL_SUPERADMIN } = require('../config/permisos');
 const { registrarAuditoria } = require('../services/auditoria.service');
+const { sinAislamiento } = require('../config/contexto');
+const { empresaPublicaId } = require('../middleware/empresa.middleware');
+const { MODULOS } = require('../config/permisos');
 
 /**
  * Firma el JWT de una cuenta. "tv" (token_version) permite invalidar todas
@@ -25,14 +33,26 @@ function firmarToken(u) {
     return { token, usuario: payload };
 }
 
-/** Permisos vigentes de una cuenta ('*' = todos, para el superadministrador). */
-async function permisosDe(u) {
-    if (u.rol === ROL_SUPERADMIN) return ['*'];
+/** Todos los permisos de "ver" (soporte de solo lectura). */
+const PERMISOS_LECTURA = MODULOS.flatMap(m => m.acciones.filter(a => a.codigo === 'ver').map(() => `${m.codigo}:ver`));
+
+/**
+ * Permisos vigentes de una cuenta. El superadministrador tiene '*' (todo)
+ * solo dentro de una empresa; sin empresa no tiene permisos de empresa.
+ */
+async function permisosDe(u, soporte = null) {
+    if (u.rol === ROL_SUPERADMIN) {
+        if (!u.empresa_id) return [];
+        return soporte?.modo === 'lectura' ? PERMISOS_LECTURA : ['*'];
+    }
     if (!ROLES_STAFF.includes(u.rol)) return [];
-    const { rows } = await pool.query(
-        `SELECT modulo || ':' || accion AS p FROM usuario_permisos WHERE usuario_id = $1 ORDER BY 1`, [u.id]);
+    const { rows } = await sinAislamiento(() => pool.query(
+        `SELECT modulo || ':' || accion AS p FROM usuario_permisos WHERE usuario_id = $1 ORDER BY 1`, [u.id]));
     return rows.map(r => r.p);
 }
+
+/** Datos de sesion que recibe el frontend (nunca contrasenas ni tokens internos). */
+const datosEmpresa = (u) => (u.empresa_id ? { id: u.empresa_id, nombre: u.empresa_nombre, slug: u.empresa_slug } : null);
 
 // Limites de longitud aceptados para email/contrasena. No son solo cosmeticos:
 // - EMAIL_MAX_LEN evita procesar strings gigantes en la consulta/comparaciones.
@@ -69,11 +89,14 @@ const login = async (req, res) => {
     const emailNorm = email.toLowerCase().trim();
 
     try {
-        const { rows } = await pool.query(
-            `SELECT id, nombre, email, password, rol, activo, estado, token_version
-             FROM usuarios WHERE email = $1`,
+        // El correo es unico en la plataforma: se busca en todas las empresas.
+        const { rows } = await sinAislamiento(() => pool.query(
+            `SELECT u.id, u.nombre, u.email, u.password, u.rol, u.activo, u.estado, u.token_version, u.empresa_id,
+                    e.nombre AS empresa_nombre, e.slug AS empresa_slug, e.estado AS empresa_estado
+             FROM usuarios u LEFT JOIN empresas e ON e.id = u.empresa_id
+             WHERE u.email = $1`,
             [emailNorm]
-        );
+        ));
         const usuario = rows[0];
         if (!usuario) {
             registrarIntento(emailNorm, false);
@@ -99,7 +122,13 @@ const login = async (req, res) => {
         if (!usuario.activo)
             return res.status(403).json({ error: 'Tu cuenta esta inactiva.' });
 
+        if (usuario.empresa_id && usuario.empresa_estado !== 'activa' && usuario.rol !== ROL_SUPERADMIN)
+            return res.status(403).json({ error: 'La empresa de esta cuenta no esta activa. Contacta al administrador de la plataforma.' });
+
         const esStaff = ROLES_STAFF.includes(usuario.rol);
+        // El portal de clientes es el de la web publica: solo sus clientes.
+        if (panel === 'cliente' && !esStaff && usuario.empresa_id !== await empresaPublicaId())
+            return res.status(403).json({ error: 'Esta cuenta no pertenece a este sitio.' });
         if (panel === 'cliente' && esStaff)
             return res.status(403).json({ error: 'Esta cuenta pertenece al personal del taller. Ingresa desde el acceso de personal.' });
         if (panel === 'staff' && !esStaff)
@@ -107,12 +136,17 @@ const login = async (req, res) => {
 
         const { token, usuario: payload } = firmarToken(usuario);
         const permisos = await permisosDe(usuario);
-        pool.query('UPDATE usuarios SET ultimo_acceso = NOW() WHERE id = $1', [usuario.id]).catch(() => {});
+        sinAislamiento(() => pool.query('UPDATE usuarios SET ultimo_acceso = NOW() WHERE id = $1', [usuario.id])).catch(() => {});
         if (esStaff) {
-            registrarAuditoria({ req, actor: payload, accion: 'sesion.inicio', recursoTipo: 'usuario', recursoId: usuario.id });
+            sinAislamiento(() => registrarAuditoria({ req, actor: payload, accion: 'sesion.inicio', recursoTipo: 'usuario',
+                recursoId: usuario.id, empresaId: usuario.empresa_id }));
         }
 
-        return res.json({ token, usuario: payload, permisos });
+        return res.json({
+            token, usuario: payload, permisos,
+            empresa: datosEmpresa(usuario),
+            plataforma: usuario.rol === ROL_SUPERADMIN,
+        });
     } catch (err) {
         console.error('Error en login:', err);
         const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
@@ -208,10 +242,17 @@ const register = async (req, res) => {
  * verificarToken). El panel lo consulta al cargar y periódicamente para que
  * un permiso revocado desaparezca del menú sin cerrar sesión.
  */
-const me = (req, res) => {
-    const { id, nombre, email, rol } = req.usuario;
-    const permisos = rol === ROL_SUPERADMIN ? ['*'] : req.usuario.permisos;
-    return res.json({ usuario: { id, nombre, email, rol }, permisos });
+const me = async (req, res) => {
+    const { id, nombre, email, rol, empresa, soporte } = req.usuario;
+    const permisos = rol === ROL_SUPERADMIN
+        ? await permisosDe({ rol, empresa_id: req.usuario.empresa_id }, soporte)
+        : req.usuario.permisos;
+    return res.json({
+        usuario: { id, nombre, email, rol }, permisos,
+        empresa: empresa || null,
+        soporte: soporte ? { modo: soporte.modo, expira: soporte.expira, motivo: soporte.motivo } : null,
+        plataforma: rol === ROL_SUPERADMIN,
+    });
 };
 
 module.exports = { login, register, me, firmarToken, permisosDe };

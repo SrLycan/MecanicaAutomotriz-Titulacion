@@ -20,8 +20,11 @@ async function obtenerProformaCompleta(id) {
     const { rows } = await pool.query(
         `SELECT p.*, u.nombre AS usuario_nombre,
                 s.nombre AS sucursal_nombre, s.direccion AS sucursal_direccion,
-                s.telefono AS sucursal_telefono, s.email AS sucursal_email
+                s.telefono AS sucursal_telefono, s.email AS sucursal_email,
+                e.nombre AS empresa_nombre, e.nombre_comercial AS empresa_nombre_comercial,
+                e.razon_social AS empresa_razon_social, e.ruc AS empresa_ruc, e.logo_archivo AS empresa_logo
          FROM proformas p
+         JOIN empresas e ON e.id = p.empresa_id          -- datos de la empresa DUEÑA del documento
          LEFT JOIN usuarios u ON u.id = p.usuario_id
          LEFT JOIN sucursales s ON s.id = p.sucursal_id
          WHERE p.id = $1`,

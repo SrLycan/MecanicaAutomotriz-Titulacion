@@ -27,6 +27,10 @@ const catalogosRoutes = require('./routes/catalogos.routes');
 const cajaRoutes = require('./routes/caja.routes');
 const finanzasRoutes = require('./routes/finanzas.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
+const plataformaRoutes = require('./routes/plataforma.routes');
+const empresaRoutes = require('./routes/empresa.routes');
+const { contextoPublico, registrarErrores } = require('./middleware/empresa.middleware');
+const { iniciarRespaldoAutomatico } = require('./services/respaldo.service');
 // Nota: ya NO se requiere './config/initDb' aqui a proposito. El esquema y
 // las migraciones de Postgres se corrieron manualmente contra Supabase
 // (schema.sql + migrations.sql via el SQL Editor), y no se quiere que el
@@ -93,6 +97,11 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Archivos subidos (fotos de perfil, etc.)
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
+// ── Multiempresa ─────────────────────────────────────────────
+// Toda peticion arranca en la empresa de la web publica (SS SWAP); las rutas
+// autenticadas pasan a la empresa del usuario en verificarToken.
+app.use('/api', registrarErrores, contextoPublico);
+
 // ── Rutas ────────────────────────────────────────────────────
 app.use('/api/auth',       authRoutes);
 app.use('/api/inventory',  inventoryRoutes);
@@ -112,6 +121,8 @@ app.use('/api/catalogos', catalogosRoutes);
 app.use('/api/caja', cajaRoutes);
 app.use('/api/finanzas', finanzasRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/plataforma', plataformaRoutes);
+app.use('/api/empresa', empresaRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => res.json({
@@ -152,5 +163,6 @@ app.listen(PORT, async () => {
     if (process.env.RUN_MIGRATIONS === 'true') await runMigrations();
     await connectMongo();
     calentarPostgres();
+    iniciarRespaldoAutomatico();
     console.log('');
 });
