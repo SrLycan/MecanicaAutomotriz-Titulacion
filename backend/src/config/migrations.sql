@@ -697,14 +697,18 @@ BEGIN
 END $$;
 
 -- Categorias base del area de colisiones/pintura (catalogo, no datos de prueba).
-INSERT INTO categorias_repuesto (nombre, descripcion, area) VALUES
+-- (Sprint 22: "solo si no existe" en vez de ON CONFLICT (nombre), porque el
+--  nombre ahora es unico por empresa; al volver a correr no inserta nada.)
+INSERT INTO categorias_repuesto (nombre, descripcion, area)
+SELECT v.nombre, v.descripcion, v.area FROM (VALUES
     ('Pinturas',             'Pinturas base, bicapa y tricapa',                 'colisiones'),
     ('Masillas',             'Masillas de relleno y acabado',                   'colisiones'),
     ('Lijas y Abrasivos',    'Lijas al agua/seco, discos, esponjas abrasivas',  'colisiones'),
     ('Primers y Barnices',   'Fondos, primers, selladores y barnices (clear)',  'colisiones'),
     ('Diluyentes y Solventes','Thinner, reductores, desengrasantes',            'colisiones'),
     ('Materiales de Reparacion','Cintas, plasticos, enderezado y otros insumos','colisiones')
-ON CONFLICT (nombre) DO NOTHING;
+) AS v(nombre, descripcion, area)
+WHERE NOT EXISTS (SELECT 1 FROM categorias_repuesto c WHERE c.nombre = v.nombre);
 
 -- ── 14.2 Stock decimal (litros/galones parciales de pintura) ─────────
 DO $$
@@ -1774,10 +1778,13 @@ INSERT INTO permisos_catalogo (modulo, accion, modulo_nombre, accion_nombre, gru
     ('sucursales', 'editar', 'Sucursales', 'Editar', 'Ajustes', 67, FALSE),
     ('sucursales', 'eliminar', 'Sucursales', 'Eliminar', 'Ajustes', 68, FALSE),
     ('bitacora', 'ver', 'Bitácora de operaciones', 'Ver', 'Ajustes', 69, FALSE),
-    ('usuarios', 'ver', 'Gestión de usuarios y permisos', 'Ver', 'Seguridad', 70, TRUE),
-    ('usuarios', 'crear', 'Gestión de usuarios y permisos', 'Crear', 'Seguridad', 71, TRUE),
-    ('usuarios', 'editar', 'Gestión de usuarios y permisos', 'Editar', 'Seguridad', 72, TRUE),
-    ('auditoria', 'ver', 'Auditoría de seguridad', 'Ver', 'Seguridad', 73, TRUE)
+    ('usuarios', 'ver', 'Usuarios y permisos de la empresa', 'Ver', 'Empresa', 70, FALSE),
+    ('usuarios', 'crear', 'Usuarios y permisos de la empresa', 'Crear', 'Empresa', 71, FALSE),
+    ('usuarios', 'editar', 'Usuarios y permisos de la empresa', 'Editar, activar/desactivar, permisos y restablecer acceso', 'Empresa', 72, FALSE),
+    ('usuarios', 'eliminar', 'Usuarios y permisos de la empresa', 'Eliminar', 'Empresa', 73, FALSE),
+    ('auditoria', 'ver', 'Auditoría de la empresa', 'Ver', 'Empresa', 74, FALSE),
+    ('empresa', 'ver', 'Configuración de la empresa', 'Ver', 'Empresa', 75, FALSE),
+    ('empresa', 'editar', 'Configuración de la empresa', 'Editar', 'Empresa', 76, FALSE)
 ON CONFLICT (modulo, accion) DO UPDATE SET
     modulo_nombre = EXCLUDED.modulo_nombre, accion_nombre = EXCLUDED.accion_nombre,
     grupo = EXCLUDED.grupo, orden = EXCLUDED.orden, solo_superadmin = EXCLUDED.solo_superadmin;
@@ -1870,6 +1877,13 @@ JOIN (VALUES
     ('administrador', 'sucursales', 'editar'),
     ('administrador', 'sucursales', 'eliminar'),
     ('administrador', 'bitacora', 'ver'),
+    ('administrador', 'usuarios', 'ver'),
+    ('administrador', 'usuarios', 'crear'),
+    ('administrador', 'usuarios', 'editar'),
+    ('administrador', 'usuarios', 'eliminar'),
+    ('administrador', 'auditoria', 'ver'),
+    ('administrador', 'empresa', 'ver'),
+    ('administrador', 'empresa', 'editar'),
     ('recepcionista', 'dashboard', 'ver'),
     ('recepcionista', 'inventario_mecanica', 'ver'),
     ('recepcionista', 'inventario_colisiones', 'ver'),
@@ -1977,3 +1991,543 @@ DROP TRIGGER IF EXISTS trg_auditoria_solo_insercion ON auditoria_seguridad;
 CREATE TRIGGER trg_auditoria_solo_insercion
     BEFORE UPDATE OR DELETE ON auditoria_seguridad
     FOR EACH ROW EXECUTE FUNCTION auditoria_solo_insercion();
+
+-- ============================================================
+-- Sprint 22: Plataforma multiempresa (SS SWAP = primera empresa)
+--
+-- Estrategia: UNA base de datos compartida y aislamiento por empresa
+-- DENTRO de PostgreSQL (Row Level Security):
+--  * Cada tabla operativa tiene empresa_id. El valor por defecto sale de la
+--    variable de la transaccion app.empresa_id, que el backend fija a partir
+--    del usuario AUTENTICADO (nunca de un dato enviado por el navegador).
+--  * El backend ejecuta las consultas de una empresa con el rol ssswap_app
+--    (sin privilegios de propietario): las politicas RLS filtran SELECT,
+--    UPDATE y DELETE e impiden INSERTAR filas de otra empresa.
+--  * Llaves foraneas compuestas (columna, empresa_id) impiden enlazar un
+--    registro con otro de otra empresa aunque se adivine su id.
+--  * Sin empresa en contexto no se ve nada (falla cerrado).
+--
+-- 22.1 Registro de migraciones y tablas de la plataforma.
+-- 22.2 Tabla empresas + SS SWAP como primera empresa (con datos reales de
+--      su sucursal principal; no se inventa nada).
+-- 22.3 empresa_id en todas las tablas operativas. La asociacion de los
+--      datos existentes a SS SWAP se hace UNA sola vez y se detiene si ya
+--      existe mas de una empresa con filas sin asociar.
+-- 22.4 Unicidades por empresa (codigo, cedula, numero de proforma, RUC...).
+-- 22.5 Llaves compuestas (generadas desde backend/src/config/multiempresa.js).
+-- 22.6 Rol ssswap_app, permisos de tabla y politicas RLS.
+-- 22.7 Vistas con security_invoker (respetan RLS).
+-- 22.8 Numeracion por empresa (empresa_secuencias).
+-- 22.9 Catalogo de permisos (usuarios/auditoria/empresa delegables).
+-- 22.10 Validaciones finales: si algo no cuadra la migracion FALLA y, como
+--       se corre en una transaccion, no deja nada a medias.
+--
+-- Idempotente: se puede correr varias veces sin duplicar nada.
+-- ============================================================
+
+-- ── 22.1 Plataforma ──
+CREATE TABLE IF NOT EXISTS migraciones_registro (
+    id          SERIAL PRIMARY KEY,
+    version     VARCHAR(40)  NOT NULL,
+    descripcion VARCHAR(200) NOT NULL,
+    aplicada_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    resultado   VARCHAR(12)  NOT NULL CHECK (resultado IN ('exito','error')),
+    detalle     JSONB
+);
+COMMENT ON TABLE migraciones_registro IS 'Historial de migraciones de datos relevantes (version, resultado y verificaciones).';
+
+CREATE TABLE IF NOT EXISTS empresas (
+    id               SERIAL PRIMARY KEY,
+    slug             VARCHAR(60)  NOT NULL UNIQUE CHECK (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
+    nombre           VARCHAR(120) NOT NULL,
+    nombre_comercial VARCHAR(160),
+    razon_social     VARCHAR(160),
+    ruc              VARCHAR(20),
+    direccion        VARCHAR(255),
+    telefono         VARCHAR(30),
+    email            VARCHAR(150),
+    logo_archivo     VARCHAR(200),
+    estado           VARCHAR(12)  NOT NULL DEFAULT 'activa' CHECK (estado IN ('activa','suspendida','inactiva')),
+    permite_soporte  BOOLEAN      NOT NULL DEFAULT FALSE,
+    creada_por       INTEGER,
+    created_at       TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at       TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+COMMENT ON TABLE empresas IS 'Mecanicas de la plataforma. Cada una ve solo sus datos (RLS por empresa_id).';
+COMMENT ON COLUMN empresas.logo_archivo IS 'Logo para PDF/Excel. "asset:logo.png" = logo incluido en el backend; vacio = sin logo.';
+COMMENT ON COLUMN empresas.permite_soporte IS 'Si TRUE, el superadministrador puede abrir un acceso de soporte (con motivo, tiempo limite y auditoria).';
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_updated_at_empresas') THEN
+        CREATE TRIGGER set_updated_at_empresas BEFORE UPDATE ON empresas FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
+    END IF;
+END $$;
+
+CREATE TABLE IF NOT EXISTS accesos_soporte (
+    id              SERIAL PRIMARY KEY,
+    superadmin_id   INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    empresa_id      INTEGER NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
+    motivo          VARCHAR(300) NOT NULL CHECK (length(trim(motivo)) >= 10),
+    modo            VARCHAR(10)  NOT NULL DEFAULT 'lectura' CHECK (modo IN ('lectura','completo')),
+    inicio          TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    expira          TIMESTAMP WITH TIME ZONE NOT NULL,
+    finalizado_at   TIMESTAMP WITH TIME ZONE,
+    CHECK (expira > inicio AND expira <= inicio + INTERVAL '8 hours')
+);
+CREATE INDEX IF NOT EXISTS idx_accesos_soporte_vigentes ON accesos_soporte(superadmin_id, empresa_id) WHERE finalizado_at IS NULL;
+COMMENT ON TABLE accesos_soporte IS 'Accesos temporales del superadministrador a una empresa (motivo obligatorio, maximo 8 h, auditado).';
+
+CREATE TABLE IF NOT EXISTS respaldos_registro (
+    id           SERIAL PRIMARY KEY,
+    inicio       TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    fin          TIMESTAMP WITH TIME ZONE,
+    tipo         VARCHAR(30)  NOT NULL CHECK (tipo IN ('automatico','manual','previo_migracion','previo_restauracion','prueba_restauracion')),
+    motor        VARCHAR(20),
+    archivo      VARCHAR(255),
+    tamano_bytes BIGINT,
+    sha256       VARCHAR(64),
+    cifrado      BOOLEAN NOT NULL DEFAULT FALSE,
+    version_app  VARCHAR(40),
+    commit_git   VARCHAR(40),
+    alcance      VARCHAR(200),
+    resultado    VARCHAR(12)  NOT NULL DEFAULT 'en_curso' CHECK (resultado IN ('en_curso','exito','error')),
+    detalle      JSONB,
+    ejecutado_por VARCHAR(150)
+);
+COMMENT ON TABLE respaldos_registro IS 'Resultado de cada respaldo y de cada prueba de restauracion (sin contrasenas ni claves).';
+
+CREATE TABLE IF NOT EXISTS errores_sistema (
+    id          BIGSERIAL PRIMARY KEY,
+    created_at  TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    metodo      VARCHAR(10),
+    ruta        VARCHAR(200),
+    estado_http INTEGER,
+    empresa_id  INTEGER,
+    usuario_id  INTEGER,
+    mensaje     VARCHAR(300)
+);
+CREATE INDEX IF NOT EXISTS idx_errores_sistema_fecha ON errores_sistema(created_at DESC);
+COMMENT ON TABLE errores_sistema IS 'Errores 500 del API (ruta y mensaje tecnico breve; nunca datos de clientes ni secretos).';
+
+-- ── 22.2 SS SWAP como primera empresa ──
+-- Los datos de contacto salen de la sucursal principal que YA existe.
+INSERT INTO empresas (slug, nombre, nombre_comercial, direccion, telefono, email, logo_archivo, estado, permite_soporte)
+SELECT 'ss-swap', 'SS SWAP', 'SS Swap - SSarango Sosa Intercambio Inteligente',
+       s.direccion, s.telefono, s.email, 'asset:logo.png', 'activa', TRUE
+FROM (SELECT 1) x
+LEFT JOIN LATERAL (SELECT direccion, telefono, email FROM sucursales ORDER BY es_principal DESC, id LIMIT 1) s ON TRUE
+WHERE NOT EXISTS (SELECT 1 FROM empresas WHERE slug = 'ss-swap');
+
+-- Valor por defecto de empresa_id: la empresa de la transaccion actual.
+CREATE OR REPLACE FUNCTION empresa_actual() RETURNS INTEGER
+LANGUAGE sql STABLE AS $$ SELECT NULLIF(current_setting('app.empresa_id', true), '')::int $$;
+
+-- Utilidad idempotente: agrega una constraint si no existe con ese nombre.
+CREATE OR REPLACE FUNCTION agregar_constraint_si_falta(tabla TEXT, nombre TEXT, definicion TEXT) RETURNS VOID
+LANGUAGE plpgsql AS $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = nombre AND conrelid = tabla::regclass) THEN
+        EXECUTE format('ALTER TABLE %I ADD CONSTRAINT %I %s', tabla, nombre, definicion);
+    END IF;
+END $$;
+
+-- ── 22.8 (antes de 22.3 porque es tabla de empresa) Numeracion por empresa ──
+CREATE TABLE IF NOT EXISTS empresa_secuencias (
+    empresa_id INTEGER     NOT NULL,
+    nombre     VARCHAR(40) NOT NULL,
+    valor      BIGINT      NOT NULL DEFAULT 0,
+    PRIMARY KEY (empresa_id, nombre)
+);
+COMMENT ON TABLE empresa_secuencias IS 'Contadores por empresa (numero de proforma, codigo de repuesto). Cada mecanica numera desde 1.';
+
+-- ── 22.9 (antes de asignar permisos) Catalogo de permisos (generado desde permisos.js) ──
+-- CATALOGO_INICIO (generado desde permisos.js)
+INSERT INTO permisos_catalogo (modulo, accion, modulo_nombre, accion_nombre, grupo, orden, solo_superadmin) VALUES
+    ('dashboard', 'ver', 'Panel principal', 'Ver', 'Panel', 1, FALSE),
+    ('inventario_mecanica', 'ver', 'Inventario de mecánica', 'Ver', 'Inventario', 2, FALSE),
+    ('inventario_mecanica', 'crear', 'Inventario de mecánica', 'Crear', 'Inventario', 3, FALSE),
+    ('inventario_mecanica', 'editar', 'Inventario de mecánica', 'Editar', 'Inventario', 4, FALSE),
+    ('inventario_mecanica', 'eliminar', 'Inventario de mecánica', 'Eliminar', 'Inventario', 5, FALSE),
+    ('inventario_colisiones', 'ver', 'Inventario de colisiones / pintura', 'Ver', 'Inventario', 6, FALSE),
+    ('inventario_colisiones', 'crear', 'Inventario de colisiones / pintura', 'Crear', 'Inventario', 7, FALSE),
+    ('inventario_colisiones', 'editar', 'Inventario de colisiones / pintura', 'Editar', 'Inventario', 8, FALSE),
+    ('inventario_colisiones', 'eliminar', 'Inventario de colisiones / pintura', 'Eliminar', 'Inventario', 9, FALSE),
+    ('registros_inventario', 'ver', 'Entradas y salidas de inventario', 'Ver registros', 'Inventario', 10, FALSE),
+    ('registros_inventario', 'crear', 'Entradas y salidas de inventario', 'Registrar entradas / salidas', 'Inventario', 11, FALSE),
+    ('registros_inventario', 'aprobar', 'Entradas y salidas de inventario', 'Devolver salidas al inventario', 'Inventario', 12, FALSE),
+    ('pedidos_tienda', 'ver', 'Pedidos de la tienda', 'Ver', 'Inventario', 13, FALSE),
+    ('pedidos_tienda', 'editar', 'Pedidos de la tienda', 'Atender / cancelar', 'Inventario', 14, FALSE),
+    ('ordenes', 'ver', 'Órdenes de trabajo', 'Ver', 'Taller', 15, FALSE),
+    ('ordenes', 'crear', 'Órdenes de trabajo', 'Crear', 'Taller', 16, FALSE),
+    ('ordenes', 'editar', 'Órdenes de trabajo', 'Editar', 'Taller', 17, FALSE),
+    ('ordenes', 'eliminar', 'Órdenes de trabajo', 'Eliminar', 'Taller', 18, FALSE),
+    ('ordenes', 'asignar', 'Órdenes de trabajo', 'Asignar técnico', 'Taller', 19, FALSE),
+    ('ordenes', 'aprobar', 'Órdenes de trabajo', 'Cambiar estado de cualquier orden', 'Taller', 20, FALSE),
+    ('proformas_mecanica', 'ver', 'Proformas de mecánica', 'Ver', 'Taller', 21, FALSE),
+    ('proformas_mecanica', 'crear', 'Proformas de mecánica', 'Crear', 'Taller', 22, FALSE),
+    ('proformas_mecanica', 'editar', 'Proformas de mecánica', 'Editar', 'Taller', 23, FALSE),
+    ('proformas_mecanica', 'eliminar', 'Proformas de mecánica', 'Eliminar', 'Taller', 24, FALSE),
+    ('proformas_mecanica', 'exportar', 'Proformas de mecánica', 'Descargar PDF / Excel', 'Taller', 25, FALSE),
+    ('proformas_mecanica', 'aprobar', 'Proformas de mecánica', 'Aprobar, rechazar, convertir en OT y confirmar materiales', 'Taller', 26, FALSE),
+    ('proformas_colisiones', 'ver', 'Proformas de colisiones / pintura', 'Ver', 'Taller', 27, FALSE),
+    ('proformas_colisiones', 'crear', 'Proformas de colisiones / pintura', 'Crear', 'Taller', 28, FALSE),
+    ('proformas_colisiones', 'editar', 'Proformas de colisiones / pintura', 'Editar', 'Taller', 29, FALSE),
+    ('proformas_colisiones', 'eliminar', 'Proformas de colisiones / pintura', 'Eliminar', 'Taller', 30, FALSE),
+    ('proformas_colisiones', 'exportar', 'Proformas de colisiones / pintura', 'Descargar PDF / Excel', 'Taller', 31, FALSE),
+    ('proformas_colisiones', 'aprobar', 'Proformas de colisiones / pintura', 'Aprobar, rechazar, convertir en OT y confirmar materiales', 'Taller', 32, FALSE),
+    ('citas', 'ver', 'Citas', 'Ver', 'Taller', 33, FALSE),
+    ('citas', 'editar', 'Citas', 'Confirmar / cambiar estado', 'Taller', 34, FALSE),
+    ('clientes', 'ver', 'Clientes', 'Ver', 'Clientes', 35, FALSE),
+    ('clientes', 'crear', 'Clientes', 'Crear', 'Clientes', 36, FALSE),
+    ('clientes', 'editar', 'Clientes', 'Editar', 'Clientes', 37, FALSE),
+    ('clientes', 'eliminar', 'Clientes', 'Eliminar', 'Clientes', 38, FALSE),
+    ('vehiculos', 'ver', 'Vehículos', 'Ver', 'Clientes', 39, FALSE),
+    ('vehiculos', 'crear', 'Vehículos', 'Crear', 'Clientes', 40, FALSE),
+    ('vehiculos', 'editar', 'Vehículos', 'Editar', 'Clientes', 41, FALSE),
+    ('vehiculos', 'eliminar', 'Vehículos', 'Eliminar', 'Clientes', 42, FALSE),
+    ('cuentas_cobrar', 'ver', 'Pagarés y cuentas por cobrar', 'Ver', 'Clientes', 43, FALSE),
+    ('cuentas_cobrar', 'crear', 'Pagarés y cuentas por cobrar', 'Crear', 'Clientes', 44, FALSE),
+    ('cuentas_cobrar', 'editar', 'Pagarés y cuentas por cobrar', 'Editar (vencimiento, datos)', 'Clientes', 45, FALSE),
+    ('cuentas_cobrar', 'eliminar', 'Pagarés y cuentas por cobrar', 'Eliminar / anular / reabrir', 'Clientes', 46, FALSE),
+    ('pagos_clientes', 'crear', 'Registro de pagos de clientes', 'Registrar pagos', 'Clientes', 47, FALSE),
+    ('pagos_clientes', 'eliminar', 'Registro de pagos de clientes', 'Anular pagos', 'Clientes', 48, FALSE),
+    ('caja', 'ver', 'Caja diaria', 'Ver', 'Finanzas', 49, FALSE),
+    ('caja', 'crear', 'Caja diaria', 'Registrar movimientos de caja', 'Finanzas', 50, FALSE),
+    ('caja', 'aprobar', 'Caja diaria', 'Abrir y cerrar caja', 'Finanzas', 51, FALSE),
+    ('finanzas', 'ver', 'Finanzas, cuentas y nómina', 'Ver', 'Finanzas', 52, FALSE),
+    ('finanzas', 'crear', 'Finanzas, cuentas y nómina', 'Crear', 'Finanzas', 53, FALSE),
+    ('finanzas', 'editar', 'Finanzas, cuentas y nómina', 'Editar', 'Finanzas', 54, FALSE),
+    ('finanzas', 'eliminar', 'Finanzas, cuentas y nómina', 'Anular movimientos / pagos', 'Finanzas', 55, FALSE),
+    ('proveedores', 'ver', 'Proveedores, compras y gastos', 'Ver', 'Proveedores', 56, FALSE),
+    ('proveedores', 'crear', 'Proveedores, compras y gastos', 'Crear', 'Proveedores', 57, FALSE),
+    ('proveedores', 'editar', 'Proveedores, compras y gastos', 'Editar', 'Proveedores', 58, FALSE),
+    ('proveedores', 'eliminar', 'Proveedores, compras y gastos', 'Eliminar', 'Proveedores', 59, FALSE),
+    ('estadisticas', 'ver', 'Reportes y estadísticas', 'Ver', 'Reportes', 60, FALSE),
+    ('servicios', 'ver', 'Servicios del taller', 'Ver', 'Ajustes', 61, FALSE),
+    ('servicios', 'crear', 'Servicios del taller', 'Crear', 'Ajustes', 62, FALSE),
+    ('servicios', 'editar', 'Servicios del taller', 'Editar', 'Ajustes', 63, FALSE),
+    ('servicios', 'eliminar', 'Servicios del taller', 'Eliminar', 'Ajustes', 64, FALSE),
+    ('sucursales', 'ver', 'Sucursales', 'Ver', 'Ajustes', 65, FALSE),
+    ('sucursales', 'crear', 'Sucursales', 'Crear', 'Ajustes', 66, FALSE),
+    ('sucursales', 'editar', 'Sucursales', 'Editar', 'Ajustes', 67, FALSE),
+    ('sucursales', 'eliminar', 'Sucursales', 'Eliminar', 'Ajustes', 68, FALSE),
+    ('bitacora', 'ver', 'Bitácora de operaciones', 'Ver', 'Ajustes', 69, FALSE),
+    ('usuarios', 'ver', 'Usuarios y permisos de la empresa', 'Ver', 'Empresa', 70, FALSE),
+    ('usuarios', 'crear', 'Usuarios y permisos de la empresa', 'Crear', 'Empresa', 71, FALSE),
+    ('usuarios', 'editar', 'Usuarios y permisos de la empresa', 'Editar, activar/desactivar, permisos y restablecer acceso', 'Empresa', 72, FALSE),
+    ('usuarios', 'eliminar', 'Usuarios y permisos de la empresa', 'Eliminar', 'Empresa', 73, FALSE),
+    ('auditoria', 'ver', 'Auditoría de la empresa', 'Ver', 'Empresa', 74, FALSE),
+    ('empresa', 'ver', 'Configuración de la empresa', 'Ver', 'Empresa', 75, FALSE),
+    ('empresa', 'editar', 'Configuración de la empresa', 'Editar', 'Empresa', 76, FALSE)
+ON CONFLICT (modulo, accion) DO UPDATE SET
+    modulo_nombre = EXCLUDED.modulo_nombre, accion_nombre = EXCLUDED.accion_nombre,
+    grupo = EXCLUDED.grupo, orden = EXCLUDED.orden, solo_superadmin = EXCLUDED.solo_superadmin;
+-- CATALOGO_FIN
+
+-- ── 22.3 empresa_id en las tablas operativas ──
+DO $$
+DECLARE
+    t TEXT;
+    tablas TEXT[] := ARRAY['usuarios', 'usuario_permisos', 'auditoria_seguridad', 'sucursales', 'tipos_servicio', 'clientes', 'vehiculos', 'citas', 'ordenes_trabajo', 'ordenes_historial', 'categorias_repuesto', 'repuestos', 'movimientos_inventario', 'solicitudes_producto', 'proformas', 'proforma_items', 'proforma_zonas_danadas', 'cuentas_cobrar', 'pagos_cliente', 'proveedores', 'proveedores_contactos', 'gastos_proveedor', 'compras_proveedor', 'compras_proveedor_items', 'movimientos_financieros_proveedor', 'cuentas_dinero', 'caja_sesiones', 'caja_movimientos', 'movimientos_dinero', 'empleados_perfil', 'pagos_empleados', 'empresa_secuencias'];
+    v_ssswap INTEGER;
+    v_empresas INTEGER;
+    v_sin_empresa BIGINT;
+    v_asociar BOOLEAN;
+BEGIN
+    SELECT id INTO v_ssswap FROM empresas WHERE slug = 'ss-swap';
+    SELECT COUNT(*) INTO v_empresas FROM empresas;
+    -- La asociacion de los datos existentes se hace UNA vez (primera corrida).
+    v_asociar := NOT EXISTS (SELECT 1 FROM migraciones_registro WHERE version = '22-multiempresa' AND resultado = 'exito');
+
+    FOREACH t IN ARRAY tablas LOOP
+        EXECUTE format('ALTER TABLE %I ADD COLUMN IF NOT EXISTS empresa_id INTEGER', t);
+
+        IF v_asociar THEN
+            EXECUTE format('SELECT COUNT(*) FROM %I WHERE empresa_id IS NULL', t) INTO v_sin_empresa;
+            IF v_sin_empresa > 0 AND v_empresas > 1 THEN
+                RAISE EXCEPTION 'La tabla % tiene % fila(s) sin empresa y ya existen % empresas: no se puede asumir que son de SS SWAP. Revisar antes de continuar.', t, v_sin_empresa, v_empresas;
+            END IF;
+            -- Todo lo existente antes de la plataforma multiempresa es de SS SWAP.
+            -- La auditoria es de solo insercion: su trigger se suspende SOLO para
+            -- esta asignacion unica de empresa (no cambia ningun otro dato).
+            IF t = 'auditoria_seguridad' AND v_sin_empresa > 0 THEN
+                ALTER TABLE auditoria_seguridad DISABLE TRIGGER trg_auditoria_solo_insercion;
+            END IF;
+            EXECUTE format('UPDATE %I SET empresa_id = %s WHERE empresa_id IS NULL', t, v_ssswap);
+            IF t = 'auditoria_seguridad' AND v_sin_empresa > 0 THEN
+                ALTER TABLE auditoria_seguridad ENABLE TRIGGER trg_auditoria_solo_insercion;
+            END IF;
+        END IF;
+
+        EXECUTE format('ALTER TABLE %I ALTER COLUMN empresa_id SET DEFAULT empresa_actual()', t);
+        PERFORM agregar_constraint_si_falta(t, 'fk_' || t || '_empresa', 'FOREIGN KEY (empresa_id) REFERENCES empresas(id)');
+        EXECUTE format('CREATE INDEX IF NOT EXISTS %I ON %I (empresa_id)', 'idx_' || t || '_empresa', t);
+        -- usuarios: NULL solo para un superadministrador global (sin empresa propia).
+        -- auditoria_seguridad: NULL = evento de la plataforma (solo lo ve el superadministrador).
+        IF t NOT IN ('usuarios', 'auditoria_seguridad') THEN
+            EXECUTE format('ALTER TABLE %I ALTER COLUMN empresa_id SET NOT NULL', t);
+        ELSE
+            EXECUTE format('ALTER TABLE %I ALTER COLUMN empresa_id DROP NOT NULL', t);
+        END IF;
+    END LOOP;
+
+    PERFORM agregar_constraint_si_falta('usuarios', 'usuarios_empresa_requerida',
+        'CHECK (empresa_id IS NOT NULL OR rol = ''superadministrador'')');
+
+    IF v_asociar THEN
+        -- Los administradores de SS SWAP pasan a gestionar el personal de su
+        -- empresa (en el Sprint 21 era exclusivo del superadministrador).
+        INSERT INTO usuario_permisos (usuario_id, modulo, accion, empresa_id)
+        SELECT u.id, x.modulo, x.accion, u.empresa_id
+        FROM usuarios u
+        CROSS JOIN (VALUES ('usuarios','ver'),('usuarios','crear'),('usuarios','editar'),('usuarios','eliminar'),
+                           ('auditoria','ver'),('empresa','ver'),('empresa','editar')) AS x(modulo, accion)
+        WHERE u.rol = 'administrador' AND u.empresa_id IS NOT NULL
+          AND EXISTS (SELECT 1 FROM permisos_catalogo pc WHERE pc.modulo = x.modulo AND pc.accion = x.accion)
+        ON CONFLICT DO NOTHING;
+    END IF;
+END $$;
+
+-- usuario_permisos: si se inserta sin empresa (scripts del servidor), la toma del usuario.
+CREATE OR REPLACE FUNCTION usuario_permisos_empresa() RETURNS TRIGGER
+LANGUAGE plpgsql AS $$
+BEGIN
+    IF NEW.empresa_id IS NULL THEN
+        SELECT empresa_id INTO NEW.empresa_id FROM usuarios WHERE id = NEW.usuario_id;
+    END IF;
+    RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS trg_usuario_permisos_empresa ON usuario_permisos;
+CREATE TRIGGER trg_usuario_permisos_empresa BEFORE INSERT ON usuario_permisos
+    FOR EACH ROW EXECUTE FUNCTION usuario_permisos_empresa();
+
+-- Numeracion: SS SWAP continua desde donde iban sus contadores globales.
+INSERT INTO empresa_secuencias (empresa_id, nombre, valor)
+SELECT e.id, 'proformas', (SELECT CASE WHEN is_called THEN last_value ELSE last_value - 1 END FROM proformas_numero_seq)
+FROM empresas e WHERE e.slug = 'ss-swap'
+ON CONFLICT DO NOTHING;
+INSERT INTO empresa_secuencias (empresa_id, nombre, valor)
+SELECT e.id, 'repuestos_referencia', (SELECT CASE WHEN is_called THEN last_value ELSE last_value - 1 END FROM repuestos_referencia_seq)
+FROM empresas e WHERE e.slug = 'ss-swap'
+ON CONFLICT DO NOTHING;
+
+-- ── 22.4 Unicidades por empresa (se conserva el nombre de cada restriccion) ──
+CREATE OR REPLACE FUNCTION reemplazar_unique_por_empresa(tabla TEXT, nombre TEXT, columnas TEXT) RETURNS VOID
+LANGUAGE plpgsql AS $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = nombre AND conrelid = tabla::regclass
+               AND pg_get_constraintdef(oid) NOT LIKE '%empresa_id%') THEN
+        EXECUTE format('ALTER TABLE %I DROP CONSTRAINT %I', tabla, nombre);
+    END IF;
+    PERFORM agregar_constraint_si_falta(tabla, nombre, format('UNIQUE (empresa_id, %s)', columnas));
+END $$;
+
+CREATE OR REPLACE FUNCTION reemplazar_indice_por_empresa(nombre TEXT, definicion TEXT) RETURNS VOID
+LANGUAGE plpgsql AS $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_indexes WHERE schemaname = 'public' AND indexname = nombre AND indexdef NOT LIKE '%empresa_id%') THEN
+        EXECUTE format('DROP INDEX %I', nombre);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE schemaname = 'public' AND indexname = nombre) THEN
+        EXECUTE format('CREATE UNIQUE INDEX %I %s', nombre, definicion);
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    PERFORM reemplazar_unique_por_empresa('categorias_repuesto', 'categorias_repuesto_nombre_key', 'nombre');
+    PERFORM reemplazar_unique_por_empresa('repuestos', 'repuestos_codigo_key', 'codigo');
+    PERFORM reemplazar_unique_por_empresa('clientes', 'clientes_cedula_key', 'cedula');
+    PERFORM reemplazar_unique_por_empresa('proformas', 'proformas_numero_key', 'numero');
+    PERFORM reemplazar_unique_por_empresa('cuentas_dinero', 'cuentas_dinero_nombre_key', 'nombre');
+    PERFORM reemplazar_indice_por_empresa('uq_caja_sesion_abierta', 'ON caja_sesiones (empresa_id) WHERE estado = ''abierta''');
+    PERFORM reemplazar_indice_por_empresa('uq_sucursal_principal', 'ON sucursales (empresa_id) WHERE es_principal');
+    PERFORM reemplazar_indice_por_empresa('uq_proveedores_ruc', 'ON proveedores (empresa_id, (TRIM(ruc))) WHERE NULLIF(TRIM(ruc), '''') IS NOT NULL');
+    PERFORM reemplazar_indice_por_empresa('uq_cuenta_dinero_predeterminada', 'ON cuentas_dinero (empresa_id, tipo) WHERE predeterminada');
+END $$;
+
+-- ── 22.5 Relaciones dentro de la misma empresa (generado desde multiempresa.js) ──
+-- RELACIONES_INICIO
+DO $$
+BEGIN
+    PERFORM agregar_constraint_si_falta('caja_sesiones', 'uq_caja_sesiones_id_empresa', 'UNIQUE (id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('categorias_repuesto', 'uq_categorias_repuesto_id_empresa', 'UNIQUE (id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('clientes', 'uq_clientes_id_empresa', 'UNIQUE (id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('compras_proveedor', 'uq_compras_proveedor_id_empresa', 'UNIQUE (id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('cuentas_cobrar', 'uq_cuentas_cobrar_id_empresa', 'UNIQUE (id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('cuentas_dinero', 'uq_cuentas_dinero_id_empresa', 'UNIQUE (id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('gastos_proveedor', 'uq_gastos_proveedor_id_empresa', 'UNIQUE (id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('movimientos_dinero', 'uq_movimientos_dinero_id_empresa', 'UNIQUE (id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('movimientos_inventario', 'uq_movimientos_inventario_id_empresa', 'UNIQUE (id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('ordenes_trabajo', 'uq_ordenes_trabajo_id_empresa', 'UNIQUE (id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('proforma_items', 'uq_proforma_items_id_empresa', 'UNIQUE (id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('proformas', 'uq_proformas_id_empresa', 'UNIQUE (id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('proveedores', 'uq_proveedores_id_empresa', 'UNIQUE (id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('repuestos', 'uq_repuestos_id_empresa', 'UNIQUE (id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('sucursales', 'uq_sucursales_id_empresa', 'UNIQUE (id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('tipos_servicio', 'uq_tipos_servicio_id_empresa', 'UNIQUE (id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('usuarios', 'uq_usuarios_id_empresa', 'UNIQUE (id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('vehiculos', 'uq_vehiculos_id_empresa', 'UNIQUE (id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('repuestos', 'fk_emp_repuestos_categoria_id', 'FOREIGN KEY (categoria_id, empresa_id) REFERENCES categorias_repuesto(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('movimientos_inventario', 'fk_emp_movimientos_inventario_repuesto_id', 'FOREIGN KEY (repuesto_id, empresa_id) REFERENCES repuestos(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('movimientos_inventario', 'fk_emp_movimientos_inventario_proforma_id', 'FOREIGN KEY (proforma_id, empresa_id) REFERENCES proformas(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('movimientos_inventario', 'fk_emp_movimientos_inventario_proforma_item_id', 'FOREIGN KEY (proforma_item_id, empresa_id) REFERENCES proforma_items(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('movimientos_inventario', 'fk_emp_movimientos_inventario_orden_id', 'FOREIGN KEY (orden_id, empresa_id) REFERENCES ordenes_trabajo(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('movimientos_inventario', 'fk_emp_movimientos_inventario_compra_id', 'FOREIGN KEY (compra_id, empresa_id) REFERENCES compras_proveedor(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('movimientos_inventario', 'fk_emp_movimientos_inventario_movimiento_revertido_id', 'FOREIGN KEY (movimiento_revertido_id, empresa_id) REFERENCES movimientos_inventario(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('vehiculos', 'fk_emp_vehiculos_cliente_id', 'FOREIGN KEY (cliente_id, empresa_id) REFERENCES clientes(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('ordenes_trabajo', 'fk_emp_ordenes_trabajo_cliente_id', 'FOREIGN KEY (cliente_id, empresa_id) REFERENCES clientes(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('ordenes_trabajo', 'fk_emp_ordenes_trabajo_vehiculo_id', 'FOREIGN KEY (vehiculo_id, empresa_id) REFERENCES vehiculos(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('ordenes_trabajo', 'fk_emp_ordenes_trabajo_tecnico_id', 'FOREIGN KEY (tecnico_id, empresa_id) REFERENCES usuarios(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('citas', 'fk_emp_citas_cliente_id', 'FOREIGN KEY (cliente_id, empresa_id) REFERENCES clientes(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('citas', 'fk_emp_citas_vehiculo_id', 'FOREIGN KEY (vehiculo_id, empresa_id) REFERENCES vehiculos(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('citas', 'fk_emp_citas_servicio_id', 'FOREIGN KEY (servicio_id, empresa_id) REFERENCES tipos_servicio(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('citas', 'fk_emp_citas_sucursal_id', 'FOREIGN KEY (sucursal_id, empresa_id) REFERENCES sucursales(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('citas', 'fk_emp_citas_usuario_id', 'FOREIGN KEY (usuario_id, empresa_id) REFERENCES usuarios(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('solicitudes_producto', 'fk_emp_solicitudes_producto_cliente_id', 'FOREIGN KEY (cliente_id, empresa_id) REFERENCES clientes(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('solicitudes_producto', 'fk_emp_solicitudes_producto_usuario_id', 'FOREIGN KEY (usuario_id, empresa_id) REFERENCES usuarios(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('solicitudes_producto', 'fk_emp_solicitudes_producto_repuesto_id', 'FOREIGN KEY (repuesto_id, empresa_id) REFERENCES repuestos(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('solicitudes_producto', 'fk_emp_solicitudes_producto_movimiento_id', 'FOREIGN KEY (movimiento_id, empresa_id) REFERENCES movimientos_inventario(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('solicitudes_producto', 'fk_emp_solicitudes_producto_cobro_id', 'FOREIGN KEY (cobro_id, empresa_id) REFERENCES movimientos_dinero(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('ordenes_historial', 'fk_emp_ordenes_historial_orden_id', 'FOREIGN KEY (orden_id, empresa_id) REFERENCES ordenes_trabajo(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('proveedores_contactos', 'fk_emp_proveedores_contactos_proveedor_id', 'FOREIGN KEY (proveedor_id, empresa_id) REFERENCES proveedores(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('gastos_proveedor', 'fk_emp_gastos_proveedor_proveedor_id', 'FOREIGN KEY (proveedor_id, empresa_id) REFERENCES proveedores(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('gastos_proveedor', 'fk_emp_gastos_proveedor_cuenta_dinero_id', 'FOREIGN KEY (cuenta_dinero_id, empresa_id) REFERENCES cuentas_dinero(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('compras_proveedor', 'fk_emp_compras_proveedor_proveedor_id', 'FOREIGN KEY (proveedor_id, empresa_id) REFERENCES proveedores(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('compras_proveedor_items', 'fk_emp_compras_proveedor_items_compra_id', 'FOREIGN KEY (compra_id, empresa_id) REFERENCES compras_proveedor(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('compras_proveedor_items', 'fk_emp_compras_proveedor_items_repuesto_id', 'FOREIGN KEY (repuesto_id, empresa_id) REFERENCES repuestos(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('movimientos_financieros_proveedor', 'fk_emp_movimientos_financieros_proveedor_proveedor_id', 'FOREIGN KEY (proveedor_id, empresa_id) REFERENCES proveedores(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('movimientos_financieros_proveedor', 'fk_emp_movimientos_financieros_proveedor_gasto_id', 'FOREIGN KEY (gasto_id, empresa_id) REFERENCES gastos_proveedor(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('movimientos_financieros_proveedor', 'fk_emp_movimientos_financieros_proveedor_compra_id', 'FOREIGN KEY (compra_id, empresa_id) REFERENCES compras_proveedor(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('movimientos_financieros_proveedor', 'fk_emp_movimientos_financieros_proveedor_cuenta_dinero_id', 'FOREIGN KEY (cuenta_dinero_id, empresa_id) REFERENCES cuentas_dinero(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('proformas', 'fk_emp_proformas_cliente_id', 'FOREIGN KEY (cliente_id, empresa_id) REFERENCES clientes(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('proformas', 'fk_emp_proformas_vehiculo_id', 'FOREIGN KEY (vehiculo_id, empresa_id) REFERENCES vehiculos(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('proformas', 'fk_emp_proformas_orden_id', 'FOREIGN KEY (orden_id, empresa_id) REFERENCES ordenes_trabajo(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('proformas', 'fk_emp_proformas_orden_generada_id', 'FOREIGN KEY (orden_generada_id, empresa_id) REFERENCES ordenes_trabajo(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('proformas', 'fk_emp_proformas_sucursal_id', 'FOREIGN KEY (sucursal_id, empresa_id) REFERENCES sucursales(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('proforma_items', 'fk_emp_proforma_items_proforma_id', 'FOREIGN KEY (proforma_id, empresa_id) REFERENCES proformas(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('proforma_zonas_danadas', 'fk_emp_proforma_zonas_danadas_proforma_id', 'FOREIGN KEY (proforma_id, empresa_id) REFERENCES proformas(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('cuentas_cobrar', 'fk_emp_cuentas_cobrar_cliente_id', 'FOREIGN KEY (cliente_id, empresa_id) REFERENCES clientes(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('cuentas_cobrar', 'fk_emp_cuentas_cobrar_vehiculo_id', 'FOREIGN KEY (vehiculo_id, empresa_id) REFERENCES vehiculos(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('cuentas_cobrar', 'fk_emp_cuentas_cobrar_proforma_id', 'FOREIGN KEY (proforma_id, empresa_id) REFERENCES proformas(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('cuentas_cobrar', 'fk_emp_cuentas_cobrar_orden_id', 'FOREIGN KEY (orden_id, empresa_id) REFERENCES ordenes_trabajo(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('pagos_cliente', 'fk_emp_pagos_cliente_cuenta_id', 'FOREIGN KEY (cuenta_id, empresa_id) REFERENCES cuentas_cobrar(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('pagos_cliente', 'fk_emp_pagos_cliente_cuenta_dinero_id', 'FOREIGN KEY (cuenta_dinero_id, empresa_id) REFERENCES cuentas_dinero(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('caja_sesiones', 'fk_emp_caja_sesiones_sucursal_id', 'FOREIGN KEY (sucursal_id, empresa_id) REFERENCES sucursales(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('caja_movimientos', 'fk_emp_caja_movimientos_caja_sesion_id', 'FOREIGN KEY (caja_sesion_id, empresa_id) REFERENCES caja_sesiones(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('caja_movimientos', 'fk_emp_caja_movimientos_cuenta_dinero_id', 'FOREIGN KEY (cuenta_dinero_id, empresa_id) REFERENCES cuentas_dinero(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('movimientos_dinero', 'fk_emp_movimientos_dinero_cuenta_dinero_id', 'FOREIGN KEY (cuenta_dinero_id, empresa_id) REFERENCES cuentas_dinero(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('movimientos_dinero', 'fk_emp_movimientos_dinero_caja_sesion_id', 'FOREIGN KEY (caja_sesion_id, empresa_id) REFERENCES caja_sesiones(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('empleados_perfil', 'fk_emp_empleados_perfil_usuario_id', 'FOREIGN KEY (usuario_id, empresa_id) REFERENCES usuarios(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('pagos_empleados', 'fk_emp_pagos_empleados_usuario_id', 'FOREIGN KEY (usuario_id, empresa_id) REFERENCES usuarios(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('pagos_empleados', 'fk_emp_pagos_empleados_cuenta_dinero_id', 'FOREIGN KEY (cuenta_dinero_id, empresa_id) REFERENCES cuentas_dinero(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('usuario_permisos', 'fk_emp_usuario_permisos_usuario_id', 'FOREIGN KEY (usuario_id, empresa_id) REFERENCES usuarios(id, empresa_id)');
+END $$;
+-- RELACIONES_FIN
+
+-- ── 22.6 Rol de la aplicacion y Row Level Security ──
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'ssswap_app') THEN
+        CREATE ROLE ssswap_app NOLOGIN NOSUPERUSER NOBYPASSRLS;
+    END IF;
+    -- El usuario de conexion debe poder hacer SET ROLE ssswap_app (en Supabase
+    -- el usuario postgres no es superusuario).
+    IF NOT EXISTS (SELECT 1 FROM pg_auth_members m JOIN pg_roles r ON r.oid = m.roleid
+                   JOIN pg_roles u ON u.oid = m.member
+                   WHERE r.rolname = 'ssswap_app' AND u.rolname = current_user) THEN
+        EXECUTE format('GRANT ssswap_app TO %I', current_user);
+    END IF;
+END $$;
+
+GRANT USAGE ON SCHEMA public TO ssswap_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO ssswap_app;
+GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO ssswap_app;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO ssswap_app;
+-- Catalogos: solo lectura. Plataforma: sin acceso. empresas: ver/editar la propia.
+REVOKE INSERT, UPDATE, DELETE ON cat_areas_inventario, cat_metodos_pago, cat_tipos_proforma,
+    cat_origenes_movimiento, cat_categorias_dinero, permisos_catalogo FROM ssswap_app;
+REVOKE ALL ON migraciones_registro, accesos_soporte, respaldos_registro, errores_sistema FROM ssswap_app;
+-- empresas: cada empresa solo cambia sus datos comerciales y la autorizacion
+-- de soporte (nunca su estado ni su identificador).
+REVOKE INSERT, UPDATE, DELETE ON empresas FROM ssswap_app;
+GRANT UPDATE (nombre, nombre_comercial, razon_social, ruc, direccion, telefono, email, permite_soporte) ON empresas TO ssswap_app;
+-- La auditoria es de solo insercion tambien para la app.
+REVOKE UPDATE, DELETE ON auditoria_seguridad FROM ssswap_app;
+
+DO $$
+DECLARE
+    t TEXT;
+    tablas TEXT[] := ARRAY['usuarios', 'usuario_permisos', 'auditoria_seguridad', 'sucursales', 'tipos_servicio', 'clientes', 'vehiculos', 'citas', 'ordenes_trabajo', 'ordenes_historial', 'categorias_repuesto', 'repuestos', 'movimientos_inventario', 'solicitudes_producto', 'proformas', 'proforma_items', 'proforma_zonas_danadas', 'cuentas_cobrar', 'pagos_cliente', 'proveedores', 'proveedores_contactos', 'gastos_proveedor', 'compras_proveedor', 'compras_proveedor_items', 'movimientos_financieros_proveedor', 'cuentas_dinero', 'caja_sesiones', 'caja_movimientos', 'movimientos_dinero', 'empleados_perfil', 'pagos_empleados', 'empresa_secuencias'];
+BEGIN
+    FOREACH t IN ARRAY tablas LOOP
+        EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
+        EXECUTE format('DROP POLICY IF EXISTS aislamiento_empresa ON %I', t);
+        EXECUTE format('CREATE POLICY aislamiento_empresa ON %I USING (empresa_id = empresa_actual()) WITH CHECK (empresa_id = empresa_actual())', t);
+    END LOOP;
+    ALTER TABLE empresas ENABLE ROW LEVEL SECURITY;
+    DROP POLICY IF EXISTS empresa_propia ON empresas;
+    CREATE POLICY empresa_propia ON empresas USING (id = empresa_actual()) WITH CHECK (id = empresa_actual());
+    -- Tablas de plataforma: RLS sin politicas = nadie salvo el propietario
+    -- (protege tambien contra el API REST de Supabase).
+    ALTER TABLE migraciones_registro ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE accesos_soporte ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE respaldos_registro ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE errores_sistema ENABLE ROW LEVEL SECURITY;
+END $$;
+
+-- ── 22.7 Vistas: se ejecutan con los permisos de quien consulta (respetan RLS) ──
+ALTER VIEW v_movimientos_inventario_detalle SET (security_invoker = true);
+ALTER VIEW v_cuentas_cobrar_detalle SET (security_invoker = true);
+ALTER VIEW v_flujo_dinero SET (security_invoker = true);
+
+
+
+-- ── 22.10 Validaciones finales y registro ──
+DO $$
+DECLARE
+    t TEXT;
+    tablas TEXT[] := ARRAY['usuarios', 'usuario_permisos', 'auditoria_seguridad', 'sucursales', 'tipos_servicio', 'clientes', 'vehiculos', 'citas', 'ordenes_trabajo', 'ordenes_historial', 'categorias_repuesto', 'repuestos', 'movimientos_inventario', 'solicitudes_producto', 'proformas', 'proforma_items', 'proforma_zonas_danadas', 'cuentas_cobrar', 'pagos_cliente', 'proveedores', 'proveedores_contactos', 'gastos_proveedor', 'compras_proveedor', 'compras_proveedor_items', 'movimientos_financieros_proveedor', 'cuentas_dinero', 'caja_sesiones', 'caja_movimientos', 'movimientos_dinero', 'empleados_perfil', 'pagos_empleados', 'empresa_secuencias'];
+    globales TEXT[] := ARRAY['cat_areas_inventario', 'cat_metodos_pago', 'cat_tipos_proforma', 'cat_origenes_movimiento', 'cat_categorias_dinero', 'permisos_catalogo', 'migraciones_registro', 'accesos_soporte', 'respaldos_registro', 'errores_sistema'];
+    n BIGINT;
+    detalle JSONB := '{}'::jsonb;
+    v_ssswap INTEGER;
+BEGIN
+    SELECT id INTO v_ssswap FROM empresas WHERE slug = 'ss-swap';
+    IF v_ssswap IS NULL THEN RAISE EXCEPTION 'Validacion: no existe la empresa SS SWAP.'; END IF;
+
+    FOREACH t IN ARRAY tablas LOOP
+        -- Ninguna fila sin empresa (salvo superadministradores globales).
+        IF t = 'usuarios' THEN
+            SELECT COUNT(*) INTO n FROM usuarios WHERE empresa_id IS NULL AND rol <> 'superadministrador';
+        ELSIF t = 'auditoria_seguridad' THEN
+            n := 0;
+        ELSE
+            EXECUTE format('SELECT COUNT(*) FROM %I WHERE empresa_id IS NULL', t) INTO n;
+        END IF;
+        IF n > 0 THEN RAISE EXCEPTION 'Validacion: % tiene % fila(s) sin empresa.', t, n; END IF;
+        -- RLS activo.
+        IF NOT (SELECT relrowsecurity FROM pg_class WHERE oid = t::regclass) THEN
+            RAISE EXCEPTION 'Validacion: % no tiene Row Level Security.', t;
+        END IF;
+        EXECUTE format('SELECT COUNT(*) FROM %I WHERE empresa_id = %s', t, v_ssswap) INTO n;
+        detalle := detalle || jsonb_build_object(t, n);
+    END LOOP;
+
+    -- Toda tabla a la que la app puede escribir debe estar aislada o ser
+    -- un catalogo/plataforma conocido: una tabla nueva sin empresa_id falla aqui.
+    FOR t IN
+        SELECT c.relname FROM pg_class c JOIN pg_namespace ns ON ns.oid = c.relnamespace
+        WHERE ns.nspname = 'public' AND c.relkind = 'r'
+          AND has_table_privilege('ssswap_app', c.oid, 'SELECT')
+          AND NOT (c.relname = ANY (tablas)) AND NOT (c.relname = ANY (globales)) AND c.relname <> 'empresas'
+    LOOP
+        RAISE EXCEPTION 'Validacion: la tabla % es accesible para la app pero no esta clasificada (empresa o global).', t;
+    END LOOP;
+
+    INSERT INTO migraciones_registro (version, descripcion, resultado, detalle)
+    SELECT '22-multiempresa', 'Plataforma multiempresa: SS SWAP como primera empresa, RLS y llaves compuestas', 'exito',
+           jsonb_build_object('empresa_ss_swap', v_ssswap, 'filas_ss_swap', detalle)
+    WHERE NOT EXISTS (SELECT 1 FROM migraciones_registro WHERE version = '22-multiempresa' AND resultado = 'exito');
+END $$;

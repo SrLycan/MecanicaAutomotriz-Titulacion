@@ -10,8 +10,10 @@
  * requierePermiso() en su router.
  *
  * Roles:
- *  - superadministrador: acceso total implícito (no necesita filas). Solo se
- *    concede desde el script de servidor `npm run superadmin`.
+ *  - superadministrador: administra la PLATAFORMA (empresas, respaldos,
+ *    auditoría global). Dentro de su empresa propia (si tiene una) o de una
+ *    empresa a la que entró con un acceso de soporte autorizado tiene acceso
+ *    total implícito. Solo se concede con el script `npm run superadmin`.
  *  - administrador, tecnico, recepcionista, interno: el acceso real lo dan las
  *    filas de `usuario_permisos`. El rol queda como etiqueta y como plantilla
  *    de permisos sugeridos al crear la cuenta.
@@ -92,11 +94,15 @@ const MODULOS = [
       descripcion: 'Historial de órdenes y conversaciones del chatbot.',
       acciones: [A.ver] },
 
-    // ── Exclusivos del superadministrador (no se pueden delegar) ──
-    { codigo: 'usuarios', nombre: 'Gestión de usuarios y permisos', grupo: 'Seguridad', soloSuperadmin: true,
-      acciones: [A.ver, A.crear, A.editar] },
-    { codigo: 'auditoria', nombre: 'Auditoría de seguridad', grupo: 'Seguridad', soloSuperadmin: true,
-      acciones: [A.ver] },
+    // ── Administración de la empresa ──
+    // Quien gestiona usuarios solo puede conceder permisos que él mismo tiene.
+    { codigo: 'usuarios', nombre: 'Usuarios y permisos de la empresa', grupo: 'Empresa',
+      descripcion: 'Solo puede conceder los permisos que la propia persona tiene.',
+      acciones: [A.ver, A.crear, acc('editar', 'Editar, activar/desactivar, permisos y restablecer acceso'), A.eliminar] },
+    { codigo: 'auditoria', nombre: 'Auditoría de la empresa', grupo: 'Empresa', acciones: [A.ver] },
+    { codigo: 'empresa', nombre: 'Configuración de la empresa', grupo: 'Empresa',
+      descripcion: 'Datos comerciales que aparecen en proformas, PDF y Excel.',
+      acciones: [A.ver, A.editar] },
 ];
 
 const MAPA = new Map(MODULOS.map(m => [m.codigo, m]));
@@ -145,6 +151,10 @@ const PLANTILLAS = {
         ...p('servicios', 'ver', 'crear', 'editar', 'eliminar'),
         ...p('sucursales', 'ver', 'crear', 'editar', 'eliminar'),
         ...p('bitacora', 'ver'),
+        // Sprint 22: el administrador de cada mecánica gestiona su personal.
+        ...p('usuarios', 'ver', 'crear', 'editar', 'eliminar'),
+        ...p('auditoria', 'ver'),
+        ...p('empresa', 'ver', 'editar'),
     ],
     recepcionista: [
         ...p('dashboard', 'ver'),

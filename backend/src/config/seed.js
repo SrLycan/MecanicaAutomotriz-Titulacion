@@ -27,6 +27,11 @@ async function seed() {
         await client.query(mig);
         console.log('[OK] Migraciones ejecutadas');
 
+        // Multiempresa: los datos de ejemplo son de SS SWAP. La sesion de este
+        // cliente queda en esa empresa (las columnas empresa_id toman su valor).
+        const { rows: emp } = await client.query("SELECT id FROM empresas WHERE slug = 'ss-swap'");
+        await client.query("SELECT set_config('app.empresa_id', $1, false)", [String(emp[0].id)]);
+
         // ── 3. Sucursales demo ──────────────────────────────
         const sucursales = [
             {
@@ -111,7 +116,7 @@ async function seed() {
             await client.query(
                 `INSERT INTO repuestos (codigo, nombre, descripcion, categoria_id, precio_compra, precio_venta, stock_actual, stock_minimo, unidad_medida)
                  VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-                 ON CONFLICT (codigo) DO NOTHING`,
+                 ON CONFLICT (empresa_id, codigo) DO NOTHING`,
                 [r.codigo, r.nombre, r.descripcion, r.categoria_id, r.precio_compra, r.precio_venta, r.stock_actual, r.stock_minimo, r.unidad_medida]
             );
         }
@@ -130,7 +135,7 @@ async function seed() {
             await client.query(
                 `INSERT INTO clientes (nombre, email, telefono, cedula, direccion)
                  VALUES ($1, $2, $3, $4, $5)
-                 ON CONFLICT (cedula) DO NOTHING`,
+                 ON CONFLICT (empresa_id, cedula) DO NOTHING`,
                 [c.nombre, c.email, c.telefono, c.cedula, c.direccion]
             );
         }

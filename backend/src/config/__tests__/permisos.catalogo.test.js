@@ -13,15 +13,28 @@ const P = require('../permisos');
 const { filasCatalogo, filasPlantillas } = require('../permisosSql');
 
 const migracion = fs.readFileSync(path.join(__dirname, '..', 'migrations.sql'), 'utf-8').replace(/\r\n/g, '\n');
-const entre = (inicio, fin) => migracion.slice(migracion.indexOf(inicio), migracion.indexOf(fin));
+/** Todos los bloques entre las marcas (el catalogo aparece en el Sprint 21 y en el 22). */
+function bloques(inicio, fin) {
+    const out = [];
+    let i = migracion.indexOf(inicio);
+    while (i >= 0) {
+        out.push(migracion.slice(i, migracion.indexOf(fin, i)));
+        i = migracion.indexOf(inicio, i + 1);
+    }
+    return out;
+}
 
 describe('config/permisos — catalogo de modulos y acciones', () => {
-    test('la migracion contiene exactamente el catalogo generado desde permisos.js', () => {
-        expect(entre('-- CATALOGO_INICIO', '-- CATALOGO_FIN')).toContain(filasCatalogo());
+    test('cada bloque de catalogo de la migracion es exactamente el generado desde permisos.js', () => {
+        const lista = bloques('-- CATALOGO_INICIO', '-- CATALOGO_FIN');
+        expect(lista.length).toBeGreaterThanOrEqual(2);
+        lista.forEach(b => expect(b).toContain(filasCatalogo()));
     });
 
     test('la migracion contiene exactamente las plantillas generadas desde permisos.js', () => {
-        expect(entre('-- PLANTILLAS_INICIO', '-- PLANTILLAS_FIN')).toContain(filasPlantillas());
+        const lista = bloques('-- PLANTILLAS_INICIO', '-- PLANTILLAS_FIN');
+        expect(lista.length).toBe(1);
+        expect(lista[0]).toContain(filasPlantillas());
     });
 
     test('no hay modulos ni acciones repetidos', () => {
@@ -42,10 +55,15 @@ describe('config/permisos — catalogo de modulos y acciones', () => {
         }
     });
 
-    test('usuarios y auditoria son exclusivos del superadministrador', () => {
-        expect(P.esAsignable('usuarios', 'ver')).toBe(false);
-        expect(P.esAsignable('auditoria', 'ver')).toBe(false);
-        expect(P.todosAsignables().some(p => p.startsWith('usuarios:') || p.startsWith('auditoria:'))).toBe(false);
+    test('Sprint 22: usuarios, auditoria y configuracion de empresa se delegan al administrador de cada empresa', () => {
+        expect(P.esAsignable('usuarios', 'editar')).toBe(true);
+        expect(P.esAsignable('auditoria', 'ver')).toBe(true);
+        expect(P.esAsignable('empresa', 'editar')).toBe(true);
+        expect(P.PLANTILLAS.administrador).toEqual(expect.arrayContaining(['usuarios:ver', 'usuarios:editar', 'auditoria:ver', 'empresa:editar']));
+        // Ni recepcion ni tecnicos los reciben por plantilla.
+        expect(P.PLANTILLAS.recepcionista.some(p => p.startsWith('usuarios:'))).toBe(false);
+        // La plataforma no es un permiso asignable.
+        expect(P.todosAsignables().some(p => p.startsWith('plataforma:'))).toBe(false);
     });
 
     test('el rol superadministrador no es asignable desde el panel', () => {
