@@ -16,10 +16,13 @@
 
 const jwt = require('jsonwebtoken');
 
-// BD simulada: mockFila = lo que devuelve "SELECT ... FROM usuarios WHERE id".
+// BD simulada: mockFila = lo que devuelve "SELECT ... FROM usuarios u LEFT JOIN empresas".
+// mockSoporte = acceso de soporte vigente (o null).
 let mockFila = null;
+let mockSoporte = null;
 const mockQuery = jest.fn(async (sql) => {
-    if (/FROM usuarios u WHERE u\.id/.test(sql)) return { rows: mockFila ? [mockFila] : [] };
+    if (/FROM usuarios u LEFT JOIN empresas/.test(sql)) return { rows: mockFila ? [mockFila] : [] };
+    if (/FROM accesos_soporte/.test(sql)) return { rows: mockSoporte ? [mockSoporte] : [] };
     return { rows: [] }; // INSERT de auditoria, etc.
 });
 jest.mock('../../config/db', () => ({ query: (...a) => mockQuery(...a) }));
@@ -31,7 +34,8 @@ const SECRETO = 'secreto-de-prueba-para-tests';
 // Usuario tipico como lo emite el login del backend (payload del JWT).
 const USUARIO_BASE = { id: 7, nombre: 'Ana Perez', email: 'ana@test.com', rol: 'cliente' };
 // Fila de la BD correspondiente (cuenta activa, sin sesiones revocadas).
-const FILA_BASE = { ...USUARIO_BASE, activo: true, estado: 'activo', token_version: 0, permisos: [] };
+const FILA_BASE = { ...USUARIO_BASE, activo: true, estado: 'activo', token_version: 0, permisos: [],
+    empresa_id: 1, empresa_nombre: 'SS SWAP', empresa_slug: 'ss-swap', empresa_estado: 'activa' };
 
 beforeAll(() => {
     // El middleware lee process.env.JWT_SECRET en cada verificacion.
@@ -41,6 +45,7 @@ beforeAll(() => {
 
 beforeEach(() => {
     mockFila = { ...FILA_BASE };
+    mockSoporte = null;
     mockQuery.mockClear();
 });
 
@@ -198,6 +203,56 @@ describe('verificarToken — validación del Bearer token y de la cuenta', () =>
         expect(next).toHaveBeenCalled();
         expect(req.usuario.permisos).toEqual([]);
     });
+
+    test('Sprint 22: la empresa de la peticion sale de la cuenta, no del navegador', async () => {
+        const token = jwt.sign({ ...USUARIO_BASE, empresa_id: 99 }, SECRETO, { expiresIn: '1h' });
+        mockFila = { ...FILA_BASE, rol: 'interno', empresa_id: 7, empresa_nombre: 'Otra' };
+        const { req, res, next } = mockReqRes({ authorization: `Bearer ${token}`, 'x-empresa-id': '99' });
+        req.query = { empresa_id: '99' };
+
+        await verificarToken(req, res, next);
+
+        expect(next).toHaveBeenCalled();
+        expect(req.usuario.empresa_id).toBe(7);
+    });
+
+    test('Sprint 22: si la empresa esta suspendida, la sesion deja de valer', async () => {
+        const token = jwt.sign(USUARIO_BASE, SECRETO, { expiresIn: '1h' });
+        mockFila = { ...FILA_BASE, rol: 'administrador', empresa_estado: 'suspendida' };
+        const { req, res, next } = mockReqRes({ authorization: `Bearer ${token}` });
+
+        await verificarToken(req, res, next);
+
+        expect(res.statusCode).toBe(401);
+        expect(res.body.codigo).toBe('EMPRESA_INACTIVA');
+        expect(next).not.toHaveBeenCalled();
+    });
+
+    test('Sprint 22: un usuario que no es superadministrador no puede pedir modo soporte', async () => {
+        const token = jwt.sign(USUARIO_BASE, SECRETO, { expiresIn: '1h' });
+        mockFila = { ...FILA_BASE, rol: 'administrador' };
+        const { req, res, next } = mockReqRes({ authorization: `Bearer ${token}`, 'x-soporte-empresa': '2' });
+
+        await verificarToken(req, res, next);
+
+        expect(res.statusCode).toBe(403);
+        expect(next).not.toHaveBeenCalled();
+    });
+
+    test('Sprint 22: el superadministrador solo entra a otra empresa con un acceso de soporte vigente', async () => {
+        const token = jwt.sign({ ...USUARIO_BASE, rol: 'superadministrador' }, SECRETO, { expiresIn: '1h' });
+        mockFila = { ...FILA_BASE, rol: 'superadministrador', empresa_id: null, empresa_estado: null };
+        let x = mockReqRes({ authorization: `Bearer ${token}`, 'x-soporte-empresa': '2' });
+        await verificarToken(x.req, x.res, x.next);
+        expect(x.res.statusCode).toBe(403); // sin acceso vigente
+
+        mockSoporte = { id: 5, empresa_id: 2, modo: 'lectura', expira: new Date(Date.now() + 3600e3), motivo: 'Revisar inventario reportado', empresa_nombre: 'Taller 2', empresa_slug: 'taller-2' };
+        x = mockReqRes({ authorization: `Bearer ${token}`, 'x-soporte-empresa': '2' });
+        await verificarToken(x.req, x.res, x.next);
+        expect(x.next).toHaveBeenCalled();
+        expect(x.req.usuario.empresa_id).toBe(2);
+        expect(x.req.usuario.soporte).toMatchObject({ id: 5, modo: 'lectura' });
+    });
 });
 
 // ── Capa 2: verificarRol ────────────────────────────────────────────────────
@@ -289,10 +344,26 @@ describe('requierePermiso / requiereAlguno / soloSuperadmin', () => {
 
     const conUsuario = (usuario) => { const x = mockReqRes(); x.req.usuario = usuario; return x; };
 
-    test('el superadministrador pasa cualquier permiso sin tener filas', () => {
-        const { req, res, next } = conUsuario({ id: 1, rol: 'superadministrador', permisos: [] });
+    test('el superadministrador pasa cualquier permiso DENTRO de una empresa', () => {
+        const { req, res, next } = conUsuario({ id: 1, rol: 'superadministrador', empresa_id: 1, permisos: [] });
         auth.requierePermiso('finanzas', 'eliminar')(req, res, next);
         expect(next).toHaveBeenCalled();
+    });
+
+    test('Sprint 22: el superadministrador sin empresa no tiene permisos de empresa', () => {
+        const { req, res, next } = conUsuario({ id: 1, rol: 'superadministrador', empresa_id: null, permisos: [] });
+        auth.requierePermiso('clientes', 'ver')(req, res, next);
+        expect(res.statusCode).toBe(403);
+    });
+
+    test('Sprint 22: en soporte de solo lectura solo puede "ver"', () => {
+        const usuario = { id: 1, rol: 'superadministrador', empresa_id: 2, soporte: { id: 5, modo: 'lectura' }, permisos: [] };
+        let x = conUsuario(usuario);
+        auth.requierePermiso('clientes', 'ver')(x.req, x.res, x.next);
+        expect(x.next).toHaveBeenCalled();
+        x = conUsuario(usuario);
+        auth.requierePermiso('clientes', 'eliminar')(x.req, x.res, x.next);
+        expect(x.res.statusCode).toBe(403);
     });
 
     test('un usuario con el permiso exacto pasa; con otra accion del mismo modulo no', () => {

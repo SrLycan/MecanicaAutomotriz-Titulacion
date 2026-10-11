@@ -33,9 +33,11 @@ function mockRes() {
     res.json = (b) => { res.body = b; return res; };
     return res;
 }
+let EMPRESA;
 async function call(fn, { params = {}, body = {}, query = {}, usuario }) {
     const res = mockRes();
-    await fn({ params, body, query, usuario }, res);
+    const { conEmpresa } = require('../config/contexto');
+    await conEmpresa(EMPRESA, () => fn({ params, body, query, usuario: usuario && { ...usuario, empresa_id: EMPRESA } }, res));
     return res;
 }
 
@@ -43,7 +45,10 @@ d('Sprint 14 - integracion con PostgreSQL', () => {
     let admin, tecnico, cliente, vehiculo, rep = {};
 
     beforeAll(async () => {
-        pool = require('../config/db');
+        // Sprint 22: todo corre dentro de SS SWAP, como una peticion real.
+        const emp = require('../test-utils/empresaPrueba');
+        EMPRESA = await emp.idEmpresa('ss-swap');
+        pool = emp.poolEnEmpresa(() => EMPRESA);
         proformas = require('../controllers/proformas.controller');
         inventario = require('../controllers/inventory.controller');
         cuentas = require('../controllers/cuentasCobrar.controller');

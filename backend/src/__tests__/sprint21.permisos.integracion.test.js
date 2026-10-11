@@ -62,6 +62,8 @@ d('Sprint 21 - superadministrador y permisos personalizados (HTTP)', () => {
 
     beforeAll(async () => {
         pool = require('../config/db');
+        // Sprint 22: los datos de prueba son de SS SWAP (empresa de la web publica).
+        ids.empresa = await require('../test-utils/empresaPrueba').idEmpresa('ss-swap');
         // Limpieza de una corrida anterior interrumpida.
         await limpiar();
 
@@ -69,6 +71,9 @@ d('Sprint 21 - superadministrador y permisos personalizados (HTTP)', () => {
         const app = express();
         app.set('trust proxy', 1);
         app.use(express.json());
+        // Igual que server.js: contexto de empresa publica + registro de errores.
+        const { contextoPublico, registrarErrores } = require('../middleware/empresa.middleware');
+        app.use('/api', registrarErrores, contextoPublico);
         const rutas = ['auth', 'inventory', 'users', 'sucursales', 'ordenes', 'servicios', 'panel', 'citas', 'solicitudes',
             'proveedores', 'estadisticas', 'proformas', 'catalogos', 'caja', 'finanzas', 'dashboard', 'chatbot'];
         const montaje = { cuentasCobrar: 'cuentas-cobrar' };
@@ -85,9 +90,9 @@ d('Sprint 21 - superadministrador y permisos personalizados (HTTP)', () => {
             await client.query('BEGIN');
             await client.query(`SELECT set_config('ssswap.gestion_superadmin', 'on', true)`);
             const { rows } = await client.query(
-                `INSERT INTO usuarios (nombre, email, password, rol, permisos_inicializados)
-                 VALUES ('TEST21 Super', 'test21-super@x.test', $1, 'superadministrador', TRUE) RETURNING id`,
-                [await bcrypt.hash(PASS, 10)]);
+                `INSERT INTO usuarios (nombre, email, password, rol, permisos_inicializados, empresa_id)
+                 VALUES ('TEST21 Super', 'test21-super@x.test', $1, 'superadministrador', TRUE, $2) RETURNING id`,
+                [await bcrypt.hash(PASS, 10), ids.empresa]);
             ids.superId = rows[0].id;
             await client.query('COMMIT');
         } finally { client.release(); }
@@ -95,18 +100,18 @@ d('Sprint 21 - superadministrador y permisos personalizados (HTTP)', () => {
 
         // Datos: un repuesto por area, un cliente y una proforma de cada tipo.
         const rep = await pool.query(
-            `INSERT INTO repuestos (codigo, nombre, area, stock_actual, stock_minimo) VALUES
-               ('TEST21-MEC', 'TEST21 Filtro mecanica', 'mecanica', 10, 1),
-               ('TEST21-COL', 'TEST21 Pintura colisiones', 'colisiones', 10, 1) RETURNING id, area`);
+            `INSERT INTO repuestos (codigo, nombre, area, stock_actual, stock_minimo, empresa_id) VALUES
+               ('TEST21-MEC', 'TEST21 Filtro mecanica', 'mecanica', 10, 1, $1),
+               ('TEST21-COL', 'TEST21 Pintura colisiones', 'colisiones', 10, 1, $1) RETURNING id, area`, [ids.empresa]);
         ids.repuestos = rep.rows.map(r => r.id);
         ids.repMec = rep.rows.find(r => r.area === 'mecanica').id;
         ids.repCol = rep.rows.find(r => r.area === 'colisiones').id;
-        const cli = await pool.query(`INSERT INTO clientes (nombre, email) VALUES ('TEST21 Cliente', 'test21-cli@x.test') RETURNING id`);
+        const cli = await pool.query(`INSERT INTO clientes (nombre, email, empresa_id) VALUES ('TEST21 Cliente', 'test21-cli@x.test', $1) RETURNING id`, [ids.empresa]);
         ids.clientes.push(cli.rows[0].id);
         const pf = await pool.query(
-            `INSERT INTO proformas (numero, tipo, usuario_id, cliente_nombre) VALUES
-               ('TEST21-PM', 'mecanica', $1, 'TEST21 Cliente'), ('TEST21-PC', 'pintura', $1, 'TEST21 Cliente') RETURNING id, tipo`,
-            [ids.superId]);
+            `INSERT INTO proformas (numero, tipo, usuario_id, cliente_nombre, empresa_id) VALUES
+               ('TEST21-PM', 'mecanica', $1, 'TEST21 Cliente', $2), ('TEST21-PC', 'pintura', $1, 'TEST21 Cliente', $2) RETURNING id, tipo`,
+            [ids.superId, ids.empresa]);
         ids.proformas = pf.rows.map(r => r.id);
         ids.profMec = pf.rows.find(r => r.tipo === 'mecanica').id;
         ids.profCol = pf.rows.find(r => r.tipo === 'pintura').id;
@@ -175,7 +180,8 @@ d('Sprint 21 - superadministrador y permisos personalizados (HTTP)', () => {
 
         test('rechaza permisos inexistentes o exclusivos del superadministrador', async () => {
             const u = await crearUsuario('a2', 'interno', []);
-            for (const p of ['usuarios:ver', 'auditoria:ver', 'finanzas:volar', 'xx']) {
+            // Sprint 22: usuarios/auditoria ya se delegan; la plataforma no existe como permiso.
+            for (const p of ['plataforma:ver', 'finanzas:volar', 'xx']) {
                 const r = await api('PUT', `/users/${u.id}/permisos`, { token: tokenSuper, body: { permisos: [p] } });
                 expect({ p, status: r.status }).toEqual({ p, status: 400 });
             }
@@ -377,11 +383,27 @@ d('Sprint 21 - superadministrador y permisos personalizados (HTTP)', () => {
             expect((await api('POST', '/users', { token: tokenSuper, body: { nombre: 'x', email: 'test21-x@x.test', password: PASS, rol: 'superadministrador' } })).status).toBe(400);
         });
 
-        test('un administrador comun no puede tocar usuarios ni darse permisos', async () => {
+        test('un administrador de empresa gestiona su personal pero no se da mas poder', async () => {
             const { PLANTILLAS } = require('../config/permisos');
-            const adm = await crearUsuario('f2', 'administrador', PLANTILLAS.administrador);
-            expect((await api('PUT', `/users/${adm.id}/permisos`, { token: adm.token, body: { permisos: ['finanzas:ver'] } })).status).toBe(403);
-            expect((await api('PUT', `/users/${adm.id}/rol`, { token: adm.token, body: { rol: 'administrador' } })).status).toBe(403);
+            // Administrador sin permisos de finanzas.
+            const adm = await crearUsuario('f2', 'administrador', PLANTILLAS.administrador.filter(p => !p.startsWith('finanzas:')));
+            // No puede modificarse a si mismo (rol ni permisos).
+            expect((await api('PUT', `/users/${adm.id}/permisos`, { token: adm.token, body: { permisos: ['finanzas:ver'] } })).status).toBe(400);
+            expect((await api('PUT', `/users/${adm.id}/rol`, { token: adm.token, body: { rol: 'administrador' } })).status).toBe(400);
+            // Crea una cuenta y le pide finanzas: no puede conceder lo que no tiene.
+            const r = await api('POST', '/users', { token: adm.token, body: {
+                nombre: 'TEST21 Hecho por admin', email: 'test21-hecho@x.test', password: PASS, rol: 'interno',
+                permisos: ['clientes:ver', 'finanzas:ver'] } });
+            expect(r.status).toBe(201);
+            ids.usuarios.push(r.body.usuario.id);
+            expect(r.body.permisos).toEqual(['clientes:ver']);
+            expect(r.body.permisos_no_concedidos).toEqual(['finanzas:ver']);
+            // Tampoco puede quitarle a otro un permiso que el no tiene.
+            await api('PUT', `/users/${r.body.usuario.id}/permisos`, { token: tokenSuper, body: { permisos: ['clientes:ver', 'finanzas:ver'] } });
+            const q = await api('PUT', `/users/${r.body.usuario.id}/permisos`, { token: adm.token, body: { permisos: [] } });
+            expect(q.body.permisos).toEqual(['finanzas:ver']);
+            // Y nunca toca al superadministrador.
+            expect((await api('PUT', `/users/${ids.superId}/estado`, { token: adm.token, body: { estado: 'bloqueado' } })).status).toBe(403);
         });
 
         test('nadie modifica ni desactiva a un superadministrador desde la API', async () => {
@@ -390,7 +412,7 @@ d('Sprint 21 - superadministrador y permisos personalizados (HTTP)', () => {
             try {
                 await otro.query('BEGIN');
                 await otro.query(`SELECT set_config('ssswap.gestion_superadmin', 'on', true)`);
-                otroId = (await otro.query(`INSERT INTO usuarios (nombre, email, password, rol) VALUES ('TEST21 Super2', 'test21-super2@x.test', 'x', 'superadministrador') RETURNING id`)).rows[0].id;
+                otroId = (await otro.query(`INSERT INTO usuarios (nombre, email, password, rol, empresa_id) VALUES ('TEST21 Super2', 'test21-super2@x.test', 'x', 'superadministrador', $1) RETURNING id`, [ids.empresa])).rows[0].id;
                 await otro.query('COMMIT');
             } finally { otro.release(); }
             expect((await api('PUT', `/users/${otroId}/estado`, { token: tokenSuper, body: { estado: 'bloqueado' } })).status).toBe(403);

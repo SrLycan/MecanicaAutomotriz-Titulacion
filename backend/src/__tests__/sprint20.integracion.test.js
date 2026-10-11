@@ -23,9 +23,11 @@ function mockRes() {
     res.json = (b) => { res.body = b; return res; };
     return res;
 }
+let EMPRESA;
 async function call(fn, { params = {}, body = {}, query = {}, usuario }) {
     const res = mockRes();
-    await fn({ params, body, query, usuario }, res);
+    const { conEmpresa } = require('../config/contexto');
+    await conEmpresa(EMPRESA, () => fn({ params, body, query, usuario: usuario && { ...usuario, empresa_id: EMPRESA } }, res));
     return res;
 }
 
@@ -44,7 +46,10 @@ d('Sprint 20 - pagares, anticipos, alertas, codigos y PDF', () => {
     let admin, cliente, vehiculo;
 
     beforeAll(async () => {
-        pool = require('../config/db');
+        // Sprint 22: todo corre dentro de SS SWAP, como una peticion real.
+        const emp = require('../test-utils/empresaPrueba');
+        EMPRESA = await emp.idEmpresa('ss-swap');
+        pool = emp.poolEnEmpresa(() => EMPRESA);
         proformas = require('../controllers/proformas.controller');
         cuentas = require('../controllers/cuentasCobrar.controller');
         inventario = require('../controllers/inventory.controller');
@@ -198,8 +203,11 @@ d('Sprint 20 - pagares, anticipos, alertas, codigos y PDF', () => {
         const path = require('path');
         const sql = fs.readFileSync(path.join(__dirname, '../config/migrations.sql'), 'utf8');
         const bloque = sql.slice(sql.indexOf('-- Sprint 20:'));
-        await pool.query(bloque);
-        await pool.query(bloque);   // idempotente: una segunda corrida no cambia nada
+        // Las migraciones las corre el usuario propietario (el rol de la app no
+        // puede cambiar la estructura de las tablas): db sin contexto de empresa.
+        const propietario = require('../config/db');
+        await propietario.query(bloque);
+        await propietario.query(bloque);   // idempotente: una segunda corrida no cambia nada
 
         const c = await detalle(vieja.id);
         expect(c).toMatchObject({ total: 1000, pagado: 700, saldo: 300, anticipo_requerido: 700, estado: 'parcial' });
@@ -255,7 +263,7 @@ d('Sprint 20 - pagares, anticipos, alertas, codigos y PDF', () => {
             const ws = new Writable({ write(c, _e, cb) { chunks.push(c); cb(); } });
             ws.on('finish', ok);
             Object.assign(ws, { setHeader() {}, status: resMec.status, json: resMec.json, headersSent: false });
-            exportar.descargarPdf({ params: { id: pm.id } }, ws);
+            require('../config/contexto').conEmpresa(EMPRESA, () => exportar.descargarPdf({ params: { id: pm.id } }, ws));
         });
         const mec = pymupdf(Buffer.concat(chunks));
         expect(mec.paginas).toBeGreaterThan(1);
