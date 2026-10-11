@@ -30,6 +30,9 @@ const dashboardRoutes = require('./routes/dashboard.routes');
 const plataformaRoutes = require('./routes/plataforma.routes');
 const empresaRoutes = require('./routes/empresa.routes');
 const { contextoPublico, registrarErrores } = require('./middleware/empresa.middleware');
+const { protegerControladoresAsync, cabecerasSeguridad } = require('./middleware/seguridad.middleware');
+// Antes de montar cualquier ruta: un error en un controlador async ya no cierra el proceso.
+protegerControladoresAsync();
 const { iniciarRespaldoAutomatico } = require('./services/respaldo.service');
 // Nota: ya NO se requiere './config/initDb' aqui a proposito. El esquema y
 // las migraciones de Postgres se corrieron manualmente contra Supabase
@@ -50,6 +53,8 @@ const PORT = process.env.PORT || 5000;
 // del proxy — rompe el rate-limit por IP del chatbot y el registro de IP
 // en las conversaciones de MongoDB. En local no afecta nada.
 app.set('trust proxy', 1);
+app.disable('x-powered-by');
+app.use(cabecerasSeguridad);
 
 // ── Middlewares globales ─────────────────────────────────────
 // CORS_ORIGIN admite una o varias URLs separadas por coma, por si el
@@ -137,8 +142,18 @@ app.use((_req, res) => res.status(404).json({ error: 'Ruta no encontrada.' }));
 
 // Error global
 app.use((err, _req, res, _next) => {
-    console.error(err.stack);
+    // JSON mal formado o demasiado grande: es un error del cliente, no del servidor.
+    if (err && (err.type === 'entity.parse.failed' || err.type === 'entity.too.large')) {
+        return res.status(err.status || 400).json({ error: 'Solicitud invalida.' });
+    }
+    console.error(err && err.stack ? err.stack : err);
+    if (res.headersSent) return;
     res.status(500).json({ error: 'Error interno del servidor.' });
+});
+
+// Ultima red: un error asincrono suelto se registra en vez de cerrar el servidor.
+process.on('unhandledRejection', (razon) => {
+    console.error('[proceso] Promesa rechazada sin manejar:', razon && razon.stack ? razon.stack : razon);
 });
 
 // ── Conexion "caliente" a Postgres ─────────────────────────────

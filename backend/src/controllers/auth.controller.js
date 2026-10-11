@@ -71,8 +71,10 @@ const PASSWORD_MAX_LEN = 72;
  * suspendida o bloqueada y que el panel solicitado corresponda al rol.
  */
 const login = async (req, res) => {
-    const { email, password, panel } = req.body;
+    const { email, password, panel } = req.body || {};
 
+    if (typeof email !== 'string' || typeof password !== 'string')
+        return res.status(400).json({ error: 'Email y contrasena son requeridos.' });
     if (!email || !password)
         return res.status(400).json({ error: 'Email y contrasena son requeridos.' });
 
@@ -162,8 +164,11 @@ const login = async (req, res) => {
  * para habilitar historial, citas y tienda.
  */
 const register = async (req, res) => {
-    const { nombre, email, password, telefono, cedula } = req.body;
+    const { nombre, email, password, telefono, cedula } = req.body || {};
 
+    if ([nombre, email, password].some(v => typeof v !== 'string')
+        || [telefono, cedula].some(v => v !== undefined && v !== null && typeof v !== 'string' && typeof v !== 'number'))
+        return res.status(400).json({ error: 'Nombre, email y contrasena son requeridos.' });
     if (!nombre || !email || !password)
         return res.status(400).json({ error: 'Nombre, email y contrasena son requeridos.' });
 
@@ -210,9 +215,21 @@ const register = async (req, res) => {
         // Vincula (o crea) el registro de "clientes" en la MISMA transaccion que el
         // usuario: si esta insercion falla, la de arriba tambien se revierte, para
         // que nunca quede una cuenta creada sin cliente vinculado (bloqueaba agendar).
+        // El correo NO se verifica, y el portal muestra las ordenes, vehiculos y
+        // pagos del cliente con ese correo. Si ya es cliente del taller, solo se
+        // vincula si tambien da su cedula registrada; si no, cualquiera podria
+        // registrarse con el correo de otra persona y ver sus datos.
         const { rows: cliExiste } = await client.query(
-            'SELECT id FROM clientes WHERE LOWER(email) = $1', [emailNorm]
+            'SELECT id, cedula FROM clientes WHERE LOWER(email) = $1', [emailNorm]
         );
+        const soloDigitos = (v) => String(v || '').replace(/\D/g, '');
+        if (cliExiste.length > 0
+            && !cliExiste.some(c => soloDigitos(c.cedula) && soloDigitos(c.cedula) === soloDigitos(cedula))) {
+            await client.query('ROLLBACK');
+            return res.status(409).json({
+                error: 'Ese correo ya esta registrado en el taller. Escribe la cedula con la que te registraron, o comunicate con el taller.',
+            });
+        }
         if (cliExiste.length === 0) {
             await client.query(
                 `INSERT INTO clientes (nombre, email, telefono, cedula)

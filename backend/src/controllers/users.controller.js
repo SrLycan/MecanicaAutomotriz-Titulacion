@@ -649,6 +649,16 @@ const actualizarMiPerfil = async (req, res) => {
         );
         if (existeEmail.length > 0) return res.status(409).json({ error: 'Ya existe otro usuario con ese correo.' });
 
+        // El portal vincula la cuenta con el cliente del taller POR CORREO: tomar
+        // el correo de otro cliente (que aun no tiene cuenta) daria acceso a sus
+        // ordenes, vehiculos y pagos.
+        if (emailNuevo !== emailActual) {
+            const { rows: esDeOtroCliente } = await pool.query(
+                'SELECT 1 FROM clientes WHERE LOWER(email) = $1 LIMIT 1', [emailNuevo]
+            );
+            if (esDeOtroCliente.length > 0) return res.status(409).json({ error: 'Ese correo pertenece a otro cliente del taller.' });
+        }
+
         // clientes.cedula tiene restriccion UNIQUE: se valida antes de escribir para
         // no dejar "usuarios" actualizado mientras la sincronizacion con "clientes" falla.
         if (cedulaLimpia) {

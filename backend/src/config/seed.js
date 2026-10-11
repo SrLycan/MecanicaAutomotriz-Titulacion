@@ -10,6 +10,12 @@ const fs     = require('fs');
 const path   = require('path');
 
 async function seed() {
+    // Las cuentas demo tienen contrasenas conocidas (estan en el repositorio
+    // publico): jamas deben crearse en una base real.
+    if (process.env.NODE_ENV === 'production' || process.env.PERMITIR_SEED !== 'true') {
+        console.error('Seed bloqueado: crea cuentas demo con contrasenas publicas. Solo para una BD de desarrollo vacia: PERMITIR_SEED=true npm run seed');
+        process.exit(1);
+    }
     const client = await pool.connect();
     try {
         console.log('\n⚙️ SS SWAP - Inicializando base de datos...\n');
