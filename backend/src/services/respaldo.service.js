@@ -283,7 +283,9 @@ async function cargarJson(cliente, archivo) {
 function empaquetarUploads(destino) {
     const uploads = path.join(RAIZ_BACKEND, 'uploads');
     if (!fs.existsSync(uploads)) return { incluido: false, motivo: 'no existe la carpeta uploads' };
-    const r = spawnSync('tar', ['-czf', destino, '-C', RAIZ_BACKEND, 'uploads'], { encoding: 'utf8', timeout: 5 * 60 * 1000, windowsHide: true });
+    // Rutas RELATIVAS: el tar de Git para Windows confunde 'C:' con un servidor remoto.
+    const r = spawnSync('tar', ['-czf', path.relative(RAIZ_BACKEND, destino), 'uploads'],
+        { cwd: RAIZ_BACKEND, encoding: 'utf8', timeout: 5 * 60 * 1000, windowsHide: true });
     if (r.status !== 0) return { incluido: false, motivo: `tar no disponible o fallo: ${(r.stderr || r.error?.message || '').slice(0, 200)}` };
     return { incluido: true };
 }
@@ -488,9 +490,9 @@ async function verificar(con, destino, manifiesto) {
         // Relaciones: ningun hijo apunta a un padre inexistente (todas las FK).
         const { rows: fks } = await cliente.query(
             `SELECT conrelid::regclass::text AS hija, confrelid::regclass::text AS padre,
-                    (SELECT array_agg(a.attname ORDER BY k.n) FROM unnest(conkey) WITH ORDINALITY k(col, n)
+                    (SELECT array_agg(a.attname::text ORDER BY k.n) FROM unnest(conkey) WITH ORDINALITY k(col, n)
                        JOIN pg_attribute a ON a.attrelid = conrelid AND a.attnum = k.col) AS cols,
-                    (SELECT array_agg(a.attname ORDER BY k.n) FROM unnest(confkey) WITH ORDINALITY k(col, n)
+                    (SELECT array_agg(a.attname::text ORDER BY k.n) FROM unnest(confkey) WITH ORDINALITY k(col, n)
                        JOIN pg_attribute a ON a.attrelid = confrelid AND a.attnum = k.col) AS refs
              FROM pg_constraint WHERE contype = 'f' AND connamespace = 'public'::regnamespace`);
         const huerfanos = [];
