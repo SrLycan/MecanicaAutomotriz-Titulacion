@@ -33,11 +33,12 @@ function Kpi({ label, value, color, card, bdr, mut, txt, sh }) {
 }
 
 function ModalCliente({ open, data, onClose, onGuardar, isDark }) {
-    const [form, setForm] = useState({ nombre: '', email: '', telefono: '', cedula: '', direccion: '' });
+    const [form, setForm] = useState({ nombre: '', email: '', telefono: '', cedula: '', direccion: '', tipo_identificacion: '' });
 
     useEffect(() => {
         if (open) {
             setForm({
+                tipo_identificacion: data?.tipo_identificacion || '',
                 nombre: data?.nombre || '',
                 email: data?.email || '',
                 telefono: data?.telefono || '',
@@ -85,7 +86,16 @@ function ModalCliente({ open, data, onClose, onGuardar, isDark }) {
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                         <div>
-                            <label style={{ display: 'block', fontFamily: "'Outfit'", fontSize: '.8rem', color: mut, marginBottom: 6 }}>Cédula</label>
+                            {/* Sprint 23: tipo SRI para facturar (se valida el formato; los datos los confirma el personal). */}
+                            <label style={{ display: 'block', fontFamily: "'Outfit'", fontSize: '.8rem', color: mut, marginBottom: 6 }}>Tipo de identificación</label>
+                            <select name="tipo_identificacion" value={form.tipo_identificacion} onChange={handleChange} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: txt, outline: 'none', marginBottom: 10 }}>
+                                <option value="">Sin indicar</option>
+                                <option value="05">Cédula</option>
+                                <option value="04">RUC</option>
+                                <option value="06">Pasaporte</option>
+                                <option value="08">Identificación del exterior</option>
+                            </select>
+                            <label style={{ display: 'block', fontFamily: "'Outfit'", fontSize: '.8rem', color: mut, marginBottom: 6 }}>Cédula / RUC / Pasaporte</label>
                             <input name="cedula" value={form.cedula} onChange={handleChange} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: txt, outline: 'none' }} />
                         </div>
                         <div>
@@ -155,13 +165,12 @@ export default function Clientes() {
 
     const guardarCliente = async (form) => {
         try {
-            if (modal.data) {
-                await api.put(`/ordenes/clientes/${modal.data.id}`, form);
-                toast.success('Cliente actualizado.');
-            } else {
-                await api.post('/ordenes/clientes', form);
-                toast.success('Cliente creado.');
-            }
+            const { data } = modal.data
+                ? await api.put(`/ordenes/clientes/${modal.data.id}`, form)
+                : await api.post('/ordenes/clientes', form);
+            toast.success(modal.data ? 'Cliente actualizado.' : 'Cliente creado.');
+            // Avisos de formato de la identificacion (p. ej. RUC que no pasa el digito verificador).
+            (data?.advertencias || []).forEach(a => toast(a, { icon: '⚠️', duration: 7000 }));
             setModal({ open: false, data: null });
             cargarClientes(busqueda);
         } catch (err) {

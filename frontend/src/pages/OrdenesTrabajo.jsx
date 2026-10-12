@@ -363,6 +363,13 @@ export default function OrdenesTrabajo() {
                                                     <IconFileText /> GENERAR PROFORMA
                                                 </button>
                                             )}
+                                            {/* Sprint 23: facturar la OT (se usa su proforma aprobada) */}
+                                            {puede('facturacion', 'crear') && (
+                                                <button onClick={() => navigate(`/dashboard/facturacion/nueva?orden_id=${o.id}`)}
+                                                    style={{ background: 'none', border: `1px solid ${bdr}`, borderRadius: 8, padding: '7px 12px', cursor: 'pointer', color: '#10b981', display: 'flex', alignItems: 'center', gap: 6, fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.14em' }}>
+                                                    FACTURAR (SRI)
+                                                </button>
+                                            )}
                                             {/* Eliminar: permiso de eliminar ordenes */}
                                             {puedeEliminar && (
                                                 <button onClick={() => eliminarOrden(o)}

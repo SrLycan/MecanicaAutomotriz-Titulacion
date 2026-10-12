@@ -502,7 +502,51 @@ const descargarRide = async (req, res) => {
     } catch (err) { return responder(res, err, 'Error al generar el RIDE.'); }
 };
 
+// ───────────────────────────── Portal del cliente ─────────────────────────────
+
+/** Cliente del portal vinculado a la cuenta (mismo criterio que /panel/mi-actividad: correo). */
+async function clienteDelPortal(req) {
+    const { rows } = await pool.query('SELECT id FROM clientes WHERE LOWER(email) = LOWER($1) ORDER BY id LIMIT 1', [req.usuario.email]);
+    return rows[0]?.id || null;
+}
+const ESTADOS_VISIBLES_CLIENTE = ['autorizado', 'anulacion_solicitada', 'anulado'];
+
+/** GET /api/panel/facturas — solo comprobantes AUTORIZADOS (o anulados) del propio cliente. */
+const misComprobantes = async (req, res) => {
+    try {
+        const clienteId = await clienteDelPortal(req);
+        if (!clienteId) return res.json({ comprobantes: [] });
+        const { rows } = await pool.query(
+            `SELECT id, cod_doc, ambiente, estado, establecimiento, punto_emision, secuencial, fecha_emision, importe_total, clave_acceso
+             FROM comprobantes_electronicos WHERE cliente_id = $1 AND estado = ANY($2::text[]) ORDER BY id DESC LIMIT 100`,
+            [clienteId, ESTADOS_VISIBLES_CLIENTE]);
+        return res.json({ comprobantes: rows.map(r => ({ ...r, numero: `${r.establecimiento}-${r.punto_emision}-${r.secuencial}` })) });
+    } catch (err) { return responder(res, err, 'Error al consultar sus comprobantes.'); }
+};
+
+/** GET /api/panel/facturas/:id/(ride|xml) — el id debe ser de un comprobante del MISMO cliente. */
+const miDocumento = (tipo) => async (req, res) => {
+    const id = idValido(req, res); if (id === null) return undefined;
+    try {
+        const clienteId = await clienteDelPortal(req);
+        const { rows } = await pool.query('SELECT id FROM comprobantes_electronicos WHERE id = $1 AND cliente_id = $2 AND estado = ANY($3::text[])',
+            [id, clienteId, ESTADOS_VISIBLES_CLIENTE]);
+        if (!clienteId || !rows[0]) return res.status(404).json({ error: 'Comprobante no encontrado.' });
+        const c = await F.obtenerComprobante(id);
+        if (tipo === 'xml') {
+            res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+            res.setHeader('Content-Disposition', `attachment; filename="${nombreArchivo(c)}.xml"`);
+            return res.send(c.xml_autorizado || c.xml_firmado);
+        }
+        const pdf = await generarRide(c, { logo: c.logo });
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${nombreArchivo(c)}.pdf"`);
+        return res.send(pdf);
+    } catch (err) { return responder(res, err, 'Error al descargar el comprobante.'); }
+};
+
 module.exports = {
+    misComprobantes, miDocumento,
     catalogos, obtenerConfig, guardarConfig, guardarPunto, fijarSecuencial, recibirCertificado, cargarCertificado,
     activarProduccion, volverAPruebas, probarConexion,
     listar, resumen, propuesta, validarIdentificacionCtrl, crear, actualizar, obtener, emitir, procesar, descartar,

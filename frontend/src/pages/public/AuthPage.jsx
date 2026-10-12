@@ -10,6 +10,7 @@ import api from '../../services/api';
 import toast from 'react-hot-toast';
 import bannerAuth from '../../assets/banner.png';
 import logoImg from '../../assets/logo.png';
+import LectorDocumento from '../../components/legal/LectorDocumento';
 import './AuthPage.css';
 
 export default function AuthPage({ staffOnly = false }) {
@@ -24,6 +25,15 @@ export default function AuthPage({ staffOnly = false }) {
     const [loginForm, setLoginForm] = useState({ email: '', password: '' });
     const [regForm,   setRegForm]   = useState({ nombre: '', email: '', password: '', telefono: '', cedula: '' });
     const [regError,  setRegError]  = useState('');
+    // Sprint 23: documentos legales vigentes del taller (cada uno con su casilla, desmarcada al inicio).
+    const [docsLegales, setDocsLegales] = useState([]);
+    const [aceptados,   setAceptados]   = useState({});
+    const [leyendo,     setLeyendo]     = useState(null);
+
+    useEffect(() => {
+        if (modo !== 'registro' || staffOnly) return;
+        api.get('/legal/publico/vigentes').then(({ data }) => setDocsLegales(data.documentos || [])).catch(() => setDocsLegales([]));
+    }, [modo, staffOnly]);
 
     useEffect(() => {
         setModo(staffOnly ? 'login' : (params.get('modo') === 'registro' ? 'registro' : 'login'));
@@ -67,9 +77,15 @@ export default function AuthPage({ staffOnly = false }) {
             setRegError('La contraseña no puede tener más de 72 caracteres.');
             return;
         }
+        const faltan = docsLegales.filter(d => d.obligatorio && !aceptados[d.version_id]);
+        if (faltan.length) {
+            setRegError(`Para crear la cuenta lea y acepte: ${faltan.map(d => d.titulo).join(', ')}.`);
+            return;
+        }
         setLoading(true);
         try {
-            const { data } = await api.post('/auth/register', regForm);
+            const aceptaciones = docsLegales.filter(d => aceptados[d.version_id]).map(d => d.version_id);
+            const { data } = await api.post('/auth/register', { ...regForm, aceptaciones });
             localStorage.setItem('SS SWAP_token',   data.token);
             localStorage.setItem('SS SWAP_usuario', JSON.stringify(data.usuario));
             syncFromStorage();
@@ -299,7 +315,7 @@ export default function AuthPage({ staffOnly = false }) {
                                 </div>
 
                                 <div>
-                                    <label style={labelBase}>Contraseña * (6 a 72 caracteres)</label>
+                                    <label style={labelBase}>Contraseña * (8 a 72 caracteres)</label>
                                     <div style={{ position: 'relative' }}>
                                         <input className="auth-input" style={inputBase} type={showPass ? 'text' : 'password'} required
                                             maxLength={72}
@@ -315,6 +331,22 @@ export default function AuthPage({ staffOnly = false }) {
                                     </div>
                                 </div>
 
+                                {docsLegales.length > 0 && (
+                                    <div role="group" aria-label="Documentos legales" style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '12px 14px', borderRadius: 10, border: '1px solid rgba(255,255,255,.1)', background: 'rgba(255,255,255,.03)' }}>
+                                        {docsLegales.map(d => (
+                                            <label key={d.version_id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: '.8rem', color: 'rgba(255,255,255,.75)', cursor: 'pointer', lineHeight: 1.45 }}>
+                                                <input type="checkbox" checked={Boolean(aceptados[d.version_id])} style={{ marginTop: 3 }}
+                                                    onChange={e => setAceptados({ ...aceptados, [d.version_id]: e.target.checked })} />
+                                                <span>
+                                                    {d.tipo === 'autorizacion_datos' ? 'Autorizo (opcional): ' : 'He leído y acepto '}
+                                                    <button type="button" className="text-link" onClick={(e) => { e.preventDefault(); setLeyendo(d); }}>{d.titulo}</button>
+                                                    {d.obligatorio ? ' *' : ' (opcional)'}
+                                                </span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                )}
+
                                 {regError && (
                                     <div style={{ padding: '10px 14px', borderRadius: 7, background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.2)', color: '#f87171', fontSize: '.82rem' }}>
                                         {regError}
@@ -325,9 +357,6 @@ export default function AuthPage({ staffOnly = false }) {
                                     {loading ? 'Creando cuenta...' : 'Crear Cuenta Gratis'}
                                 </button>
 
-                                <p style={{ textAlign: 'center', fontSize: '.75rem', fontWeight: 300, color: 'rgba(255,255,255,.22)', lineHeight: 1.6 }}>
-                                    Al registrarte aceptas los términos y condiciones del uso de tus datos*.
-                                </p>
 
                                 <p style={{ textAlign: 'center', fontSize: '.82rem', fontWeight: 300, color: 'rgba(255,255,255,.3)' }}>
                                     ¿Ya tienes cuenta?{' '}
@@ -340,6 +369,7 @@ export default function AuthPage({ staffOnly = false }) {
                     </div>
                 </div>
 
+                {leyendo && <LectorDocumento doc={leyendo} onClose={() => setLeyendo(null)} />}
                 <p style={{ textAlign: 'center', marginTop: 18, fontSize: '.75rem', fontWeight: 300, color: 'rgba(255,255,255,.18)' }}>
                     Mecánica SS SWAP · Ponciano Alto, Quito · 2026
                 </p>

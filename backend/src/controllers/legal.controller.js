@@ -128,7 +128,7 @@ const revocar = async (req, res) => {
 const misAceptaciones = async (req, res) => {
     try {
         const { rows } = await pool.query(
-            `SELECT a.transaccion_id, a.evento, a.contexto, a.aceptado_at, a.hash_contenido, d.titulo, d.tipo, v.version
+            `SELECT a.transaccion_id, a.evento, a.contexto, a.aceptado_at, a.hash_contenido, a.documento_id, d.titulo, d.tipo, d.obligatorio, v.version
              FROM aceptaciones_legales a JOIN documentos_legales d ON d.id = a.documento_id JOIN documento_legal_versiones v ON v.id = a.version_id
              WHERE a.usuario_id = $1 ORDER BY a.id DESC LIMIT 200`, [req.usuario.id]);
         return res.json({ aceptaciones: rows });

@@ -171,6 +171,10 @@ export default function ProformaView() {
                     {ordenId && (
                         <Link to="/dashboard/ordenes" style={{ ...btnSec(bdr, txt), textDecoration: 'none', display: 'inline-flex' }}>VER ORDEN {proforma.orden_numero}</Link>
                     )}
+                    {/* Sprint 23: factura electronica con los conceptos aprobados (no vuelve a descontar inventario). */}
+                    {puede('facturacion', 'crear') && ['aprobada', 'convertida'].includes(proforma.estado) && (
+                        <Link to={`/dashboard/facturacion/nueva?proforma_id=${proforma.id}`} style={{ ...btnSec(bdr, '#10b981'), textDecoration: 'none', display: 'inline-flex' }}>FACTURAR (SRI)</Link>
+                    )}
                 </div>
             </div>
 

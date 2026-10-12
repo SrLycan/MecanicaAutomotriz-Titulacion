@@ -13,12 +13,14 @@ import api from '../../services/api';
 import toast from 'react-hot-toast';
 import CargandoPagina from '../common/CargandoPagina';
 import ModalMiCuenta from './ModalMiCuenta';
+import AvisoPendientes from '../legal/AvisoPendientes';
 import './Layout.css';
 
 // Icono exclusivo de Proveedores (solo administradores)
 function IconTruck() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>; }
 function IconPlataforma() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="7" rx="1.5"/><rect x="2" y="14" width="20" height="7" rx="1.5"/><line x1="6" y1="6.5" x2="6.01" y2="6.5"/><line x1="6" y1="17.5" x2="6.01" y2="17.5"/></svg>; }
 function IconMoney() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>; }
+function IconFactura() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 2v20l3-2 3 2 3-2 3 2 3-2 1 .7V2l-1 .7-3-2-3 2-3-2-3 2-3-2z"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg>; }
 function IconChart() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>; }
 
 // Menú lateral tipo ACORDEÓN: cada sección se despliega al hacer clic y
@@ -63,6 +65,11 @@ const NAV_GROUPS = [
         { to: '/dashboard/finanzas?tab=nomina',       label: 'Nómina / Empleados', permiso: 'finanzas:ver' },
         { to: '/dashboard/finanzas?tab=cuentas',      label: 'Cuentas (caja / bancos)', permiso: 'finanzas:ver' },
     ] },
+    { id: 'facturacion', label: 'Facturación SRI', icon: IconFactura, children: [
+        { to: '/dashboard/facturacion',          label: 'Comprobantes', permiso: 'facturacion:ver', prefijo: true },
+        { to: '/dashboard/facturacion/nueva',    label: 'Nueva factura', permiso: 'facturacion:crear' },
+        { to: '/dashboard/facturacion/config',   label: 'Configuración tributaria', permiso: 'facturacion_config:ver' },
+    ] },
     { id: 'graficas', label: 'Gráficas', icon: IconChart, children: [
         { to: '/dashboard/graficas',                  label: 'Productos', permiso: 'estadisticas:ver' },
         { to: '/dashboard/graficas?tab=servicios',    label: 'Servicios', permiso: 'estadisticas:ver' },
@@ -80,6 +87,8 @@ const NAV_GROUPS = [
         { to: '/dashboard/usuarios?rol=cliente', label: 'Clientes (portal)', permiso: 'usuarios:ver' },
         { to: '/dashboard/auditoria',           label: 'Auditoría', permiso: 'auditoria:ver' },
         { to: '/dashboard/empresa',             label: 'Configuración de la empresa', permiso: 'empresa:ver' },
+        { to: '/dashboard/legal',               label: 'Documentos legales', permiso: 'legal:ver' },
+        { to: '/dashboard/contratacion',        label: 'Contratación del servicio', permiso: 'empresa:editar' },
     ] },
     // Plataforma multiempresa: solo el superadministrador.
     { id: 'plataforma', label: 'Plataforma', icon: IconPlataforma, children: [
@@ -87,6 +96,7 @@ const NAV_GROUPS = [
         { to: '/dashboard/plataforma/auditoria', label: 'Auditoría global', soloSuperadmin: true },
         { to: '/dashboard/plataforma/respaldos', label: 'Respaldos', soloSuperadmin: true },
         { to: '/dashboard/plataforma/sistema',   label: 'Migraciones y errores', soloSuperadmin: true },
+        { to: '/dashboard/plataforma/legal',     label: 'Documentos y contratos', soloSuperadmin: true },
     ] },
 ];
 
@@ -262,6 +272,11 @@ export default function Layout() {
         if (location.pathname.includes('/plataforma/sistema'))   return 'Migraciones y errores';
         if (location.pathname.endsWith('/plataforma'))   return 'Empresas';
         if (location.pathname.endsWith('/empresa'))      return 'Configuración de la empresa';
+        if (location.pathname.includes('/facturacion/config')) return 'Configuración tributaria';
+        if (location.pathname.includes('/facturacion'))  return 'Facturación electrónica';
+        if (location.pathname.includes('/plataforma/legal')) return 'Documentos y contratos';
+        if (location.pathname.endsWith('/legal'))        return 'Documentos legales';
+        if (location.pathname.endsWith('/contratacion')) return 'Contratación del servicio';
         if (location.pathname.endsWith('/auditoria'))    return 'Auditoría';
         if (location.pathname.endsWith('/acceso-denegado')) return 'Acceso denegado';
         if (location.pathname.endsWith('/clientes'))     return 'Clientes';
@@ -513,6 +528,7 @@ export default function Layout() {
                             <button type="button" onClick={terminarSoporte} style={{ marginLeft: 'auto', background: 'none', border: '1px solid rgba(245,158,11,.6)', borderRadius: 8, padding: '5px 12px', cursor: 'pointer', color: '#b45309', fontFamily: "'Bebas Neue'", letterSpacing: '.1em' }}>TERMINAR SOPORTE</button>
                         </div>
                     )}
+                    <AvisoPendientes />
                     {/* Suspense aqui: al cambiar de pagina solo el contenido muestra
                         el indicador de carga; menu y encabezado se quedan quietos. */}
                     <Suspense fallback={<CargandoPagina />}>

@@ -12,6 +12,7 @@
  *   (ver services/ordenesHistorial.service.js).
  */
 const pool = require('../config/db');
+const { validarIdentificacion } = require('../sri/identificacion');
 const { errorBD } = require('../utils/erroresBD');
 const { puede } = require('../middleware/auth.middleware');
 const {
@@ -110,21 +111,37 @@ const obtenerCliente = async (req, res) => {
 /**
  * Registra un nuevo cliente en el taller validando unicidad de cédula.
  */
+/**
+ * Sprint 23: tipo de identificación SRI (opcional). Si se indica, se valida el
+ * FORMATO de la cédula/RUC/pasaporte (el SRI no publica un servicio de
+ * consulta de datos). Devuelve { error } o { tipo, advertencias }.
+ */
+function validarIdentificacionCliente(tipo, cedula) {
+    if (tipo === undefined || tipo === null || tipo === '') return { tipo: null, advertencias: [] };
+    if (!['04', '05', '06', '08'].includes(String(tipo))) return { error: 'Tipo de identificación no válido.' };
+    if (!cedula) return { error: 'Ingrese el número de identificación.' };
+    const v = validarIdentificacion(String(tipo), cedula);
+    if (!v.valido) return { error: v.errores.join(' ') };
+    return { tipo: String(tipo), advertencias: v.advertencias };
+}
+
 const crearCliente = async (req, res) => {
-    const { nombre, email, telefono, cedula, direccion } = req.body;
+    const { nombre, email, telefono, cedula, direccion, tipo_identificacion } = req.body;
     const errVal = validarDatosCliente({ nombre, email, telefono, cedula });
     if (errVal) return res.status(400).json({ error: errVal });
+    const ident = validarIdentificacionCliente(tipo_identificacion, cedula);
+    if (ident.error) return res.status(400).json({ error: ident.error });
     try {
         if (cedula) {
             const { rows: dup } = await pool.query('SELECT id FROM clientes WHERE cedula = $1', [cedula]);
             if (dup.length > 0) return res.status(409).json({ error: 'Ya existe un cliente con esa cedula.' });
         }
         const { rows } = await pool.query(
-            `INSERT INTO clientes (nombre, email, telefono, cedula, direccion)
-             VALUES ($1,$2,$3,$4,$5) RETURNING *`,
-            [nombre.trim(), email || null, telefono || null, cedula || null, direccion || null]
+            `INSERT INTO clientes (nombre, email, telefono, cedula, direccion, tipo_identificacion)
+             VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+            [nombre.trim(), email || null, telefono || null, cedula || null, direccion || null, ident.tipo]
         );
-        return res.status(201).json({ cliente: rows[0] });
+        return res.status(201).json({ cliente: rows[0], advertencias: ident.advertencias });
     } catch (err) {
         console.error('Error crearCliente:', err);
         const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
@@ -166,9 +183,11 @@ const eliminarCliente = async (req, res) => {
  */
 const actualizarCliente = async (req, res) => {
     const { id } = req.params;
-    const { nombre, email, telefono, cedula, direccion } = req.body;
+    const { nombre, email, telefono, cedula, direccion, tipo_identificacion } = req.body;
     const errVal = validarDatosCliente({ nombre, email, telefono, cedula });
     if (errVal) return res.status(400).json({ error: errVal });
+    const ident = validarIdentificacionCliente(tipo_identificacion, cedula);
+    if (ident.error) return res.status(400).json({ error: ident.error });
     try {
         if (cedula) {
             const { rows: dup } = await pool.query(
@@ -177,11 +196,16 @@ const actualizarCliente = async (req, res) => {
             if (dup.length > 0) return res.status(409).json({ error: 'Ya existe otro cliente con esa cedula.' });
         }
         const { rows } = await pool.query(
-            `UPDATE clientes SET nombre=$1, email=$2, telefono=$3, cedula=$4, direccion=$5 WHERE id=$6 RETURNING *`,
-            [nombre.trim(), email || null, telefono || null, cedula || null, direccion || null, id]
+            // Si cambia la identificación o la razón social, la confirmación anterior deja de valer.
+            `UPDATE clientes SET nombre=$1, email=$2, telefono=$3, cedula=$4, direccion=$5,
+                    tipo_identificacion = COALESCE($7, tipo_identificacion),
+                    identificacion_confirmada_at = CASE WHEN cedula IS DISTINCT FROM $4 OR nombre IS DISTINCT FROM $1 THEN NULL ELSE identificacion_confirmada_at END,
+                    identificacion_confirmada_por = CASE WHEN cedula IS DISTINCT FROM $4 OR nombre IS DISTINCT FROM $1 THEN NULL ELSE identificacion_confirmada_por END
+             WHERE id=$6 RETURNING *`,
+            [nombre.trim(), email || null, telefono || null, cedula || null, direccion || null, id, ident.tipo]
         );
         if (!rows[0]) return res.status(404).json({ error: 'Cliente no encontrado.' });
-        return res.json({ cliente: rows[0] });
+        return res.json({ cliente: rows[0], advertencias: ident.advertencias });
     } catch (err) {
         console.error('Error actualizarCliente:', err);
         const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });

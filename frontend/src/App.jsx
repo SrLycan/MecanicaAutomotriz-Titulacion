@@ -60,6 +60,14 @@ const Pedidos             = lazy(() => import('./pages/Pedidos'));
 
 const Auditoria           = lazy(() => import('./pages/Auditoria'));
 const EmpresaConfig       = lazy(() => import('./pages/EmpresaConfig'));
+// Sprint 23: facturación electrónica SRI y documentos legales
+const Facturacion         = lazy(() => import('./pages/facturacion/Facturacion'));
+const FacturaEditor       = lazy(() => import('./pages/facturacion/FacturaEditor'));
+const FacturaDetalle      = lazy(() => import('./pages/facturacion/FacturaDetalle'));
+const FacturacionConfig   = lazy(() => import('./pages/facturacion/FacturacionConfig'));
+const Legal               = lazy(() => import('./pages/legal/Legal'));
+const Contratacion        = lazy(() => import('./pages/legal/Contratacion'));
+const PlataformaLegal     = lazy(() => import('./pages/plataforma/LegalPlataforma'));
 // Plataforma (solo superadministrador)
 const PlataformaEmpresas  = lazy(() => import('./pages/plataforma/Empresas'));
 const PlataformaAuditoria = lazy(() => import('./pages/plataforma/AuditoriaGlobal'));
@@ -106,11 +114,20 @@ const RUTAS_PANEL = [
     { path: 'usuarios',             Pagina: Usuarios,            permiso: 'usuarios:ver' },
     { path: 'auditoria',            Pagina: Auditoria,           permiso: 'auditoria:ver' },
     { path: 'empresa',              Pagina: EmpresaConfig,       permiso: 'empresa:ver' },
+    { path: 'legal',                Pagina: Legal,               permiso: 'legal:ver' },
+    { path: 'contratacion',         Pagina: Contratacion,        permiso: 'empresa:editar' },
+    // Facturación electrónica (SRI)
+    { path: 'facturacion',            Pagina: Facturacion,       permiso: 'facturacion:ver' },
+    { path: 'facturacion/nueva',      Pagina: FacturaEditor,     permiso: 'facturacion:crear' },
+    { path: 'facturacion/config',     Pagina: FacturacionConfig, permiso: 'facturacion_config:ver' },
+    { path: 'facturacion/:id/editar', Pagina: FacturaEditor,     permiso: ['facturacion:crear', 'facturacion:anular'] },
+    { path: 'facturacion/:id',        Pagina: FacturaDetalle,    permiso: 'facturacion:ver' },
     // Plataforma: solo el superadministrador.
     { path: 'plataforma',           Pagina: PlataformaEmpresas,  soloSuperadmin: true },
     { path: 'plataforma/auditoria', Pagina: PlataformaAuditoria, soloSuperadmin: true },
     { path: 'plataforma/respaldos', Pagina: PlataformaRespaldos, soloSuperadmin: true },
     { path: 'plataforma/sistema',   Pagina: PlataformaSistema,   soloSuperadmin: true },
+    { path: 'plataforma/legal',     Pagina: PlataformaLegal,     soloSuperadmin: true },
 ];
 
 export default function App() {
