@@ -2433,8 +2433,12 @@ BEGIN
         CREATE ROLE ssswap_app NOLOGIN NOSUPERUSER NOBYPASSRLS;
     END IF;
     -- El usuario de conexion debe poder hacer SET ROLE ssswap_app (en Supabase
-    -- el usuario postgres no es superusuario).
-    IF NOT EXISTS (SELECT 1 FROM pg_auth_members m JOIN pg_roles r ON r.oid = m.roleid
+    -- el usuario postgres no es superusuario). Desde PostgreSQL 16 quien crea
+    -- un rol queda solo con ADMIN sobre el (sin SET), asi que la membresia
+    -- existe pero SET ROLE falla: se concede SET explicitamente.
+    IF current_setting('server_version_num')::int >= 160000 THEN
+        EXECUTE format('GRANT ssswap_app TO %I WITH SET TRUE', current_user);
+    ELSIF NOT EXISTS (SELECT 1 FROM pg_auth_members m JOIN pg_roles r ON r.oid = m.roleid
                    JOIN pg_roles u ON u.oid = m.member
                    WHERE r.rolname = 'ssswap_app' AND u.rolname = current_user) THEN
         EXECUTE format('GRANT ssswap_app TO %I', current_user);
