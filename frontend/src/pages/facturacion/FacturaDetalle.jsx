@@ -58,7 +58,7 @@ export default function FacturaDetalle() {
 
     const seccion = { background: p.card, border: `1px solid ${p.bdr}`, borderRadius: 14, boxShadow: p.cardSh, padding: 18, marginBottom: 16 };
     const fila = (et, val) => (
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '4px 0', ...outfit('.86rem') }}>
+        <div key={et} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '4px 0', ...outfit('.86rem') }}>
             <span style={{ color: p.mut }}>{et}</span><span style={{ color: p.txt, textAlign: 'right', wordBreak: 'break-all' }}>{val || '—'}</span>
         </div>
     );
@@ -163,7 +163,7 @@ export default function FacturaDetalle() {
                     </table>
                 </div>
                 <div style={{ maxWidth: 320, marginLeft: 'auto', marginTop: 12 }}>
-                    {(c.totales_impuestos || []).map(g => fila(`Subtotal ${g.tarifa}%`, dinero(g.base)))}
+                    {(c.totales_impuestos || []).map(g => fila(g.codigoPorcentaje === '6' ? 'Subtotal no objeto de IVA' : g.codigoPorcentaje === '7' ? 'Subtotal exento de IVA' : `Subtotal ${g.tarifa}%`, dinero(g.base)))}
                     {fila('Subtotal sin impuestos', dinero(c.total_sin_impuestos))}
                     {fila('Descuento', dinero(c.total_descuento))}
                     {fila('IVA', dinero(c.total_iva))}
