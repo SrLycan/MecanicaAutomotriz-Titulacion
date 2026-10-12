@@ -29,11 +29,14 @@ const finanzasRoutes = require('./routes/finanzas.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
 const plataformaRoutes = require('./routes/plataforma.routes');
 const empresaRoutes = require('./routes/empresa.routes');
+const facturacionRoutes = require('./routes/facturacion.routes');
+const legalRoutes = require('./routes/legal.routes');
 const { contextoPublico, registrarErrores } = require('./middleware/empresa.middleware');
 const { protegerControladoresAsync, cabecerasSeguridad } = require('./middleware/seguridad.middleware');
 // Antes de montar cualquier ruta: un error en un controlador async ya no cierra el proceso.
 protegerControladoresAsync();
 const { iniciarRespaldoAutomatico } = require('./services/respaldo.service');
+const { iniciarTareaAutomatica: iniciarTareaFacturacion } = require('./services/facturacion.service');
 // Nota: ya NO se requiere './config/initDb' aqui a proposito. El esquema y
 // las migraciones de Postgres se corrieron manualmente contra Supabase
 // (schema.sql + migrations.sql via el SQL Editor), y no se quiere que el
@@ -128,6 +131,8 @@ app.use('/api/finanzas', finanzasRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/plataforma', plataformaRoutes);
 app.use('/api/empresa', empresaRoutes);
+app.use('/api/facturacion', facturacionRoutes);
+app.use('/api/legal', legalRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => res.json({
@@ -179,5 +184,7 @@ app.listen(PORT, async () => {
     await connectMongo();
     calentarPostgres();
     iniciarRespaldoAutomatico();
+    // Comprobantes electronicos en curso: consulta/reintento automatico cada minuto.
+    iniciarTareaFacturacion();
     console.log('');
 });

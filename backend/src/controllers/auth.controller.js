@@ -21,6 +21,8 @@ const { registrarAuditoria } = require('../services/auditoria.service');
 const { sinAislamiento } = require('../config/contexto');
 const { empresaPublicaId } = require('../middleware/empresa.middleware');
 const { MODULOS } = require('../config/permisos');
+const { registrarAceptaciones } = require('../services/legal.service');
+const { ErrorNegocio } = require('../services/inventarioProforma.service');
 
 /**
  * Firma el JWT de una cuenta. "tv" (token_version) permite invalidar todas
@@ -166,6 +168,8 @@ const login = async (req, res) => {
  */
 const register = async (req, res) => {
     const { nombre, email, password, telefono, cedula } = req.body || {};
+    // Sprint 23: versiones de los documentos legales que la persona leyó y aceptó (casillas desmarcadas por defecto).
+    const versionesAceptadas = Array.isArray(req.body?.aceptaciones) ? req.body.aceptaciones.slice(0, 20) : [];
 
     if ([nombre, email, password].some(v => typeof v !== 'string')
         || [telefono, cedula].some(v => v !== undefined && v !== null && typeof v !== 'string' && typeof v !== 'number'))
@@ -231,13 +235,23 @@ const register = async (req, res) => {
                 error: 'Ese correo ya esta registrado en el taller. Escribe la cedula con la que te registraron, o comunicate con el taller.',
             });
         }
+        let clienteId = cliExiste[0]?.id || null;
         if (cliExiste.length === 0) {
-            await client.query(
+            const { rows: nuevo } = await client.query(
                 `INSERT INTO clientes (nombre, email, telefono, cedula)
-                 VALUES ($1, $2, $3, $4)`,
+                 VALUES ($1, $2, $3, $4) RETURNING id`,
                 [nombre.trim(), emailNorm, telefono || null, cedula || null]
             );
+            clienteId = nuevo[0].id;
         }
+
+        // Términos y privacidad del taller: si la empresa publicó documentos
+        // obligatorios, la cuenta NO se crea sin su aceptación expresa (todo en
+        // la misma transacción: sin aceptación válida no queda nada a medias).
+        await registrarAceptaciones(client, {
+            versionIds: versionesAceptadas, audiencia: 'clientes_portal', usuarioId: rows[0].id, clienteId,
+            contexto: 'registro_cliente', req, nombre: nombre.trim(), identificacion: cedula ? String(cedula) : null,
+        });
 
         await client.query('COMMIT');
 
@@ -246,6 +260,7 @@ const register = async (req, res) => {
         return res.status(201).json({ token, usuario: payload, permisos: [] });
     } catch (err) {
         if (client) await client.query('ROLLBACK').catch(() => {});
+        if (err instanceof ErrorNegocio) return res.status(err.status).json({ error: err.message, ...(err.detalle || {}) });
         console.error('Error en register:', err);
         const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error interno del servidor.' });
