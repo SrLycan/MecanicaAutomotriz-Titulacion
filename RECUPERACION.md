@@ -96,3 +96,9 @@ npm run respaldo:probar
 Restaura el último respaldo en la base temporal `ssswap_prueba_restauracion`, verifica conteos,
 huérfanos y RLS, y la borra. Nunca toca la base de producción. El resultado queda en
 `respaldos_registro` y en **Plataforma › Respaldos**.
+
+## Sprint 23 (facturación electrónica y documentos legales)
+- La migración es aditiva. Para volver al código anterior basta con desplegar el ZIP previo: el código viejo ignora las tablas nuevas.
+- **No borre** `comprobantes_electronicos`, `comprobante_eventos` ni `aceptaciones_legales` si ya hay facturas autorizadas o aceptaciones reales. Son evidencia tributaria y contractual que debe conservarse.
+- El certificado `.p12` está cifrado con `SRI_CERT_KEY`. Si restaura la base en otro servidor, configure la misma llave; si no, cargue de nuevo el certificado.
+

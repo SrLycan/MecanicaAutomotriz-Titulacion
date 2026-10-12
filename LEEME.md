@@ -4,6 +4,53 @@
 
 ---
 
+# SS SWAP — Sprint 23: Facturación electrónica SRI, documentos legales y seguridad
+
+Detalle completo:
+- [docs/SPRINT23_AUDITORIA_Y_PLAN.md](docs/SPRINT23_AUDITORIA_Y_PLAN.md): diagnóstico, hallazgos y fuentes oficiales del SRI.
+- [docs/SPRINT23_GUIAS.md](docs/SPRINT23_GUIAS.md): guías, pruebas, pendientes y reversión.
+
+## 1. Base de datos (OBLIGATORIO antes de desplegar el código nuevo)
+Bloque **"Sprint 23"** al final de `backend/src/config/migrations.sql`; para Supabase, `Downloads/ssswap/supabase_sprint23.sql`.
+Es aditivo e idempotente. **Respalde antes.**
+
+## 2. Variables nuevas
+- `SRI_CERT_KEY`: obligatoria para facturar. Son 32 o más caracteres aleatorios. Guárdela también fuera del servidor.
+- Opcionales: `SMTP_*` (correo), `SRI_WS_*`, `SRI_TIMEOUT_MS`, `SRI_TAREA_AUTOMATICA`.
+
+Ver `backend/.env.example`. **Node 20** recomendado en Hostinger.
+
+## 3. Qué hay
+- **Facturación SRI** (factura y nota de crédito 1.1.0, ficha técnica Off-line v2.34):
+  - servicios web oficiales gratuitos;
+  - XML validado contra los XSD oficiales;
+  - firma XAdES-BES con el `.p12` del emisor, guardado cifrado;
+  - estados reales del SRI;
+  - reintentos sin duplicar números;
+  - RIDE con código de barras, XML y correo;
+  - anulación verificada con la consulta oficial.
+- **Documentos legales**:
+  - versiones inmutables con hash SHA-256;
+  - aceptación expresa con una casilla por documento, inicialmente desmarcada;
+  - evidencia de solo inserción y constancia PDF;
+  - re-aceptación cuando hay cambios materiales;
+  - contratación de empresas.
+- **Seguridad**: cambiar la contraseña cierra las otras sesiones; las contraseñas nuevas exigen al menos 8 caracteres.
+- **Permisos nuevos**:
+  - `facturacion`: ver, crear, aprobar (emitir), exportar, anular, eliminar;
+  - `facturacion_config`: ver, editar, aprobar (producción);
+  - `legal`: ver, editar, aprobar.
+
+  Los administradores existentes los recibieron una sola vez.
+
+## 4. Pruebas
+- Backend: `PG_INTEGRATION=1 DB_NAME=ssswap_test npx jest --runInBand` → 197/197.
+- Frontend: `CI=true npm test` → 50/50.
+
+**La autorización REAL del SRI está pendiente** del RUC habilitado y el certificado de SS SWAP (ver la guía, punto 6).
+
+---
+
 # SS SWAP — Sprint 22: Plataforma multiempresa, soporte auditado y respaldos
 
 ## 1. Base de datos (OBLIGATORIO antes de desplegar el código nuevo)
