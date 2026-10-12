@@ -511,13 +511,15 @@ function PerfilForm({ perfil, onActualizado, txt, mut, card, bdr }) {
     const cambiarPassword = async (e) => {
         e.preventDefault();
         setErrorPwd('');
-        if (pwd.nueva.length < 6) { setErrorPwd('La nueva contraseña debe tener al menos 6 caracteres.'); return; }
+        if (pwd.nueva.length < 8) { setErrorPwd('La nueva contraseña debe tener al menos 8 caracteres.'); return; }
         if (pwd.nueva !== pwd.confirmar) { setErrorPwd('Las contraseñas nuevas no coinciden.'); return; }
         setCambiandoPwd(true);
         try {
-            await api.put('/users/me/password', { password_actual: pwd.actual, password_nueva: pwd.nueva });
+            const { data } = await api.put('/users/me/password', { password_actual: pwd.actual, password_nueva: pwd.nueva });
+            // El backend cierra las demas sesiones y entrega un token nuevo para esta.
+            if (data?.token) actualizarSesion(data.token);
             setPwd({ actual: '', nueva: '', confirmar: '' });
-            toast.success('Contraseña actualizada.');
+            toast.success('Contraseña actualizada. Se cerraron tus otras sesiones.');
         } catch (err) {
             setErrorPwd(err.response?.data?.error || 'No se pudo cambiar tu contraseña.');
         } finally {
@@ -603,8 +605,8 @@ function PerfilForm({ perfil, onActualizado, txt, mut, card, bdr }) {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 14 }}>
                         <input className="pc-input" type="password" placeholder="Contraseña actual" value={pwd.actual} onChange={e => setPwd({ ...pwd, actual: e.target.value })} required />
                         <div className="pc-form-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                            <input className="pc-input" type="password" placeholder="Nueva contraseña (mín. 6)" minLength={6} value={pwd.nueva} onChange={e => setPwd({ ...pwd, nueva: e.target.value })} required />
-                            <input className="pc-input" type="password" placeholder="Confirmar nueva" minLength={6} value={pwd.confirmar} onChange={e => setPwd({ ...pwd, confirmar: e.target.value })} required />
+                            <input className="pc-input" type="password" placeholder="Nueva contraseña (mín. 8)" minLength={8} value={pwd.nueva} onChange={e => setPwd({ ...pwd, nueva: e.target.value })} required />
+                            <input className="pc-input" type="password" placeholder="Confirmar nueva" minLength={8} value={pwd.confirmar} onChange={e => setPwd({ ...pwd, confirmar: e.target.value })} required />
                         </div>
                     </div>
                     {errorPwd && <p style={{ fontFamily: "'Outfit'", fontSize: '.8rem', color: '#f87171', marginBottom: 14 }}>{errorPwd}</p>}

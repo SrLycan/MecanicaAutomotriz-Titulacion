@@ -54,7 +54,7 @@ d('Sprint 22 - plataforma multiempresa (HTTP)', () => {
             const { rows } = await cliente.query(`SELECT id FROM empresas WHERE slug LIKE 'test22-%'`);
             const ids = rows.map(r => r.id);
             if (ids.length) {
-                const { TABLAS_EMPRESA } = require('../config/multiempresa');
+                const { TODAS_TABLAS_EMPRESA: TABLAS_EMPRESA } = require('../config/multiempresa');
                 for (const tabla of TABLAS_EMPRESA) await cliente.query(`DELETE FROM ${tabla} WHERE empresa_id = ANY($1)`, [ids]);
                 for (const tabla of ['accesos_soporte']) await cliente.query(`DELETE FROM ${tabla} WHERE empresa_id = ANY($1)`, [ids]);
                 await cliente.query(`DELETE FROM empresas WHERE id = ANY($1)`, [ids]);

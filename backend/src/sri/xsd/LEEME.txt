@@ -1,0 +1,10 @@
+Esquemas XSD OFICIALES del SRI (descargados el 2026-10-12 de https://www.sri.gob.ec/facturacion-electronica):
+- factura_V1.1.0.xsd        (ZIP "XML y XSD Factura", actualizado feb-2022)
+- NotaCredito_V1.1.0.xsd    (ZIP "XML y XSD Nota de Credito", actualizado feb-2022)
+- xmldsig-core-schema.xsd   (W3C, https://www.w3.org/TR/xmldsig-core/xmldsig-core-schema.xsd)
+
+Unica modificacion: en <contribuyenteRimpe> se agrego el patron
+"CONTRIBUYENTE NEGOCIO POPULAR - REGIMEN RIMPE" que exige la Ficha Tecnica
+Off-line v2.34 (julio 2026) y que el XSD de 2022 aun no incluye.
+Si el SRI publica XSD nuevos, reemplazar estos archivos y correr las pruebas
+(npx jest sri).

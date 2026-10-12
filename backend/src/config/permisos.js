@@ -84,6 +84,17 @@ const MODULOS = [
       acciones: [A.ver, A.crear, A.editar, acc('eliminar', 'Anular movimientos / pagos')] },
     { codigo: 'proveedores', nombre: 'Proveedores, compras y gastos', grupo: 'Proveedores', acciones: CRUD },
 
+    // ── Facturación electrónica (Sprint 23) ──
+    // Emitir = firmar y enviar al SRI: es una acción tributaria, separada de preparar el borrador.
+    { codigo: 'facturacion', nombre: 'Facturación electrónica (SRI)', grupo: 'Facturación',
+      descripcion: 'Facturas y notas de crédito electrónicas. Emitir firma el comprobante y lo envía al SRI.',
+      acciones: [acc('ver', 'Ver comprobantes'), acc('crear', 'Preparar borradores'), acc('aprobar', 'Emitir y enviar al SRI'),
+          acc('exportar', 'Descargar XML / RIDE y reenviar correo'), propia('anular', 'Notas de crédito y registro de anulaciones'),
+          acc('eliminar', 'Descartar borradores')] },
+    { codigo: 'facturacion_config', nombre: 'Configuración tributaria y firma electrónica', grupo: 'Facturación',
+      descripcion: 'Datos del emisor (RUC, régimen), puntos de emisión y certificado .p12. Activar producción es una acción aparte.',
+      acciones: [A.ver, acc('editar', 'Editar datos tributarios, puntos de emisión y certificado'), acc('aprobar', 'Activar el ambiente de producción')] },
+
     // ── Reportes ──
     { codigo: 'estadisticas', nombre: 'Reportes y estadísticas', grupo: 'Reportes', acciones: [A.ver] },
 
@@ -103,6 +114,10 @@ const MODULOS = [
     { codigo: 'empresa', nombre: 'Configuración de la empresa', grupo: 'Empresa',
       descripcion: 'Datos comerciales que aparecen en proformas, PDF y Excel.',
       acciones: [A.ver, A.editar] },
+    // Sprint 23: términos, privacidad y evidencia de aceptación de la empresa.
+    { codigo: 'legal', nombre: 'Documentos legales y aceptaciones', grupo: 'Empresa',
+      descripcion: 'Términos y política de privacidad para los clientes del portal. Publicar crea una versión inmutable.',
+      acciones: [acc('ver', 'Ver documentos, aceptaciones y constancias'), acc('editar', 'Redactar borradores'), acc('aprobar', 'Publicar versiones')] },
 ];
 
 const MAPA = new Map(MODULOS.map(m => [m.codigo, m]));
@@ -155,6 +170,10 @@ const PLANTILLAS = {
         ...p('usuarios', 'ver', 'crear', 'editar', 'eliminar'),
         ...p('auditoria', 'ver'),
         ...p('empresa', 'ver', 'editar'),
+        // Sprint 23
+        ...p('facturacion', 'ver', 'crear', 'aprobar', 'exportar', 'anular', 'eliminar'),
+        ...p('facturacion_config', 'ver', 'editar', 'aprobar'),
+        ...p('legal', 'ver', 'editar', 'aprobar'),
     ],
     recepcionista: [
         ...p('dashboard', 'ver'),
@@ -172,6 +191,8 @@ const PLANTILLAS = {
         ...p('cuentas_cobrar', 'ver', 'crear', 'editar'),
         ...p('pagos_clientes', 'crear'),
         ...p('caja', 'ver', 'crear', 'aprobar'),
+        // Sprint 23: recepcion prepara facturas; emitirlas lo concede el administrador.
+        ...p('facturacion', 'ver', 'crear', 'exportar'),
     ],
     tecnico: [
         ...p('dashboard', 'ver'),

@@ -59,8 +59,8 @@ export default function AuthPage({ staffOnly = false }) {
     const handleRegister = async (e) => {
         e.preventDefault();
         setRegError('');
-        if (regForm.password.length < 6) {
-            setRegError('La contraseña debe tener al menos 6 caracteres.');
+        if (regForm.password.length < 8) {
+            setRegError('La contraseña debe tener al menos 8 caracteres.');
             return;
         }
         if (regForm.password.length > 72) {
@@ -303,7 +303,7 @@ export default function AuthPage({ staffOnly = false }) {
                                     <div style={{ position: 'relative' }}>
                                         <input className="auth-input" style={inputBase} type={showPass ? 'text' : 'password'} required
                                             maxLength={72}
-                                            placeholder="Mínimo 6 caracteres"
+                                            placeholder="Mínimo 8 caracteres"
                                             value={regForm.password}
                                             onChange={e => setRegForm({ ...regForm, password: e.target.value })} />
                                         <button type="button" className="pass-toggle" onClick={() => setShowPass(p => !p)}>

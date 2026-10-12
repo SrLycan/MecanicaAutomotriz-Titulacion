@@ -31,6 +31,18 @@ describe('config/multiempresa — aislamiento por empresa', () => {
         expect(M.TABLAS_EMPRESA.filter(t => globales.includes(t))).toEqual([]);
     });
 
+    test('Sprint 23: la migracion contiene las llaves compuestas y las tablas generadas', () => {
+        const b23 = migracion.slice(migracion.indexOf('-- RELACIONES23_INICIO'), migracion.indexOf('-- RELACIONES23_FIN'));
+        expect(b23).toContain(M.sqlRelaciones(M.RELACIONES_SPRINT23));
+        const lista = M.TABLAS_EMPRESA_SPRINT23.map(t => `'${t}'`).join(', ');
+        // Politicas RLS y validaciones finales del bloque 23.
+        expect(migracion.split(`ARRAY[${lista}]`).length - 1).toBe(2);
+        for (const [tabla, , ref] of M.RELACIONES_SPRINT23) {
+            expect(M.TODAS_TABLAS_EMPRESA).toContain(tabla);
+            expect(M.TODAS_TABLAS_EMPRESA).toContain(ref);
+        }
+    });
+
     test('la migracion aplica RLS a la lista de tablas de empresa', () => {
         const lista = M.TABLAS_EMPRESA.map(t => `'${t}'`).join(', ');
         // Aparece en la asignacion de empresa, en las politicas y en las validaciones.

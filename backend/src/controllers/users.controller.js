@@ -712,19 +712,28 @@ const cambiarMiPassword = async (req, res) => {
     const { password_actual, password_nueva } = req.body;
     if (!password_actual || !password_nueva)
         return res.status(400).json({ error: 'Ingresa tu contrasena actual y la nueva.' });
-    if (password_nueva.length < 6)
-        return res.status(400).json({ error: 'La nueva contrasena debe tener al menos 6 caracteres.' });
+    if (typeof password_nueva !== 'string' || password_nueva.length < PASSWORD_MIN_LEN)
+        return res.status(400).json({ error: `La nueva contrasena debe tener al menos ${PASSWORD_MIN_LEN} caracteres.` });
+    if (password_nueva.length > PASSWORD_MAX_LEN)
+        return res.status(400).json({ error: `La contrasena no puede tener mas de ${PASSWORD_MAX_LEN} caracteres.` });
 
     try {
         const { rows } = await pool.query('SELECT password FROM usuarios WHERE id = $1', [req.usuario.id]);
         if (!rows[0]) return res.status(404).json({ error: 'Usuario no encontrado.' });
 
-        const ok = await bcrypt.compare(password_actual, rows[0].password);
+        const ok = await bcrypt.compare(String(password_actual), rows[0].password);
         if (!ok) return res.status(400).json({ error: 'Tu contrasena actual no es correcta.' });
 
+        // Cambiar la contrasena cierra TODAS las demas sesiones (token_version + 1):
+        // si alguien tenia un token robado, deja de servir. Esta sesion recibe uno nuevo.
         const hash = await bcrypt.hash(password_nueva, 10);
-        await pool.query('UPDATE usuarios SET password = $1 WHERE id = $2', [hash, req.usuario.id]);
-        return res.json({ ok: true, mensaje: 'Contrasena actualizada correctamente.' });
+        const { rows: act } = await pool.query(
+            `UPDATE usuarios SET password = $1, token_version = token_version + 1 WHERE id = $2
+             RETURNING id, nombre, email, rol, token_version`, [hash, req.usuario.id]);
+        registrarAuditoria({ req, accion: 'usuario.password_cambiada', recursoTipo: 'usuario', recursoId: req.usuario.id,
+            detalle: { otras_sesiones_cerradas: true } });
+        const { token } = firmarToken(act[0]);
+        return res.json({ ok: true, token, mensaje: 'Contrasena actualizada. Se cerraron tus otras sesiones abiertas.' });
     } catch (err) {
         console.error('Error cambiarMiPassword:', err);
         const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });

@@ -1768,23 +1768,35 @@ INSERT INTO permisos_catalogo (modulo, accion, modulo_nombre, accion_nombre, gru
     ('proveedores', 'crear', 'Proveedores, compras y gastos', 'Crear', 'Proveedores', 57, FALSE),
     ('proveedores', 'editar', 'Proveedores, compras y gastos', 'Editar', 'Proveedores', 58, FALSE),
     ('proveedores', 'eliminar', 'Proveedores, compras y gastos', 'Eliminar', 'Proveedores', 59, FALSE),
-    ('estadisticas', 'ver', 'Reportes y estadísticas', 'Ver', 'Reportes', 60, FALSE),
-    ('servicios', 'ver', 'Servicios del taller', 'Ver', 'Ajustes', 61, FALSE),
-    ('servicios', 'crear', 'Servicios del taller', 'Crear', 'Ajustes', 62, FALSE),
-    ('servicios', 'editar', 'Servicios del taller', 'Editar', 'Ajustes', 63, FALSE),
-    ('servicios', 'eliminar', 'Servicios del taller', 'Eliminar', 'Ajustes', 64, FALSE),
-    ('sucursales', 'ver', 'Sucursales', 'Ver', 'Ajustes', 65, FALSE),
-    ('sucursales', 'crear', 'Sucursales', 'Crear', 'Ajustes', 66, FALSE),
-    ('sucursales', 'editar', 'Sucursales', 'Editar', 'Ajustes', 67, FALSE),
-    ('sucursales', 'eliminar', 'Sucursales', 'Eliminar', 'Ajustes', 68, FALSE),
-    ('bitacora', 'ver', 'Bitácora de operaciones', 'Ver', 'Ajustes', 69, FALSE),
-    ('usuarios', 'ver', 'Usuarios y permisos de la empresa', 'Ver', 'Empresa', 70, FALSE),
-    ('usuarios', 'crear', 'Usuarios y permisos de la empresa', 'Crear', 'Empresa', 71, FALSE),
-    ('usuarios', 'editar', 'Usuarios y permisos de la empresa', 'Editar, activar/desactivar, permisos y restablecer acceso', 'Empresa', 72, FALSE),
-    ('usuarios', 'eliminar', 'Usuarios y permisos de la empresa', 'Eliminar', 'Empresa', 73, FALSE),
-    ('auditoria', 'ver', 'Auditoría de la empresa', 'Ver', 'Empresa', 74, FALSE),
-    ('empresa', 'ver', 'Configuración de la empresa', 'Ver', 'Empresa', 75, FALSE),
-    ('empresa', 'editar', 'Configuración de la empresa', 'Editar', 'Empresa', 76, FALSE)
+    ('facturacion', 'ver', 'Facturación electrónica (SRI)', 'Ver comprobantes', 'Facturación', 60, FALSE),
+    ('facturacion', 'crear', 'Facturación electrónica (SRI)', 'Preparar borradores', 'Facturación', 61, FALSE),
+    ('facturacion', 'aprobar', 'Facturación electrónica (SRI)', 'Emitir y enviar al SRI', 'Facturación', 62, FALSE),
+    ('facturacion', 'exportar', 'Facturación electrónica (SRI)', 'Descargar XML / RIDE y reenviar correo', 'Facturación', 63, FALSE),
+    ('facturacion', 'anular', 'Facturación electrónica (SRI)', 'Notas de crédito y registro de anulaciones', 'Facturación', 64, FALSE),
+    ('facturacion', 'eliminar', 'Facturación electrónica (SRI)', 'Descartar borradores', 'Facturación', 65, FALSE),
+    ('facturacion_config', 'ver', 'Configuración tributaria y firma electrónica', 'Ver', 'Facturación', 66, FALSE),
+    ('facturacion_config', 'editar', 'Configuración tributaria y firma electrónica', 'Editar datos tributarios, puntos de emisión y certificado', 'Facturación', 67, FALSE),
+    ('facturacion_config', 'aprobar', 'Configuración tributaria y firma electrónica', 'Activar el ambiente de producción', 'Facturación', 68, FALSE),
+    ('estadisticas', 'ver', 'Reportes y estadísticas', 'Ver', 'Reportes', 69, FALSE),
+    ('servicios', 'ver', 'Servicios del taller', 'Ver', 'Ajustes', 70, FALSE),
+    ('servicios', 'crear', 'Servicios del taller', 'Crear', 'Ajustes', 71, FALSE),
+    ('servicios', 'editar', 'Servicios del taller', 'Editar', 'Ajustes', 72, FALSE),
+    ('servicios', 'eliminar', 'Servicios del taller', 'Eliminar', 'Ajustes', 73, FALSE),
+    ('sucursales', 'ver', 'Sucursales', 'Ver', 'Ajustes', 74, FALSE),
+    ('sucursales', 'crear', 'Sucursales', 'Crear', 'Ajustes', 75, FALSE),
+    ('sucursales', 'editar', 'Sucursales', 'Editar', 'Ajustes', 76, FALSE),
+    ('sucursales', 'eliminar', 'Sucursales', 'Eliminar', 'Ajustes', 77, FALSE),
+    ('bitacora', 'ver', 'Bitácora de operaciones', 'Ver', 'Ajustes', 78, FALSE),
+    ('usuarios', 'ver', 'Usuarios y permisos de la empresa', 'Ver', 'Empresa', 79, FALSE),
+    ('usuarios', 'crear', 'Usuarios y permisos de la empresa', 'Crear', 'Empresa', 80, FALSE),
+    ('usuarios', 'editar', 'Usuarios y permisos de la empresa', 'Editar, activar/desactivar, permisos y restablecer acceso', 'Empresa', 81, FALSE),
+    ('usuarios', 'eliminar', 'Usuarios y permisos de la empresa', 'Eliminar', 'Empresa', 82, FALSE),
+    ('auditoria', 'ver', 'Auditoría de la empresa', 'Ver', 'Empresa', 83, FALSE),
+    ('empresa', 'ver', 'Configuración de la empresa', 'Ver', 'Empresa', 84, FALSE),
+    ('empresa', 'editar', 'Configuración de la empresa', 'Editar', 'Empresa', 85, FALSE),
+    ('legal', 'ver', 'Documentos legales y aceptaciones', 'Ver documentos, aceptaciones y constancias', 'Empresa', 86, FALSE),
+    ('legal', 'editar', 'Documentos legales y aceptaciones', 'Redactar borradores', 'Empresa', 87, FALSE),
+    ('legal', 'aprobar', 'Documentos legales y aceptaciones', 'Publicar versiones', 'Empresa', 88, FALSE)
 ON CONFLICT (modulo, accion) DO UPDATE SET
     modulo_nombre = EXCLUDED.modulo_nombre, accion_nombre = EXCLUDED.accion_nombre,
     grupo = EXCLUDED.grupo, orden = EXCLUDED.orden, solo_superadmin = EXCLUDED.solo_superadmin;
@@ -1884,6 +1896,18 @@ JOIN (VALUES
     ('administrador', 'auditoria', 'ver'),
     ('administrador', 'empresa', 'ver'),
     ('administrador', 'empresa', 'editar'),
+    ('administrador', 'facturacion', 'ver'),
+    ('administrador', 'facturacion', 'crear'),
+    ('administrador', 'facturacion', 'aprobar'),
+    ('administrador', 'facturacion', 'exportar'),
+    ('administrador', 'facturacion', 'anular'),
+    ('administrador', 'facturacion', 'eliminar'),
+    ('administrador', 'facturacion_config', 'ver'),
+    ('administrador', 'facturacion_config', 'editar'),
+    ('administrador', 'facturacion_config', 'aprobar'),
+    ('administrador', 'legal', 'ver'),
+    ('administrador', 'legal', 'editar'),
+    ('administrador', 'legal', 'aprobar'),
     ('recepcionista', 'dashboard', 'ver'),
     ('recepcionista', 'inventario_mecanica', 'ver'),
     ('recepcionista', 'inventario_colisiones', 'ver'),
@@ -1921,6 +1945,9 @@ JOIN (VALUES
     ('recepcionista', 'caja', 'ver'),
     ('recepcionista', 'caja', 'crear'),
     ('recepcionista', 'caja', 'aprobar'),
+    ('recepcionista', 'facturacion', 'ver'),
+    ('recepcionista', 'facturacion', 'crear'),
+    ('recepcionista', 'facturacion', 'exportar'),
     ('tecnico', 'dashboard', 'ver'),
     ('tecnico', 'inventario_mecanica', 'ver'),
     ('tecnico', 'inventario_mecanica', 'crear'),
@@ -2203,23 +2230,35 @@ INSERT INTO permisos_catalogo (modulo, accion, modulo_nombre, accion_nombre, gru
     ('proveedores', 'crear', 'Proveedores, compras y gastos', 'Crear', 'Proveedores', 57, FALSE),
     ('proveedores', 'editar', 'Proveedores, compras y gastos', 'Editar', 'Proveedores', 58, FALSE),
     ('proveedores', 'eliminar', 'Proveedores, compras y gastos', 'Eliminar', 'Proveedores', 59, FALSE),
-    ('estadisticas', 'ver', 'Reportes y estadísticas', 'Ver', 'Reportes', 60, FALSE),
-    ('servicios', 'ver', 'Servicios del taller', 'Ver', 'Ajustes', 61, FALSE),
-    ('servicios', 'crear', 'Servicios del taller', 'Crear', 'Ajustes', 62, FALSE),
-    ('servicios', 'editar', 'Servicios del taller', 'Editar', 'Ajustes', 63, FALSE),
-    ('servicios', 'eliminar', 'Servicios del taller', 'Eliminar', 'Ajustes', 64, FALSE),
-    ('sucursales', 'ver', 'Sucursales', 'Ver', 'Ajustes', 65, FALSE),
-    ('sucursales', 'crear', 'Sucursales', 'Crear', 'Ajustes', 66, FALSE),
-    ('sucursales', 'editar', 'Sucursales', 'Editar', 'Ajustes', 67, FALSE),
-    ('sucursales', 'eliminar', 'Sucursales', 'Eliminar', 'Ajustes', 68, FALSE),
-    ('bitacora', 'ver', 'Bitácora de operaciones', 'Ver', 'Ajustes', 69, FALSE),
-    ('usuarios', 'ver', 'Usuarios y permisos de la empresa', 'Ver', 'Empresa', 70, FALSE),
-    ('usuarios', 'crear', 'Usuarios y permisos de la empresa', 'Crear', 'Empresa', 71, FALSE),
-    ('usuarios', 'editar', 'Usuarios y permisos de la empresa', 'Editar, activar/desactivar, permisos y restablecer acceso', 'Empresa', 72, FALSE),
-    ('usuarios', 'eliminar', 'Usuarios y permisos de la empresa', 'Eliminar', 'Empresa', 73, FALSE),
-    ('auditoria', 'ver', 'Auditoría de la empresa', 'Ver', 'Empresa', 74, FALSE),
-    ('empresa', 'ver', 'Configuración de la empresa', 'Ver', 'Empresa', 75, FALSE),
-    ('empresa', 'editar', 'Configuración de la empresa', 'Editar', 'Empresa', 76, FALSE)
+    ('facturacion', 'ver', 'Facturación electrónica (SRI)', 'Ver comprobantes', 'Facturación', 60, FALSE),
+    ('facturacion', 'crear', 'Facturación electrónica (SRI)', 'Preparar borradores', 'Facturación', 61, FALSE),
+    ('facturacion', 'aprobar', 'Facturación electrónica (SRI)', 'Emitir y enviar al SRI', 'Facturación', 62, FALSE),
+    ('facturacion', 'exportar', 'Facturación electrónica (SRI)', 'Descargar XML / RIDE y reenviar correo', 'Facturación', 63, FALSE),
+    ('facturacion', 'anular', 'Facturación electrónica (SRI)', 'Notas de crédito y registro de anulaciones', 'Facturación', 64, FALSE),
+    ('facturacion', 'eliminar', 'Facturación electrónica (SRI)', 'Descartar borradores', 'Facturación', 65, FALSE),
+    ('facturacion_config', 'ver', 'Configuración tributaria y firma electrónica', 'Ver', 'Facturación', 66, FALSE),
+    ('facturacion_config', 'editar', 'Configuración tributaria y firma electrónica', 'Editar datos tributarios, puntos de emisión y certificado', 'Facturación', 67, FALSE),
+    ('facturacion_config', 'aprobar', 'Configuración tributaria y firma electrónica', 'Activar el ambiente de producción', 'Facturación', 68, FALSE),
+    ('estadisticas', 'ver', 'Reportes y estadísticas', 'Ver', 'Reportes', 69, FALSE),
+    ('servicios', 'ver', 'Servicios del taller', 'Ver', 'Ajustes', 70, FALSE),
+    ('servicios', 'crear', 'Servicios del taller', 'Crear', 'Ajustes', 71, FALSE),
+    ('servicios', 'editar', 'Servicios del taller', 'Editar', 'Ajustes', 72, FALSE),
+    ('servicios', 'eliminar', 'Servicios del taller', 'Eliminar', 'Ajustes', 73, FALSE),
+    ('sucursales', 'ver', 'Sucursales', 'Ver', 'Ajustes', 74, FALSE),
+    ('sucursales', 'crear', 'Sucursales', 'Crear', 'Ajustes', 75, FALSE),
+    ('sucursales', 'editar', 'Sucursales', 'Editar', 'Ajustes', 76, FALSE),
+    ('sucursales', 'eliminar', 'Sucursales', 'Eliminar', 'Ajustes', 77, FALSE),
+    ('bitacora', 'ver', 'Bitácora de operaciones', 'Ver', 'Ajustes', 78, FALSE),
+    ('usuarios', 'ver', 'Usuarios y permisos de la empresa', 'Ver', 'Empresa', 79, FALSE),
+    ('usuarios', 'crear', 'Usuarios y permisos de la empresa', 'Crear', 'Empresa', 80, FALSE),
+    ('usuarios', 'editar', 'Usuarios y permisos de la empresa', 'Editar, activar/desactivar, permisos y restablecer acceso', 'Empresa', 81, FALSE),
+    ('usuarios', 'eliminar', 'Usuarios y permisos de la empresa', 'Eliminar', 'Empresa', 82, FALSE),
+    ('auditoria', 'ver', 'Auditoría de la empresa', 'Ver', 'Empresa', 83, FALSE),
+    ('empresa', 'ver', 'Configuración de la empresa', 'Ver', 'Empresa', 84, FALSE),
+    ('empresa', 'editar', 'Configuración de la empresa', 'Editar', 'Empresa', 85, FALSE),
+    ('legal', 'ver', 'Documentos legales y aceptaciones', 'Ver documentos, aceptaciones y constancias', 'Empresa', 86, FALSE),
+    ('legal', 'editar', 'Documentos legales y aceptaciones', 'Redactar borradores', 'Empresa', 87, FALSE),
+    ('legal', 'aprobar', 'Documentos legales y aceptaciones', 'Publicar versiones', 'Empresa', 88, FALSE)
 ON CONFLICT (modulo, accion) DO UPDATE SET
     modulo_nombre = EXCLUDED.modulo_nombre, accion_nombre = EXCLUDED.accion_nombre,
     grupo = EXCLUDED.grupo, orden = EXCLUDED.orden, solo_superadmin = EXCLUDED.solo_superadmin;
@@ -2521,11 +2560,15 @@ BEGIN
 
     -- Toda tabla a la que la app puede escribir debe estar aislada o ser
     -- un catalogo/plataforma conocido: una tabla nueva sin empresa_id falla aqui.
+    -- (Sprint 23: las tablas de sprints posteriores cuentan como protegidas si
+    -- tienen RLS activo: con politicas quedan aisladas por empresa y sin
+    -- politicas nadie salvo el sistema las lee. Su propio bloque las valida.)
     FOR t IN
         SELECT c.relname FROM pg_class c JOIN pg_namespace ns ON ns.oid = c.relnamespace
         WHERE ns.nspname = 'public' AND c.relkind = 'r'
           AND has_table_privilege('ssswap_app', c.oid, 'SELECT')
           AND NOT (c.relname = ANY (tablas)) AND NOT (c.relname = ANY (globales)) AND c.relname <> 'empresas'
+          AND NOT c.relrowsecurity
     LOOP
         RAISE EXCEPTION 'Validacion: la tabla % es accesible para la app pero no esta clasificada (empresa o global).', t;
     END LOOP;
@@ -2534,4 +2577,711 @@ BEGIN
     SELECT '22-multiempresa', 'Plataforma multiempresa: SS SWAP como primera empresa, RLS y llaves compuestas', 'exito',
            jsonb_build_object('empresa_ss_swap', v_ssswap, 'filas_ss_swap', detalle)
     WHERE NOT EXISTS (SELECT 1 FROM migraciones_registro WHERE version = '22-multiempresa' AND resultado = 'exito');
+END $$;
+
+
+-- ============================================================
+-- Sprint 23: Facturacion electronica SRI + documentos legales
+--
+-- Requiere el Sprint 22 (empresas, RLS, rol ssswap_app). 100 % aditivo:
+-- no borra ni modifica datos existentes (solo agrega columnas opcionales a
+-- clientes). Idempotente: se puede correr varias veces.
+--
+-- 23.1 Clientes: tipo de identificacion SRI y confirmacion de datos.
+-- 23.2 Configuracion tributaria del emisor (por empresa) y certificado
+--      CIFRADO (AES-256-GCM con la llave SRI_CERT_KEY del servidor).
+-- 23.3 Puntos de emision (establecimiento + punto habilitados en el SRI).
+-- 23.4 Comprobantes electronicos, detalles y eventos (bitacora inmutable).
+--      Un comprobante AUTORIZADO no se puede editar ni borrar (trigger).
+-- 23.5 Documentos legales versionados, contratos y aceptaciones
+--      (evidencia de solo insercion, ligada al hash del texto aceptado).
+-- 23.6 Proveedor de la plataforma (datos para el flujo de contratacion).
+-- 23.7 Aislamiento por empresa (RLS + llaves compuestas generadas desde
+--      backend/src/config/multiempresa.js) y permisos del rol ssswap_app.
+-- 23.8 Permisos nuevos para los administradores existentes (una vez).
+-- 23.9 Validaciones finales y registro.
+-- ============================================================
+
+-- ── 23.1 Clientes ──
+ALTER TABLE clientes ADD COLUMN IF NOT EXISTS tipo_identificacion VARCHAR(2);
+ALTER TABLE clientes ADD COLUMN IF NOT EXISTS identificacion_confirmada_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE clientes ADD COLUMN IF NOT EXISTS identificacion_confirmada_por INTEGER;
+SELECT agregar_constraint_si_falta('clientes', 'chk_clientes_tipo_identificacion',
+    'CHECK (tipo_identificacion IS NULL OR tipo_identificacion IN (''04'',''05'',''06'',''07'',''08''))');
+COMMENT ON COLUMN clientes.tipo_identificacion IS 'Tipo SRI (Tabla 6): 04 RUC, 05 cedula, 06 pasaporte, 07 consumidor final, 08 exterior. NULL = sin confirmar.';
+COMMENT ON COLUMN clientes.identificacion_confirmada_at IS 'Cuando una persona autorizada confirmo la identificacion y razon social (el SRI no publica un servicio de consulta de RUC).';
+
+-- ── 23.2 Configuracion tributaria ──
+CREATE TABLE IF NOT EXISTS sri_configuracion (
+    id                        SERIAL PRIMARY KEY,
+    empresa_id                INTEGER NOT NULL DEFAULT empresa_actual() UNIQUE,
+    ruc                       VARCHAR(13),
+    razon_social              VARCHAR(300),
+    nombre_comercial          VARCHAR(300),
+    dir_matriz                VARCHAR(300),
+    regimen                   VARCHAR(30) NOT NULL DEFAULT 'general'
+                              CHECK (regimen IN ('general','rimpe_emprendedor','rimpe_negocio_popular')),
+    obligado_contabilidad     BOOLEAN NOT NULL DEFAULT FALSE,
+    contribuyente_especial    VARCHAR(13),
+    agente_retencion          VARCHAR(8),
+    email_emisor              VARCHAR(150),
+    telefono                  VARCHAR(30),
+    iva_codigo_defecto        VARCHAR(4) NOT NULL DEFAULT '4',
+    ruc_proveedor_sistema     VARCHAR(13),
+    ambiente                  SMALLINT NOT NULL DEFAULT 1 CHECK (ambiente IN (1,2)),
+    produccion_habilitada_at  TIMESTAMP WITH TIME ZONE,
+    produccion_habilitada_por INTEGER,
+    espera_autorizacion_seg   INTEGER NOT NULL DEFAULT 3 CHECK (espera_autorizacion_seg BETWEEN 1 AND 60),
+    certificado_cifrado       BYTEA,
+    certificado_clave_cifrada BYTEA,
+    certificado_titular       VARCHAR(300),
+    certificado_emisor        VARCHAR(300),
+    certificado_serial        VARCHAR(80),
+    certificado_desde         TIMESTAMP WITH TIME ZONE,
+    certificado_hasta         TIMESTAMP WITH TIME ZONE,
+    certificado_ruc           VARCHAR(13),
+    certificado_huella        VARCHAR(64),
+    certificado_cargado_por   INTEGER,
+    certificado_cargado_at    TIMESTAMP WITH TIME ZONE,
+    actualizado_por           INTEGER,
+    created_at                TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at                TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    CHECK (ruc IS NULL OR ruc ~ '^[0-9]{13}$'),
+    CHECK (ruc_proveedor_sistema IS NULL OR ruc_proveedor_sistema ~ '^[0-9]{13}$'),
+    -- Produccion solo con la habilitacion registrada (quien y cuando).
+    CHECK (ambiente = 1 OR produccion_habilitada_at IS NOT NULL)
+);
+COMMENT ON TABLE sri_configuracion IS 'Datos tributarios del EMISOR de cada empresa. Los ingresa y verifica un administrador; nunca se copian de otro comprobante.';
+COMMENT ON COLUMN sri_configuracion.certificado_cifrado IS 'Archivo .p12 cifrado (AES-256-GCM, llave SRI_CERT_KEY del servidor). Nunca se devuelve por la API.';
+COMMENT ON COLUMN sri_configuracion.ruc_proveedor_sistema IS 'Anexo 26 (Ficha v2.34): RUC del proveedor del sistema de facturacion, solo si es un tercero de la resolucion 2718.';
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_updated_at_sri_configuracion') THEN
+        CREATE TRIGGER set_updated_at_sri_configuracion BEFORE UPDATE ON sri_configuracion FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
+    END IF;
+END $$;
+
+-- ── 23.3 Puntos de emision ──
+CREATE TABLE IF NOT EXISTS sri_puntos_emision (
+    id                SERIAL PRIMARY KEY,
+    empresa_id        INTEGER NOT NULL DEFAULT empresa_actual(),
+    establecimiento   CHAR(3) NOT NULL CHECK (establecimiento ~ '^[0-9]{3}$' AND establecimiento <> '000'),
+    punto_emision     CHAR(3) NOT NULL CHECK (punto_emision ~ '^[0-9]{3}$' AND punto_emision <> '000'),
+    direccion         VARCHAR(300) NOT NULL,
+    sucursal_id       INTEGER,
+    descripcion       VARCHAR(120),
+    activo            BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at        TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE (empresa_id, establecimiento, punto_emision)
+);
+COMMENT ON TABLE sri_puntos_emision IS 'Establecimiento y punto de emision habilitados en el SRI. La numeracion de cada uno vive en empresa_secuencias (sri:<ambiente>:<codDoc>:<estab>-<pto>).';
+
+-- ── 23.4 Comprobantes electronicos ──
+CREATE TABLE IF NOT EXISTS comprobantes_electronicos (
+    id                         SERIAL PRIMARY KEY,
+    empresa_id                 INTEGER NOT NULL DEFAULT empresa_actual(),
+    cod_doc                    VARCHAR(2)  NOT NULL CHECK (cod_doc IN ('01','04')),
+    version_xml                VARCHAR(10) NOT NULL DEFAULT '1.1.0',
+    ambiente                   SMALLINT    NOT NULL CHECK (ambiente IN (1,2)),
+    estado                     VARCHAR(25) NOT NULL DEFAULT 'borrador' CHECK (estado IN (
+                                   'borrador','firmado','recibida','devuelta','en_procesamiento','autorizado',
+                                   'no_autorizado','pendiente_reintento','anulacion_solicitada','anulado','descartado')),
+    punto_emision_id           INTEGER NOT NULL,
+    establecimiento            CHAR(3) NOT NULL,
+    punto_emision              CHAR(3) NOT NULL,
+    secuencial                 CHAR(9) CHECK (secuencial ~ '^[0-9]{9}$'),
+    clave_acceso               CHAR(49) UNIQUE CHECK (clave_acceso ~ '^[0-9]{49}$'),
+    fecha_emision              DATE NOT NULL DEFAULT CURRENT_DATE,
+    -- Instantanea del comprador (integridad historica: no cambia si cambia el cliente).
+    cliente_id                 INTEGER,
+    comprador_tipo_identificacion VARCHAR(2) NOT NULL CHECK (comprador_tipo_identificacion IN ('04','05','06','07','08')),
+    comprador_identificacion   VARCHAR(20)  NOT NULL,
+    comprador_razon_social     VARCHAR(300) NOT NULL,
+    comprador_direccion        VARCHAR(300),
+    comprador_email            VARCHAR(300),
+    comprador_telefono         VARCHAR(50),
+    emisor                     JSONB,
+    vehiculo                   JSONB,
+    -- Origen y relaciones con el resto del sistema.
+    proforma_id                INTEGER,
+    orden_id                   INTEGER,
+    cuenta_cobrar_id           INTEGER,
+    comprobante_modificado_id  INTEGER,
+    motivo_nc                  VARCHAR(300),
+    -- Valores.
+    total_sin_impuestos        NUMERIC(14,2) NOT NULL DEFAULT 0,
+    total_descuento            NUMERIC(14,2) NOT NULL DEFAULT 0,
+    total_iva                  NUMERIC(14,2) NOT NULL DEFAULT 0,
+    propina                    NUMERIC(14,2) NOT NULL DEFAULT 0,
+    importe_total              NUMERIC(14,2) NOT NULL DEFAULT 0,
+    totales_impuestos          JSONB NOT NULL DEFAULT '[]'::jsonb,
+    pagos                      JSONB NOT NULL DEFAULT '[]'::jsonb,
+    info_adicional             JSONB NOT NULL DEFAULT '[]'::jsonb,
+    -- SRI.
+    xml_firmado                TEXT,
+    xml_autorizado             TEXT,
+    numero_autorizacion        VARCHAR(49),
+    fecha_autorizacion         TIMESTAMP WITH TIME ZONE,
+    ultimo_mensaje             JSONB,
+    intentos_envio             INTEGER NOT NULL DEFAULT 0,
+    proximo_intento            TIMESTAMP WITH TIME ZONE,
+    procesando_hasta           TIMESTAMP WITH TIME ZONE,
+    -- Entrega (independiente del estado tributario).
+    correo_estado              VARCHAR(12) NOT NULL DEFAULT 'pendiente' CHECK (correo_estado IN ('pendiente','enviado','error','sin_correo')),
+    correo_enviado_at          TIMESTAMP WITH TIME ZONE,
+    correo_destinatarios       VARCHAR(500),
+    correo_error               VARCHAR(300),
+    -- Anulacion (se tramita en SRI en Linea; aqui se registra y se verifica).
+    anulacion_solicitada_at    TIMESTAMP WITH TIME ZONE,
+    anulacion_solicitada_por   INTEGER,
+    anulacion_motivo           VARCHAR(300),
+    anulado_at                 TIMESTAMP WITH TIME ZONE,
+    idempotency_key            VARCHAR(64),
+    creado_por                 INTEGER NOT NULL,
+    emitido_por                INTEGER,
+    emitido_at                 TIMESTAMP WITH TIME ZONE,
+    created_at                 TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at                 TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    CHECK (importe_total >= 0 AND total_sin_impuestos >= 0 AND total_iva >= 0 AND total_descuento >= 0),
+    CHECK (cod_doc <> '04' OR (comprobante_modificado_id IS NOT NULL AND motivo_nc IS NOT NULL)),
+    -- Ficha 9.10: consumidor final solo hasta USD 50 (y nunca en notas de credito).
+    CHECK (comprador_tipo_identificacion <> '07' OR (cod_doc = '01' AND importe_total <= 50)),
+    CHECK (estado IN ('borrador','descartado') OR (secuencial IS NOT NULL AND clave_acceso IS NOT NULL))
+);
+COMMENT ON TABLE comprobantes_electronicos IS 'Facturas (01) y notas de credito (04) electronicas. El estado tributario sale SOLO de las respuestas del SRI. Un comprobante autorizado no se edita ni se borra.';
+COMMENT ON COLUMN comprobantes_electronicos.ambiente IS '1 = pruebas (sin validez tributaria), 2 = produccion.';
+COMMENT ON COLUMN comprobantes_electronicos.correo_estado IS 'Entrega al cliente. Un error de correo NO cambia el estado tributario.';
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_comprobante_numero ON comprobantes_electronicos (empresa_id, ambiente, cod_doc, establecimiento, punto_emision, secuencial) WHERE secuencial IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_comprobante_idempotencia ON comprobantes_electronicos (empresa_id, idempotency_key) WHERE idempotency_key IS NOT NULL;
+-- Una proforma se factura una sola vez por ambiente (salvo borradores descartados o facturas anuladas).
+CREATE UNIQUE INDEX IF NOT EXISTS uq_factura_por_proforma ON comprobantes_electronicos (empresa_id, ambiente, proforma_id)
+    WHERE cod_doc = '01' AND proforma_id IS NOT NULL AND estado NOT IN ('descartado','anulado');
+CREATE INDEX IF NOT EXISTS idx_comprobantes_estado ON comprobantes_electronicos (empresa_id, estado);
+CREATE INDEX IF NOT EXISTS idx_comprobantes_fecha ON comprobantes_electronicos (empresa_id, fecha_emision DESC);
+CREATE INDEX IF NOT EXISTS idx_comprobantes_comprador ON comprobantes_electronicos (empresa_id, comprador_identificacion);
+CREATE INDEX IF NOT EXISTS idx_comprobantes_pendientes ON comprobantes_electronicos (proximo_intento)
+    WHERE estado IN ('firmado','recibida','en_procesamiento','pendiente_reintento');
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_updated_at_comprobantes_electronicos') THEN
+        CREATE TRIGGER set_updated_at_comprobantes_electronicos BEFORE UPDATE ON comprobantes_electronicos FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
+    END IF;
+END $$;
+
+CREATE TABLE IF NOT EXISTS comprobante_detalles (
+    id                         SERIAL PRIMARY KEY,
+    empresa_id                 INTEGER NOT NULL DEFAULT empresa_actual(),
+    comprobante_id             INTEGER NOT NULL,
+    linea                      INTEGER NOT NULL,
+    codigo_principal           VARCHAR(25),
+    descripcion                VARCHAR(300) NOT NULL,
+    cantidad                   NUMERIC(18,6) NOT NULL CHECK (cantidad > 0),
+    precio_unitario            NUMERIC(18,6) NOT NULL CHECK (precio_unitario >= 0),
+    descuento                  NUMERIC(14,2) NOT NULL DEFAULT 0 CHECK (descuento >= 0),
+    precio_total_sin_impuesto  NUMERIC(14,2) NOT NULL CHECK (precio_total_sin_impuesto >= 0),
+    iva_codigo                 VARCHAR(4)  NOT NULL,
+    iva_tarifa                 NUMERIC(5,2) NOT NULL,
+    iva_base                   NUMERIC(14,2) NOT NULL,
+    iva_valor                  NUMERIC(14,2) NOT NULL,
+    proforma_item_id           INTEGER,
+    detalles_adicionales       JSONB,
+    UNIQUE (comprobante_id, linea)
+);
+CREATE INDEX IF NOT EXISTS idx_comprobante_detalles_comprobante ON comprobante_detalles (comprobante_id);
+COMMENT ON TABLE comprobante_detalles IS 'Lineas del comprobante tal como se enviaron al SRI (instantanea; no cambian si cambia el inventario o la proforma).';
+
+CREATE TABLE IF NOT EXISTS comprobante_eventos (
+    id                 BIGSERIAL PRIMARY KEY,
+    empresa_id         INTEGER NOT NULL DEFAULT empresa_actual(),
+    comprobante_id     INTEGER NOT NULL,
+    created_at         TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    usuario_id         INTEGER,
+    tipo               VARCHAR(40) NOT NULL,
+    estado_anterior    VARCHAR(25),
+    estado_nuevo       VARCHAR(25),
+    detalle            JSONB,
+    respuesta_sri      TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_comprobante_eventos ON comprobante_eventos (comprobante_id, created_at);
+COMMENT ON TABLE comprobante_eventos IS 'Bitacora inmutable de cada comprobante: emision, envios, respuestas del SRI, correos, anulaciones. Nunca guarda certificados ni claves.';
+
+-- ── 23.5 Documentos legales, contratos y aceptaciones ──
+CREATE TABLE IF NOT EXISTS documentos_legales (
+    id            SERIAL PRIMARY KEY,
+    empresa_id    INTEGER,
+    tipo          VARCHAR(40) NOT NULL CHECK (tipo IN ('terminos','privacidad','condiciones_comerciales',
+                      'cancelacion','condiciones_empresariales','autorizacion_datos')),
+    titulo        VARCHAR(200) NOT NULL,
+    audiencia     VARCHAR(20)  NOT NULL CHECK (audiencia IN ('empresas','clientes_portal')),
+    obligatorio   BOOLEAN NOT NULL DEFAULT TRUE,
+    activo        BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at    TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    -- Plataforma (empresa NULL) -> lo aceptan las empresas; empresa -> sus clientes.
+    CHECK ((empresa_id IS NULL AND audiencia = 'empresas') OR (empresa_id IS NOT NULL AND audiencia = 'clientes_portal'))
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_documento_legal ON documentos_legales (COALESCE(empresa_id, 0), tipo);
+COMMENT ON TABLE documentos_legales IS 'Documentos legales: empresa_id NULL = de la plataforma (los acepta cada empresa); con empresa = de esa empresa para los clientes de su portal.';
+COMMENT ON COLUMN documentos_legales.activo IS 'FALSE = ya no se ofrece para nuevas aceptaciones; el historial y las aceptaciones se conservan.';
+
+CREATE TABLE IF NOT EXISTS documento_legal_versiones (
+    id                   SERIAL PRIMARY KEY,
+    documento_id         INTEGER NOT NULL REFERENCES documentos_legales(id),
+    empresa_id           INTEGER,
+    version              INTEGER NOT NULL,
+    contenido            TEXT NOT NULL CHECK (length(contenido) BETWEEN 50 AND 200000),
+    hash_contenido       CHAR(64) NOT NULL,
+    estado               VARCHAR(12) NOT NULL DEFAULT 'borrador' CHECK (estado IN ('borrador','publicada','retirada')),
+    cambio_material      BOOLEAN NOT NULL DEFAULT FALSE,
+    resumen_cambios      VARCHAR(1000),
+    revision_profesional VARCHAR(12) NOT NULL DEFAULT 'pendiente' CHECK (revision_profesional IN ('pendiente','revisado')),
+    vigente_desde        DATE,
+    publicada_at         TIMESTAMP WITH TIME ZONE,
+    publicada_por        INTEGER,
+    retirada_at          TIMESTAMP WITH TIME ZONE,
+    creado_por           INTEGER,
+    created_at           TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE (documento_id, version),
+    CHECK (estado = 'borrador' OR (publicada_at IS NOT NULL AND vigente_desde IS NOT NULL))
+);
+COMMENT ON TABLE documento_legal_versiones IS 'Versiones de cada documento. Al publicarse, el texto y su hash SHA-256 quedan inmutables (trigger).';
+
+CREATE TABLE IF NOT EXISTS contratos_empresa (
+    id                   SERIAL PRIMARY KEY,
+    empresa_id           INTEGER NOT NULL DEFAULT empresa_actual(),
+    plan                 VARCHAR(120) NOT NULL,
+    alcance              TEXT NOT NULL,
+    precio               NUMERIC(12,2),
+    moneda               VARCHAR(3) NOT NULL DEFAULT 'USD',
+    periodicidad         VARCHAR(20) CHECK (periodicidad IS NULL OR periodicidad IN ('mensual','trimestral','semestral','anual','unico')),
+    condiciones_soporte  TEXT,
+    fecha_inicio         DATE,
+    fecha_fin            DATE,
+    estado               VARCHAR(25) NOT NULL DEFAULT 'pendiente_aceptacion' CHECK (estado IN ('pendiente_aceptacion','vigente','terminado')),
+    creado_por           INTEGER,
+    created_at           TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    aceptado_por         INTEGER,
+    aceptado_at          TIMESTAMP WITH TIME ZONE,
+    transaccion_aceptacion UUID,
+    terminado_at         TIMESTAMP WITH TIME ZONE,
+    motivo_terminacion   VARCHAR(300),
+    CHECK (estado = 'pendiente_aceptacion' OR aceptado_at IS NOT NULL)
+);
+COMMENT ON TABLE contratos_empresa IS 'Contratacion del servicio por cada empresa: plan, alcance y precio. Lo crea la plataforma y lo acepta el administrador de la empresa.';
+
+CREATE TABLE IF NOT EXISTS aceptaciones_legales (
+    id               BIGSERIAL PRIMARY KEY,
+    empresa_id       INTEGER NOT NULL DEFAULT empresa_actual(),
+    version_id       INTEGER NOT NULL REFERENCES documento_legal_versiones(id),
+    documento_id     INTEGER NOT NULL REFERENCES documentos_legales(id),
+    evento           VARCHAR(12) NOT NULL DEFAULT 'aceptacion' CHECK (evento IN ('aceptacion','revocacion')),
+    usuario_id       INTEGER,
+    cliente_id       INTEGER,
+    contrato_id      INTEGER,
+    contexto         VARCHAR(30) NOT NULL CHECK (contexto IN ('registro_cliente','contratacion_empresa','reaceptacion','revocacion')),
+    metodo           VARCHAR(30) NOT NULL DEFAULT 'casilla_web',
+    transaccion_id   UUID NOT NULL,
+    hash_contenido   CHAR(64) NOT NULL,
+    nombre_aceptante VARCHAR(200),
+    identificacion_aceptante VARCHAR(20),
+    ip               VARCHAR(64),
+    user_agent       VARCHAR(250),
+    aceptado_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    CHECK (usuario_id IS NOT NULL OR cliente_id IS NOT NULL)
+);
+CREATE INDEX IF NOT EXISTS idx_aceptaciones_version ON aceptaciones_legales (version_id);
+CREATE INDEX IF NOT EXISTS idx_aceptaciones_usuario ON aceptaciones_legales (usuario_id);
+CREATE INDEX IF NOT EXISTS idx_aceptaciones_transaccion ON aceptaciones_legales (transaccion_id);
+COMMENT ON TABLE aceptaciones_legales IS 'Evidencia de aceptacion: version exacta, hash del texto, fecha del servidor y transaccion. Solo insercion (una revocacion es una fila nueva).';
+COMMENT ON COLUMN aceptaciones_legales.ip IS 'IP de la peticion, como evidencia tecnica del evento. Solo visible con el permiso legal:ver.';
+
+CREATE TABLE IF NOT EXISTS notificaciones_legales (
+    id            BIGSERIAL PRIMARY KEY,
+    empresa_id    INTEGER NOT NULL DEFAULT empresa_actual(),
+    version_id    INTEGER NOT NULL REFERENCES documento_legal_versiones(id),
+    usuario_id    INTEGER,
+    cliente_id    INTEGER,
+    medio         VARCHAR(12) NOT NULL CHECK (medio IN ('panel','correo')),
+    resultado     VARCHAR(12) NOT NULL DEFAULT 'enviado' CHECK (resultado IN ('enviado','error','visto')),
+    detalle       VARCHAR(300),
+    created_at    TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_notificaciones_legales ON notificaciones_legales (version_id);
+COMMENT ON TABLE notificaciones_legales IS 'Cuando y por que medio se notifico una nueva version de un documento legal.';
+
+-- ── 23.6 Proveedor de la plataforma ──
+CREATE TABLE IF NOT EXISTS plataforma_proveedor (
+    id                 INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+    razon_social       VARCHAR(300),
+    ruc                VARCHAR(13),
+    direccion          VARCHAR(300),
+    email_contacto     VARCHAR(150),
+    telefono           VARCHAR(30),
+    canal_reclamos     VARCHAR(300),
+    actualizado_por    INTEGER,
+    updated_at         TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+COMMENT ON TABLE plataforma_proveedor IS 'Identidad del proveedor del servicio (para el flujo de contratacion). Solo el superadministrador la edita.';
+
+-- ── Triggers de integridad ──
+-- Solo insercion (aceptaciones y eventos son evidencia).
+CREATE OR REPLACE FUNCTION solo_insercion() RETURNS TRIGGER AS $$
+BEGIN
+    RAISE EXCEPTION 'Los registros de % no se pueden modificar ni borrar (son evidencia).', TG_TABLE_NAME USING ERRCODE = '42501';
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS trg_solo_insercion ON aceptaciones_legales;
+CREATE TRIGGER trg_solo_insercion BEFORE UPDATE OR DELETE ON aceptaciones_legales FOR EACH ROW EXECUTE FUNCTION solo_insercion();
+DROP TRIGGER IF EXISTS trg_solo_insercion ON comprobante_eventos;
+CREATE TRIGGER trg_solo_insercion BEFORE UPDATE OR DELETE ON comprobante_eventos FOR EACH ROW EXECUTE FUNCTION solo_insercion();
+DROP TRIGGER IF EXISTS trg_solo_insercion ON notificaciones_legales;
+CREATE TRIGGER trg_solo_insercion BEFORE UPDATE OR DELETE ON notificaciones_legales FOR EACH ROW EXECUTE FUNCTION solo_insercion();
+
+-- Comprobante autorizado/anulado: inmutable salvo correo y anulacion.
+CREATE OR REPLACE FUNCTION proteger_comprobante_electronico() RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'DELETE' THEN
+        IF OLD.estado <> 'borrador' THEN
+            RAISE EXCEPTION 'Un comprobante electronico emitido no se puede borrar (estado %).', OLD.estado USING ERRCODE = '42501';
+        END IF;
+        RETURN OLD;
+    END IF;
+    IF OLD.clave_acceso IS NOT NULL AND NEW.clave_acceso IS DISTINCT FROM OLD.clave_acceso THEN
+        RAISE EXCEPTION 'La clave de acceso de un comprobante no se puede cambiar.' USING ERRCODE = '42501';
+    END IF;
+    IF OLD.secuencial IS NOT NULL AND (NEW.secuencial, NEW.establecimiento, NEW.punto_emision, NEW.ambiente, NEW.cod_doc)
+            IS DISTINCT FROM (OLD.secuencial, OLD.establecimiento, OLD.punto_emision, OLD.ambiente, OLD.cod_doc) THEN
+        RAISE EXCEPTION 'El numero de un comprobante emitido no se puede cambiar.' USING ERRCODE = '42501';
+    END IF;
+    IF OLD.estado IN ('autorizado','anulacion_solicitada','anulado') THEN
+        IF NEW.estado NOT IN ('autorizado','anulacion_solicitada','anulado') THEN
+            RAISE EXCEPTION 'Un comprobante autorizado no puede volver al estado %.', NEW.estado USING ERRCODE = '42501';
+        END IF;
+        IF OLD.estado = 'anulado' AND NEW.estado <> 'anulado' THEN
+            RAISE EXCEPTION 'Un comprobante anulado no cambia de estado.' USING ERRCODE = '42501';
+        END IF;
+        IF (NEW.fecha_emision, NEW.xml_firmado, NEW.xml_autorizado, NEW.numero_autorizacion, NEW.fecha_autorizacion,
+            NEW.total_sin_impuestos, NEW.total_descuento, NEW.total_iva, NEW.propina, NEW.importe_total,
+            NEW.comprador_tipo_identificacion, NEW.comprador_identificacion, NEW.comprador_razon_social, NEW.comprador_direccion,
+            NEW.emisor, NEW.totales_impuestos, NEW.pagos, NEW.info_adicional, NEW.cliente_id, NEW.proforma_id, NEW.orden_id)
+           IS DISTINCT FROM
+           (OLD.fecha_emision, OLD.xml_firmado, OLD.xml_autorizado, OLD.numero_autorizacion, OLD.fecha_autorizacion,
+            OLD.total_sin_impuestos, OLD.total_descuento, OLD.total_iva, OLD.propina, OLD.importe_total,
+            OLD.comprador_tipo_identificacion, OLD.comprador_identificacion, OLD.comprador_razon_social, OLD.comprador_direccion,
+            OLD.emisor, OLD.totales_impuestos, OLD.pagos, OLD.info_adicional, OLD.cliente_id, OLD.proforma_id, OLD.orden_id) THEN
+            RAISE EXCEPTION 'Un comprobante autorizado no se puede modificar. Para corregirlo use una nota de credito.' USING ERRCODE = '42501';
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS trg_proteger_comprobante ON comprobantes_electronicos;
+CREATE TRIGGER trg_proteger_comprobante BEFORE UPDATE OR DELETE ON comprobantes_electronicos
+    FOR EACH ROW EXECUTE FUNCTION proteger_comprobante_electronico();
+
+-- Lineas: solo editables mientras el comprobante es borrador o fue devuelto/no autorizado (se corrige con la misma clave).
+CREATE OR REPLACE FUNCTION proteger_detalle_comprobante() RETURNS TRIGGER AS $$
+DECLARE v_estado TEXT;
+BEGIN
+    SELECT estado INTO v_estado FROM comprobantes_electronicos WHERE id = COALESCE(NEW.comprobante_id, OLD.comprobante_id);
+    IF v_estado IS NOT NULL AND v_estado NOT IN ('borrador','devuelta','no_autorizado') THEN
+        RAISE EXCEPTION 'Las lineas de un comprobante en estado % no se pueden modificar.', v_estado USING ERRCODE = '42501';
+    END IF;
+    RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS trg_proteger_detalle ON comprobante_detalles;
+CREATE TRIGGER trg_proteger_detalle BEFORE INSERT OR UPDATE OR DELETE ON comprobante_detalles
+    FOR EACH ROW EXECUTE FUNCTION proteger_detalle_comprobante();
+
+-- Versiones legales: el hash lo calcula la BD; publicada = inmutable (solo puede retirarse).
+CREATE OR REPLACE FUNCTION proteger_version_legal() RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'DELETE' THEN
+        IF OLD.estado <> 'borrador' THEN
+            RAISE EXCEPTION 'Una version publicada no se puede borrar (se conserva como evidencia).' USING ERRCODE = '42501';
+        END IF;
+        RETURN OLD;
+    END IF;
+    IF TG_OP = 'UPDATE' AND OLD.estado <> 'borrador' THEN
+        IF (NEW.contenido, NEW.version, NEW.documento_id, NEW.empresa_id, NEW.cambio_material, NEW.resumen_cambios, NEW.publicada_at, NEW.publicada_por, NEW.vigente_desde)
+           IS DISTINCT FROM (OLD.contenido, OLD.version, OLD.documento_id, OLD.empresa_id, OLD.cambio_material, OLD.resumen_cambios, OLD.publicada_at, OLD.publicada_por, OLD.vigente_desde)
+           OR NOT (NEW.estado = OLD.estado OR (OLD.estado = 'publicada' AND NEW.estado = 'retirada')) THEN
+            RAISE EXCEPTION 'Una version publicada no se puede modificar; cree una version nueva.' USING ERRCODE = '42501';
+        END IF;
+    END IF;
+    NEW.hash_contenido := encode(sha256(convert_to(NEW.contenido, 'UTF8')), 'hex');
+    -- La empresa de la version es siempre la de su documento.
+    NEW.empresa_id := (SELECT empresa_id FROM documentos_legales WHERE id = NEW.documento_id);
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS trg_proteger_version_legal ON documento_legal_versiones;
+CREATE TRIGGER trg_proteger_version_legal BEFORE INSERT OR UPDATE OR DELETE ON documento_legal_versiones
+    FOR EACH ROW EXECUTE FUNCTION proteger_version_legal();
+
+-- Aceptacion: solo de versiones publicadas; el hash lo copia la BD desde la version (no el navegador).
+CREATE OR REPLACE FUNCTION completar_aceptacion_legal() RETURNS TRIGGER AS $$
+DECLARE v RECORD;
+BEGIN
+    SELECT estado, hash_contenido, documento_id INTO v FROM documento_legal_versiones WHERE id = NEW.version_id;
+    IF v IS NULL OR (v.estado <> 'publicada' AND NEW.evento = 'aceptacion') THEN
+        RAISE EXCEPTION 'Solo se puede aceptar una version publicada y vigente.' USING ERRCODE = '23514';
+    END IF;
+    NEW.hash_contenido := v.hash_contenido;
+    NEW.documento_id := v.documento_id;
+    NEW.aceptado_at := NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS trg_completar_aceptacion ON aceptaciones_legales;
+CREATE TRIGGER trg_completar_aceptacion BEFORE INSERT ON aceptaciones_legales
+    FOR EACH ROW EXECUTE FUNCTION completar_aceptacion_legal();
+
+-- Contrato aceptado: sus condiciones ya no cambian (solo puede terminarse).
+CREATE OR REPLACE FUNCTION proteger_contrato_empresa() RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'DELETE' THEN
+        IF OLD.estado <> 'pendiente_aceptacion' THEN
+            RAISE EXCEPTION 'Un contrato aceptado no se puede borrar.' USING ERRCODE = '42501';
+        END IF;
+        RETURN OLD;
+    END IF;
+    IF OLD.estado <> 'pendiente_aceptacion' AND
+       (NEW.plan, NEW.alcance, NEW.precio, NEW.moneda, NEW.periodicidad, NEW.condiciones_soporte, NEW.fecha_inicio,
+        NEW.aceptado_por, NEW.aceptado_at, NEW.transaccion_aceptacion)
+       IS DISTINCT FROM
+       (OLD.plan, OLD.alcance, OLD.precio, OLD.moneda, OLD.periodicidad, OLD.condiciones_soporte, OLD.fecha_inicio,
+        OLD.aceptado_por, OLD.aceptado_at, OLD.transaccion_aceptacion) THEN
+        RAISE EXCEPTION 'Las condiciones de un contrato aceptado no se pueden cambiar; cree un contrato nuevo.' USING ERRCODE = '42501';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS trg_proteger_contrato ON contratos_empresa;
+CREATE TRIGGER trg_proteger_contrato BEFORE UPDATE OR DELETE ON contratos_empresa
+    FOR EACH ROW EXECUTE FUNCTION proteger_contrato_empresa();
+
+-- ── 23.7 Aislamiento por empresa ──
+DO $$
+DECLARE
+    t TEXT;
+    tablas TEXT[] := ARRAY['sri_configuracion', 'sri_puntos_emision', 'comprobantes_electronicos', 'comprobante_detalles', 'comprobante_eventos', 'contratos_empresa', 'aceptaciones_legales', 'notificaciones_legales'];
+BEGIN
+    FOREACH t IN ARRAY tablas LOOP
+        PERFORM agregar_constraint_si_falta(t, 'fk_' || t || '_empresa', 'FOREIGN KEY (empresa_id) REFERENCES empresas(id)');
+        EXECUTE format('CREATE INDEX IF NOT EXISTS %I ON %I (empresa_id)', 'idx_' || t || '_empresa', t);
+        EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
+        EXECUTE format('DROP POLICY IF EXISTS aislamiento_empresa ON %I', t);
+        EXECUTE format('CREATE POLICY aislamiento_empresa ON %I USING (empresa_id = empresa_actual()) WITH CHECK (empresa_id = empresa_actual())', t);
+    END LOOP;
+
+    -- Documentos legales: leer los de la plataforma (empresa NULL) y los propios; escribir solo los propios.
+    FOREACH t IN ARRAY ARRAY['documentos_legales', 'documento_legal_versiones'] LOOP
+        PERFORM agregar_constraint_si_falta(t, 'fk_' || t || '_empresa', 'FOREIGN KEY (empresa_id) REFERENCES empresas(id)');
+        EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
+        EXECUTE format('DROP POLICY IF EXISTS legal_lectura ON %I', t);
+        EXECUTE format('DROP POLICY IF EXISTS legal_insercion ON %I', t);
+        EXECUTE format('DROP POLICY IF EXISTS legal_edicion ON %I', t);
+        EXECUTE format('DROP POLICY IF EXISTS legal_borrado ON %I', t);
+        EXECUTE format('CREATE POLICY legal_lectura ON %I FOR SELECT USING (empresa_id IS NULL OR empresa_id = empresa_actual())', t);
+        EXECUTE format('CREATE POLICY legal_insercion ON %I FOR INSERT WITH CHECK (empresa_id = empresa_actual())', t);
+        EXECUTE format('CREATE POLICY legal_edicion ON %I FOR UPDATE USING (empresa_id = empresa_actual()) WITH CHECK (empresa_id = empresa_actual())', t);
+        EXECUTE format('CREATE POLICY legal_borrado ON %I FOR DELETE USING (empresa_id = empresa_actual())', t);
+    END LOOP;
+    ALTER TABLE documentos_legales ALTER COLUMN empresa_id SET DEFAULT empresa_actual();
+    ALTER TABLE plataforma_proveedor ENABLE ROW LEVEL SECURITY;
+END $$;
+
+-- Llaves compuestas (generadas desde multiempresa.js: RELACIONES_SPRINT23).
+-- RELACIONES23_INICIO
+DO $$
+BEGIN
+    PERFORM agregar_constraint_si_falta('clientes', 'uq_clientes_id_empresa', 'UNIQUE (id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('comprobantes_electronicos', 'uq_comprobantes_electronicos_id_empresa', 'UNIQUE (id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('contratos_empresa', 'uq_contratos_empresa_id_empresa', 'UNIQUE (id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('cuentas_cobrar', 'uq_cuentas_cobrar_id_empresa', 'UNIQUE (id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('ordenes_trabajo', 'uq_ordenes_trabajo_id_empresa', 'UNIQUE (id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('proforma_items', 'uq_proforma_items_id_empresa', 'UNIQUE (id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('proformas', 'uq_proformas_id_empresa', 'UNIQUE (id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('sri_puntos_emision', 'uq_sri_puntos_emision_id_empresa', 'UNIQUE (id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('sucursales', 'uq_sucursales_id_empresa', 'UNIQUE (id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('usuarios', 'uq_usuarios_id_empresa', 'UNIQUE (id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('sri_puntos_emision', 'fk_emp_sri_puntos_emision_sucursal_id', 'FOREIGN KEY (sucursal_id, empresa_id) REFERENCES sucursales(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('comprobantes_electronicos', 'fk_emp_comprobantes_electronicos_punto_emision_id', 'FOREIGN KEY (punto_emision_id, empresa_id) REFERENCES sri_puntos_emision(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('comprobantes_electronicos', 'fk_emp_comprobantes_electronicos_cliente_id', 'FOREIGN KEY (cliente_id, empresa_id) REFERENCES clientes(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('comprobantes_electronicos', 'fk_emp_comprobantes_electronicos_proforma_id', 'FOREIGN KEY (proforma_id, empresa_id) REFERENCES proformas(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('comprobantes_electronicos', 'fk_emp_comprobantes_electronicos_orden_id', 'FOREIGN KEY (orden_id, empresa_id) REFERENCES ordenes_trabajo(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('comprobantes_electronicos', 'fk_emp_comprobantes_electronicos_cuenta_cobrar_id', 'FOREIGN KEY (cuenta_cobrar_id, empresa_id) REFERENCES cuentas_cobrar(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('comprobantes_electronicos', 'fk_emp_comprobantes_electronicos_comprobante_modificado_id', 'FOREIGN KEY (comprobante_modificado_id, empresa_id) REFERENCES comprobantes_electronicos(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('comprobante_detalles', 'fk_emp_comprobante_detalles_comprobante_id', 'FOREIGN KEY (comprobante_id, empresa_id) REFERENCES comprobantes_electronicos(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('comprobante_detalles', 'fk_emp_comprobante_detalles_proforma_item_id', 'FOREIGN KEY (proforma_item_id, empresa_id) REFERENCES proforma_items(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('comprobante_eventos', 'fk_emp_comprobante_eventos_comprobante_id', 'FOREIGN KEY (comprobante_id, empresa_id) REFERENCES comprobantes_electronicos(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('aceptaciones_legales', 'fk_emp_aceptaciones_legales_contrato_id', 'FOREIGN KEY (contrato_id, empresa_id) REFERENCES contratos_empresa(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('aceptaciones_legales', 'fk_emp_aceptaciones_legales_cliente_id', 'FOREIGN KEY (cliente_id, empresa_id) REFERENCES clientes(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('aceptaciones_legales', 'fk_emp_aceptaciones_legales_usuario_id', 'FOREIGN KEY (usuario_id, empresa_id) REFERENCES usuarios(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('notificaciones_legales', 'fk_emp_notificaciones_legales_usuario_id', 'FOREIGN KEY (usuario_id, empresa_id) REFERENCES usuarios(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('notificaciones_legales', 'fk_emp_notificaciones_legales_cliente_id', 'FOREIGN KEY (cliente_id, empresa_id) REFERENCES clientes(id, empresa_id)');
+END $$;
+-- RELACIONES23_FIN
+
+-- Permisos del rol de la aplicacion sobre las tablas nuevas. (El bloque del
+-- Sprint 22 concede ALL TABLES en cada corrida: por eso aqui se QUITA
+-- explicitamente lo que la app no debe poder hacer.)
+GRANT SELECT, INSERT, UPDATE, DELETE ON sri_puntos_emision, comprobantes_electronicos,
+    comprobante_detalles, documentos_legales, documento_legal_versiones TO ssswap_app;
+GRANT SELECT, INSERT, UPDATE ON sri_configuracion TO ssswap_app;
+REVOKE DELETE ON sri_configuracion FROM ssswap_app;
+-- Evidencia: solo insercion.
+GRANT SELECT, INSERT ON comprobante_eventos, aceptaciones_legales, notificaciones_legales TO ssswap_app;
+REVOKE UPDATE, DELETE, TRUNCATE ON comprobante_eventos, aceptaciones_legales, notificaciones_legales FROM ssswap_app;
+-- Contratos: los crea la plataforma; la empresa solo los lee y registra su aceptacion.
+GRANT SELECT ON contratos_empresa TO ssswap_app;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON contratos_empresa FROM ssswap_app;
+GRANT UPDATE (estado, aceptado_por, aceptado_at, transaccion_aceptacion) ON contratos_empresa TO ssswap_app;
+-- Proveedor de la plataforma: solo el sistema (superadministrador).
+REVOKE ALL ON plataforma_proveedor FROM ssswap_app;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ssswap_app;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO ssswap_app;
+
+-- Catalogo de permisos (incluye facturacion, facturacion_config y legal).
+-- CATALOGO_INICIO (generado desde permisos.js)
+INSERT INTO permisos_catalogo (modulo, accion, modulo_nombre, accion_nombre, grupo, orden, solo_superadmin) VALUES
+    ('dashboard', 'ver', 'Panel principal', 'Ver', 'Panel', 1, FALSE),
+    ('inventario_mecanica', 'ver', 'Inventario de mecánica', 'Ver', 'Inventario', 2, FALSE),
+    ('inventario_mecanica', 'crear', 'Inventario de mecánica', 'Crear', 'Inventario', 3, FALSE),
+    ('inventario_mecanica', 'editar', 'Inventario de mecánica', 'Editar', 'Inventario', 4, FALSE),
+    ('inventario_mecanica', 'eliminar', 'Inventario de mecánica', 'Eliminar', 'Inventario', 5, FALSE),
+    ('inventario_colisiones', 'ver', 'Inventario de colisiones / pintura', 'Ver', 'Inventario', 6, FALSE),
+    ('inventario_colisiones', 'crear', 'Inventario de colisiones / pintura', 'Crear', 'Inventario', 7, FALSE),
+    ('inventario_colisiones', 'editar', 'Inventario de colisiones / pintura', 'Editar', 'Inventario', 8, FALSE),
+    ('inventario_colisiones', 'eliminar', 'Inventario de colisiones / pintura', 'Eliminar', 'Inventario', 9, FALSE),
+    ('registros_inventario', 'ver', 'Entradas y salidas de inventario', 'Ver registros', 'Inventario', 10, FALSE),
+    ('registros_inventario', 'crear', 'Entradas y salidas de inventario', 'Registrar entradas / salidas', 'Inventario', 11, FALSE),
+    ('registros_inventario', 'aprobar', 'Entradas y salidas de inventario', 'Devolver salidas al inventario', 'Inventario', 12, FALSE),
+    ('pedidos_tienda', 'ver', 'Pedidos de la tienda', 'Ver', 'Inventario', 13, FALSE),
+    ('pedidos_tienda', 'editar', 'Pedidos de la tienda', 'Atender / cancelar', 'Inventario', 14, FALSE),
+    ('ordenes', 'ver', 'Órdenes de trabajo', 'Ver', 'Taller', 15, FALSE),
+    ('ordenes', 'crear', 'Órdenes de trabajo', 'Crear', 'Taller', 16, FALSE),
+    ('ordenes', 'editar', 'Órdenes de trabajo', 'Editar', 'Taller', 17, FALSE),
+    ('ordenes', 'eliminar', 'Órdenes de trabajo', 'Eliminar', 'Taller', 18, FALSE),
+    ('ordenes', 'asignar', 'Órdenes de trabajo', 'Asignar técnico', 'Taller', 19, FALSE),
+    ('ordenes', 'aprobar', 'Órdenes de trabajo', 'Cambiar estado de cualquier orden', 'Taller', 20, FALSE),
+    ('proformas_mecanica', 'ver', 'Proformas de mecánica', 'Ver', 'Taller', 21, FALSE),
+    ('proformas_mecanica', 'crear', 'Proformas de mecánica', 'Crear', 'Taller', 22, FALSE),
+    ('proformas_mecanica', 'editar', 'Proformas de mecánica', 'Editar', 'Taller', 23, FALSE),
+    ('proformas_mecanica', 'eliminar', 'Proformas de mecánica', 'Eliminar', 'Taller', 24, FALSE),
+    ('proformas_mecanica', 'exportar', 'Proformas de mecánica', 'Descargar PDF / Excel', 'Taller', 25, FALSE),
+    ('proformas_mecanica', 'aprobar', 'Proformas de mecánica', 'Aprobar, rechazar, convertir en OT y confirmar materiales', 'Taller', 26, FALSE),
+    ('proformas_colisiones', 'ver', 'Proformas de colisiones / pintura', 'Ver', 'Taller', 27, FALSE),
+    ('proformas_colisiones', 'crear', 'Proformas de colisiones / pintura', 'Crear', 'Taller', 28, FALSE),
+    ('proformas_colisiones', 'editar', 'Proformas de colisiones / pintura', 'Editar', 'Taller', 29, FALSE),
+    ('proformas_colisiones', 'eliminar', 'Proformas de colisiones / pintura', 'Eliminar', 'Taller', 30, FALSE),
+    ('proformas_colisiones', 'exportar', 'Proformas de colisiones / pintura', 'Descargar PDF / Excel', 'Taller', 31, FALSE),
+    ('proformas_colisiones', 'aprobar', 'Proformas de colisiones / pintura', 'Aprobar, rechazar, convertir en OT y confirmar materiales', 'Taller', 32, FALSE),
+    ('citas', 'ver', 'Citas', 'Ver', 'Taller', 33, FALSE),
+    ('citas', 'editar', 'Citas', 'Confirmar / cambiar estado', 'Taller', 34, FALSE),
+    ('clientes', 'ver', 'Clientes', 'Ver', 'Clientes', 35, FALSE),
+    ('clientes', 'crear', 'Clientes', 'Crear', 'Clientes', 36, FALSE),
+    ('clientes', 'editar', 'Clientes', 'Editar', 'Clientes', 37, FALSE),
+    ('clientes', 'eliminar', 'Clientes', 'Eliminar', 'Clientes', 38, FALSE),
+    ('vehiculos', 'ver', 'Vehículos', 'Ver', 'Clientes', 39, FALSE),
+    ('vehiculos', 'crear', 'Vehículos', 'Crear', 'Clientes', 40, FALSE),
+    ('vehiculos', 'editar', 'Vehículos', 'Editar', 'Clientes', 41, FALSE),
+    ('vehiculos', 'eliminar', 'Vehículos', 'Eliminar', 'Clientes', 42, FALSE),
+    ('cuentas_cobrar', 'ver', 'Pagarés y cuentas por cobrar', 'Ver', 'Clientes', 43, FALSE),
+    ('cuentas_cobrar', 'crear', 'Pagarés y cuentas por cobrar', 'Crear', 'Clientes', 44, FALSE),
+    ('cuentas_cobrar', 'editar', 'Pagarés y cuentas por cobrar', 'Editar (vencimiento, datos)', 'Clientes', 45, FALSE),
+    ('cuentas_cobrar', 'eliminar', 'Pagarés y cuentas por cobrar', 'Eliminar / anular / reabrir', 'Clientes', 46, FALSE),
+    ('pagos_clientes', 'crear', 'Registro de pagos de clientes', 'Registrar pagos', 'Clientes', 47, FALSE),
+    ('pagos_clientes', 'eliminar', 'Registro de pagos de clientes', 'Anular pagos', 'Clientes', 48, FALSE),
+    ('caja', 'ver', 'Caja diaria', 'Ver', 'Finanzas', 49, FALSE),
+    ('caja', 'crear', 'Caja diaria', 'Registrar movimientos de caja', 'Finanzas', 50, FALSE),
+    ('caja', 'aprobar', 'Caja diaria', 'Abrir y cerrar caja', 'Finanzas', 51, FALSE),
+    ('finanzas', 'ver', 'Finanzas, cuentas y nómina', 'Ver', 'Finanzas', 52, FALSE),
+    ('finanzas', 'crear', 'Finanzas, cuentas y nómina', 'Crear', 'Finanzas', 53, FALSE),
+    ('finanzas', 'editar', 'Finanzas, cuentas y nómina', 'Editar', 'Finanzas', 54, FALSE),
+    ('finanzas', 'eliminar', 'Finanzas, cuentas y nómina', 'Anular movimientos / pagos', 'Finanzas', 55, FALSE),
+    ('proveedores', 'ver', 'Proveedores, compras y gastos', 'Ver', 'Proveedores', 56, FALSE),
+    ('proveedores', 'crear', 'Proveedores, compras y gastos', 'Crear', 'Proveedores', 57, FALSE),
+    ('proveedores', 'editar', 'Proveedores, compras y gastos', 'Editar', 'Proveedores', 58, FALSE),
+    ('proveedores', 'eliminar', 'Proveedores, compras y gastos', 'Eliminar', 'Proveedores', 59, FALSE),
+    ('facturacion', 'ver', 'Facturación electrónica (SRI)', 'Ver comprobantes', 'Facturación', 60, FALSE),
+    ('facturacion', 'crear', 'Facturación electrónica (SRI)', 'Preparar borradores', 'Facturación', 61, FALSE),
+    ('facturacion', 'aprobar', 'Facturación electrónica (SRI)', 'Emitir y enviar al SRI', 'Facturación', 62, FALSE),
+    ('facturacion', 'exportar', 'Facturación electrónica (SRI)', 'Descargar XML / RIDE y reenviar correo', 'Facturación', 63, FALSE),
+    ('facturacion', 'anular', 'Facturación electrónica (SRI)', 'Notas de crédito y registro de anulaciones', 'Facturación', 64, FALSE),
+    ('facturacion', 'eliminar', 'Facturación electrónica (SRI)', 'Descartar borradores', 'Facturación', 65, FALSE),
+    ('facturacion_config', 'ver', 'Configuración tributaria y firma electrónica', 'Ver', 'Facturación', 66, FALSE),
+    ('facturacion_config', 'editar', 'Configuración tributaria y firma electrónica', 'Editar datos tributarios, puntos de emisión y certificado', 'Facturación', 67, FALSE),
+    ('facturacion_config', 'aprobar', 'Configuración tributaria y firma electrónica', 'Activar el ambiente de producción', 'Facturación', 68, FALSE),
+    ('estadisticas', 'ver', 'Reportes y estadísticas', 'Ver', 'Reportes', 69, FALSE),
+    ('servicios', 'ver', 'Servicios del taller', 'Ver', 'Ajustes', 70, FALSE),
+    ('servicios', 'crear', 'Servicios del taller', 'Crear', 'Ajustes', 71, FALSE),
+    ('servicios', 'editar', 'Servicios del taller', 'Editar', 'Ajustes', 72, FALSE),
+    ('servicios', 'eliminar', 'Servicios del taller', 'Eliminar', 'Ajustes', 73, FALSE),
+    ('sucursales', 'ver', 'Sucursales', 'Ver', 'Ajustes', 74, FALSE),
+    ('sucursales', 'crear', 'Sucursales', 'Crear', 'Ajustes', 75, FALSE),
+    ('sucursales', 'editar', 'Sucursales', 'Editar', 'Ajustes', 76, FALSE),
+    ('sucursales', 'eliminar', 'Sucursales', 'Eliminar', 'Ajustes', 77, FALSE),
+    ('bitacora', 'ver', 'Bitácora de operaciones', 'Ver', 'Ajustes', 78, FALSE),
+    ('usuarios', 'ver', 'Usuarios y permisos de la empresa', 'Ver', 'Empresa', 79, FALSE),
+    ('usuarios', 'crear', 'Usuarios y permisos de la empresa', 'Crear', 'Empresa', 80, FALSE),
+    ('usuarios', 'editar', 'Usuarios y permisos de la empresa', 'Editar, activar/desactivar, permisos y restablecer acceso', 'Empresa', 81, FALSE),
+    ('usuarios', 'eliminar', 'Usuarios y permisos de la empresa', 'Eliminar', 'Empresa', 82, FALSE),
+    ('auditoria', 'ver', 'Auditoría de la empresa', 'Ver', 'Empresa', 83, FALSE),
+    ('empresa', 'ver', 'Configuración de la empresa', 'Ver', 'Empresa', 84, FALSE),
+    ('empresa', 'editar', 'Configuración de la empresa', 'Editar', 'Empresa', 85, FALSE),
+    ('legal', 'ver', 'Documentos legales y aceptaciones', 'Ver documentos, aceptaciones y constancias', 'Empresa', 86, FALSE),
+    ('legal', 'editar', 'Documentos legales y aceptaciones', 'Redactar borradores', 'Empresa', 87, FALSE),
+    ('legal', 'aprobar', 'Documentos legales y aceptaciones', 'Publicar versiones', 'Empresa', 88, FALSE)
+ON CONFLICT (modulo, accion) DO UPDATE SET
+    modulo_nombre = EXCLUDED.modulo_nombre, accion_nombre = EXCLUDED.accion_nombre,
+    grupo = EXCLUDED.grupo, orden = EXCLUDED.orden, solo_superadmin = EXCLUDED.solo_superadmin;
+-- CATALOGO_FIN
+
+-- ── 23.8 Permisos nuevos para los administradores existentes (una sola vez) ──
+-- Las cuentas creadas despues reciben la plantilla de permisos.js.
+INSERT INTO usuario_permisos (usuario_id, modulo, accion, empresa_id)
+SELECT u.id, t.modulo, t.accion, u.empresa_id
+FROM usuarios u
+JOIN (VALUES
+    ('facturacion', 'ver'), ('facturacion', 'crear'), ('facturacion', 'aprobar'), ('facturacion', 'exportar'),
+    ('facturacion', 'anular'), ('facturacion', 'eliminar'),
+    ('facturacion_config', 'ver'), ('facturacion_config', 'editar'), ('facturacion_config', 'aprobar'),
+    ('legal', 'ver'), ('legal', 'editar'), ('legal', 'aprobar')
+) AS t(modulo, accion) ON TRUE
+WHERE u.rol = 'administrador' AND u.permisos_inicializados = TRUE AND u.empresa_id IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM migraciones_registro WHERE version = '23-facturacion-legal' AND resultado = 'exito')
+ON CONFLICT DO NOTHING;
+
+-- ── 23.9 Validaciones finales y registro ──
+DO $$
+DECLARE
+    t TEXT;
+    tablas TEXT[] := ARRAY['sri_configuracion', 'sri_puntos_emision', 'comprobantes_electronicos', 'comprobante_detalles', 'comprobante_eventos', 'contratos_empresa', 'aceptaciones_legales', 'notificaciones_legales'];
+    n BIGINT;
+BEGIN
+    FOREACH t IN ARRAY tablas || ARRAY['documentos_legales', 'documento_legal_versiones'] LOOP
+        IF NOT (SELECT relrowsecurity FROM pg_class WHERE oid = t::regclass) THEN
+            RAISE EXCEPTION 'Validacion 23: % no tiene Row Level Security.', t;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = t) THEN
+            RAISE EXCEPTION 'Validacion 23: % no tiene politicas de aislamiento.', t;
+        END IF;
+    END LOOP;
+    FOREACH t IN ARRAY tablas LOOP
+        EXECUTE format('SELECT COUNT(*) FROM %I WHERE empresa_id IS NULL', t) INTO n;
+        IF n > 0 THEN RAISE EXCEPTION 'Validacion 23: % tiene % fila(s) sin empresa.', t, n; END IF;
+    END LOOP;
+    IF has_table_privilege('ssswap_app', 'aceptaciones_legales', 'UPDATE') OR has_table_privilege('ssswap_app', 'aceptaciones_legales', 'DELETE')
+       OR has_table_privilege('ssswap_app', 'comprobante_eventos', 'UPDATE') OR has_table_privilege('ssswap_app', 'comprobante_eventos', 'DELETE')
+       OR has_table_privilege('ssswap_app', 'plataforma_proveedor', 'SELECT') THEN
+        RAISE EXCEPTION 'Validacion 23: la evidencia debe ser de solo insercion para la app.';
+    END IF;
+
+    INSERT INTO migraciones_registro (version, descripcion, resultado, detalle)
+    SELECT '23-facturacion-legal', 'Facturacion electronica SRI (factura/NC 1.1.0) y documentos legales con evidencia de aceptacion', 'exito',
+           jsonb_build_object('tablas', tablas || ARRAY['documentos_legales', 'documento_legal_versiones', 'plataforma_proveedor'])
+    WHERE NOT EXISTS (SELECT 1 FROM migraciones_registro WHERE version = '23-facturacion-legal' AND resultado = 'exito');
 END $$;

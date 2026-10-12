@@ -103,19 +103,57 @@ const RELACIONES_EMPRESA = [
 ];
 
 /** Tablas referenciadas: necesitan UNIQUE (id, empresa_id). */
-const tablasReferenciadas = () => [...new Set(RELACIONES_EMPRESA.map(r => r[2]))].sort();
+const tablasReferenciadas = (relaciones = RELACIONES_EMPRESA) => [...new Set(relaciones.map(r => r[2]))].sort();
 
 /** Sentencias SQL idempotentes de las llaves compuestas. */
-function sqlRelaciones() {
-    const uniques = tablasReferenciadas().map(t =>
+function sqlRelaciones(relaciones = RELACIONES_EMPRESA) {
+    const uniques = tablasReferenciadas(relaciones).map(t =>
         `    PERFORM agregar_constraint_si_falta('${t}', 'uq_${t}_id_empresa', 'UNIQUE (id, empresa_id)');`);
-    const fks = RELACIONES_EMPRESA.map(([t, c, ref]) =>
+    const fks = relaciones.map(([t, c, ref]) =>
         `    PERFORM agregar_constraint_si_falta('${t}', 'fk_emp_${t}_${c}', 'FOREIGN KEY (${c}, empresa_id) REFERENCES ${ref}(id, empresa_id)');`);
     return [...uniques, ...fks].join('\n');
 }
 
+// ── Sprint 23: facturación electrónica y documentos legales ──
+// Mismas reglas que las del Sprint 22 (empresa_id NOT NULL + RLS), en su
+// propio bloque de la migración (marcas RELACIONES23_INICIO/FIN).
+const TABLAS_EMPRESA_SPRINT23 = [
+    'sri_configuracion', 'sri_puntos_emision',
+    'comprobantes_electronicos', 'comprobante_detalles', 'comprobante_eventos',
+    'contratos_empresa', 'aceptaciones_legales', 'notificaciones_legales',
+];
+// Documentos legales: empresa_id NULL = documento de la PLATAFORMA (lo
+// redacta el superadministrador y lo aceptan las empresas); con empresa =
+// documento propio de esa empresa para los clientes de su portal. Cada
+// empresa LEE los de la plataforma y los suyos, y solo ESCRIBE los suyos.
+const TABLAS_LEGALES_COMPARTIDAS = ['documentos_legales', 'documento_legal_versiones'];
+
+const RELACIONES_SPRINT23 = [
+    ['sri_puntos_emision', 'sucursal_id', 'sucursales'],
+    ['comprobantes_electronicos', 'punto_emision_id', 'sri_puntos_emision'],
+    ['comprobantes_electronicos', 'cliente_id', 'clientes'],
+    ['comprobantes_electronicos', 'proforma_id', 'proformas'],
+    ['comprobantes_electronicos', 'orden_id', 'ordenes_trabajo'],
+    ['comprobantes_electronicos', 'cuenta_cobrar_id', 'cuentas_cobrar'],
+    ['comprobantes_electronicos', 'comprobante_modificado_id', 'comprobantes_electronicos'],
+    ['comprobante_detalles', 'comprobante_id', 'comprobantes_electronicos'],
+    ['comprobante_detalles', 'proforma_item_id', 'proforma_items'],
+    ['comprobante_eventos', 'comprobante_id', 'comprobantes_electronicos'],
+    ['aceptaciones_legales', 'contrato_id', 'contratos_empresa'],
+    ['aceptaciones_legales', 'cliente_id', 'clientes'],
+    ['aceptaciones_legales', 'usuario_id', 'usuarios'],
+    ['notificaciones_legales', 'usuario_id', 'usuarios'],
+    ['notificaciones_legales', 'cliente_id', 'clientes'],
+];
+
+/** Todas las tablas aisladas por empresa (las del Sprint 23 primero: dependen de las anteriores). */
+const TODAS_TABLAS_EMPRESA = [...TABLAS_EMPRESA_SPRINT23, ...TABLAS_EMPRESA];
+
 if (require.main === module) {
-    console.log(sqlRelaciones());
+    console.log('-- Sprint 22\n' + sqlRelaciones() + '\n\n-- Sprint 23\n' + sqlRelaciones(RELACIONES_SPRINT23));
 }
 
-module.exports = { TABLAS_EMPRESA, TABLAS_GLOBALES, RELACIONES_EMPRESA, tablasReferenciadas, sqlRelaciones };
+module.exports = {
+    TABLAS_EMPRESA, TABLAS_GLOBALES, RELACIONES_EMPRESA, tablasReferenciadas, sqlRelaciones,
+    TABLAS_EMPRESA_SPRINT23, TABLAS_LEGALES_COMPARTIDAS, RELACIONES_SPRINT23, TODAS_TABLAS_EMPRESA,
+};

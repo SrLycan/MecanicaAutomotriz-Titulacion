@@ -61,7 +61,8 @@ const datosEmpresa = (u) => (u.empresa_id ? { id: u.empresa_id, nombre: u.empres
 //   los primeros 72 bytes de la contrasena y trunca el resto EN SILENCIO, asi
 //   que aceptar mas de eso sin avisar es un problema de seguridad, no de UX.
 const EMAIL_MAX_LEN    = 254; // maximo practico de un correo (RFC 5321)
-const PASSWORD_MIN_LEN = 6;
+// Solo para contrasenas NUEVAS (registro): las existentes de 6-7 caracteres siguen entrando.
+const PASSWORD_MIN_LEN = 8;
 const PASSWORD_MAX_LEN = 72;
 
 /* ── LOGIN ─────────────────────────────────────────────────── */
@@ -176,7 +177,7 @@ const register = async (req, res) => {
         return res.status(400).json({ error: 'El email es demasiado largo.' });
 
     if (password.length < PASSWORD_MIN_LEN)
-        return res.status(400).json({ error: 'La contrasena debe tener al menos 6 caracteres.' });
+        return res.status(400).json({ error: `La contrasena debe tener al menos ${PASSWORD_MIN_LEN} caracteres.` });
     if (password.length > PASSWORD_MAX_LEN)
         return res.status(400).json({ error: `La contrasena no puede tener mas de ${PASSWORD_MAX_LEN} caracteres.` });
 

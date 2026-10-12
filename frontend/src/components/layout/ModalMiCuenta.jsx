@@ -16,7 +16,7 @@ const ROL_TEXTO = {
 };
 
 export default function ModalMiCuenta({ onClose }) {
-    const { usuario, permisos } = useAuth();
+    const { usuario, permisos, actualizarSesion } = useAuth();
     const { isDark } = useTheme();
     const [form, setForm] = useState({ actual: '', nueva: '', repetir: '' });
     const [error, setError] = useState('');
@@ -40,8 +40,10 @@ export default function ModalMiCuenta({ onClose }) {
         if (form.nueva !== form.repetir) { setError('Las contraseñas no coinciden.'); return; }
         setSaving(true);
         try {
-            await api.put('/users/me/password', { password_actual: form.actual, password_nueva: form.nueva });
-            toast.success('Contraseña actualizada.');
+            const { data } = await api.put('/users/me/password', { password_actual: form.actual, password_nueva: form.nueva });
+            // El backend cierra las demas sesiones y entrega un token nuevo para esta.
+            if (data?.token) actualizarSesion(data.token);
+            toast.success('Contraseña actualizada. Se cerraron tus otras sesiones.');
             onClose();
         } catch (err) {
             setError(err.response?.data?.error || 'No se pudo cambiar la contraseña.');
