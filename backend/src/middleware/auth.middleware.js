@@ -30,10 +30,12 @@ const pool = require('../config/db');
 const { conEmpresa, sinAislamiento } = require('../config/contexto');
 const { ROL_SUPERADMIN, ROLES_STAFF, moduloProforma, moduloInventario, AREAS_INVENTARIO } = require('../config/permisos');
 const { registrarDenegado, registrarAuditoria } = require('../services/auditoria.service');
+const { empresaSesion } = require('../services/marcaEmpresa');
 
 const SQL_SESION = `
     SELECT u.id, u.nombre, u.email, u.rol, u.activo, u.estado, u.token_version, u.empresa_id,
            e.nombre AS empresa_nombre, e.slug AS empresa_slug, e.estado AS empresa_estado,
+           e.nombre_comercial AS empresa_nombre_comercial, e.logo_archivo AS empresa_logo,
            ARRAY(SELECT up.modulo || ':' || up.accion FROM usuario_permisos up WHERE up.usuario_id = u.id) AS permisos
     FROM usuarios u LEFT JOIN empresas e ON e.id = u.empresa_id
     WHERE u.id = $1`;
@@ -47,7 +49,8 @@ async function cargarSesion(id) {
 /** Acceso de soporte vigente del superadministrador a una empresa (o null). */
 async function cargarSoporte(superadminId, empresaId) {
     const { rows } = await sinAislamiento(() => pool.query(
-        `SELECT a.id, a.empresa_id, a.modo, a.expira, a.motivo, e.nombre AS empresa_nombre, e.slug AS empresa_slug
+        `SELECT a.id, a.empresa_id, a.modo, a.expira, a.motivo, e.nombre AS empresa_nombre, e.slug AS empresa_slug,
+                e.nombre_comercial AS empresa_nombre_comercial, e.logo_archivo AS empresa_logo
          FROM accesos_soporte a JOIN empresas e ON e.id = a.empresa_id
          WHERE a.superadmin_id = $1 AND a.empresa_id = $2 AND a.finalizado_at IS NULL AND a.expira > NOW()
            AND e.estado <> 'inactiva'
@@ -90,7 +93,7 @@ const verificarToken = async (req, res, next) => {
             return res.status(401).json({ error: 'La empresa de esta cuenta no esta activa. Contacta al administrador de la plataforma.', codigo: 'EMPRESA_INACTIVA' });
 
         // Empresa de la peticion: la de la cuenta, o la de un soporte vigente.
-        let empresa = u.empresa_id ? { id: u.empresa_id, nombre: u.empresa_nombre, slug: u.empresa_slug } : null;
+        let empresa = u.empresa_id ? empresaSesion(u.empresa_id, u) : null;
         let soporte = null;
         const pedido = req.headers['x-soporte-empresa'];
         if (pedido !== undefined && pedido !== '') {
@@ -100,7 +103,7 @@ const verificarToken = async (req, res, next) => {
             if (!acceso)
                 return res.status(403).json({ error: 'El acceso de soporte vencio o no existe. Abre uno nuevo desde la plataforma.', codigo: 'SOPORTE_NO_VALIDO' });
             soporte = { id: acceso.id, modo: acceso.modo, expira: acceso.expira, motivo: acceso.motivo };
-            empresa = { id: acceso.empresa_id, nombre: acceso.empresa_nombre, slug: acceso.empresa_slug };
+            empresa = empresaSesion(acceso.empresa_id, acceso);
         }
 
         req.usuario = {

@@ -12,6 +12,23 @@
 const pool = require('../config/db');
 const { redondear2 } = require('../utils/numeros');
 
+/**
+ * Saldo por proveedor (proveedor_id, saldo): compras confirmadas menos pagos
+ * y abonos confirmados, sin contar compras canceladas ni los pagos hechos a
+ * ellas. 'cancelacion' es solo un registro informativo: la compra cancelada
+ * ya queda anulada, por eso no se resta otra vez. `extra` = filtros SQL
+ * adicionales sobre m. Lo usan el resumen de Proveedores, Finanzas y el panel.
+ */
+function saldoProveedoresSql(extra = '') {
+    return `SELECT m.proveedor_id,
+                   SUM(CASE WHEN m.tipo = 'compra' THEN m.monto
+                            WHEN m.tipo IN ('pago','abono') THEN -m.monto ELSE 0 END) AS saldo
+            FROM movimientos_financieros_proveedor m
+            LEFT JOIN compras_proveedor c ON c.id = m.compra_id
+            WHERE m.estado = 'confirmado' AND (c.id IS NULL OR c.estado <> 'cancelada')${extra}
+            GROUP BY m.proveedor_id`;
+}
+
 /** Saldos de todas las cuentas (o de una). `db` puede ser el pool o un client de transaccion. */
 async function saldosCuentas(db = pool, { soloActivas = false, cuentaId = null } = {}) {
     const params = [];
@@ -84,4 +101,4 @@ function inicioDeMes(valor) {
     return `${m[1]}-${m[2]}-01`;
 }
 
-module.exports = { saldosCuentas, cuentaCajaPredeterminada, saldoCaja, registrarAjusteCaja, inicioDeMes };
+module.exports = { saldoProveedoresSql, saldosCuentas, cuentaCajaPredeterminada, saldoCaja, registrarAjusteCaja, inicioDeMes };

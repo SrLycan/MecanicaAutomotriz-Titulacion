@@ -12,7 +12,7 @@
 const pool = require('../config/db');
 const { errorBD } = require('../utils/erroresBD');
 const { redondear2 } = require('../utils/numeros');
-const { saldosCuentas, saldoCaja } = require('../services/finanzas.service');
+const { saldosCuentas, saldoCaja, saldoProveedoresSql } = require('../services/finanzas.service');
 const { puede, esSuperadmin, tiposProformaPermitidos, areasInventarioPermitidas } = require('../middleware/auth.middleware');
 
 const num = (v) => Number(v) || 0;
@@ -182,9 +182,7 @@ const resumenDashboard = async (req, res) => {
                             GROUP BY usuario_id) pg ON pg.usuario_id = ep.usuario_id
                  WHERE ep.en_nomina`);
             consultas.deudaProv = pool.query(
-                `SELECT COALESCE(SUM(GREATEST(saldo, 0)), 0) AS total FROM (
-                    SELECT SUM(CASE WHEN tipo = 'compra' THEN monto WHEN tipo IN ('pago','abono','cancelacion') THEN -monto ELSE 0 END) AS saldo
-                    FROM movimientos_financieros_proveedor WHERE estado = 'confirmado' GROUP BY proveedor_id) s`);
+                `SELECT COALESCE(SUM(GREATEST(saldo, 0)), 0) AS total FROM (${saldoProveedoresSql()}) s`);
         }
 
         const claves = Object.keys(consultas);

@@ -104,6 +104,9 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Archivos subidos (fotos de perfil, etc.)
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+// Logos incluidos en el backend (empresas.logo_archivo = 'asset:...'): solo imagenes.
+app.use('/recursos-marca', (req, res, next) => (/^\/[\w.-]+\.(png|jpe?g)$/i.test(req.path) ? next() : res.status(404).end()),
+    express.static(path.join(__dirname, 'assets'), { index: false, fallthrough: false }));
 
 // ── Multiempresa ─────────────────────────────────────────────
 // Toda peticion arranca en la empresa de la web publica (SS SWAP); las rutas

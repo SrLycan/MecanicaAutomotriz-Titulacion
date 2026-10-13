@@ -626,6 +626,9 @@ async function emitir(id, usuario, { confirmarComprador = false, enviarAhora = t
                 establecimiento: punto.establecimiento, puntoEmision: punto.punto_emision, secuencial: c.secuencial });
         }
         c.emisor = emisorSnapshot(config, punto);
+        // Logo de la empresa al emitir (solo para el RIDE; el XML no lo usa).
+        const { rows: empLogo } = await client.query('SELECT logo_archivo FROM empresas WHERE id = $1', [c.empresa_id]);
+        c.emisor.logoArchivo = empLogo[0]?.logo_archivo || null;
 
         const { rows: detalles } = await client.query('SELECT * FROM comprobante_detalles WHERE comprobante_id = $1 ORDER BY linea', [c.id]);
         const xml = construirXml(datosParaXml(c, detalles, sustento));
@@ -890,7 +893,8 @@ async function obtenerComprobante(id) {
     const { rows: eventos } = await pool.query(
         `SELECT e.id, e.created_at, e.tipo, e.estado_anterior, e.estado_nuevo, e.detalle, u.nombre AS usuario_nombre
          FROM comprobante_eventos e LEFT JOIN usuarios u ON u.id = e.usuario_id WHERE e.comprobante_id = $1 ORDER BY e.id`, [id]);
-    const { rows: emp } = await pool.query('SELECT logo_archivo FROM empresas LIMIT 1');
+    // Logo de la empresa DUEÑA del comprobante: el que tenía al emitirse o, si no, el actual.
+    const { rows: emp } = await pool.query('SELECT logo_archivo FROM empresas WHERE id = $1', [c.empresa_id]);
     let sustento = null;
     if (c.cod_doc === '04' && c.comprobante_modificado_id) {
         const { rows } = await pool.query('SELECT id, establecimiento, punto_emision, secuencial, fecha_emision, importe_total FROM comprobantes_electronicos WHERE id = $1',
@@ -914,7 +918,7 @@ async function obtenerComprobante(id) {
         eventos,
         sustento,
         notas_credito: nc.map(n => ({ ...n, numero: n.secuencial ? `${n.establecimiento}-${n.punto_emision}-${n.secuencial}` : null })),
-        logo: rutaLogo(emp[0]?.logo_archivo),
+        logo: rutaLogo(c.emisor?.logoArchivo) || rutaLogo(emp[0]?.logo_archivo),
     };
 }
 

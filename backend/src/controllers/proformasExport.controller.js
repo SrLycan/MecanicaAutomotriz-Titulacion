@@ -4,6 +4,7 @@
 const pool = require('../config/db');
 const { generarProformaPdf } = require('../services/proformaPdf.service');
 const { generarProformaExcel } = require('../services/proformaExcel.service');
+const { COLUMNAS_EMPRESA_SQL } = require('../services/marcaEmpresa');
 
 /** Quita caracteres invalidos en nombres de archivo de Windows: \ / : * ? " < > | */
 function sanitizarNombreArchivo(texto) {
@@ -23,8 +24,7 @@ async function obtenerProformaCompleta(id) {
         `SELECT p.*, u.nombre AS usuario_nombre,
                 s.nombre AS sucursal_nombre, s.direccion AS sucursal_direccion,
                 s.telefono AS sucursal_telefono, s.email AS sucursal_email,
-                e.nombre AS empresa_nombre, e.nombre_comercial AS empresa_nombre_comercial,
-                e.razon_social AS empresa_razon_social, e.ruc AS empresa_ruc, e.logo_archivo AS empresa_logo
+                ${COLUMNAS_EMPRESA_SQL}
          FROM proformas p
          JOIN empresas e ON e.id = p.empresa_id          -- datos de la empresa DUEÑA del documento
          LEFT JOIN usuarios u ON u.id = p.usuario_id

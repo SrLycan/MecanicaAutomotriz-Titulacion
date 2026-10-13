@@ -3285,3 +3285,66 @@ BEGIN
            jsonb_build_object('tablas', tablas || ARRAY['documentos_legales', 'documento_legal_versiones', 'plataforma_proveedor'])
     WHERE NOT EXISTS (SELECT 1 FROM migraciones_registro WHERE version = '23-facturacion-legal' AND resultado = 'exito');
 END $$;
+
+-- ============================================================
+-- Sprint 24: Identidad de cada empresa en sus documentos (logo y copia
+-- de los datos al crear el documento)
+--
+-- 100 % aditivo e idempotente. No modifica documentos existentes: las
+-- proformas y ordenes anteriores quedan con empresa_datos = NULL y siguen
+-- mostrando los datos ACTUALES de su propia empresa (como hasta ahora).
+--
+-- 24.1 Logo: la app puede cambiar empresas.logo_archivo de SU empresa
+--      (RLS empresa_propia ya limita la fila).
+-- 24.2 Copia de los datos de la empresa (nombre, RUC, direccion, contacto
+--      y logo) en cada proforma y orden de trabajo NUEVA, hecha por la base
+--      (trigger): el documento conserva la identidad con la que se emitio
+--      aunque la empresa cambie despues su nombre o su logo. La copia no se
+--      puede modificar una vez guardada.
+-- 24.3 Registro.
+-- (El RUC de proveedor ya es unico por empresa: indice uq_proveedores_ruc,
+--  Sprints 16 y 22.)
+-- ============================================================
+
+-- ── 24.1 Logo ──
+GRANT UPDATE (logo_archivo) ON empresas TO ssswap_app;
+COMMENT ON COLUMN empresas.logo_archivo IS 'Logo: upload:<archivo> (backend/uploads/logos, PNG o JPG validados) o asset:<archivo> (backend/src/assets). NULL = sin logo.';
+
+-- ── 24.2 Copia de los datos de la empresa en los documentos ──
+ALTER TABLE proformas       ADD COLUMN IF NOT EXISTS empresa_datos JSONB;
+ALTER TABLE ordenes_trabajo ADD COLUMN IF NOT EXISTS empresa_datos JSONB;
+COMMENT ON COLUMN proformas.empresa_datos IS 'Datos de la empresa emisora al crear la proforma (Sprint 24). NULL en proformas anteriores: se usan los datos actuales de su empresa.';
+COMMENT ON COLUMN ordenes_trabajo.empresa_datos IS 'Datos de la empresa al crear la orden (Sprint 24). NULL en ordenes anteriores: se usan los datos actuales de su empresa.';
+
+CREATE OR REPLACE FUNCTION copiar_datos_empresa() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+    IF TG_OP = 'UPDATE' THEN
+        -- La copia es historica: una vez guardada no cambia.
+        IF OLD.empresa_datos IS NOT NULL THEN NEW.empresa_datos := OLD.empresa_datos; END IF;
+        RETURN NEW;
+    END IF;
+    IF NEW.empresa_id IS NOT NULL THEN
+        SELECT jsonb_build_object(
+                   'nombre', e.nombre, 'nombre_comercial', e.nombre_comercial, 'razon_social', e.razon_social,
+                   'ruc', e.ruc, 'direccion', e.direccion, 'telefono', e.telefono, 'email', e.email,
+                   'logo_archivo', e.logo_archivo, 'copiado_at', NOW())
+          INTO NEW.empresa_datos
+          FROM empresas e WHERE e.id = NEW.empresa_id;
+    END IF;
+    RETURN NEW;
+END $$;
+
+DROP TRIGGER IF EXISTS trg_proformas_empresa_datos ON proformas;
+CREATE TRIGGER trg_proformas_empresa_datos BEFORE INSERT OR UPDATE OF empresa_datos ON proformas
+    FOR EACH ROW EXECUTE FUNCTION copiar_datos_empresa();
+DROP TRIGGER IF EXISTS trg_ordenes_empresa_datos ON ordenes_trabajo;
+CREATE TRIGGER trg_ordenes_empresa_datos BEFORE INSERT OR UPDATE OF empresa_datos ON ordenes_trabajo
+    FOR EACH ROW EXECUTE FUNCTION copiar_datos_empresa();
+GRANT EXECUTE ON FUNCTION copiar_datos_empresa() TO ssswap_app;
+
+-- ── 24.3 Registro ──
+INSERT INTO migraciones_registro (version, descripcion, resultado, detalle)
+SELECT '24-identidad-empresa', 'Logo por empresa y copia de los datos de la empresa en proformas y ordenes nuevas', 'exito',
+       jsonb_build_object('columnas', ARRAY['proformas.empresa_datos', 'ordenes_trabajo.empresa_datos'], 'trigger', 'copiar_datos_empresa')
+WHERE NOT EXISTS (SELECT 1 FROM migraciones_registro WHERE version = '24-identidad-empresa' AND resultado = 'exito');

@@ -7,6 +7,7 @@ const express = require('express');
 const router  = express.Router();
 const c = require('../controllers/plataforma.controller');
 const { verificarToken, soloSuperadmin } = require('../middleware/auth.middleware');
+const { subirLogoEmpresa } = require('../middleware/upload.middleware');
 
 router.use(verificarToken, soloSuperadmin);
 
@@ -16,6 +17,8 @@ router.post('/empresas',                       c.crearEmpresa);
 router.get('/empresas/:id',                    c.obtenerEmpresa);
 router.put('/empresas/:id',                    c.actualizarEmpresa);
 router.patch('/empresas/:id/estado',           c.cambiarEstadoEmpresa);
+router.post('/empresas/:id/logo',              subirLogoEmpresa, c.subirLogoEmpresa);
+router.delete('/empresas/:id/logo',            c.quitarLogoEmpresa);
 router.post('/empresas/:id/administrador',     c.administradorEmpresa);
 router.post('/empresas/:id/soporte',           c.abrirSoporte);
 router.get('/soporte',                         c.listarSoporte);

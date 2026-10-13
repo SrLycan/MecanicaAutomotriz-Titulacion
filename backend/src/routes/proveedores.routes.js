@@ -13,6 +13,7 @@
 const express = require('express');
 const router  = express.Router();
 const { verificarToken, permisoPorMetodo } = require('../middleware/auth.middleware');
+const { idempotencia } = require('../middleware/idempotencia.middleware');
 
 const {
     listarProveedores, obtenerProveedor, crearProveedor, actualizarProveedor, eliminarProveedor,
@@ -33,7 +34,8 @@ const {
 
 // Todas las rutas de este modulo requieren estar autenticado como administrador
 // GET = ver, POST = crear, PUT/PATCH = editar, DELETE = eliminar (modulo "proveedores").
-router.use(verificarToken, permisoPorMetodo('proveedores'));
+// Idempotency-Key: un doble clic o un reintento no crea dos proveedores, compras ni pagos.
+router.use(verificarToken, permisoPorMetodo('proveedores'), idempotencia);
 
 // ── Proveedores ──────────────────────────────────────────────
 router.get('/proveedores',        listarProveedores);

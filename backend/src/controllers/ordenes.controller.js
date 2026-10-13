@@ -15,6 +15,8 @@ const pool = require('../config/db');
 const { validarIdentificacion } = require('../sri/identificacion');
 const { errorBD } = require('../utils/erroresBD');
 const { puede } = require('../middleware/auth.middleware');
+const { COLUMNAS_EMPRESA_SQL } = require('../services/marcaEmpresa');
+const { generarOrdenPdf, numeroOrden } = require('../services/ordenPdf.service');
 const {
     registrarHistorial, obtenerHistorialPorOrden, registrarAccionBitacora,
     listarHistorialGeneral: listarHistorialGeneralService,
@@ -392,6 +394,50 @@ const obtenerOrden = async (req, res) => {
 };
 
 /**
+ * GET /api/ordenes/ordenes/:id/pdf
+ * Orden de trabajo en PDF con la identidad de SU empresa (copia guardada al
+ * crearla o, en órdenes anteriores, los datos actuales de la empresa) y el
+ * usuario que la registró (siempre el autenticado al crearla, nunca el
+ * navegador). RLS: solo existe para la empresa dueña.
+ */
+const descargarOrdenPdf = async (req, res) => {
+    const { id } = req.params;
+    if (!/^\d+$/.test(String(id))) return res.status(404).json({ error: 'Orden no encontrada.' });
+    try {
+        const { rows } = await pool.query(`
+            SELECT o.*,
+                   c.nombre AS cliente_nombre, c.email AS cliente_email, c.telefono AS cliente_telefono,
+                   c.cedula AS cliente_cedula, c.direccion AS cliente_direccion,
+                   v.placa, v.marca, v.modelo, v.anio, v.color, v.vin,
+                   u.nombre AS usuario_nombre, t.nombre AS tecnico_nombre,
+                   ${COLUMNAS_EMPRESA_SQL}
+            FROM ordenes_trabajo o
+            JOIN empresas e ON e.id = o.empresa_id
+            JOIN clientes c ON c.id = o.cliente_id
+            LEFT JOIN vehiculos v ON v.id = o.vehiculo_id
+            LEFT JOIN usuarios u ON u.id = o.usuario_id
+            LEFT JOIN usuarios t ON t.id = o.tecnico_id
+            WHERE o.id = $1`, [id]);
+        const orden = rows[0];
+        if (!orden) return res.status(404).json({ error: 'Orden no encontrada.' });
+        const [{ rows: proformas }, { rows: ultima }] = await Promise.all([
+            pool.query(`SELECT numero, total, estado FROM proformas WHERE orden_id = $1 OR orden_generada_id = $1 ORDER BY id`, [id]),
+            pool.query(`SELECT h.created_at, u.nombre AS usuario_nombre FROM ordenes_historial h
+                        LEFT JOIN usuarios u ON u.id = h.usuario_id WHERE h.orden_id = $1 ORDER BY h.created_at DESC, h.id DESC LIMIT 1`, [id]),
+        ]);
+        const pdf = await generarOrdenPdf({ ...orden, proformas, ultima_modificacion: ultima[0] || null });
+        const archivo = `${numeroOrden(orden)}-${String(orden.cliente_nombre || 'CLIENTE').normalize('NFD').replace(/[̀-ͯ]/g, '')
+            .replace(/[^\w-]+/g, '_').slice(0, 50).toUpperCase()}.pdf`;
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${archivo}"`);
+        return res.send(pdf);
+    } catch (err) {
+        console.error('Error descargarOrdenPdf:', err.message);
+        if (!res.headersSent) return res.status(500).json({ error: 'Error al generar el PDF de la orden.' });
+    }
+};
+
+/**
  * Crea una orden de trabajo y registra la primera entrada en la bitácora de auditoría.
  * Solo administradores y recepcionistas pueden asignar técnico en el momento de creación.
  */
@@ -606,5 +652,5 @@ module.exports = {
     listarClientes, obtenerCliente, crearCliente, actualizarCliente, eliminarCliente,
     listarVehiculos, crearVehiculo, actualizarVehiculo, eliminarVehiculo,
     listarOrdenes, obtenerOrden, crearOrden, actualizarOrden, eliminarOrden,
-    obtenerHistorialOrden, listarHistorialGeneral,
+    obtenerHistorialOrden, listarHistorialGeneral, descargarOrdenPdf,
 };

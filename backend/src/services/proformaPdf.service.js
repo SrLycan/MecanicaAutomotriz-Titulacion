@@ -164,11 +164,14 @@ function dibujarEncabezado(doc, proforma) {
         .text(limpiarTexto(marca.nombre), empresaX, yInicio + 2, { width: empresaAncho });
     let y = doc.y + 3;
     doc.font(F.normal).fontSize(7.8).fillColor(COLOR_MUT);
+    if (marca.razonSocial && marca.razonSocial !== marca.nombre) { doc.text(limpiarTexto(marca.razonSocial), empresaX, y, { width: empresaAncho }); y = doc.y + 1; }
     if (marca.ruc) { doc.text(`RUC: ${limpiarTexto(marca.ruc)}`, empresaX, y, { width: empresaAncho }); y = doc.y + 1; }
     const sucursal = limpiarTexto(proforma.sucursal_nombre);
     if (sucursal) { doc.text(`Sucursal: ${sucursal}`, empresaX, y, { width: empresaAncho }); y = doc.y + 1; }
-    if (proforma.sucursal_direccion) { doc.text(limpiarTexto(proforma.sucursal_direccion), empresaX, y, { width: empresaAncho }); y = doc.y + 1; }
-    const contacto = [proforma.sucursal_telefono, proforma.sucursal_email].map(limpiarTexto).filter(Boolean).join('   ·   ');
+    // Direccion y contacto: los de la sucursal; si no tiene, los de la empresa.
+    const direccion = proforma.sucursal_direccion || marca.direccion;
+    if (direccion) { doc.text(limpiarTexto(direccion), empresaX, y, { width: empresaAncho }); y = doc.y + 1; }
+    const contacto = [proforma.sucursal_telefono || marca.telefono, proforma.sucursal_email || marca.email].map(limpiarTexto).filter(Boolean).join('   ·   ');
     if (contacto) { doc.text(contacto, empresaX, y, { width: empresaAncho }); y = doc.y; }
     const yFinEmpresa = doc.y;
 

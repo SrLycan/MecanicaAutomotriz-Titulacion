@@ -20,6 +20,7 @@ const { ROLES_STAFF, ROL_SUPERADMIN } = require('../config/permisos');
 const { registrarAuditoria } = require('../services/auditoria.service');
 const { sinAislamiento } = require('../config/contexto');
 const { empresaPublicaId } = require('../middleware/empresa.middleware');
+const { empresaSesion } = require('../services/marcaEmpresa');
 const { MODULOS } = require('../config/permisos');
 const { registrarAceptaciones } = require('../services/legal.service');
 const { ErrorNegocio } = require('../services/inventarioProforma.service');
@@ -54,7 +55,7 @@ async function permisosDe(u, soporte = null) {
 }
 
 /** Datos de sesion que recibe el frontend (nunca contrasenas ni tokens internos). */
-const datosEmpresa = (u) => (u.empresa_id ? { id: u.empresa_id, nombre: u.empresa_nombre, slug: u.empresa_slug } : null);
+const datosEmpresa = (u) => (u.empresa_id ? empresaSesion(u.empresa_id, u) : null);
 
 // Limites de longitud aceptados para email/contrasena. No son solo cosmeticos:
 // - EMAIL_MAX_LEN evita procesar strings gigantes en la consulta/comparaciones.
@@ -97,7 +98,8 @@ const login = async (req, res) => {
         // El correo es unico en la plataforma: se busca en todas las empresas.
         const { rows } = await sinAislamiento(() => pool.query(
             `SELECT u.id, u.nombre, u.email, u.password, u.rol, u.activo, u.estado, u.token_version, u.empresa_id,
-                    e.nombre AS empresa_nombre, e.slug AS empresa_slug, e.estado AS empresa_estado
+                    e.nombre AS empresa_nombre, e.slug AS empresa_slug, e.estado AS empresa_estado,
+                    e.nombre_comercial AS empresa_nombre_comercial, e.logo_archivo AS empresa_logo
              FROM usuarios u LEFT JOIN empresas e ON e.id = u.empresa_id
              WHERE u.email = $1`,
             [emailNorm]

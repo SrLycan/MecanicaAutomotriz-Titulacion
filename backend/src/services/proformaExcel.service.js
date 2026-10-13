@@ -133,6 +133,15 @@ async function generarProformaExcel(proforma) {
     sheet.getCell('G2').value = `Emisión: ${fecha(proforma.fecha_emision)}   Validez: ${fecha(proforma.fecha_validez)}`;
     sheet.getCell('G2').alignment = { horizontal: 'right' };
     sheet.mergeCells('G2:L2');
+    // Datos de contacto de la empresa emisora (de la sucursal si los tiene).
+    const contactoEmpresa = [marca.razonSocial && marca.razonSocial !== marca.nombre ? marca.razonSocial : null,
+        proforma.sucursal_direccion || marca.direccion, proforma.sucursal_telefono || marca.telefono, proforma.sucursal_email || marca.email]
+        .filter(Boolean).join('  ·  ');
+    if (contactoEmpresa) {
+        sheet.getCell('A3').value = contactoEmpresa;
+        sheet.getCell('A3').font = { name: FONT, size: 9, color: { argb: 'FF64748B' } };
+        sheet.mergeCells('A3:L3');
+    }
 
     // ── Cliente / Vehiculo ──
     let fila = 4;

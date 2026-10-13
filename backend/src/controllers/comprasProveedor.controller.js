@@ -301,6 +301,22 @@ const cambiarEstadoCompra = async (req, res) => {
             await client.query('ROLLBACK');
             return res.status(409).json({ error: `La compra ya esta en estado "${compra.estado}" y no se puede modificar.` });
         }
+        if (estado === 'cancelada') {
+            // Una compra con pagos vigentes no se cancela: el dinero ya salio de
+            // la cuenta y quedaria "pagado" algo que no se compro (total pagado
+            // mayor que lo comprado). Primero se anulan esos pagos (si fueron un
+            // error o el proveedor devolvio el dinero) y luego se cancela.
+            const { rows: pg } = await client.query(
+                `SELECT COALESCE(SUM(monto), 0) AS pagado, COUNT(*)::int AS n FROM movimientos_financieros_proveedor
+                 WHERE compra_id = $1 AND tipo IN ('pago','abono') AND estado = 'confirmado'`, [compra.id]);
+            if (Number(pg[0].pagado) > 0.005) {
+                await client.query('ROLLBACK');
+                return res.status(409).json({
+                    error: `La compra #${compra.id} tiene ${pg[0].n} pago(s) confirmado(s) por $${Number(pg[0].pagado).toFixed(2)}. Si el proveedor devolvio el dinero o el pago fue un error, anulalo en "Historial financiero" y luego cancela la compra.`,
+                    codigo: 'COMPRA_CON_PAGOS', pagado: Number(pg[0].pagado),
+                });
+            }
+        }
 
         if (Array.isArray(cantidades_recibidas)) {
             for (const c of cantidades_recibidas) {

@@ -12,7 +12,7 @@ const { verificarToken, soloStaff, requierePermiso, requiereAlguno } = require('
 const {
     listarClientes, obtenerCliente, crearCliente, actualizarCliente, eliminarCliente,
     listarVehiculos, crearVehiculo, actualizarVehiculo, eliminarVehiculo,
-    listarOrdenes, obtenerOrden, crearOrden, actualizarOrden, eliminarOrden,
+    listarOrdenes, obtenerOrden, crearOrden, actualizarOrden, eliminarOrden, descargarOrdenPdf,
     obtenerHistorialOrden, listarHistorialGeneral,
 } = require('../controllers/ordenes.controller');
 
@@ -46,6 +46,7 @@ router.delete('/vehiculos/:id', requierePermiso('vehiculos', 'eliminar'), elimin
 router.get('/ordenes',                    requiereAlguno(['ordenes', 'ver'], ['vehiculos', 'ver']), listarOrdenes);
 router.get('/ordenes/historial/general',  requierePermiso('bitacora', 'ver'), listarHistorialGeneral);
 router.get('/ordenes/:id/historial',      requierePermiso('ordenes', 'ver'), obtenerHistorialOrden);
+router.get('/ordenes/:id/pdf',            requierePermiso('ordenes', 'ver'), descargarOrdenPdf);
 router.get('/ordenes/:id',                requierePermiso('ordenes', 'ver'), obtenerOrden);
 router.post('/ordenes',       requierePermiso('ordenes', 'crear'),    crearOrden);
 router.put('/ordenes/:id',    requierePermiso('ordenes', 'editar'),   actualizarOrden);

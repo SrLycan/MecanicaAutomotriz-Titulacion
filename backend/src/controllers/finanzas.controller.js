@@ -12,6 +12,7 @@
  * Nada se borra: movimientos y pagos se ANULAN con motivo.
  */
 const pool = require('../config/db');
+const { saldoProveedoresSql } = require('../services/finanzas.service');
 const { errorBD } = require('../utils/erroresBD');
 const { redondear2 } = require('../utils/numeros');
 const { registrarAccionBitacora } = require('../services/ordenesHistorial.service');
@@ -97,14 +98,11 @@ const resumen = async (req, res) => {
                         COALESCE(SUM(monto_total - monto_pagado) FILTER (WHERE estado = 'vencido'
                             OR (fecha_vencimiento IS NOT NULL AND fecha_vencimiento < CURRENT_DATE)), 0) AS vencido
                  FROM cuentas_cobrar WHERE estado IN ('pendiente','parcial','vencido')`),
-            // Deuda con proveedores: compras confirmadas - canceladas - pagos/abonos.
+            // Deuda con proveedores: compras vigentes - pagos/abonos (la misma regla
+            // que el resumen de Proveedores; antes la cancelacion se restaba dos veces).
             pool.query(
                 `SELECT COALESCE(SUM(GREATEST(saldo, 0)), 0) AS total, COUNT(*) FILTER (WHERE saldo > 0.004) AS proveedores
-                 FROM (SELECT proveedor_id,
-                              SUM(CASE WHEN tipo = 'compra' THEN monto
-                                       WHEN tipo IN ('pago','abono','cancelacion') THEN -monto ELSE 0 END) AS saldo
-                       FROM movimientos_financieros_proveedor WHERE estado = 'confirmado'
-                       GROUP BY proveedor_id) s`),
+                 FROM (${saldoProveedoresSql()}) s`),
             pool.query(`SELECT COALESCE(SUM(monto), 0) AS total, COUNT(*) AS cantidad FROM gastos_proveedor WHERE estado = 'pendiente'`),
             pool.query(
                 `SELECT COALESCE(SUM(ep.sueldo_base), 0) AS sueldos,

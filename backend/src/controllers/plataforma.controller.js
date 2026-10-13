@@ -19,6 +19,9 @@ const { errorBD } = require('../utils/erroresBD');
 const { registrarAuditoria } = require('../services/auditoria.service');
 const { PLANTILLAS } = require('../config/permisos');
 const respaldos = require('../services/respaldo.service');
+const { guardarLogo } = require('./empresa.controller');
+const { urlLogo } = require('../services/marcaEmpresa');
+const fs = require('fs');
 
 const SLUG_PUBLICO = (process.env.EMPRESA_PUBLICA || 'ss-swap').trim().toLowerCase();
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -36,6 +39,9 @@ function responder(res, err, contexto, mensaje) {
     const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
     return res.status(500).json({ error: mensaje });
 }
+
+/** Fila de empresa para la API: URL del logo en vez del nombre interno del archivo. */
+const empresaApi = ({ logo_archivo, ...e }) => ({ ...e, logo_url: urlLogo(logo_archivo) });
 
 /** Consulta sin aislamiento (la plataforma ve todas las empresas). */
 const q = (sql, params) => sinAislamiento(() => pool.query(sql, params));
@@ -117,7 +123,8 @@ const resumen = async (_req, res) => {
 // ─────────────────────────────────────────────────────────────
 const SQL_EMPRESA = `
     SELECT e.id, e.slug, e.nombre, e.nombre_comercial, e.razon_social, e.ruc, e.direccion, e.telefono, e.email,
-           e.estado, e.permite_soporte, e.created_at, e.updated_at,
+           e.estado, e.permite_soporte, e.created_at, e.updated_at, e.logo_archivo, e.creada_por,
+           (SELECT u.nombre FROM usuarios u WHERE u.id = e.creada_por) AS creada_por_nombre,
            (e.slug = $1) AS es_publica,
            (SELECT COUNT(*) FROM usuarios u WHERE u.empresa_id = e.id AND u.rol <> 'cliente' AND u.activo)::int AS personal_activo,
            (SELECT COUNT(*) FROM clientes c WHERE c.empresa_id = e.id)::int AS total_clientes,
@@ -141,7 +148,7 @@ const listarEmpresas = async (req, res) => {
     }
     try {
         const { rows } = await q(`${SQL_EMPRESA} ${where.length ? `WHERE ${where.join(' AND ')}` : ''} ORDER BY e.id`, params);
-        return res.json({ empresas: rows, total: rows.length });
+        return res.json({ empresas: rows.map(empresaApi), total: rows.length });
     } catch (err) {
         return responder(res, err, 'listarEmpresas', 'Error al listar empresas.');
     }
@@ -157,7 +164,7 @@ const obtenerEmpresa = async (req, res) => {
         const { rows: admins } = await q(
             `SELECT id, nombre, email, estado, ultimo_acceso FROM usuarios
              WHERE empresa_id = $1 AND rol = 'administrador' ORDER BY id`, [req.params.id]);
-        return res.json({ empresa: rows[0], administradores: admins });
+        return res.json({ empresa: empresaApi(rows[0]), administradores: admins });
     } catch (err) {
         return responder(res, err, 'obtenerEmpresa', 'Error al obtener la empresa.');
     }
@@ -232,7 +239,7 @@ const crearEmpresa = async (req, res) => {
         });
         const { rows } = await q(`${SQL_EMPRESA} WHERE e.id = $2`, [SLUG_PUBLICO, r.empresaId]);
         return res.status(201).json({
-            empresa: rows[0],
+            empresa: empresaApi(rows[0]),
             administrador: r.administrador.usuario,
             // Se muestra una sola vez: el superadministrador la entrega en persona.
             password_temporal: r.administrador.password_temporal,
@@ -262,11 +269,29 @@ const actualizarEmpresa = async (req, res) => {
             }
         });
         const { rows } = await q(`${SQL_EMPRESA} WHERE e.id = $2`, [SLUG_PUBLICO, req.params.id]);
-        return res.json({ empresa: rows[0], ...r });
+        return res.json({ empresa: empresaApi(rows[0]), ...r });
     } catch (err) {
         return responder(res, err, 'actualizarEmpresa', 'Error al actualizar la empresa.');
     }
 };
+
+// POST /api/plataforma/empresas/:id/logo   (multipart "logo")  ·  DELETE /api/plataforma/empresas/:id/logo
+const subirLogoEmpresa = async (req, res) => logoEmpresa(req, res, `upload:${req.file.filename}`);
+const quitarLogoEmpresa = async (req, res) => logoEmpresa(req, res, null);
+
+async function logoEmpresa(req, res, valor) {
+    const descartar = () => { if (req.file) fs.unlink(req.file.path, () => {}); };
+    if (!idValido(req.params.id)) { descartar(); return res.status(400).json({ error: 'Identificador invalido.' }); }
+    try {
+        const fila = await transaccion(client => guardarLogo(client, { empresaId: Number(req.params.id), valor, req }));
+        if (!fila) { descartar(); return res.status(404).json({ error: 'Empresa no encontrada.' }); }
+        const { rows } = await q(`${SQL_EMPRESA} WHERE e.id = $2`, [SLUG_PUBLICO, req.params.id]);
+        return res.json({ empresa: empresaApi(rows[0]) });
+    } catch (err) {
+        descartar();
+        return responder(res, err, 'logoEmpresa', 'No se pudo guardar el logo de la empresa.');
+    }
+}
 
 // PATCH /api/plataforma/empresas/:id/estado   body: { estado: activa|suspendida|inactiva, motivo }
 // Una empresa no activa deja de poder usar el sistema de inmediato (sus
@@ -493,6 +518,7 @@ const pruebaRestauracion = async (req, res) => {
 };
 
 module.exports = {
+    subirLogoEmpresa, quitarLogoEmpresa,
     resumen, listarEmpresas, obtenerEmpresa, crearEmpresa, actualizarEmpresa, cambiarEstadoEmpresa, administradorEmpresa,
     abrirSoporte, cerrarSoporte, listarSoporte, auditoriaGlobal, listarMigraciones, listarErrores,
     estadoRespaldos, respaldoManual, pruebaRestauracion, slugDe,

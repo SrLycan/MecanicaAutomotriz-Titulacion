@@ -10,17 +10,38 @@
 const pool = require('../config/db');
 const { errorBD } = require('../utils/erroresBD');
 const { registrarAuditoria } = require('../services/auditoria.service');
+const { urlLogo } = require('../services/marcaEmpresa');
+const fs = require('fs');
 
 const CAMPOS = { nombre: 120, nombre_comercial: 160, razon_social: 160, ruc: 20, direccion: 255, telefono: 30, email: 150 };
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const COLUMNAS = 'id, slug, nombre, nombre_comercial, razon_social, ruc, direccion, telefono, email, estado, permite_soporte, logo_archivo';
+const COLUMNAS = 'id, slug, nombre, nombre_comercial, razon_social, ruc, direccion, telefono, email, estado, permite_soporte, logo_archivo, created_at, updated_at';
+
+/** Fila de empresa para la API: URL del logo en vez del nombre interno del archivo. */
+const paraApi = ({ logo_archivo, ...e }) => ({ ...e, logo_url: urlLogo(logo_archivo) });
+
+/**
+ * Cambia (o quita, con valor null) el logo de una empresa y lo audita.
+ * `client` debe estar en una transacción; la fila debe ser visible para él
+ * (RLS de la propia empresa o la plataforma sin aislamiento).
+ * Los archivos anteriores NO se borran: las proformas y órdenes ya emitidas
+ * guardan una copia de los datos de la empresa que apunta a ese archivo.
+ */
+async function guardarLogo(client, { empresaId, valor, req }) {
+    const { rows: antes } = await client.query('SELECT logo_archivo FROM empresas WHERE id = $1 FOR UPDATE', [empresaId]);
+    if (!antes[0]) return null;
+    const { rows } = await client.query(`UPDATE empresas SET logo_archivo = $1 WHERE id = $2 RETURNING ${COLUMNAS}`, [valor, empresaId]);
+    await registrarAuditoria({ req, accion: valor ? 'empresa.logo_cambiar' : 'empresa.logo_quitar', recursoTipo: 'empresa',
+        recursoId: empresaId, empresaId, detalle: { antes: antes[0].logo_archivo, despues: valor } }, client, true);
+    return rows[0];
+}
 
 // GET /api/empresa
 const obtener = async (_req, res) => {
     try {
         const { rows } = await pool.query(`SELECT ${COLUMNAS} FROM empresas WHERE id = empresa_actual()`);
         if (!rows[0]) return res.status(404).json({ error: 'Empresa no encontrada.' });
-        return res.json({ empresa: rows[0] });
+        return res.json({ empresa: paraApi(rows[0]) });
     } catch (err) {
         console.error('Error obtener empresa:', err.message);
         return res.status(500).json({ error: 'Error al obtener los datos de la empresa.' });
@@ -58,7 +79,7 @@ const actualizar = async (req, res) => {
                 detalle: { cambios } }, client, true);
         }
         await client.query('COMMIT');
-        return res.json({ empresa: rows[0] });
+        return res.json({ empresa: paraApi(rows[0]) });
     } catch (err) {
         await client.query('ROLLBACK').catch(() => {});
         console.error('Error actualizar empresa:', err.message);
@@ -69,4 +90,33 @@ const actualizar = async (req, res) => {
     }
 };
 
-module.exports = { obtener, actualizar };
+// POST /api/empresa/logo   multipart, campo "logo" (subirLogoEmpresa valida formato, firma y tamaño)
+const subirLogo = async (req, res) => cambiarLogo(req, res, `upload:${req.file.filename}`);
+
+// DELETE /api/empresa/logo
+const quitarLogo = async (req, res) => cambiarLogo(req, res, null);
+
+async function cambiarLogo(req, res, valor) {
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const { rows } = await client.query('SELECT empresa_actual() AS id');
+        const fila = rows[0].id ? await guardarLogo(client, { empresaId: rows[0].id, valor, req }) : null;
+        if (!fila) {
+            await client.query('ROLLBACK');
+            if (req.file) fs.unlink(req.file.path, () => {});
+            return res.status(404).json({ error: 'Empresa no encontrada.' });
+        }
+        await client.query('COMMIT');
+        return res.json({ empresa: paraApi(fila) });
+    } catch (err) {
+        await client.query('ROLLBACK').catch(() => {});
+        if (req.file) fs.unlink(req.file.path, () => {});
+        console.error('Error logo empresa:', err.message);
+        return res.status(500).json({ error: 'No se pudo guardar el logo de la empresa.' });
+    } finally {
+        client.release();
+    }
+}
+
+module.exports = { obtener, actualizar, subirLogo, quitarLogo, guardarLogo, paraApi };
