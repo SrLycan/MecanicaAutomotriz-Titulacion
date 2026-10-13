@@ -43,6 +43,17 @@ describe('config/multiempresa — aislamiento por empresa', () => {
         }
     });
 
+    test('Sprint 25: la migracion contiene las llaves compuestas y el RLS de las facturas de compra', () => {
+        const b25 = migracion.slice(migracion.indexOf('-- RELACIONES25_INICIO'), migracion.indexOf('-- RELACIONES25_FIN'));
+        expect(b25).toContain(M.sqlRelaciones(M.RELACIONES_SPRINT25));
+        const lista = M.TABLAS_EMPRESA_SPRINT25.map(t => `'${t}'`).join(', ');
+        expect(migracion.split(`ARRAY[${lista}]`).length - 1).toBe(3); // politicas RLS, validacion final y registro
+        for (const [tabla, , ref] of M.RELACIONES_SPRINT25) {
+            expect(M.TODAS_TABLAS_EMPRESA).toContain(tabla);
+            expect(M.TODAS_TABLAS_EMPRESA).toContain(ref);
+        }
+    });
+
     test('la migracion aplica RLS a la lista de tablas de empresa', () => {
         const lista = M.TABLAS_EMPRESA.map(t => `'${t}'`).join(', ');
         // Aparece en la asignacion de empresa, en las politicas y en las validaciones.

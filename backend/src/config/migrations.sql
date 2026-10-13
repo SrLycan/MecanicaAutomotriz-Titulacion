@@ -3348,3 +3348,234 @@ INSERT INTO migraciones_registro (version, descripcion, resultado, detalle)
 SELECT '24-identidad-empresa', 'Logo por empresa y copia de los datos de la empresa en proformas y ordenes nuevas', 'exito',
        jsonb_build_object('columnas', ARRAY['proformas.empresa_datos', 'ordenes_trabajo.empresa_datos'], 'trigger', 'copiar_datos_empresa')
 WHERE NOT EXISTS (SELECT 1 FROM migraciones_registro WHERE version = '24-identidad-empresa' AND resultado = 'exito');
+
+-- ============================================================
+-- Sprint 25: Facturas de compra (comprobantes electronicos RECIBIDOS de
+-- proveedores) que alimentan el inventario
+--
+-- Requiere los Sprints 22 a 24. Aditivo e idempotente: no borra datos.
+-- Unico cambio sobre una columna existente: compras_proveedor_items.cantidad
+-- y cantidad_recibida pasan de INTEGER a NUMERIC(10,2) (sin perdida: todo
+-- entero cabe en NUMERIC) para comprar litros, galones o metros.
+--
+-- 25.1 facturas_compra: una fila por clave de acceso y empresa (UNIQUE): la
+--      misma factura nunca se registra dos veces. Guarda el XML original,
+--      su origen (SRI / XML cargado / manual), el estado en el SRI y el
+--      estado interno (pendiente_confirmacion -> registrada).
+-- 25.2 facturas_compra_detalles: los articulos del comprobante y la decision
+--      tomada al confirmar (producto existente, nuevo u omitir).
+-- 25.3 repuestos_codigos_proveedor: codigo del proveedor -> codigo interno.
+-- 25.4 movimientos_inventario.factura_compra_detalle_id UNIQUE: cada articulo
+--      de una factura genera A LO SUMO una entrada de inventario (garantia de
+--      la base, ademas del bloqueo en el backend).
+-- 25.5 Proteccion: una factura registrada no se borra ni se altera.
+-- 25.6 Aislamiento por empresa (RLS + llaves compuestas desde multiempresa.js).
+-- 25.7 Registro.
+-- ============================================================
+
+-- ── 25.0 Cantidades decimales en compras ──
+DO $$
+BEGIN
+    IF (SELECT data_type FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'compras_proveedor_items' AND column_name = 'cantidad') = 'integer' THEN
+        ALTER TABLE compras_proveedor_items ALTER COLUMN cantidad TYPE NUMERIC(10,2);
+        ALTER TABLE compras_proveedor_items ALTER COLUMN cantidad_recibida TYPE NUMERIC(10,2);
+    END IF;
+END $$;
+
+-- ── 25.1 Facturas de compra ──
+CREATE TABLE IF NOT EXISTS facturas_compra (
+    id                          SERIAL PRIMARY KEY,
+    empresa_id                  INTEGER NOT NULL DEFAULT empresa_actual(),
+    clave_acceso                VARCHAR(49) NOT NULL CHECK (clave_acceso ~ '^[0-9]{49}$'),
+    ambiente                    SMALLINT NOT NULL CHECK (ambiente IN (1, 2)),
+    cod_doc                     VARCHAR(2) NOT NULL DEFAULT '01',
+    numero                      VARCHAR(17),
+    fecha_emision               DATE,
+    emisor_ruc                  VARCHAR(13) NOT NULL,
+    emisor_razon_social         VARCHAR(300),
+    emisor_nombre_comercial     VARCHAR(300),
+    emisor_direccion            VARCHAR(300),
+    comprador_tipo_identificacion VARCHAR(2),
+    comprador_identificacion    VARCHAR(20),
+    comprador_razon_social      VARCHAR(300),
+    total_sin_impuestos         NUMERIC(14,2),
+    total_descuento             NUMERIC(14,2),
+    total_iva                   NUMERIC(14,2),
+    importe_total               NUMERIC(14,2),
+    totales_impuestos           JSONB,
+    estado_sri                  VARCHAR(30) NOT NULL DEFAULT 'SIN_VERIFICAR'
+                                    CHECK (estado_sri IN ('AUTORIZADO', 'NO AUTORIZADO', 'ANULADO', 'PENDIENTE DE ANULAR', 'NO_ENCONTRADO', 'SIN_VERIFICAR')),
+    numero_autorizacion         VARCHAR(49),
+    fecha_autorizacion          TIMESTAMP WITH TIME ZONE,
+    verificado_sri_at           TIMESTAMP WITH TIME ZONE,
+    anulacion_verificada        BOOLEAN,
+    origen_datos                VARCHAR(10) NOT NULL CHECK (origen_datos IN ('sri', 'xml', 'manual')),
+    firma_valida                BOOLEAN,
+    xml_original                TEXT,
+    xml_sha256                  CHAR(64),
+    estado                      VARCHAR(30) NOT NULL DEFAULT 'pendiente_confirmacion'
+                                    CHECK (estado IN ('pendiente_confirmacion', 'registrada', 'no_registrable', 'error')),
+    advertencias                JSONB NOT NULL DEFAULT '[]'::jsonb,
+    ultimo_error                TEXT,
+    proveedor_id                INTEGER REFERENCES proveedores(id),
+    compra_id                   INTEGER UNIQUE REFERENCES compras_proveedor(id),
+    consultada_por              INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+    registrada_por              INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+    registrada_at               TIMESTAMP WITH TIME ZONE,
+    created_at                  TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at                  TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    CONSTRAINT uq_facturas_compra_clave UNIQUE (empresa_id, clave_acceso),
+    CONSTRAINT chk_facturas_compra_registrada CHECK (estado <> 'registrada' OR (compra_id IS NOT NULL AND proveedor_id IS NOT NULL AND registrada_at IS NOT NULL))
+);
+CREATE INDEX IF NOT EXISTS idx_facturas_compra_emisor   ON facturas_compra (empresa_id, emisor_ruc);
+CREATE INDEX IF NOT EXISTS idx_facturas_compra_fecha    ON facturas_compra (empresa_id, fecha_emision DESC);
+CREATE INDEX IF NOT EXISTS idx_facturas_compra_estado   ON facturas_compra (empresa_id, estado);
+COMMENT ON TABLE facturas_compra IS 'Comprobantes electronicos recibidos de proveedores (Sprint 25). Consultar no toca el inventario; solo confirmar (estado registrada) genera la compra y las entradas.';
+COMMENT ON COLUMN facturas_compra.estado_sri IS 'Estado en el SRI: AUTORIZADO/NO AUTORIZADO (servicio de autorizacion), ANULADO/PENDIENTE DE ANULAR (servicio de consulta), NO_ENCONTRADO, SIN_VERIFICAR (no se pudo consultar).';
+COMMENT ON COLUMN facturas_compra.origen_datos IS 'De donde salio el detalle: sri (XML autorizado descargado del SRI), xml (archivo cargado por el usuario), manual (escrito a mano, no verificado).';
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_updated_at_facturas_compra') THEN
+        CREATE TRIGGER set_updated_at_facturas_compra BEFORE UPDATE ON facturas_compra FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
+    END IF;
+END $$;
+
+-- ── 25.2 Detalle ──
+CREATE TABLE IF NOT EXISTS facturas_compra_detalles (
+    id                          SERIAL PRIMARY KEY,
+    empresa_id                  INTEGER NOT NULL DEFAULT empresa_actual(),
+    factura_id                  INTEGER NOT NULL REFERENCES facturas_compra(id) ON DELETE CASCADE,
+    linea                       SMALLINT NOT NULL,
+    codigo_principal            VARCHAR(100),
+    codigo_auxiliar             VARCHAR(100),
+    descripcion                 VARCHAR(300) NOT NULL,
+    unidad_medida               VARCHAR(50),
+    cantidad                    NUMERIC(18,6) NOT NULL CHECK (cantidad > 0),
+    precio_unitario             NUMERIC(18,6) NOT NULL DEFAULT 0 CHECK (precio_unitario >= 0),
+    descuento                   NUMERIC(14,2) NOT NULL DEFAULT 0 CHECK (descuento >= 0),
+    precio_total_sin_impuesto   NUMERIC(14,2) NOT NULL DEFAULT 0,
+    impuestos                   JSONB NOT NULL DEFAULT '[]'::jsonb,
+    -- Decision al confirmar la compra.
+    accion                      VARCHAR(10) CHECK (accion IN ('existente', 'nuevo', 'omitir')),
+    repuesto_id                 INTEGER REFERENCES repuestos(id),
+    area                        VARCHAR(30),
+    cantidad_recibida           NUMERIC(10,2) CHECK (cantidad_recibida IS NULL OR cantidad_recibida > 0),
+    costo_unitario              NUMERIC(10,2) CHECK (costo_unitario IS NULL OR costo_unitario >= 0),
+    CONSTRAINT uq_facturas_compra_detalles_linea UNIQUE (factura_id, linea)
+);
+CREATE INDEX IF NOT EXISTS idx_fc_detalles_factura  ON facturas_compra_detalles (factura_id);
+CREATE INDEX IF NOT EXISTS idx_fc_detalles_repuesto ON facturas_compra_detalles (repuesto_id);
+
+-- ── 25.3 Codigos de proveedor -> codigo interno ──
+CREATE TABLE IF NOT EXISTS repuestos_codigos_proveedor (
+    id              SERIAL PRIMARY KEY,
+    empresa_id      INTEGER NOT NULL DEFAULT empresa_actual(),
+    repuesto_id     INTEGER NOT NULL REFERENCES repuestos(id),
+    proveedor_id    INTEGER NOT NULL REFERENCES proveedores(id),
+    codigo          VARCHAR(100) NOT NULL CHECK (BTRIM(codigo) <> ''),
+    creado_por      INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+    created_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    CONSTRAINT uq_repuestos_codigos_proveedor UNIQUE (empresa_id, proveedor_id, codigo)
+);
+CREATE INDEX IF NOT EXISTS idx_rcp_repuesto ON repuestos_codigos_proveedor (repuesto_id);
+COMMENT ON TABLE repuestos_codigos_proveedor IS 'Codigo que usa cada proveedor para un producto propio. El codigo interno (repuestos.codigo) nunca se reemplaza.';
+
+-- ── 25.4 Movimientos de inventario ligados a la factura ──
+ALTER TABLE movimientos_inventario ADD COLUMN IF NOT EXISTS factura_compra_id INTEGER REFERENCES facturas_compra(id);
+ALTER TABLE movimientos_inventario ADD COLUMN IF NOT EXISTS factura_compra_detalle_id INTEGER REFERENCES facturas_compra_detalles(id);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_movimientos_factura_detalle ON movimientos_inventario (factura_compra_detalle_id)
+    WHERE factura_compra_detalle_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_movimientos_factura_compra ON movimientos_inventario (factura_compra_id) WHERE factura_compra_id IS NOT NULL;
+COMMENT ON COLUMN movimientos_inventario.factura_compra_detalle_id IS 'Articulo de la factura de compra que origino esta entrada (UNIQUE: una sola entrada por articulo).';
+
+-- ── 25.5 Una factura registrada no se borra ni cambia su identidad ──
+CREATE OR REPLACE FUNCTION proteger_factura_compra() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+    IF TG_OP = 'DELETE' THEN
+        IF OLD.estado = 'registrada' THEN
+            RAISE EXCEPTION 'La factura de compra % ya fue registrada: no se puede borrar.', OLD.clave_acceso USING ERRCODE = 'P0001';
+        END IF;
+        RETURN OLD;
+    END IF;
+    IF OLD.estado = 'registrada' AND (
+        NEW.estado IS DISTINCT FROM OLD.estado OR NEW.clave_acceso IS DISTINCT FROM OLD.clave_acceso
+        OR NEW.compra_id IS DISTINCT FROM OLD.compra_id OR NEW.proveedor_id IS DISTINCT FROM OLD.proveedor_id
+        OR NEW.importe_total IS DISTINCT FROM OLD.importe_total OR NEW.xml_original IS DISTINCT FROM OLD.xml_original
+        OR NEW.empresa_id IS DISTINCT FROM OLD.empresa_id) THEN
+        RAISE EXCEPTION 'La factura de compra % ya fue registrada: no se puede modificar.', OLD.clave_acceso USING ERRCODE = 'P0001';
+    END IF;
+    RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS trg_proteger_factura_compra ON facturas_compra;
+CREATE TRIGGER trg_proteger_factura_compra BEFORE UPDATE OR DELETE ON facturas_compra
+    FOR EACH ROW EXECUTE FUNCTION proteger_factura_compra();
+
+CREATE OR REPLACE FUNCTION proteger_detalle_factura_compra() RETURNS trigger
+LANGUAGE plpgsql AS $$
+DECLARE est TEXT;
+BEGIN
+    SELECT estado INTO est FROM facturas_compra WHERE id = COALESCE(OLD.factura_id, NEW.factura_id);
+    IF est = 'registrada' THEN
+        RAISE EXCEPTION 'Los articulos de una factura de compra registrada no se pueden modificar.' USING ERRCODE = 'P0001';
+    END IF;
+    RETURN COALESCE(NEW, OLD);
+END $$;
+DROP TRIGGER IF EXISTS trg_proteger_detalle_factura_compra ON facturas_compra_detalles;
+CREATE TRIGGER trg_proteger_detalle_factura_compra BEFORE INSERT OR UPDATE OR DELETE ON facturas_compra_detalles
+    FOR EACH ROW EXECUTE FUNCTION proteger_detalle_factura_compra();
+
+-- ── 25.6 Aislamiento por empresa ──
+DO $$
+DECLARE
+    t TEXT;
+    tablas TEXT[] := ARRAY['facturas_compra', 'facturas_compra_detalles', 'repuestos_codigos_proveedor'];
+BEGIN
+    FOREACH t IN ARRAY tablas LOOP
+        PERFORM agregar_constraint_si_falta(t, 'fk_' || t || '_empresa', 'FOREIGN KEY (empresa_id) REFERENCES empresas(id)');
+        EXECUTE format('CREATE INDEX IF NOT EXISTS %I ON %I (empresa_id)', 'idx_' || t || '_empresa', t);
+        EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
+        EXECUTE format('DROP POLICY IF EXISTS aislamiento_empresa ON %I', t);
+        EXECUTE format('CREATE POLICY aislamiento_empresa ON %I USING (empresa_id = empresa_actual()) WITH CHECK (empresa_id = empresa_actual())', t);
+    END LOOP;
+END $$;
+
+-- RELACIONES25_INICIO (generado desde multiempresa.js: node src/config/multiempresa.js)
+DO $$
+BEGIN
+    PERFORM agregar_constraint_si_falta('compras_proveedor', 'uq_compras_proveedor_id_empresa', 'UNIQUE (id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('facturas_compra', 'uq_facturas_compra_id_empresa', 'UNIQUE (id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('facturas_compra_detalles', 'uq_facturas_compra_detalles_id_empresa', 'UNIQUE (id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('proveedores', 'uq_proveedores_id_empresa', 'UNIQUE (id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('repuestos', 'uq_repuestos_id_empresa', 'UNIQUE (id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('facturas_compra', 'fk_emp_facturas_compra_proveedor_id', 'FOREIGN KEY (proveedor_id, empresa_id) REFERENCES proveedores(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('facturas_compra', 'fk_emp_facturas_compra_compra_id', 'FOREIGN KEY (compra_id, empresa_id) REFERENCES compras_proveedor(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('facturas_compra_detalles', 'fk_emp_facturas_compra_detalles_factura_id', 'FOREIGN KEY (factura_id, empresa_id) REFERENCES facturas_compra(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('facturas_compra_detalles', 'fk_emp_facturas_compra_detalles_repuesto_id', 'FOREIGN KEY (repuesto_id, empresa_id) REFERENCES repuestos(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('repuestos_codigos_proveedor', 'fk_emp_repuestos_codigos_proveedor_repuesto_id', 'FOREIGN KEY (repuesto_id, empresa_id) REFERENCES repuestos(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('repuestos_codigos_proveedor', 'fk_emp_repuestos_codigos_proveedor_proveedor_id', 'FOREIGN KEY (proveedor_id, empresa_id) REFERENCES proveedores(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('movimientos_inventario', 'fk_emp_movimientos_inventario_factura_compra_id', 'FOREIGN KEY (factura_compra_id, empresa_id) REFERENCES facturas_compra(id, empresa_id)');
+    PERFORM agregar_constraint_si_falta('movimientos_inventario', 'fk_emp_movimientos_inventario_factura_compra_detalle_id', 'FOREIGN KEY (factura_compra_detalle_id, empresa_id) REFERENCES facturas_compra_detalles(id, empresa_id)');
+END $$;
+-- RELACIONES25_FIN
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON facturas_compra, facturas_compra_detalles TO ssswap_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON repuestos_codigos_proveedor TO ssswap_app;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ssswap_app;
+GRANT EXECUTE ON FUNCTION proteger_factura_compra(), proteger_detalle_factura_compra() TO ssswap_app;
+
+-- ── 25.7 Validaciones y registro ──
+DO $$
+DECLARE t TEXT;
+BEGIN
+    FOREACH t IN ARRAY ARRAY['facturas_compra', 'facturas_compra_detalles', 'repuestos_codigos_proveedor'] LOOP
+        IF NOT (SELECT relrowsecurity FROM pg_class WHERE oid = t::regclass) THEN
+            RAISE EXCEPTION 'Validacion 25: % no tiene Row Level Security.', t;
+        END IF;
+    END LOOP;
+    INSERT INTO migraciones_registro (version, descripcion, resultado, detalle)
+    SELECT '25-facturas-compra', 'Facturas de compra (comprobantes recibidos) con entrada unica al inventario', 'exito',
+           jsonb_build_object('tablas', ARRAY['facturas_compra', 'facturas_compra_detalles', 'repuestos_codigos_proveedor'],
+                              'columnas', ARRAY['movimientos_inventario.factura_compra_id', 'movimientos_inventario.factura_compra_detalle_id'])
+    WHERE NOT EXISTS (SELECT 1 FROM migraciones_registro WHERE version = '25-facturas-compra' AND resultado = 'exito');
+END $$;

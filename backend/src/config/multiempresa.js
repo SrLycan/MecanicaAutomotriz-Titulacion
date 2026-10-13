@@ -146,14 +146,30 @@ const RELACIONES_SPRINT23 = [
     ['notificaciones_legales', 'cliente_id', 'clientes'],
 ];
 
-/** Todas las tablas aisladas por empresa (las del Sprint 23 primero: dependen de las anteriores). */
-const TODAS_TABLAS_EMPRESA = [...TABLAS_EMPRESA_SPRINT23, ...TABLAS_EMPRESA];
+// ── Sprint 25: facturas de compra (comprobantes recibidos de proveedores) ──
+// Bloque propio en la migración (marcas RELACIONES25_INICIO/FIN).
+const TABLAS_EMPRESA_SPRINT25 = ['facturas_compra', 'facturas_compra_detalles', 'repuestos_codigos_proveedor'];
+const RELACIONES_SPRINT25 = [
+    ['facturas_compra', 'proveedor_id', 'proveedores'],
+    ['facturas_compra', 'compra_id', 'compras_proveedor'],
+    ['facturas_compra_detalles', 'factura_id', 'facturas_compra'],
+    ['facturas_compra_detalles', 'repuesto_id', 'repuestos'],
+    ['repuestos_codigos_proveedor', 'repuesto_id', 'repuestos'],
+    ['repuestos_codigos_proveedor', 'proveedor_id', 'proveedores'],
+    ['movimientos_inventario', 'factura_compra_id', 'facturas_compra'],
+    ['movimientos_inventario', 'factura_compra_detalle_id', 'facturas_compra_detalles'],
+];
+
+/** Todas las tablas aisladas por empresa (las más nuevas primero: dependen de las anteriores). */
+const TODAS_TABLAS_EMPRESA = [...TABLAS_EMPRESA_SPRINT25, ...TABLAS_EMPRESA_SPRINT23, ...TABLAS_EMPRESA];
 
 if (require.main === module) {
-    console.log('-- Sprint 22\n' + sqlRelaciones() + '\n\n-- Sprint 23\n' + sqlRelaciones(RELACIONES_SPRINT23));
+    console.log('-- Sprint 22\n' + sqlRelaciones() + '\n\n-- Sprint 23\n' + sqlRelaciones(RELACIONES_SPRINT23)
+        + '\n\n-- Sprint 25\n' + sqlRelaciones(RELACIONES_SPRINT25));
 }
 
 module.exports = {
     TABLAS_EMPRESA, TABLAS_GLOBALES, RELACIONES_EMPRESA, tablasReferenciadas, sqlRelaciones,
     TABLAS_EMPRESA_SPRINT23, TABLAS_LEGALES_COMPARTIDAS, RELACIONES_SPRINT23, TODAS_TABLAS_EMPRESA,
+    TABLAS_EMPRESA_SPRINT25, RELACIONES_SPRINT25,
 };

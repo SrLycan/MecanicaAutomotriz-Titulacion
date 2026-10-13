@@ -14,6 +14,7 @@ const express = require('express');
 const router  = express.Router();
 const { verificarToken, permisoPorMetodo } = require('../middleware/auth.middleware');
 const { idempotencia } = require('../middleware/idempotencia.middleware');
+const fc = require('../controllers/facturasCompra.controller');
 
 const {
     listarProveedores, obtenerProveedor, crearProveedor, actualizarProveedor, eliminarProveedor,
@@ -66,6 +67,18 @@ router.post('/compras',             crearCompra);
 router.put('/compras/:id',          actualizarCompra);
 router.patch('/compras/:id/estado', cambiarEstadoCompra);
 router.delete('/compras/:id',       eliminarCompra);
+
+// ── Facturas de compra (Sprint 25) ───────────────────────────
+// GET = ver, POST = crear (consultar, cargar XML, confirmar), DELETE = eliminar (descartar no registradas).
+router.get('/facturas-compra',               fc.listar);
+router.post('/facturas-compra/consultar',    fc.limiteConsultas, fc.consultar);
+router.post('/facturas-compra/xml',          fc.limiteConsultas, fc.cargarXml);
+router.post('/facturas-compra/manual',       fc.limiteConsultas, fc.ingresoManual);
+router.get('/facturas-compra/:id',           fc.obtener);
+router.get('/facturas-compra/:id/xml',       fc.descargarXml);
+router.get('/facturas-compra/:id/pdf',       fc.descargarPdf);
+router.post('/facturas-compra/:id/confirmar', fc.confirmar);
+router.delete('/facturas-compra/:id',        fc.descartar);
 
 // ── Historial financiero + resumen ───────────────────────────
 router.get('/movimientos',               listarMovimientos);
