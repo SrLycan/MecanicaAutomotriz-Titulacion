@@ -40,7 +40,7 @@ function Modal({ servicio, onClose, onSaved, isDark }) {
     const bg    = isDark ? '#080e1c' : '#ffffff';
     const bdr   = isDark ? 'rgba(201,162,39,.22)' : '#b6c3d3';
     const txt   = isDark ? '#f1f5f9' : '#0f172a';
-    const mut   = isDark ? 'rgba(241,245,249,.55)' : '#64748b';
+    const mut   = isDark ? 'rgba(241,245,249,.72)' : '#526075';
     const inp   = isDark ? '#0d1526' : '#f8fafc';
     const inpBdr= isDark ? 'rgba(255,255,255,.1)' : 'rgba(15,23,42,.15)';
 
@@ -110,7 +110,7 @@ function Modal({ servicio, onClose, onSaved, isDark }) {
                             <input type="file" accept="image/*" onChange={handleImagenFile}
                                 style={{ width: '100%', background: inp, border: `1px solid ${inpBdr}`, borderRadius: 10, padding: '9px 12px', color: txt, fontFamily: "'Outfit'", fontSize: '.82rem', boxSizing: 'border-box' }} />
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
-                                <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.68rem', color: mut }}>
+                                <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.76rem', color: mut }}>
                                     Se muestra en la página pública de Servicios.
                                 </p>
                                 {preview && (
@@ -163,7 +163,7 @@ export default function Servicios() {
     const card = isDark ? '#0a1020' : '#ffffff';
     const bdr  = isDark ? 'rgba(201,162,39,.18)' : '#b6c3d3';
     const txt  = isDark ? '#f1f5f9' : '#0f172a';
-    const mut  = isDark ? 'rgba(241,245,249,.55)' : '#64748b';
+    const mut  = isDark ? 'rgba(241,245,249,.72)' : '#526075';
 
     const cargar = useCallback(async () => {
         setLoading(true);
@@ -205,7 +205,7 @@ export default function Servicios() {
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14, marginBottom: 28 }}>
                 <div>
-                    <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.3em', color: GOLD, marginBottom: 4 }}>ADMINISTRACIÓN</p>
+                    <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.3em', color: GOLD, marginBottom: 4 }}>ADMINISTRACIÓN</p>
                     <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(1.6rem,4vw,2.2rem)', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>Tipos de Servicio</h1>
                     <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.85rem', color: mut, marginTop: 6 }}>
                         Define qué servicios ofrece el taller para que los clientes puedan agendar.
@@ -246,7 +246,7 @@ export default function Servicios() {
                     <p style={{ fontFamily: "'Outfit'", color: mut }}>{search ? 'Sin resultados para tu búsqueda.' : 'No hay servicios registrados. Crea el primero.'}</p>
                 </div>
             ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(300px, 100%), 1fr))', gap: 16 }}>
                     {filtered.map((s, i) => (
                         <div key={s.id} className="svc-card svc-row"
                             style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, padding: '20px 22px', animationDelay: `${i * 40}ms`, position: 'relative', overflow: 'hidden' }}>
@@ -255,7 +255,7 @@ export default function Servicios() {
 
                             {/* Badge activo */}
                             <div style={{ position: 'absolute', top: 14, right: 14 }}>
-                                <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.16em', padding: '3px 9px', borderRadius: 999, background: s.activo ? 'rgba(16,185,129,.12)' : 'rgba(100,116,139,.12)', color: s.activo ? '#10b981' : '#64748b', border: `1px solid ${s.activo ? 'rgba(16,185,129,.25)' : 'rgba(100,116,139,.2)'}` }}>
+                                <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.16em', padding: '3px 9px', borderRadius: 999, background: s.activo ? 'rgba(16,185,129,.12)' : 'rgba(100,116,139,.12)', color: s.activo ? '#10b981' : '#64748b', border: `1px solid ${s.activo ? 'rgba(16,185,129,.25)' : 'rgba(100,116,139,.2)'}` }}>
                                     {s.activo ? 'ACTIVO' : 'INACTIVO'}
                                 </span>
                             </div>

@@ -19,15 +19,15 @@ export function usePaleta() {
         SKY_BDR: isDark ? 'rgba(56,189,248,0.22)' : 'rgba(14,165,233,0.35)',
         txt: isDark ? '#f1f5f9' : '#0f172a',
         txtSf: isDark ? '#cbd5e1' : '#334155',
-        mut: isDark ? 'rgba(241,245,249,0.55)' : '#64748b',
-        faint: isDark ? 'rgba(241,245,249,0.38)' : '#94a3b8',
-        bdr: isDark ? 'rgba(148,163,184,0.18)' : '#b6c3d3',
-        card: isDark ? 'rgba(255,255,255,0.025)' : '#ffffff',
+        mut: isDark ? 'rgba(241,245,249,0.72)' : '#526075',
+        faint: isDark ? 'rgba(241,245,249,0.56)' : '#5f6b7d',
+        bdr: isDark ? 'rgba(148,163,184,0.28)' : '#b6c3d3',
+        card: isDark ? 'rgba(255,255,255,0.045)' : '#ffffff',
         cardSh: isDark
             ? '0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 40px -16px rgba(0,0,0,0.55)'
             : '0 1px 2px rgba(15,23,42,0.06), 0 8px 22px -8px rgba(15,23,42,0.20)',
         inputBg: isDark ? '#0b1220' : '#fafcff',
-        boxBg: isDark ? '#0a0f1c' : '#ffffff',
+        boxBg: isDark ? '#111826' : '#ffffff',
     };
 }
 
@@ -36,7 +36,7 @@ export const outfit = (size, weight = 400) => ({ fontFamily: "'Outfit'", fontSiz
 
 export function Pildora({ color, children, title }) {
     return (
-        <span title={title} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 999, background: color + '14', border: `1px solid ${color}40`, color, ...bebas('.6rem'), whiteSpace: 'nowrap' }}>
+        <span title={title} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 999, background: color + '14', border: `1px solid ${color}40`, color, ...bebas('.72rem'), whiteSpace: 'nowrap' }}>
             <span style={{ width: 5, height: 5, borderRadius: '50%', background: color }} />{children}
         </span>
     );
@@ -58,7 +58,7 @@ export function BotonSecundario({ children, onClick, color, disabled, title }) {
     const c = color || p.mut;
     return (
         <button type="button" onClick={onClick} disabled={disabled} title={title}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, ...bebas('.66rem'), background: 'none', border: `1px solid ${color ? color + '55' : p.bdr}`, borderRadius: 10, padding: '8px 14px', cursor: disabled ? 'not-allowed' : 'pointer', color: c, opacity: disabled ? .55 : 1 }}>
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, ...bebas('.76rem'), background: 'none', border: `1px solid ${color ? color + '55' : p.bdr}`, borderRadius: 10, padding: '8px 14px', cursor: disabled ? 'not-allowed' : 'pointer', color: c, opacity: disabled ? .55 : 1 }}>
             {children}
         </button>
     );
@@ -74,9 +74,9 @@ export function Modal({ titulo, subtitulo, etiqueta = 'EMPRESA · USUARIOS', onC
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, transparent, ${c}, ${p.SKY}, ${c}, transparent)`, borderRadius: '20px 20px 0 0' }} />
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18, gap: 12 }}>
                     <div>
-                        <p style={{ ...bebas('.58rem', '.24em'), color: c, marginBottom: 6 }}>{etiqueta}</p>
+                        <p style={{ ...bebas('.7rem', '.24em'), color: c, marginBottom: 6 }}>{etiqueta}</p>
                         <h2 style={{ ...bebas('1.7rem', '.04em'), color: p.txt }}>{titulo}</h2>
-                        {subtitulo && <p style={{ ...outfit('.8rem', 300), color: p.mut, marginTop: 4 }}>{subtitulo}</p>}
+                        {subtitulo && <p style={{ ...outfit('.8rem', 400), color: p.mut, marginTop: 4 }}>{subtitulo}</p>}
                     </div>
                     <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: `1px solid ${p.bdr}`, borderRadius: 9, padding: 7, cursor: 'pointer', color: p.mut, display: 'flex' }}><IconX /></button>
                 </div>
@@ -92,7 +92,7 @@ export function KpiCard({ label, value, color }) {
     return (
         <div className="u-kpi" style={{ padding: 18, background: p.card, border: `1px solid ${p.bdr}`, borderRadius: 14, position: 'relative', overflow: 'hidden', boxShadow: p.cardSh }}>
             <div style={{ position: 'absolute', top: 0, left: 0, width: 3, height: '100%', background: `linear-gradient(180deg, ${color}, transparent)` }} />
-            <p style={{ ...bebas('.58rem', '.22em'), color: p.mut }}>{label.toUpperCase()}</p>
+            <p style={{ ...bebas('.7rem', '.22em'), color: p.mut }}>{label.toUpperCase()}</p>
             <p style={{ ...bebas('1.9rem', '.02em'), color, lineHeight: 1, marginTop: 6 }}>{value}</p>
         </div>
     );

@@ -16,10 +16,14 @@
   --bg-row-hover: rgba(43,92,133,0.04);
   --bg-head:      rgba(43,92,133,0.10);
 
-  --text:         #000000;
-  --text-soft:    #0f172a;
-  --text-muted:   #111827;
-  --text-faint:   #334155;
+  /* Jerarquía de texto: principal > suave > secundario > tenue (todos ≥ 4.5:1 sobre blanco) */
+  --text:         #0b1220;
+  --text-soft:    #1e293b;
+  --text-muted:   #475569;
+  --text-faint:   #5f6b7d;
+
+  /* Fondo del área de trabajo del panel: gris muy suave para que las tarjetas blancas se distingan */
+  --bg-page:      #f3f5f9;
 
   --border:       #b6c3d3;
   --border-soft:  #cad5e1;
@@ -60,19 +64,20 @@
 [data-theme="dark"] {
   --bg:           #0a0d12;
   --bg-soft:      #10141b;
-  --bg-card:      rgba(255,255,255,0.025);
-  --bg-deep:      #10141b;
-  --bg-input:     #12161e;
-  --bg-row-hover: rgba(127,171,206,0.06);
-  --bg-head:      rgba(127,171,206,0.06);
+  --bg-card:      rgba(255,255,255,0.045);
+  --bg-deep:      #111826;
+  --bg-input:     #0c131e;
+  --bg-row-hover: rgba(127,171,206,0.07);
+  --bg-head:      rgba(127,171,206,0.09);
+  --bg-page:      #0a0f17;
 
   --text:         #eef1f5;
-  --text-soft:    #cdd4dc;
-  --text-muted:   rgba(238,241,245,0.56);
-  --text-faint:   rgba(238,241,245,0.36);
+  --text-soft:    #d3dae3;
+  --text-muted:   rgba(238,241,245,0.72);
+  --text-faint:   rgba(238,241,245,0.56);
 
-  --border:       rgba(148,163,184,0.16);
-  --border-soft:  rgba(148,163,184,0.10);
+  --border:       rgba(148,163,184,0.28);
+  --border-soft:  rgba(148,163,184,0.16);
   --border-h:     rgba(127,171,206,0.50);
 
   --accent-pale:  rgba(127,171,206,0.10);
@@ -184,7 +189,7 @@ img, svg, video { max-width: 100%; }
 .btn-ghost {
   display: inline-flex; align-items: center; gap: 7px;
   font-family: 'Bebas Neue', sans-serif;
-  font-size: .8rem; letter-spacing: .12em;
+  font-size: .86rem; letter-spacing: .1em;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -283,6 +288,11 @@ img, svg, video { max-width: 100%; }
   background: var(--accent-2);
   box-shadow: 0 0 8px var(--accent-2);
 }
+/* En modo oscuro el azul de marca (#2b5c85) no se lee como texto: se usa su tono claro */
+[data-theme="dark"] .ssswap-chip { color: #a9cbe6; }
+[data-theme="dark"] .ssswap-chip > .dot { background: var(--accent-3); box-shadow: 0 0 8px var(--accent-3); }
+[data-theme="dark"] .ssswap-label { color: var(--accent-3); -webkit-text-fill-color: var(--accent-3); }
+[data-theme="dark"] .btn-ghost:hover, [data-theme="dark"] .btn-icon:hover { color: var(--accent-3); }
 
 /* ── Modal ── */
 .modal-backdrop {
@@ -327,10 +337,26 @@ img, svg, video { max-width: 100%; }
 
 /* ── Experiencia táctil y accesibilidad ── */
 button, a, select, input, textarea { -webkit-tap-highlight-color: transparent; }
-button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible {
-  outline: 3px solid rgba(59,123,171,.35); outline-offset: 3px;
+button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid var(--accent-2); outline-offset: 2px;
 }
 select { cursor: pointer; }
+
+/* Controles nativos (calendario, desplegables, barras) acordes al tema activo */
+:root, [data-theme="light"] { color-scheme: light; }
+[data-theme="dark"] { color-scheme: dark; }
+[data-theme="dark"] option, [data-theme="dark"] optgroup { background-color: #111826; color: #eef1f5; }
+[data-theme="light"] option, [data-theme="light"] optgroup { background-color: #ffffff; color: #0b1220; }
+
+button:disabled, input:disabled, select:disabled, textarea:disabled { cursor: not-allowed; }
+input:disabled, select:disabled, textarea:disabled { opacity: .65; }
+.btn-ghost:disabled, .btn-icon:disabled { opacity: .5; transform: none; box-shadow: none; }
+
+/* ── Área de trabajo del panel: base legible para tablas y cifras ── */
+.main-content-pad td, .main-content-pad th { line-height: 1.45; }
+.main-content-pad td { font-variant-numeric: tabular-nums; }
+.main-content-pad h1, .main-content-pad h2, .main-content-pad h3 { overflow-wrap: anywhere; }
+.main-content-pad textarea { line-height: 1.5; }
 
 /* ── Bandeja de citas ── */
 .appointments-page { animation: fadeUp .42s cubic-bezier(.2,.8,.2,1) both; }
@@ -362,4 +388,158 @@ select { cursor: pointer; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
+}
+
+/* Códigos y referencias en tablas: nunca se parten a mitad de línea */
+.main-content-pad td code { white-space: nowrap; display: inline-block; }
+/* Los íconos de los botones conservan su tamaño aunque la celda sea estrecha */
+.main-content-pad button svg, .modal-box button svg { flex-shrink: 0; }
+.main-content-pad td button svg { max-width: none; }
+
+/* Gráficas (Recharts): tooltip siempre opaco y legible en ambos temas */
+.recharts-default-tooltip {
+  background-color: var(--bg-deep) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+  box-shadow: var(--shadow-lg);
+}
+.recharts-default-tooltip .recharts-tooltip-label { color: var(--text) !important; font-weight: 600; }
+.recharts-cartesian-axis-tick-value { font-variant-numeric: tabular-nums; }
+
+/* ── Contraste de colores de estado y acento según el tema ──
+   Los módulos escriben sus colores en línea (verde, ámbar, celeste, rojo…) con
+   tonos pensados para fondo oscuro; en modo claro quedaban por debajo de 4.5:1
+   y algunos azules oscuros no se leían en modo oscuro. Aquí se reasigna SOLO el
+   color del texto a la variante accesible de cada tema, dentro del área de
+   trabajo y los modales (no toca fondos, bordes, gráficas ni imágenes).
+   Un contenedor con la clase .color-fijo conserva sus colores originales
+   (p. ej. el recuadro blanco del logo, que es igual en ambos temas). */
+[data-theme="light"] .main-content-pad [style^="color: rgb(2, 132, 199)"]:not(.color-fijo *),
+[data-theme="light"] .main-content-pad [style*="; color: rgb(2, 132, 199)"]:not(.color-fijo *),
+[data-theme="light"] .modal-box [style^="color: rgb(2, 132, 199)"]:not(.color-fijo *),
+[data-theme="light"] .modal-box [style*="; color: rgb(2, 132, 199)"]:not(.color-fijo *) { color: #0369a1 !important; }
+[data-theme="light"] .main-content-pad [style^="color: rgb(14, 165, 233)"]:not(.color-fijo *),
+[data-theme="light"] .main-content-pad [style*="; color: rgb(14, 165, 233)"]:not(.color-fijo *),
+[data-theme="light"] .modal-box [style^="color: rgb(14, 165, 233)"]:not(.color-fijo *),
+[data-theme="light"] .modal-box [style*="; color: rgb(14, 165, 233)"]:not(.color-fijo *) { color: #0369a1 !important; }
+[data-theme="light"] .main-content-pad [style^="color: rgb(16, 185, 129)"]:not(.color-fijo *),
+[data-theme="light"] .main-content-pad [style*="; color: rgb(16, 185, 129)"]:not(.color-fijo *),
+[data-theme="light"] .modal-box [style^="color: rgb(16, 185, 129)"]:not(.color-fijo *),
+[data-theme="light"] .modal-box [style*="; color: rgb(16, 185, 129)"]:not(.color-fijo *) { color: #047857 !important; }
+[data-theme="light"] .main-content-pad [style^="color: rgb(52, 211, 153)"]:not(.color-fijo *),
+[data-theme="light"] .main-content-pad [style*="; color: rgb(52, 211, 153)"]:not(.color-fijo *),
+[data-theme="light"] .modal-box [style^="color: rgb(52, 211, 153)"]:not(.color-fijo *),
+[data-theme="light"] .modal-box [style*="; color: rgb(52, 211, 153)"]:not(.color-fijo *) { color: #047857 !important; }
+[data-theme="light"] .main-content-pad [style^="color: rgb(34, 197, 94)"]:not(.color-fijo *),
+[data-theme="light"] .main-content-pad [style*="; color: rgb(34, 197, 94)"]:not(.color-fijo *),
+[data-theme="light"] .modal-box [style^="color: rgb(34, 197, 94)"]:not(.color-fijo *),
+[data-theme="light"] .modal-box [style*="; color: rgb(34, 197, 94)"]:not(.color-fijo *) { color: #15803d !important; }
+[data-theme="light"] .main-content-pad [style^="color: rgb(245, 158, 11)"]:not(.color-fijo *),
+[data-theme="light"] .main-content-pad [style*="; color: rgb(245, 158, 11)"]:not(.color-fijo *),
+[data-theme="light"] .modal-box [style^="color: rgb(245, 158, 11)"]:not(.color-fijo *),
+[data-theme="light"] .modal-box [style*="; color: rgb(245, 158, 11)"]:not(.color-fijo *) { color: #9a4507 !important; }
+[data-theme="light"] .main-content-pad [style^="color: rgb(217, 119, 6)"]:not(.color-fijo *),
+[data-theme="light"] .main-content-pad [style*="; color: rgb(217, 119, 6)"]:not(.color-fijo *),
+[data-theme="light"] .modal-box [style^="color: rgb(217, 119, 6)"]:not(.color-fijo *),
+[data-theme="light"] .modal-box [style*="; color: rgb(217, 119, 6)"]:not(.color-fijo *) { color: #9a4507 !important; }
+[data-theme="light"] .main-content-pad [style^="color: rgb(234, 179, 8)"]:not(.color-fijo *),
+[data-theme="light"] .main-content-pad [style*="; color: rgb(234, 179, 8)"]:not(.color-fijo *),
+[data-theme="light"] .modal-box [style^="color: rgb(234, 179, 8)"]:not(.color-fijo *),
+[data-theme="light"] .modal-box [style*="; color: rgb(234, 179, 8)"]:not(.color-fijo *) { color: #a16207 !important; }
+[data-theme="light"] .main-content-pad [style^="color: rgb(239, 68, 68)"]:not(.color-fijo *),
+[data-theme="light"] .main-content-pad [style*="; color: rgb(239, 68, 68)"]:not(.color-fijo *),
+[data-theme="light"] .modal-box [style^="color: rgb(239, 68, 68)"]:not(.color-fijo *),
+[data-theme="light"] .modal-box [style*="; color: rgb(239, 68, 68)"]:not(.color-fijo *) { color: #b91c1c !important; }
+[data-theme="light"] .main-content-pad [style^="color: rgb(249, 115, 22)"]:not(.color-fijo *),
+[data-theme="light"] .main-content-pad [style*="; color: rgb(249, 115, 22)"]:not(.color-fijo *),
+[data-theme="light"] .modal-box [style^="color: rgb(249, 115, 22)"]:not(.color-fijo *),
+[data-theme="light"] .modal-box [style*="; color: rgb(249, 115, 22)"]:not(.color-fijo *) { color: #c2410c !important; }
+[data-theme="light"] .main-content-pad [style^="color: rgb(139, 92, 246)"]:not(.color-fijo *),
+[data-theme="light"] .main-content-pad [style*="; color: rgb(139, 92, 246)"]:not(.color-fijo *),
+[data-theme="light"] .modal-box [style^="color: rgb(139, 92, 246)"]:not(.color-fijo *),
+[data-theme="light"] .modal-box [style*="; color: rgb(139, 92, 246)"]:not(.color-fijo *) { color: #6d28d9 !important; }
+[data-theme="light"] .main-content-pad [style^="color: rgb(168, 85, 247)"]:not(.color-fijo *),
+[data-theme="light"] .main-content-pad [style*="; color: rgb(168, 85, 247)"]:not(.color-fijo *),
+[data-theme="light"] .modal-box [style^="color: rgb(168, 85, 247)"]:not(.color-fijo *),
+[data-theme="light"] .modal-box [style*="; color: rgb(168, 85, 247)"]:not(.color-fijo *) { color: #7e22ce !important; }
+[data-theme="light"] .main-content-pad [style^="color: rgb(99, 102, 241)"]:not(.color-fijo *),
+[data-theme="light"] .main-content-pad [style*="; color: rgb(99, 102, 241)"]:not(.color-fijo *),
+[data-theme="light"] .modal-box [style^="color: rgb(99, 102, 241)"]:not(.color-fijo *),
+[data-theme="light"] .modal-box [style*="; color: rgb(99, 102, 241)"]:not(.color-fijo *) { color: #4338ca !important; }
+[data-theme="light"] .main-content-pad [style^="color: rgb(20, 184, 166)"]:not(.color-fijo *),
+[data-theme="light"] .main-content-pad [style*="; color: rgb(20, 184, 166)"]:not(.color-fijo *),
+[data-theme="light"] .modal-box [style^="color: rgb(20, 184, 166)"]:not(.color-fijo *),
+[data-theme="light"] .modal-box [style*="; color: rgb(20, 184, 166)"]:not(.color-fijo *) { color: #0f766e !important; }
+[data-theme="light"] .main-content-pad [style^="color: rgb(201, 162, 39)"]:not(.color-fijo *),
+[data-theme="light"] .main-content-pad [style*="; color: rgb(201, 162, 39)"]:not(.color-fijo *),
+[data-theme="light"] .modal-box [style^="color: rgb(201, 162, 39)"]:not(.color-fijo *),
+[data-theme="light"] .modal-box [style*="; color: rgb(201, 162, 39)"]:not(.color-fijo *) { color: #86670f !important; }
+[data-theme="light"] .main-content-pad [style^="color: rgb(168, 122, 20)"]:not(.color-fijo *),
+[data-theme="light"] .main-content-pad [style*="; color: rgb(168, 122, 20)"]:not(.color-fijo *),
+[data-theme="light"] .modal-box [style^="color: rgb(168, 122, 20)"]:not(.color-fijo *),
+[data-theme="light"] .modal-box [style*="; color: rgb(168, 122, 20)"]:not(.color-fijo *) { color: #7f5c0c !important; }
+[data-theme="light"] .main-content-pad [style^="color: rgb(100, 116, 139)"]:not(.color-fijo *),
+[data-theme="light"] .main-content-pad [style*="; color: rgb(100, 116, 139)"]:not(.color-fijo *),
+[data-theme="light"] .modal-box [style^="color: rgb(100, 116, 139)"]:not(.color-fijo *),
+[data-theme="light"] .modal-box [style*="; color: rgb(100, 116, 139)"]:not(.color-fijo *) { color: #526075 !important; }
+[data-theme="light"] .main-content-pad [style^="color: rgb(59, 130, 246)"]:not(.color-fijo *),
+[data-theme="light"] .main-content-pad [style*="; color: rgb(59, 130, 246)"]:not(.color-fijo *),
+[data-theme="light"] .modal-box [style^="color: rgb(59, 130, 246)"]:not(.color-fijo *),
+[data-theme="light"] .modal-box [style*="; color: rgb(59, 130, 246)"]:not(.color-fijo *) { color: #1d4ed8 !important; }
+[data-theme="dark"] .main-content-pad [style^="color: rgb(2, 132, 199)"]:not(.color-fijo *),
+[data-theme="dark"] .main-content-pad [style*="; color: rgb(2, 132, 199)"]:not(.color-fijo *),
+[data-theme="dark"] .modal-box [style^="color: rgb(2, 132, 199)"]:not(.color-fijo *),
+[data-theme="dark"] .modal-box [style*="; color: rgb(2, 132, 199)"]:not(.color-fijo *) { color: #38bdf8 !important; }
+[data-theme="dark"] .main-content-pad [style^="color: rgb(43, 92, 133)"]:not(.color-fijo *),
+[data-theme="dark"] .main-content-pad [style*="; color: rgb(43, 92, 133)"]:not(.color-fijo *),
+[data-theme="dark"] .modal-box [style^="color: rgb(43, 92, 133)"]:not(.color-fijo *),
+[data-theme="dark"] .modal-box [style*="; color: rgb(43, 92, 133)"]:not(.color-fijo *) { color: #7fabce !important; }
+[data-theme="dark"] .main-content-pad [style^="color: rgb(27, 58, 87)"]:not(.color-fijo *),
+[data-theme="dark"] .main-content-pad [style*="; color: rgb(27, 58, 87)"]:not(.color-fijo *),
+[data-theme="dark"] .modal-box [style^="color: rgb(27, 58, 87)"]:not(.color-fijo *),
+[data-theme="dark"] .modal-box [style*="; color: rgb(27, 58, 87)"]:not(.color-fijo *) { color: #a9cbe6 !important; }
+[data-theme="dark"] .main-content-pad [style^="color: rgb(139, 92, 246)"]:not(.color-fijo *),
+[data-theme="dark"] .main-content-pad [style*="; color: rgb(139, 92, 246)"]:not(.color-fijo *),
+[data-theme="dark"] .modal-box [style^="color: rgb(139, 92, 246)"]:not(.color-fijo *),
+[data-theme="dark"] .modal-box [style*="; color: rgb(139, 92, 246)"]:not(.color-fijo *) { color: #a78bfa !important; }
+[data-theme="dark"] .main-content-pad [style^="color: rgb(168, 122, 20)"]:not(.color-fijo *),
+[data-theme="dark"] .main-content-pad [style*="; color: rgb(168, 122, 20)"]:not(.color-fijo *),
+[data-theme="dark"] .modal-box [style^="color: rgb(168, 122, 20)"]:not(.color-fijo *),
+[data-theme="dark"] .modal-box [style*="; color: rgb(168, 122, 20)"]:not(.color-fijo *) { color: #d4a73a !important; }
+[data-theme="dark"] .main-content-pad [style^="color: rgb(99, 102, 241)"]:not(.color-fijo *),
+[data-theme="dark"] .main-content-pad [style*="; color: rgb(99, 102, 241)"]:not(.color-fijo *),
+[data-theme="dark"] .modal-box [style^="color: rgb(99, 102, 241)"]:not(.color-fijo *),
+[data-theme="dark"] .modal-box [style*="; color: rgb(99, 102, 241)"]:not(.color-fijo *) { color: #8b93f8 !important; }
+[data-theme="dark"] .main-content-pad [style^="color: rgb(239, 68, 68)"]:not(.color-fijo *),
+[data-theme="dark"] .main-content-pad [style*="; color: rgb(239, 68, 68)"]:not(.color-fijo *),
+[data-theme="dark"] .modal-box [style^="color: rgb(239, 68, 68)"]:not(.color-fijo *),
+[data-theme="dark"] .modal-box [style*="; color: rgb(239, 68, 68)"]:not(.color-fijo *) { color: #f87171 !important; }
+[data-theme="dark"] .main-content-pad [style^="color: rgb(168, 85, 247)"]:not(.color-fijo *),
+[data-theme="dark"] .main-content-pad [style*="; color: rgb(168, 85, 247)"]:not(.color-fijo *),
+[data-theme="dark"] .modal-box [style^="color: rgb(168, 85, 247)"]:not(.color-fijo *),
+[data-theme="dark"] .modal-box [style*="; color: rgb(168, 85, 247)"]:not(.color-fijo *) { color: #c084fc !important; }
+[data-theme="dark"] .main-content-pad [style^="color: rgb(180, 83, 9)"]:not(.color-fijo *),
+[data-theme="dark"] .main-content-pad [style*="; color: rgb(180, 83, 9)"]:not(.color-fijo *),
+[data-theme="dark"] .modal-box [style^="color: rgb(180, 83, 9)"]:not(.color-fijo *),
+[data-theme="dark"] .modal-box [style*="; color: rgb(180, 83, 9)"]:not(.color-fijo *) { color: #f59e0b !important; }
+[data-theme="dark"] .main-content-pad [style^="color: rgb(3, 105, 161)"]:not(.color-fijo *),
+[data-theme="dark"] .main-content-pad [style*="; color: rgb(3, 105, 161)"]:not(.color-fijo *),
+[data-theme="dark"] .modal-box [style^="color: rgb(3, 105, 161)"]:not(.color-fijo *),
+[data-theme="dark"] .modal-box [style*="; color: rgb(3, 105, 161)"]:not(.color-fijo *) { color: #38bdf8 !important; }
+[data-theme="light"] .main-content-pad [style^="color: rgb(180, 83, 9)"]:not(.color-fijo *),
+[data-theme="light"] .main-content-pad [style*="; color: rgb(180, 83, 9)"]:not(.color-fijo *) { color: #9a4507 !important; }
+
+/* Pestañas activas: el color de acento de cada página se oscurece en modo claro */
+[data-theme="light"] .prov-tab-btn.active { color: color-mix(in srgb, var(--prov-sky, #0284c7) 72%, #000); }
+[data-theme="light"] .graf-tab-btn.active { color: color-mix(in srgb, var(--graf-sky, #0284c7) 72%, #000); }
+
+/* Rejillas fijas de 3-4 columnas definidas en línea: en teléfonos se reorganizan
+   para que los campos no se compriman ni desborden (en escritorio no cambian). */
+@media (max-width: 640px) {
+  .main-content-pad [style*="grid-template-columns: repeat(3, 1fr)"],
+  .main-content-pad [style*="grid-template-columns: 1fr 1fr 1fr"],
+  .modal-box [style*="grid-template-columns: repeat(3, 1fr)"],
+  .modal-box [style*="grid-template-columns: 1fr 1fr 1fr"] { grid-template-columns: minmax(0, 1fr) !important; }
+  .main-content-pad [style*="grid-template-columns: repeat(4, 1fr)"],
+  .modal-box [style*="grid-template-columns: repeat(4, 1fr)"] { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
 }

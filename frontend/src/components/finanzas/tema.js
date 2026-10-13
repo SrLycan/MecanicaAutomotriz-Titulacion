@@ -14,16 +14,16 @@ export function useTemaPanel() {
     const SKY_BDR  = isDark ? 'rgba(56,189,248,0.22)' : 'rgba(14,165,233,0.35)';
     const txt   = isDark ? '#f1f5f9' : '#0f172a';
     const txtSf = isDark ? '#cbd5e1' : '#334155';
-    const mut   = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
-    const bdr   = isDark ? 'rgba(148,163,184,0.18)' : '#b6c3d3';
-    const card  = isDark ? 'rgba(255,255,255,0.025)' : '#ffffff';
-    const boxBg = isDark ? '#0a0f1c' : '#ffffff';
+    const mut   = isDark ? 'rgba(241,245,249,0.72)' : '#526075';
+    const bdr   = isDark ? 'rgba(148,163,184,0.28)' : '#b6c3d3';
+    const card  = isDark ? 'rgba(255,255,255,0.045)' : '#ffffff';
+    const boxBg = isDark ? '#111826' : '#ffffff';
     const inputBg = isDark ? '#0b1220' : '#f8fafc';
     const cardSh = isDark
         ? '0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 40px -16px rgba(0,0,0,0.55)'
         : '0 1px 2px rgba(15,23,42,0.06), 0 8px 22px -8px rgba(15,23,42,0.20)';
     const inputSt = { width: '100%', boxSizing: 'border-box', padding: '10px 13px', borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: txt, fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.88rem', outline: 'none' };
-    const labelSt = { display: 'block', marginBottom: 6, fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.22em', color: SKY_DEEP };
+    const labelSt = { display: 'block', marginBottom: 6, fontFamily: "'Bebas Neue'", fontSize: '.74rem', letterSpacing: '.22em', color: SKY_DEEP };
     const btnPrim = { display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.14em', color: '#fff', background: `linear-gradient(135deg, ${SKY_DEEP}, ${SKY})`, border: 'none', borderRadius: 11, padding: '10px 18px', cursor: 'pointer' };
     const btnSec  = { display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: "'Bebas Neue'", fontSize: '.74rem', letterSpacing: '.14em', color: txtSf, background: card, border: `1px solid ${bdr}`, borderRadius: 11, padding: '10px 16px', cursor: 'pointer' };
     return { isDark, txt, txtSf, mut, bdr, card, boxBg, inputBg, cardSh, inputSt, labelSt, btnPrim, btnSec, SKY, SKY_DEEP, SKY_PALE, SKY_BDR };

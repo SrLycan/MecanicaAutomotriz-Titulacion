@@ -163,7 +163,7 @@ function ResumenCard({ label, value, color, theme }) {
     const { card, bdr, cardSh, txt } = theme;
     return (
         <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, padding: '14px 16px', boxShadow: cardSh }}>
-            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.56rem', letterSpacing: '.16em', color, marginBottom: 6 }}>{label}</p>
+            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.16em', color, marginBottom: 6 }}>{label}</p>
             <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.4rem', color: txt, lineHeight: 1 }}>{value}</p>
         </div>
     );
@@ -173,7 +173,7 @@ export default function PagareTab({ theme, cuentaInicial }) {
     const { txt, txtSf, mut, bdr, card, cardSh, inputBg, SKY, SKY_DEEP } = theme;
     const SKY_PALE = theme.isDark ? 'rgba(201,162,39,0.10)' : 'rgba(201,162,39,0.06)';
     const inputSt = { width: '100%', boxSizing: 'border-box', padding: '10px 13px', borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: txt, fontFamily: "'Outfit'", fontSize: '.86rem', outline: 'none' };
-    const labelSt = { display: 'block', marginBottom: 6, fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.2em', color: SKY_DEEP };
+    const labelSt = { display: 'block', marginBottom: 6, fontFamily: "'Bebas Neue'", fontSize: '.72rem', letterSpacing: '.2em', color: SKY_DEEP };
 
     const [cuentas, setCuentas] = useState([]);
     const [resumen, setResumen] = useState(null);
@@ -394,9 +394,9 @@ export default function PagareTab({ theme, cuentaInicial }) {
 
 function ModalNuevaCuenta({ theme, clientes, onClose, onGuardar }) {
     const { txt, mut, bdr, boxBg, SKY, SKY_DEEP, inputBg } = theme;
-    const bg = boxBg || (theme.isDark ? '#0a0f1c' : '#ffffff');
+    const bg = boxBg || (theme.isDark ? '#111826' : '#ffffff');
     const inputSt = { width: '100%', boxSizing: 'border-box', padding: '10px 13px', borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: txt, fontFamily: "'Outfit'", fontSize: '.86rem', outline: 'none' };
-    const labelSt = { display: 'block', marginBottom: 6, fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.22em', color: SKY_DEEP };
+    const labelSt = { display: 'block', marginBottom: 6, fontFamily: "'Bebas Neue'", fontSize: '.74rem', letterSpacing: '.22em', color: SKY_DEEP };
     const [form, setForm] = useState(EMPTY_CUENTA);
     const [vehiculos, setVehiculos] = useState([]);
     const [saving, setSaving] = useState(false);
@@ -416,7 +416,7 @@ function ModalNuevaCuenta({ theme, clientes, onClose, onGuardar }) {
             <div className="modal-box" style={{ maxWidth: 560, background: bg, border: `1px solid ${bdr}`, padding: 28 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
                     <div>
-                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 6 }}>PAGARÉ</p>
+                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 6 }}>PAGARÉ</p>
                         <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.6rem', letterSpacing: '.04em', color: txt }}>Nueva Cuenta por Cobrar (manual)</h2>
                         <p style={{ fontFamily: "'Outfit'", fontSize: '.78rem', color: mut, marginTop: 4 }}>Para deudas sin proforma. Las órdenes con proforma generan su pagaré automáticamente.</p>
                     </div>
@@ -482,7 +482,7 @@ function ModalNuevaCuenta({ theme, clientes, onClose, onGuardar }) {
 function Dato({ k, v, mut, txt, fuerte }) {
     return (
         <div>
-            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.56rem', letterSpacing: '.18em', color: mut }}>{k}</p>
+            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.18em', color: mut }}>{k}</p>
             <p style={{ fontFamily: "'Outfit'", fontSize: fuerte ? '1rem' : '.86rem', fontWeight: fuerte ? 700 : 500, color: txt }}>{v || '—'}</p>
         </div>
     );
@@ -490,10 +490,10 @@ function Dato({ k, v, mut, txt, fuerte }) {
 
 function ModalDetalleCuenta({ theme, cuenta, onClose, onActualizado, onCambiarEstado, permisos }) {
     const { txt, txtSf, mut, bdr, SKY, SKY_DEEP, inputBg } = theme;
-    const bg = theme.boxBg || (theme.isDark ? '#0a0f1c' : '#ffffff');
+    const bg = theme.boxBg || (theme.isDark ? '#111826' : '#ffffff');
     const SKY_PALE = theme.isDark ? 'rgba(201,162,39,0.10)' : 'rgba(201,162,39,0.06)';
     const inputSt = { width: '100%', boxSizing: 'border-box', padding: '9px 12px', borderRadius: 9, border: `1px solid ${bdr}`, background: inputBg, color: txt, fontFamily: "'Outfit'", fontSize: '.84rem', outline: 'none' };
-    const etiqSt = { display: 'block', fontFamily: "'Bebas Neue'", fontSize: '.56rem', letterSpacing: '.18em', color: mut, marginBottom: 4 };
+    const etiqSt = { display: 'block', fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.18em', color: mut, marginBottom: 4 };
     const [form, setForm] = useState(EMPTY_PAGO);
     const [saving, setSaving] = useState(false);
     const [anulando, setAnulando] = useState(null); // { id, motivo }
@@ -565,7 +565,7 @@ function ModalDetalleCuenta({ theme, cuenta, onClose, onActualizado, onCambiarEs
             <div className="modal-box" style={{ maxWidth: 720, background: bg, border: `1px solid ${bdr}`, padding: 28, maxHeight: '92vh', overflowY: 'auto' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
                     <div>
-                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 4 }}>
+                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.72rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 4 }}>
                             {cuenta.origen === 'automatico'
                                 ? `PAGARÉ AUTOMÁTICO · ${cuenta.proforma_tipo === 'pintura' ? 'COLISIONES' : 'MECÁNICA GENERAL'}`
                                 : 'CUENTA POR COBRAR (MANUAL)'}
@@ -615,7 +615,7 @@ function ModalDetalleCuenta({ theme, cuenta, onClose, onActualizado, onCambiarEs
                     )}
                 </div>
 
-                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.65rem', letterSpacing: '.18em', color: SKY_DEEP, marginBottom: 8 }}>HISTORIAL DE PAGOS</p>
+                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.18em', color: SKY_DEEP, marginBottom: 8 }}>HISTORIAL DE PAGOS</p>
                 {(!cuenta.pagos || cuenta.pagos.length === 0) ? (
                     <p style={{ fontFamily: "'Outfit'", fontSize: '.82rem', color: mut, marginBottom: 16 }}>Sin pagos registrados todavía.</p>
                 ) : (
@@ -665,7 +665,7 @@ function ModalDetalleCuenta({ theme, cuenta, onClose, onActualizado, onCambiarEs
 
                 {saldo > 0 && cuenta.estado !== 'anulado' && permisos.registrarPago && (
                     <form onSubmit={onSubmit} style={{ borderTop: `1px solid ${bdr}`, paddingTop: 16 }}>
-                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.65rem', letterSpacing: '.18em', color: SKY_DEEP, marginBottom: 10 }}>REGISTRAR PAGO</p>
+                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.18em', color: SKY_DEEP, marginBottom: 10 }}>REGISTRAR PAGO</p>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 10, marginBottom: 10 }}>
                             <label><span style={etiqSt}>MÉTODO DE PAGO</span>
                                 <select name="metodo_pago" value={form.metodo_pago} onChange={onMetodo} style={inputSt}>
@@ -682,7 +682,7 @@ function ModalDetalleCuenta({ theme, cuenta, onClose, onActualizado, onCambiarEs
 
                         {campos.length > 0 && (
                             <div style={{ border: `1px dashed ${bdr}`, borderRadius: 12, padding: 12, marginBottom: 10 }}>
-                                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.18em', color: SKY_DEEP, marginBottom: 8 }}>
+                                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.72rem', letterSpacing: '.18em', color: SKY_DEEP, marginBottom: 8 }}>
                                     DATOS DE {METODO_LABEL[form.metodo_pago].toUpperCase()}
                                 </p>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 10 }}>

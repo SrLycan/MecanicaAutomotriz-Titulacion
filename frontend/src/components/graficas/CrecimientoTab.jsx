@@ -82,7 +82,7 @@ export default function CrecimientoTab({ theme }) {
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={data.serie} margin={{ top: 4, right: 16, left: 0, bottom: 4 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke={bdr} />
-                                <XAxis dataKey="periodo" tick={{ fontFamily: 'Outfit', fontSize: 10, fill: mut }} />
+                                <XAxis dataKey="periodo" tick={{ fontFamily: 'Outfit', fontSize: 11, fill: mut }} />
                                 <YAxis tick={{ fontFamily: 'Outfit', fontSize: 11, fill: mut }} />
                                 <Tooltip contentStyle={{ background: card, border: `1px solid ${bdr}`, borderRadius: 10, fontFamily: 'Outfit', fontSize: 12 }} />
                                 <Legend wrapperStyle={{ fontFamily: 'Outfit', fontSize: 12 }} />
@@ -105,7 +105,7 @@ export default function CrecimientoTab({ theme }) {
                             { label: 'UTILIDAD (EST.)', value: `$${data.totales.utilidad_estimada.toFixed(2)}`, color: data.totales.utilidad_estimada >= 0 ? '#10b981' : '#ef4444' },
                         ].map(k => (
                             <div key={k.label} style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, padding: '14px 16px', boxShadow: cardSh }}>
-                                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.56rem', letterSpacing: '.14em', color: k.color, marginBottom: 6 }}>{k.label}</p>
+                                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.14em', color: k.color, marginBottom: 6 }}>{k.label}</p>
                                 <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.25rem', color: txt, lineHeight: 1 }}>{k.value}</p>
                             </div>
                         ))}

@@ -26,7 +26,7 @@ function IconUser() { return <svg width="18" height="18" viewBox="0 0 24 24" fil
 function Kpi({ label, value, color, card, bdr, mut, txt, sh }) {
     return (
         <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, padding: 16, boxShadow: sh }}>
-            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.56rem', letterSpacing: '.18em', color, marginBottom: 6 }}>{label}</p>
+            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.18em', color, marginBottom: 6 }}>{label}</p>
             <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.6rem', color: txt, lineHeight: 1 }}>{value}</p>
             <p style={{ fontFamily: "'Outfit'", fontSize: '.74rem', color: mut, marginTop: 4 }}>Clientes registrados</p>
         </div>
@@ -51,10 +51,10 @@ function ModalCliente({ open, data, onClose, onGuardar, isDark }) {
 
     if (!open) return null;
 
-    const card = isDark ? 'rgba(255,255,255,0.025)' : '#ffffff';
-    const bdr = isDark ? 'rgba(148,163,184,0.18)' : '#b6c3d3';
+    const card = isDark ? 'rgba(255,255,255,0.045)' : '#ffffff';
+    const bdr = isDark ? 'rgba(148,163,184,0.28)' : '#b6c3d3';
     const txt = isDark ? '#f1f5f9' : '#0f172a';
-    const mut = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
+    const mut = isDark ? 'rgba(241,245,249,0.72)' : '#526075';
     const inputBg = isDark ? '#0b1220' : '#fafcff';
 
     const handleChange = (e) => setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -136,9 +136,9 @@ export default function Clientes() {
     const SKY_DEEP = '#a87a14';
     const txt = isDark ? '#f1f5f9' : '#0f172a';
     const txtSf = isDark ? '#cbd5e1' : '#334155';
-    const mut = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
-    const bdr = isDark ? 'rgba(148,163,184,0.18)' : '#b6c3d3';
-    const card = isDark ? 'rgba(255,255,255,0.025)' : '#ffffff';
+    const mut = isDark ? 'rgba(241,245,249,0.72)' : '#526075';
+    const bdr = isDark ? 'rgba(148,163,184,0.28)' : '#b6c3d3';
+    const card = isDark ? 'rgba(255,255,255,0.045)' : '#ffffff';
     const cardSh = isDark ? '0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 40px -16px rgba(0,0,0,0.55)' : '0 1px 2px rgba(15,23,42,0.06), 0 8px 22px -8px rgba(15,23,42,0.20)';
     const inputBg = isDark ? '#0b1220' : '#fafcff';
 

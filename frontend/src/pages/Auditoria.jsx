@@ -78,9 +78,9 @@ export default function Auditoria({ endpoint = '/users/auditoria', global = fals
     const SKY_PALE = isDark ? 'rgba(14,165,233,0.10)' : 'rgba(14,165,233,0.12)';
     const txt = isDark ? '#f1f5f9' : '#0f172a';
     const txtSf = isDark ? '#cbd5e1' : '#334155';
-    const mut = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
-    const bdr = isDark ? 'rgba(148,163,184,0.18)' : '#b6c3d3';
-    const card = isDark ? 'rgba(255,255,255,0.025)' : '#ffffff';
+    const mut = isDark ? 'rgba(241,245,249,0.72)' : '#526075';
+    const bdr = isDark ? 'rgba(148,163,184,0.28)' : '#b6c3d3';
+    const card = isDark ? 'rgba(255,255,255,0.045)' : '#ffffff';
     const cardSh = isDark ? '0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 40px -16px rgba(0,0,0,0.55)' : '0 1px 2px rgba(15,23,42,0.06), 0 8px 22px -8px rgba(15,23,42,0.20)';
     const inputBg = isDark ? '#0b1220' : '#fafcff';
     const ctrl = { padding: '10px 12px', background: inputBg, border: `1px solid ${bdr}`, borderRadius: 10, color: txt, fontFamily: "'Outfit'", fontSize: '.85rem', outline: 'none' };
@@ -146,7 +146,7 @@ export default function Auditoria({ endpoint = '/users/auditoria', global = fals
                     <thead>
                         <tr style={{ borderBottom: `1px solid ${bdr}`, background: SKY_PALE }}>
                             {[...(global ? ['Empresa'] : []), 'Fecha y hora', 'Responsable', 'Acción', 'Recurso', 'Resultado', 'Detalle'].map(h => (
-                                <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.22em', color: SKY_DEEP, whiteSpace: 'nowrap' }}>{h}</th>
+                                <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontFamily: "'Bebas Neue'", fontSize: '.74rem', letterSpacing: '.22em', color: SKY_DEEP, whiteSpace: 'nowrap' }}>{h}</th>
                             ))}
                         </tr>
                     </thead>
@@ -168,7 +168,7 @@ export default function Auditoria({ endpoint = '/users/auditoria', global = fals
                                     {r.recurso_tipo === 'usuario' ? (r.recurso_email || `Cuenta #${r.recurso_id}`) : (r.recurso_id || '—')}
                                 </td>
                                 <td style={{ padding: '10px 16px' }}>
-                                    <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.14em', color: COLOR_RESULTADO[r.resultado] || mut }}>{r.resultado.toUpperCase()}</span>
+                                    <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.74rem', letterSpacing: '.14em', color: COLOR_RESULTADO[r.resultado] || mut }}>{r.resultado.toUpperCase()}</span>
                                 </td>
                                 <td style={{ padding: '10px 16px', fontFamily: "'Outfit'", fontSize: '.74rem', color: mut, maxWidth: 420, wordBreak: 'break-word' }}>{resumenDetalle(r.detalle)}</td>
                             </tr>

@@ -26,7 +26,7 @@ function CampoTexto({ id, label, value, onChange, ...resto }) {
     const p = usePaleta();
     return (
         <div>
-            <label htmlFor={id} style={{ display: 'block', marginBottom: 6, ...bebas('.62rem', '.22em'), color: p.SKY_DEEP }}>{label}</label>
+            <label htmlFor={id} style={{ display: 'block', marginBottom: 6, ...bebas('.74rem', '.22em'), color: p.SKY_DEEP }}>{label}</label>
             <input id={id} value={value} onChange={e => onChange(e.target.value)} {...resto}
                 style={{ width: '100%', boxSizing: 'border-box', padding: '10px 13px', borderRadius: 10, border: `1px solid ${p.bdr}`, background: p.inputBg, color: p.txt, ...outfit('.88rem'), outline: 'none' }} />
         </div>
@@ -101,7 +101,7 @@ function ModalEmpresa({ empresa, onClose, onGuardada }) {
         <Modal titulo={nueva ? 'Nueva empresa' : `Editar ${empresa.nombre}`} etiqueta="PLATAFORMA · EMPRESAS" onClose={onClose} ancho={760}
             subtitulo={nueva ? 'La empresa empieza vacía: no se copia ningún dato de otra mecánica.' : 'El identificador y el estado no se cambian aquí.'}>
             <form onSubmit={enviar} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 13 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))', gap: 13 }}>
                     <CampoTexto id="e-nombre" label="NOMBRE *" value={f.nombre} onChange={set('nombre')} required maxLength={120} />
                     {nueva && <CampoTexto id="e-slug" label="IDENTIFICADOR (OPCIONAL)" value={f.slug} onChange={set('slug')} maxLength={60} placeholder="taller-ejemplo" />}
                     <CampoTexto id="e-nc" label="NOMBRE COMERCIAL" value={f.nombre_comercial} onChange={set('nombre_comercial')} maxLength={160} />
@@ -133,11 +133,11 @@ function ModalEmpresa({ empresa, onClose, onGuardada }) {
                 {nueva && (
                     <div>
                         <p style={{ ...bebas('.8rem', '.18em'), marginBottom: 8 }}>ADMINISTRADOR INICIAL</p>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 13 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))', gap: 13 }}>
                             <CampoTexto id="e-an" label="NOMBRE *" value={f.admin_nombre} onChange={set('admin_nombre')} required maxLength={100} />
                             <CampoTexto id="e-ae" label="CORREO (USUARIO DE ACCESO) *" type="email" value={f.admin_email} onChange={set('admin_email')} required maxLength={150} />
                         </div>
-                        <p style={{ ...outfit('.76rem', 300), marginTop: 6, opacity: .8 }}>Se genera una contraseña temporal segura. Tendrá los permisos de administrador de su empresa y podrá crear a su personal.</p>
+                        <p style={{ ...outfit('.76rem', 400), marginTop: 6, opacity: .8 }}>Se genera una contraseña temporal segura. Tendrá los permisos de administrador de su empresa y podrá crear a su personal.</p>
                     </div>
                 )}
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
@@ -172,18 +172,18 @@ function ModalSoporte({ empresa, onClose }) {
             subtitulo="El acceso es temporal y cada acción queda en la auditoría de la empresa.">
             <form onSubmit={enviar} style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
                 <div>
-                    <label htmlFor="s-motivo" style={{ display: 'block', marginBottom: 6, ...bebas('.62rem', '.22em'), color: p.SKY_DEEP }}>MOTIVO * (MÍNIMO 10 CARACTERES)</label>
+                    <label htmlFor="s-motivo" style={{ display: 'block', marginBottom: 6, ...bebas('.74rem', '.22em'), color: p.SKY_DEEP }}>MOTIVO * (MÍNIMO 10 CARACTERES)</label>
                     <textarea id="s-motivo" value={f.motivo} onChange={e => setF({ ...f, motivo: e.target.value })} required minLength={10} maxLength={300} rows={3} style={ctrl} />
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 13 }}>
                     <div>
-                        <label htmlFor="s-min" style={{ display: 'block', marginBottom: 6, ...bebas('.62rem', '.22em'), color: p.SKY_DEEP }}>DURACIÓN</label>
+                        <label htmlFor="s-min" style={{ display: 'block', marginBottom: 6, ...bebas('.74rem', '.22em'), color: p.SKY_DEEP }}>DURACIÓN</label>
                         <select id="s-min" value={f.minutos} onChange={e => setF({ ...f, minutos: e.target.value })} style={ctrl}>
                             {[15, 30, 60, 120, 240, 480].map(m => <option key={m} value={m}>{m < 60 ? `${m} minutos` : `${m / 60} hora(s)`}</option>)}
                         </select>
                     </div>
                     <div>
-                        <label htmlFor="s-modo" style={{ display: 'block', marginBottom: 6, ...bebas('.62rem', '.22em'), color: p.SKY_DEEP }}>MODO</label>
+                        <label htmlFor="s-modo" style={{ display: 'block', marginBottom: 6, ...bebas('.74rem', '.22em'), color: p.SKY_DEEP }}>MODO</label>
                         <select id="s-modo" value={f.modo} onChange={e => setF({ ...f, modo: e.target.value })} style={ctrl}>
                             <option value="lectura">Solo lectura</option>
                             <option value="completo">Completo (puede modificar)</option>
@@ -258,7 +258,7 @@ export default function Empresas() {
     };
 
     const vigentes = accesos.filter(a => a.vigente);
-    const th = { padding: '12px 14px', textAlign: 'left', ...bebas('.62rem', '.2em'), color: p.SKY_DEEP, whiteSpace: 'nowrap' };
+    const th = { padding: '12px 14px', textAlign: 'left', ...bebas('.74rem', '.2em'), color: p.SKY_DEEP, whiteSpace: 'nowrap' };
     const td = { padding: '11px 14px', ...outfit('.82rem'), color: p.txtSf };
 
     return (

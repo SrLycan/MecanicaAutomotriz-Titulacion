@@ -52,10 +52,10 @@ export default function Dashboard() {
     const SKY_BDR  = isDark ? 'rgba(56,189,248,0.22)' : 'rgba(14,165,233,0.35)';
     const txt   = isDark ? '#f1f5f9' : '#0f172a';
     const txtSf = isDark ? '#cbd5e1' : '#334155';
-    const mut   = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
-    const bdr   = isDark ? 'rgba(148,163,184,0.16)' : '#b6c3d3';
-    const card  = isDark ? 'rgba(255,255,255,0.025)' : '#ffffff';
-    const boxBg = isDark ? '#0a0f1c' : '#ffffff';
+    const mut   = isDark ? 'rgba(241,245,249,0.72)' : '#526075';
+    const bdr   = isDark ? 'rgba(148,163,184,0.28)' : '#b6c3d3';
+    const card  = isDark ? 'rgba(255,255,255,0.045)' : '#ffffff';
+    const boxBg = isDark ? '#111826' : '#ffffff';
     const cardSh = isDark
         ? '0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 40px -16px rgba(0,0,0,0.55)'
         : '0 1px 2px rgba(15,23,42,0.06), 0 8px 22px -8px rgba(15,23,42,0.20)';
@@ -153,7 +153,7 @@ export default function Dashboard() {
                     {acciones.length === 0 ? (
                         <Vacio>Tu cuenta todavía no tiene módulos asignados. Pide al superadministrador que te habilite los que necesitas.</Vacio>
                     ) : (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(200px, 100%), 1fr))', gap: 10 }}>
                             {acciones.map(a => (
                                 <Link key={a.to} to={a.to} className="quick-action" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderRadius: 12, background: card, border: `1px solid ${bdr}`, textDecoration: 'none' }}>
                                     <div style={{ flex: 1 }}>
@@ -184,10 +184,10 @@ export default function Dashboard() {
                     {d.atencion.length === 0 ? (
                         <p style={{ fontFamily: "'Outfit'", fontSize: '.9rem', color: '#10b981' }}>✔ No hay tareas pendientes. ¡Buen trabajo!</p>
                     ) : (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 10 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(300px, 100%), 1fr))', gap: 10 }}>
                             {d.atencion.map((a, i) => (
                                 <Link key={i} to={a.link} className="quick-action" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 13px', borderRadius: 12, border: `1px solid ${NIVEL[a.nivel].color}33`, background: `${NIVEL[a.nivel].color}0d`, textDecoration: 'none' }}>
-                                    <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.14em', color: NIVEL[a.nivel].color, border: `1px solid ${NIVEL[a.nivel].color}55`, borderRadius: 999, padding: '2px 8px', whiteSpace: 'nowrap' }}>{NIVEL[a.nivel].label}</span>
+                                    <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.72rem', letterSpacing: '.14em', color: NIVEL[a.nivel].color, border: `1px solid ${NIVEL[a.nivel].color}55`, borderRadius: 999, padding: '2px 8px', whiteSpace: 'nowrap' }}>{NIVEL[a.nivel].label}</span>
                                     <span style={{ flex: 1, fontFamily: "'Outfit'", fontSize: '.86rem', color: txt }}>{a.texto}</span>
                                     <span className="qa-arrow" style={{ color: mut }}><IconArrowR /></span>
                                 </Link>
@@ -202,7 +202,7 @@ export default function Dashboard() {
                         <Link key={k.label} to={k.to} className="dash-card" style={{ textDecoration: 'none', background: card, border: `1px solid ${bdr}`, borderRadius: 16, padding: '18px 20px', boxShadow: cardSh, animationDelay: `${i * 60}ms` }}>
                             <div className="glow" style={{ background: `radial-gradient(closest-side, ${k.color}, transparent)` }} />
                             <div style={{ position: 'absolute', top: 0, left: 0, width: 3, height: '100%', background: `linear-gradient(180deg, ${k.color}, transparent)` }} />
-                            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.66rem', letterSpacing: '.2em', color: mut, marginBottom: 8 }}>{k.label.toUpperCase()}</p>
+                            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.2em', color: mut, marginBottom: 8 }}>{k.label.toUpperCase()}</p>
                             <p style={{ fontFamily: "'Bebas Neue'", fontSize: '2.3rem', letterSpacing: '.02em', color: k.color, lineHeight: 1 }}>{k.val}</p>
                             <p style={{ fontFamily: "'Outfit'", fontSize: '.74rem', color: mut, marginTop: 8, lineHeight: 1.4 }}>{k.sub}</p>
                         </Link>
@@ -218,7 +218,7 @@ export default function Dashboard() {
                             <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.25rem', letterSpacing: '.05em', color: txt }}>Crecimiento del taller</h2>
                             <div style={{ display: 'flex', gap: 4, border: `1px solid ${bdr}`, borderRadius: 10, padding: 3 }}>
                                 {[6, 12].map(m => (
-                                    <button key={m} onClick={() => setMeses(m)} style={{ fontFamily: "'Bebas Neue'", fontSize: '.66rem', letterSpacing: '.1em', padding: '5px 11px', borderRadius: 7, border: 'none', cursor: 'pointer', background: meses === m ? `linear-gradient(135deg, ${SKY_DEEP}, ${SKY})` : 'transparent', color: meses === m ? '#fff' : mut }}>{m} MESES</button>
+                                    <button key={m} onClick={() => setMeses(m)} style={{ fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.1em', padding: '5px 11px', borderRadius: 7, border: 'none', cursor: 'pointer', background: meses === m ? `linear-gradient(135deg, ${SKY_DEEP}, ${SKY})` : 'transparent', color: meses === m ? '#fff' : mut }}>{m} MESES</button>
                                 ))}
                             </div>
                         </div>
@@ -233,9 +233,9 @@ export default function Dashboard() {
                                 <ResponsiveContainer width="100%" height="100%">
                                     <ComposedChart data={serie} margin={{ top: 6, right: 6, left: 0, bottom: 0 }}>
                                         <CartesianGrid strokeDasharray="3 3" stroke={bdr} vertical={false} />
-                                        <XAxis dataKey="etiqueta" tick={{ fontFamily: 'Outfit', fontSize: 10, fill: mut }} />
-                                        {veDinero && <YAxis yAxisId="dinero" tick={{ fontFamily: 'Outfit', fontSize: 10, fill: mut }} width={56} />}
-                                        <YAxis yAxisId="cant" orientation={veDinero ? 'right' : 'left'} allowDecimals={false} tick={{ fontFamily: 'Outfit', fontSize: 10, fill: mut }} width={34} />
+                                        <XAxis dataKey="etiqueta" tick={{ fontFamily: 'Outfit', fontSize: 11, fill: mut }} />
+                                        {veDinero && <YAxis yAxisId="dinero" tick={{ fontFamily: 'Outfit', fontSize: 11, fill: mut }} width={56} />}
+                                        <YAxis yAxisId="cant" orientation={veDinero ? 'right' : 'left'} allowDecimals={false} tick={{ fontFamily: 'Outfit', fontSize: 11, fill: mut }} width={34} />
                                         <Tooltip formatter={(v, n) => (['Ingresos', 'Egresos'].includes(n) ? dinero(v) : v)}
                                             contentStyle={{ background: boxBg, border: `1px solid ${bdr}`, borderRadius: 10, fontFamily: 'Outfit', fontSize: 12, color: txt }} />
                                         <Legend wrapperStyle={{ fontFamily: 'Outfit', fontSize: 12 }} />
@@ -278,9 +278,9 @@ export default function Dashboard() {
                                 ['Entregados', d.taller.entregadas_mes, 'este mes'],
                             ].filter(Boolean).map(([l, v, s]) => (
                                 <div key={l} style={{ background: SKY_PALE, borderRadius: 10, padding: '9px 11px' }}>
-                                    <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.16em', color: mut }}>{l.toUpperCase()}</p>
+                                    <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.16em', color: mut }}>{l.toUpperCase()}</p>
                                     <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.4rem', color: txt, lineHeight: 1.1 }}>{v}</p>
-                                    <p style={{ fontFamily: "'Outfit'", fontSize: '.68rem', color: mut }}>{s}</p>
+                                    <p style={{ fontFamily: "'Outfit'", fontSize: '.76rem', color: mut }}>{s}</p>
                                 </div>
                             ))}
                         </div>
@@ -303,7 +303,7 @@ export default function Dashboard() {
                                         <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.88rem', color: txt }}>{o.numero} · {[o.marca, o.modelo].filter(Boolean).join(' ') || 'Vehículo'} {o.placa && <span style={{ color: mut, fontWeight: 400 }}>({o.placa})</span>}</p>
                                         <p style={{ fontFamily: "'Outfit'", fontSize: '.74rem', color: mut }}>{o.cliente_nombre} · {o.tecnico_nombre ? `Técnico: ${o.tecnico_nombre}` : 'Sin técnico asignado'} · desde {String(o.fecha_ingreso).slice(0, 10)}</p>
                                     </div>
-                                    <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.1em', padding: '3px 9px', borderRadius: 999, whiteSpace: 'nowrap', color: et?.color || mut, border: `1px solid ${(et?.color || '#94a3b8')}55`, background: `${et?.color || '#94a3b8'}14` }}>
+                                    <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.74rem', letterSpacing: '.1em', padding: '3px 9px', borderRadius: 999, whiteSpace: 'nowrap', color: et?.color || mut, border: `1px solid ${(et?.color || '#94a3b8')}55`, background: `${et?.color || '#94a3b8'}14` }}>
                                         {(et?.label || 'Pendiente').toUpperCase()}
                                     </span>
                                 </div>
@@ -321,7 +321,7 @@ export default function Dashboard() {
                                     <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.86rem', color: txt }}>{c.cliente_nombre}</p>
                                     <p style={{ fontFamily: "'Outfit'", fontSize: '.74rem', color: mut }}>{c.servicio_nombre}{c.placa ? ` · ${c.placa}` : ''}</p>
                                 </div>
-                                <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.12em', color: c.estado === 'confirmada' ? '#10b981' : '#f59e0b' }}>{c.estado.toUpperCase()}</span>
+                                <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.72rem', letterSpacing: '.12em', color: c.estado === 'confirmada' ? '#10b981' : '#f59e0b' }}>{c.estado.toUpperCase()}</span>
                             </div>
                         ))}
                     </div>
@@ -372,7 +372,7 @@ export default function Dashboard() {
 
                 {/* ── 6. Accesos rapidos ── */}
                 {acciones.length > 0 && <Titulo>Accesos rápidos</Titulo>}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(200px, 100%), 1fr))', gap: 10 }}>
                     {acciones.map(a => (
                         <Link key={a.to} to={a.to} className="quick-action" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderRadius: 12, background: card, border: `1px solid ${bdr}`, textDecoration: 'none' }}>
                             <div style={{ flex: 1 }}>

@@ -62,9 +62,9 @@ export default function OrdenesTrabajo() {
     const SKY_BDR  = isDark ? 'rgba(56,189,248,0.22)' : 'rgba(14,165,233,0.35)';
     const txt    = isDark ? '#f1f5f9' : '#0f172a';
     const txtSf  = isDark ? '#cbd5e1' : '#334155';
-    const mut    = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
-    const bdr    = isDark ? 'rgba(148,163,184,0.18)' : '#b6c3d3';
-    const card   = isDark ? 'rgba(255,255,255,0.025)' : '#ffffff';
+    const mut    = isDark ? 'rgba(241,245,249,0.72)' : '#526075';
+    const bdr    = isDark ? 'rgba(148,163,184,0.28)' : '#b6c3d3';
+    const card   = isDark ? 'rgba(255,255,255,0.045)' : '#ffffff';
     const cardSh = isDark
         ? '0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 40px -16px rgba(0,0,0,0.55)'
         : '0 1px 2px rgba(15,23,42,0.06), 0 8px 22px -8px rgba(15,23,42,0.20)';
@@ -259,12 +259,12 @@ export default function OrdenesTrabajo() {
                                     <div style={{ minWidth: 0 }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                                             <span style={{ fontFamily: "'Bebas Neue'", fontSize: '1.3rem', letterSpacing: '.03em', color: txt }}>{o.numero || `OT-${String(o.id).padStart(6, '0')}`}</span>
-                                            <span style={{ padding: '3px 10px', borderRadius: 999, background: `${est.color}14`, border: `1px solid ${est.color}35`, color: est.color, fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.16em' }}>{est.label.toUpperCase()}</span>
+                                            <span style={{ padding: '3px 10px', borderRadius: 999, background: `${est.color}14`, border: `1px solid ${est.color}35`, color: est.color, fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.16em' }}>{est.label.toUpperCase()}</span>
                                             {prog && (
-                                                <span style={{ padding: '3px 10px', borderRadius: 999, background: `${prog.color}14`, border: `1px solid ${prog.color}35`, color: prog.color, fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.16em' }}>{prog.label.toUpperCase()}</span>
+                                                <span style={{ padding: '3px 10px', borderRadius: 999, background: `${prog.color}14`, border: `1px solid ${prog.color}35`, color: prog.color, fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.16em' }}>{prog.label.toUpperCase()}</span>
                                             )}
                                             {o.tecnico_nombre && (
-                                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 999, background: 'rgba(16,185,129,.1)', border: '1px solid rgba(16,185,129,.25)', color: '#10b981', fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.12em' }}>
+                                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 999, background: 'rgba(16,185,129,.1)', border: '1px solid rgba(16,185,129,.25)', color: '#10b981', fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.12em' }}>
                                                     <IconUser /> {o.tecnico_nombre}
                                                 </span>
                                             )}
@@ -277,7 +277,7 @@ export default function OrdenesTrabajo() {
                                         <p style={{ fontFamily: "'Outfit'", fontSize: '.72rem', color: mut }}>
                                             {new Date(o.fecha_ingreso || o.created_at).toLocaleDateString('es-EC')}
                                         </p>
-                                        <p style={{ fontFamily: "'Outfit'", fontSize: '.68rem', color: mut, marginTop: 1 }}>{o.usuario_nombre}</p>
+                                        <p style={{ fontFamily: "'Outfit'", fontSize: '.76rem', color: mut, marginTop: 1 }}>{o.usuario_nombre}</p>
                                     </div>
                                 </div>
 
@@ -285,13 +285,13 @@ export default function OrdenesTrabajo() {
                                     <div style={{ borderTop: `1px solid ${bdr}`, padding: '16px 20px', background: isDark ? 'rgba(255,255,255,.015)' : 'rgba(14,165,233,.02)' }}>
                                         <div className="ot-detail-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
                                             <div>
-                                                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.2em', color: SKY_DEEP, marginBottom: 4 }}>CLIENTE</p>
+                                                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.2em', color: SKY_DEEP, marginBottom: 4 }}>CLIENTE</p>
                                                 <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.85rem', color: txt }}>{o.cliente_nombre}</p>
                                                 {o.cliente_telefono && <p style={{ fontFamily: "'Outfit'", fontSize: '.78rem', color: mut }}>{o.cliente_telefono}</p>}
                                             </div>
                                             {o.placa && (
                                                 <div>
-                                                    <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.2em', color: SKY_DEEP, marginBottom: 4 }}>VEHICULO</p>
+                                                    <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.2em', color: SKY_DEEP, marginBottom: 4 }}>VEHICULO</p>
                                                     <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.85rem', color: txt }}>{o.placa}</p>
                                                     <p style={{ fontFamily: "'Outfit'", fontSize: '.78rem', color: mut }}>{[o.marca, o.modelo, o.anio].filter(Boolean).join(' · ')}</p>
                                                 </div>
@@ -302,14 +302,14 @@ export default function OrdenesTrabajo() {
 
                                         {o.diagnostico && (
                                             <div style={{ padding: '10px 14px', borderRadius: 10, background: SKY_PALE, border: `1px solid ${SKY_BDR}`, marginBottom: 14 }}>
-                                                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.2em', color: SKY_DEEP, marginBottom: 3 }}>DIAGNOSTICO</p>
+                                                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.2em', color: SKY_DEEP, marginBottom: 3 }}>DIAGNOSTICO</p>
                                                 <p style={{ fontFamily: "'Outfit'", fontSize: '.82rem', color: txtSf }}>{o.diagnostico}</p>
                                             </div>
                                         )}
 
                                         {o.notas_progreso && (
                                             <div style={{ padding: '10px 14px', borderRadius: 10, background: isDark ? 'rgba(99,102,241,.08)' : 'rgba(99,102,241,.04)', border: `1px solid ${isDark ? 'rgba(99,102,241,.25)' : 'rgba(99,102,241,.15)'}`, marginBottom: 14 }}>
-                                                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.2em', color: '#6366f1', marginBottom: 3 }}>NOTAS DE PROGRESO</p>
+                                                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.2em', color: '#6366f1', marginBottom: 3 }}>NOTAS DE PROGRESO</p>
                                                 <p style={{ fontFamily: "'Outfit'", fontSize: '.82rem', color: txtSf }}>{o.notas_progreso}</p>
                                             </div>
                                         )}
@@ -330,7 +330,7 @@ export default function OrdenesTrabajo() {
                                         {/* Historial de cambios: sub-seccion expandible con flecha */}
                                         <div style={{ borderTop: `1px solid ${bdr}`, paddingTop: 12, marginBottom: 12 }}>
                                             <button onClick={() => toggleHistorial(o.id)}
-                                                style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: SKY_DEEP, fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.18em' }}>
+                                                style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: SKY_DEEP, fontFamily: "'Bebas Neue'", fontSize: '.74rem', letterSpacing: '.18em' }}>
                                                 <IconChevron open={!!historialAbierto[o.id]} />
                                                 HISTORIAL DE CAMBIOS
                                             </button>
@@ -364,33 +364,33 @@ export default function OrdenesTrabajo() {
                                             {/* Editar datos / asignar tecnico */}
                                             {puedeEditarDatos && o.estado !== 'completado' && o.estado !== 'cancelado' && (
                                                 <button onClick={() => setModal({ open: true, data: o })}
-                                                    style={{ background: 'none', border: `1px solid ${bdr}`, borderRadius: 8, padding: '7px 12px', cursor: 'pointer', color: SKY_DEEP, display: 'flex', alignItems: 'center', gap: 6, fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.14em' }}>
+                                                    style={{ background: 'none', border: `1px solid ${bdr}`, borderRadius: 8, padding: '7px 12px', cursor: 'pointer', color: SKY_DEEP, display: 'flex', alignItems: 'center', gap: 6, fontFamily: "'Bebas Neue'", fontSize: '.72rem', letterSpacing: '.14em' }}>
                                                     <IconEdit /> EDITAR / ASIGNAR
                                                 </button>
                                             )}
                                             {/* PDF de la orden con la identidad de la empresa y quien la registro */}
                                             <button onClick={() => descargarPdf(o)}
-                                                style={{ background: 'none', border: `1px solid ${bdr}`, borderRadius: 8, padding: '7px 12px', cursor: 'pointer', color: txtSf, display: 'flex', alignItems: 'center', gap: 6, fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.14em' }}>
+                                                style={{ background: 'none', border: `1px solid ${bdr}`, borderRadius: 8, padding: '7px 12px', cursor: 'pointer', color: txtSf, display: 'flex', alignItems: 'center', gap: 6, fontFamily: "'Bebas Neue'", fontSize: '.72rem', letterSpacing: '.14em' }}>
                                                 <IconFileText /> PDF
                                             </button>
                                             {/* Generar Proforma: requiere crear proformas */}
                                             {o.vehiculo_id && puedeProforma && (
                                                 <button onClick={() => navigate(`/dashboard/proformas/nueva?desde_orden=${o.id}`)}
-                                                    style={{ background: 'none', border: `1px solid ${bdr}`, borderRadius: 8, padding: '7px 12px', cursor: 'pointer', color: '#8b5cf6', display: 'flex', alignItems: 'center', gap: 6, fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.14em' }}>
+                                                    style={{ background: 'none', border: `1px solid ${bdr}`, borderRadius: 8, padding: '7px 12px', cursor: 'pointer', color: '#8b5cf6', display: 'flex', alignItems: 'center', gap: 6, fontFamily: "'Bebas Neue'", fontSize: '.72rem', letterSpacing: '.14em' }}>
                                                     <IconFileText /> GENERAR PROFORMA
                                                 </button>
                                             )}
                                             {/* Sprint 23: facturar la OT (se usa su proforma aprobada) */}
                                             {puede('facturacion', 'crear') && (
                                                 <button onClick={() => navigate(`/dashboard/facturacion/nueva?orden_id=${o.id}`)}
-                                                    style={{ background: 'none', border: `1px solid ${bdr}`, borderRadius: 8, padding: '7px 12px', cursor: 'pointer', color: '#10b981', display: 'flex', alignItems: 'center', gap: 6, fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.14em' }}>
+                                                    style={{ background: 'none', border: `1px solid ${bdr}`, borderRadius: 8, padding: '7px 12px', cursor: 'pointer', color: '#10b981', display: 'flex', alignItems: 'center', gap: 6, fontFamily: "'Bebas Neue'", fontSize: '.72rem', letterSpacing: '.14em' }}>
                                                     FACTURAR (SRI)
                                                 </button>
                                             )}
                                             {/* Eliminar: permiso de eliminar ordenes */}
                                             {puedeEliminar && (
                                                 <button onClick={() => eliminarOrden(o)}
-                                                    style={{ marginLeft: 'auto', background: 'none', border: `1px solid ${bdr}`, borderRadius: 8, padding: '7px 12px', cursor: 'pointer', color: '#ef4444', display: 'flex', alignItems: 'center', gap: 6, fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.14em' }}>
+                                                    style={{ marginLeft: 'auto', background: 'none', border: `1px solid ${bdr}`, borderRadius: 8, padding: '7px 12px', cursor: 'pointer', color: '#ef4444', display: 'flex', alignItems: 'center', gap: 6, fontFamily: "'Bebas Neue'", fontSize: '.72rem', letterSpacing: '.14em' }}>
                                                     <IconTrash /> ELIMINAR
                                                 </button>
                                             )}
@@ -435,7 +435,7 @@ function PanelProgreso({ orden, onGuardar, isDark, bdr, inputBg, txt, mut }) {
 
     return (
         <div style={{ padding: 14, borderRadius: 12, background: isDark ? 'rgba(14,165,233,.06)' : 'rgba(14,165,233,.03)', border: `1px solid ${bdr}`, marginBottom: 14 }}>
-            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.2em', color: SKY_DEEP, marginBottom: 10 }}>ACTUALIZAR PROGRESO DE REPARACION</p>
+            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.2em', color: SKY_DEEP, marginBottom: 10 }}>ACTUALIZAR PROGRESO DE REPARACION</p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
                 <div style={{ gridColumn: '1/-1' }}>
                     <select value={progreso} onChange={e => setProgreso(e.target.value)}
@@ -451,7 +451,7 @@ function PanelProgreso({ orden, onGuardar, isDark, bdr, inputBg, txt, mut }) {
                 </div>
             </div>
             <button onClick={() => onGuardar(orden.id, progreso, notas)}
-                style={{ fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.14em', padding: '7px 16px', borderRadius: 8, background: 'linear-gradient(135deg, #0284c7, #0ea5e9)', border: 'none', color: '#fff', cursor: 'pointer' }}>
+                style={{ fontFamily: "'Bebas Neue'", fontSize: '.74rem', letterSpacing: '.14em', padding: '7px 16px', borderRadius: 8, background: 'linear-gradient(135deg, #0284c7, #0ea5e9)', border: 'none', color: '#fff', cursor: 'pointer' }}>
                 GUARDAR PROGRESO
             </button>
         </div>
@@ -461,7 +461,7 @@ function PanelProgreso({ orden, onGuardar, isDark, bdr, inputBg, txt, mut }) {
 function EstBtn({ color, label, onClick }) {
     return (
         <button onClick={onClick}
-            style={{ fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.14em', padding: '5px 14px', borderRadius: 8, background: `${color}14`, border: `1px solid ${color}35`, color, cursor: 'pointer', transition: 'all .15s' }}
+            style={{ fontFamily: "'Bebas Neue'", fontSize: '.72rem', letterSpacing: '.14em', padding: '5px 14px', borderRadius: 8, background: `${color}14`, border: `1px solid ${color}35`, color, cursor: 'pointer', transition: 'all .15s' }}
             onMouseEnter={e => { e.currentTarget.style.background = `${color}30`; e.currentTarget.style.transform = 'translateY(-1px)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = `${color}14`; e.currentTarget.style.transform = 'none'; }}>
             {label}
@@ -537,12 +537,12 @@ function ModalCliente({ onClose, onCreado, isDark }) {
     const [saving, setSaving] = useState(false);
     const SKY = '#0ea5e9'; const SKY_DEEP = '#0284c7';
     const txt = isDark ? '#f1f5f9' : '#0f172a';
-    const mut = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
-    const bdr = isDark ? 'rgba(148,163,184,0.18)' : '#b6c3d3';
+    const mut = isDark ? 'rgba(241,245,249,0.72)' : '#526075';
+    const bdr = isDark ? 'rgba(148,163,184,0.28)' : '#b6c3d3';
     const inputBg = isDark ? '#0b1220' : '#f8fafc';
-    const boxBg = isDark ? '#0a0f1c' : '#ffffff';
+    const boxBg = isDark ? '#111826' : '#ffffff';
     const inputSt = { width: '100%', boxSizing: 'border-box', padding: '10px 13px', borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: txt, fontFamily: "'Outfit'", fontSize: '.88rem', outline: 'none' };
-    const labelSt = { display: 'block', marginBottom: 6, fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.22em', color: SKY_DEEP };
+    const labelSt = { display: 'block', marginBottom: 6, fontFamily: "'Bebas Neue'", fontSize: '.74rem', letterSpacing: '.22em', color: SKY_DEEP };
 
     const handlePhoneChange = (e) => {
         let val = e.target.value.replace(/[^\d+]/g, '');
@@ -577,7 +577,7 @@ function ModalCliente({ onClose, onCreado, isDark }) {
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, transparent, ${SKY}, ${SKY_DEEP}, ${SKY}, transparent)`, borderRadius: '20px 20px 0 0' }} />
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
                     <div>
-                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 6 }}>TALLER · CLIENTES</p>
+                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 6 }}>TALLER · CLIENTES</p>
                         <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.7rem', letterSpacing: '.04em', color: txt }}>Nuevo Cliente</h2>
                     </div>
                     <button onClick={onClose} style={{ background: 'none', border: `1px solid ${bdr}`, borderRadius: 9, padding: 7, cursor: 'pointer', color: mut, display: 'flex' }}><IconX /></button>
@@ -640,12 +640,12 @@ function ModalOrden({ data, clientePre, onClose, onGuardar, onNuevoCliente, isDa
 
     const SKY = '#0ea5e9'; const SKY_DEEP = '#0284c7';
     const txt = isDark ? '#f1f5f9' : '#0f172a';
-    const mut = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
-    const bdr = isDark ? 'rgba(148,163,184,0.18)' : '#b6c3d3';
+    const mut = isDark ? 'rgba(241,245,249,0.72)' : '#526075';
+    const bdr = isDark ? 'rgba(148,163,184,0.28)' : '#b6c3d3';
     const inputBg = isDark ? '#0b1220' : '#f8fafc';
-    const boxBg = isDark ? '#0a0f1c' : '#ffffff';
+    const boxBg = isDark ? '#111826' : '#ffffff';
     const inputSt = { width: '100%', boxSizing: 'border-box', padding: '10px 13px', borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: txt, fontFamily: "'Outfit'", fontSize: '.88rem', outline: 'none' };
-    const labelSt = { display: 'block', marginBottom: 6, fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.22em', color: SKY_DEEP };
+    const labelSt = { display: 'block', marginBottom: 6, fontFamily: "'Bebas Neue'", fontSize: '.74rem', letterSpacing: '.22em', color: SKY_DEEP };
 
     useEffect(() => {
         api.get('/ordenes/clientes').then(r => {
@@ -710,7 +710,7 @@ function ModalOrden({ data, clientePre, onClose, onGuardar, onNuevoCliente, isDa
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, transparent, ${SKY}, ${SKY_DEEP}, ${SKY}, transparent)`, borderRadius: '20px 20px 0 0' }} />
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
                     <div>
-                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 6 }}>TALLER · ORDENES</p>
+                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 6 }}>TALLER · ORDENES</p>
                         <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.7rem', letterSpacing: '.04em', color: txt }}>{esEdicion ? 'Editar Orden' : 'Nueva Orden de Trabajo'}</h2>
                     </div>
                     <button onClick={onClose} style={{ background: 'none', border: `1px solid ${bdr}`, borderRadius: 9, padding: 7, cursor: 'pointer', color: mut, display: 'flex' }}><IconX /></button>
@@ -731,7 +731,7 @@ function ModalOrden({ data, clientePre, onClose, onGuardar, onNuevoCliente, isDa
                                         onChange={e => setBuscandoCliente(e.target.value)}
                                         style={{ ...inputSt, flex: 1 }} />
                                     <button type="button" onClick={onNuevoCliente}
-                                        style={{ fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.14em', color: '#fff', background: `linear-gradient(135deg, ${SKY_DEEP}, ${SKY})`, border: 'none', borderRadius: 10, padding: '0 14px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                        style={{ fontFamily: "'Bebas Neue'", fontSize: '.72rem', letterSpacing: '.14em', color: '#fff', background: `linear-gradient(135deg, ${SKY_DEEP}, ${SKY})`, border: 'none', borderRadius: 10, padding: '0 14px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                                         + NUEVO
                                     </button>
                                 </div>
@@ -778,7 +778,7 @@ function ModalOrden({ data, clientePre, onClose, onGuardar, onNuevoCliente, isDa
                                 </select>
                                 {form.cliente_id && (
                                     <button type="button" onClick={() => setCreandoVehiculo(true)}
-                                        style={{ fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.14em', color: '#10b981', background: 'rgba(16,185,129,.1)', border: '1px solid rgba(16,185,129,.25)', borderRadius: 10, padding: '0 14px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                        style={{ fontFamily: "'Bebas Neue'", fontSize: '.72rem', letterSpacing: '.14em', color: '#10b981', background: 'rgba(16,185,129,.1)', border: '1px solid rgba(16,185,129,.25)', borderRadius: 10, padding: '0 14px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                                         + VEHICULO
                                     </button>
                                 )}
@@ -793,8 +793,8 @@ function ModalOrden({ data, clientePre, onClose, onGuardar, onNuevoCliente, isDa
                                     <input name="color" value={vehForm.color} onChange={onChangeVeh} placeholder="Color" style={inputSt} />
                                 </div>
                                 <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                                    <button type="button" onClick={() => setCreandoVehiculo(false)} style={{ fontFamily: "'Bebas Neue'", fontSize: '.6rem', background: 'none', border: `1px solid ${bdr}`, borderRadius: 8, padding: '6px 14px', cursor: 'pointer', color: mut }}>CANCELAR</button>
-                                    <button type="button" onClick={guardarVehiculo} style={{ fontFamily: "'Bebas Neue'", fontSize: '.6rem', color: '#fff', background: 'linear-gradient(135deg, #059669, #10b981)', border: 'none', borderRadius: 8, padding: '6px 16px', cursor: 'pointer' }}>GUARDAR VEHICULO</button>
+                                    <button type="button" onClick={() => setCreandoVehiculo(false)} style={{ fontFamily: "'Bebas Neue'", fontSize: '.72rem', background: 'none', border: `1px solid ${bdr}`, borderRadius: 8, padding: '6px 14px', cursor: 'pointer', color: mut }}>CANCELAR</button>
+                                    <button type="button" onClick={guardarVehiculo} style={{ fontFamily: "'Bebas Neue'", fontSize: '.72rem', color: '#fff', background: 'linear-gradient(135deg, #059669, #10b981)', border: 'none', borderRadius: 8, padding: '6px 16px', cursor: 'pointer' }}>GUARDAR VEHICULO</button>
                                 </div>
                             </div>
                         )}

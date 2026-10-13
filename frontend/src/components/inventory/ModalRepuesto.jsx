@@ -44,8 +44,8 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
     const SKY_BDR  = isDark ? 'rgba(56,189,248,0.22)' : 'rgba(14,165,233,0.22)';
 
     const txt     = isDark ? '#f1f5f9'                : '#0f172a';
-    const mut     = isDark ? 'rgba(241,245,249,0.55)' : 'rgba(15,23,42,0.55)';
-    const bdr     = isDark ? 'rgba(148,163,184,0.18)' : '#b6c3d3';
+    const mut     = isDark ? 'rgba(241,245,249,0.72)' : '#526075';
+    const bdr     = isDark ? 'rgba(148,163,184,0.28)' : '#b6c3d3';
     const inputBg = isDark ? '#0b1220'                : '#f8fafc';
     const boxBg   = isDark ? '#0a0f1c'                : '#ffffff';
 
@@ -58,7 +58,7 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
     };
     const labelSt = {
         display: 'block', marginBottom: 6,
-        fontFamily: "'Bebas Neue', sans-serif", fontSize: '.62rem', letterSpacing: '.22em',
+        fontFamily: "'Bebas Neue', sans-serif", fontSize: '.74rem', letterSpacing: '.22em',
         color: SKY_DEEP, WebkitTextFillColor: SKY_DEEP, background: 'none',
     };
 
@@ -140,12 +140,12 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
                     <div>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '3px 9px', borderRadius: 999, background: SKY_PALE, border: `1px solid ${SKY_BDR}`, marginBottom: 6 }}>
                             <span style={{ width: 5, height: 5, borderRadius: '50%', background: SKY }} />
-                            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.24em', color: SKY_DEEP }}>ADMIN · INVENTARIO</p>
+                            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.24em', color: SKY_DEEP }}>ADMIN · INVENTARIO</p>
                         </div>
                         <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.7rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>
                             {esEdicion ? 'Editar Repuesto' : 'Nuevo Repuesto'}
                         </h2>
-                        <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.78rem', color: mut, marginTop: 5 }}>
+                        <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.78rem', color: mut, marginTop: 5 }}>
                             {esEdicion ? 'Modifica la informacion del repuesto en catalogo' : 'Registra un nuevo articulo en el inventario'}
                         </p>
                     </div>
@@ -221,7 +221,7 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
                                     ) : (
                                         <div style={{ textAlign: 'center' }}>
                                             <IconImage />
-                                            <p style={{ fontFamily: "'Outfit'", fontSize: '.68rem', marginTop: 6 }}>Sin foto</p>
+                                            <p style={{ fontFamily: "'Outfit'", fontSize: '.76rem', marginTop: 6 }}>Sin foto</p>
                                         </div>
                                     )}
                                 </div>
@@ -230,7 +230,7 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
                                     <input className="ssswap-input" name="imagen_url" value={urlValue} onChange={handleChange}
                                         placeholder="O pega una URL/ruta de imagen..." style={inputSt} />
                                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
-                                        <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.68rem', color: mut }}>
+                                        <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.76rem', color: mut }}>
                                             {form.imagen_url?.startsWith('data:image/') ? 'Imagen cargada desde archivo.' : 'Puedes pegar una URL o subir una foto.'}
                                         </p>
                                         {preview && (
@@ -295,7 +295,7 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
                                 style={{ width: 16, height: 16, accentColor: SKY, marginTop: 2 }}
                             />
                             <span>
-                                <span style={{ display: 'block', fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.22em', color: SKY_DEEP }}>MARCAR PARA VENTA</span>
+                                <span style={{ display: 'block', fontFamily: "'Bebas Neue'", fontSize: '.74rem', letterSpacing: '.22em', color: SKY_DEEP }}>MARCAR PARA VENTA</span>
                                 <span style={{ display: 'block', fontFamily: "'Outfit'", fontSize: '.78rem', color: mut, marginTop: 4 }}>
                                     Si está activado, el producto aparecerá en el panel del cliente como disponible para compra.
                                 </span>
@@ -307,14 +307,14 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
                     {form.precio_compra && form.precio_venta && parseFloat(form.precio_compra) > 0 && (
                         <div style={{ padding: '12px 16px', borderRadius: 12, background: SKY_PALE, border: `1px solid ${SKY_BDR}`, display: 'flex', alignItems: 'center', gap: 24 }}>
                             <div>
-                                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.2em', color: SKY_DEEP }}>MARGEN</p>
+                                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.2em', color: SKY_DEEP }}>MARGEN</p>
                                 <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.4rem', letterSpacing: '.04em', color: '#10b981', lineHeight: 1, marginTop: 2 }}>
                                     {((parseFloat(form.precio_venta) - parseFloat(form.precio_compra)) / parseFloat(form.precio_compra) * 100).toFixed(1)}%
                                 </p>
                             </div>
                             <div style={{ width: 1, height: 30, background: SKY_BDR }} />
                             <div>
-                                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.2em', color: SKY_DEEP }}>UTILIDAD POR UNIDAD</p>
+                                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.2em', color: SKY_DEEP }}>UTILIDAD POR UNIDAD</p>
                                 <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.4rem', letterSpacing: '.04em', color: SKY_DEEP, lineHeight: 1, marginTop: 2 }}>
                                     ${(parseFloat(form.precio_venta) - parseFloat(form.precio_compra)).toFixed(2)}
                                 </p>

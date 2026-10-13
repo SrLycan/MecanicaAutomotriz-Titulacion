@@ -38,9 +38,9 @@ export default function Sucursales() {
     const SKY_BDR  = isDark ? 'rgba(56,189,248,0.22)' : 'rgba(14,165,233,0.35)';
     const txt    = isDark ? '#f1f5f9' : '#0f172a';
     const txtSf  = isDark ? '#cbd5e1' : '#334155';
-    const mut    = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
-    const bdr    = isDark ? 'rgba(148,163,184,0.18)' : '#b6c3d3';
-    const card   = isDark ? 'rgba(255,255,255,0.025)' : '#ffffff';
+    const mut    = isDark ? 'rgba(241,245,249,0.72)' : '#526075';
+    const bdr    = isDark ? 'rgba(148,163,184,0.28)' : '#b6c3d3';
+    const card   = isDark ? 'rgba(255,255,255,0.045)' : '#ffffff';
     const cardSh = isDark
         ? '0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 40px -16px rgba(0,0,0,0.55)'
         : '0 1px 2px rgba(15,23,42,0.06), 0 8px 22px -8px rgba(15,23,42,0.20)';
@@ -113,7 +113,7 @@ export default function Sucursales() {
                     <p style={{ fontFamily: "'Outfit'", fontSize: '.82rem', color: mut, marginTop: 4 }}>Crea la primera para que aparezca en la pagina principal</p>
                 </div>
             ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 18 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(340px, 100%), 1fr))', gap: 18 }}>
                     {sucursales.map((s, i) => (
                         <div key={s.id} className="s-card"
                             style={{
@@ -130,12 +130,12 @@ export default function Sucursales() {
                                 <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                                         {s.es_principal && (
-                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 9px', borderRadius: 999, background: SKY_PALE, border: `1px solid ${SKY_BDR}`, color: SKY_DEEP, fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.2em' }}>
+                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 9px', borderRadius: 999, background: SKY_PALE, border: `1px solid ${SKY_BDR}`, color: SKY_DEEP, fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.2em' }}>
                                                 <IconStar /> PRINCIPAL
                                             </span>
                                         )}
                                         {!s.activa && (
-                                            <span style={{ padding: '3px 9px', borderRadius: 999, background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.25)', color: '#ef4444', fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.2em' }}>
+                                            <span style={{ padding: '3px 9px', borderRadius: 999, background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.25)', color: '#ef4444', fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.2em' }}>
                                                 OCULTA
                                             </span>
                                         )}
@@ -203,13 +203,13 @@ function ModalSucursal({ data, onClose, onGuardar }) {
 
     const SKY = '#0ea5e9'; const SKY_DEEP = '#0284c7';
     const txt = isDark ? '#f1f5f9' : '#0f172a';
-    const mut = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
-    const bdr = isDark ? 'rgba(148,163,184,0.18)' : '#b6c3d3';
+    const mut = isDark ? 'rgba(241,245,249,0.72)' : '#526075';
+    const bdr = isDark ? 'rgba(148,163,184,0.28)' : '#b6c3d3';
     const inputBg = isDark ? '#0b1220' : '#f8fafc';
-    const boxBg = isDark ? '#0a0f1c' : '#ffffff';
+    const boxBg = isDark ? '#111826' : '#ffffff';
 
     const inputSt = { width: '100%', boxSizing: 'border-box', padding: '10px 13px', borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: txt, fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.88rem', outline: 'none' };
-    const labelSt = { display: 'block', marginBottom: 6, fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.22em', color: SKY_DEEP };
+    const labelSt = { display: 'block', marginBottom: 6, fontFamily: "'Bebas Neue'", fontSize: '.74rem', letterSpacing: '.22em', color: SKY_DEEP };
 
     const handlePhoneChange = (e) => {
         let val = e.target.value.replace(/[^\d+]/g, '');
@@ -238,7 +238,7 @@ function ModalSucursal({ data, onClose, onGuardar }) {
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, transparent, ${SKY}, ${SKY_DEEP}, ${SKY}, transparent)`, borderRadius: '20px 20px 0 0' }} />
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 22 }}>
                     <div>
-                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 6 }}>ADMIN · SUCURSALES</p>
+                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 6 }}>ADMIN · SUCURSALES</p>
                         <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.7rem', letterSpacing: '.04em', color: txt }}>{esEdicion ? 'Editar Sucursal' : 'Nueva Sucursal'}</h2>
                     </div>
                     <button onClick={onClose} style={{ background: 'none', border: `1px solid ${bdr}`, borderRadius: 9, padding: 7, cursor: 'pointer', color: mut, display: 'flex' }}>

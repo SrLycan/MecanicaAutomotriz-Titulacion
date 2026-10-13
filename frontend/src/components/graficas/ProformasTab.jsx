@@ -24,7 +24,7 @@ function Kpi({ label, value, sub, theme, color }) {
     const { card, bdr, cardSh, txt, mut } = theme;
     return (
         <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, padding: '14px 16px', boxShadow: cardSh }}>
-            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.18em', color: color || mut }}>{label}</p>
+            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.18em', color: color || mut }}>{label}</p>
             <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.6rem', color: txt, lineHeight: 1.1, marginTop: 4 }}>{value}</p>
             {sub && <p style={{ fontFamily: "'Outfit'", fontSize: '.74rem', color: mut, marginTop: 2 }}>{sub}</p>}
         </div>
@@ -101,7 +101,7 @@ export default function ProformasTab({ theme }) {
                         </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: 16 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(420px, 100%), 1fr))', gap: 16 }}>
                         <div className="prov-table-wrap" style={{ background: card, border: `1px solid ${bdr}`, boxShadow: cardSh, overflowX: 'auto' }}>
                             <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.78rem', letterSpacing: '.14em', color: SKY_DEEP, padding: '14px 16px 6px' }}>PRODUCTOS UTILIZADOS (SALIDAS POR PROFORMA)</p>
                             {data.productos_utilizados.length === 0 ? (

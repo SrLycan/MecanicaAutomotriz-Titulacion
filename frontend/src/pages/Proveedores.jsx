@@ -63,7 +63,7 @@ function ResumenCard({ label, value, color, theme }) {
     const { card, bdr, cardSh, mut, txt } = theme;
     return (
         <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, padding: '14px 16px', boxShadow: cardSh }}>
-            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.56rem', letterSpacing: '.16em', color, marginBottom: 6 }}>{label}</p>
+            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.16em', color, marginBottom: 6 }}>{label}</p>
             <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.4rem', color: txt, lineHeight: 1 }}>{value}</p>
         </div>
     );
@@ -135,7 +135,7 @@ export default function Proveedores() {
                 <div style={{ display: 'flex', gap: 6, background: card, border: `1px solid ${bdr}`, borderRadius: 11, padding: 4 }}>
                     {PERIODOS.map(p => (
                         <button key={p.id} onClick={() => setPeriodo(p.id)}
-                            style={{ fontFamily: "'Bebas Neue'", fontSize: '.68rem', letterSpacing: '.1em', padding: '7px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', background: periodo === p.id ? `linear-gradient(135deg, ${SKY_DEEP}, ${SKY})` : 'transparent', color: periodo === p.id ? '#fff' : mut }}>
+                            style={{ fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.1em', padding: '7px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', background: periodo === p.id ? `linear-gradient(135deg, ${SKY_DEEP}, ${SKY})` : 'transparent', color: periodo === p.id ? '#fff' : mut }}>
                             {p.label.toUpperCase()}
                         </button>
                     ))}

@@ -96,7 +96,7 @@ export default function PanelCliente() {
     }, []);
 
     const txt  = 'rgba(241,245,249,1)';
-    const mut  = 'rgba(241,245,249,.55)';
+    const mut  = 'rgba(241,245,249,.72)';
     const card = 'rgba(255,255,255,.04)';
     const bdr  = 'rgba(255,255,255,.08)';
 
@@ -127,7 +127,7 @@ export default function PanelCliente() {
                             : <IconUser />}
                     </div>
                     <div>
-                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.3em', color: ACCENT }}>MI PANEL</p>
+                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.3em', color: ACCENT }}>MI PANEL</p>
                         <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(1.6rem,4vw,2.4rem)', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>
                             Hola, {usuario?.nombre?.split(' ')[0] || 'Cliente'}
                         </h1>
@@ -401,7 +401,7 @@ function EstadoVehiculoCard({ orden, txt, mut, card }) {
                                 }}>
                                     {completada ? <IconCheck /> : <span style={{ fontFamily: "'Outfit'", fontSize: '.7rem', fontWeight: 700 }}>{i + 1}</span>}
                                 </div>
-                                <p style={{ fontFamily: "'Outfit'", fontSize: '.68rem', fontWeight: enCurso ? 700 : 500, color: enCurso ? txt : mut, textAlign: 'center', lineHeight: 1.2 }}>
+                                <p style={{ fontFamily: "'Outfit'", fontSize: '.76rem', fontWeight: enCurso ? 700 : 500, color: enCurso ? txt : mut, textAlign: 'center', lineHeight: 1.2 }}>
                                     {e.label}{enCurso && <span className="pc-dots"><span>.</span><span>.</span><span>.</span></span>}
                                 </p>
                             </div>

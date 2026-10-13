@@ -226,14 +226,16 @@ export default function Layout() {
     const SKY_DEEP = GOLD_DEEP;
     const SKY_SOFT = GOLD_LIGHT;
 
-    const sbBg    = isDark ? '#050a14' : '#0a0f1c';
+    const sbBg    = isDark ? '#070b12' : '#0a0f1c';
     const sbBdr   = 'rgba(127,171,206,0.20)';
-    const mainBg  = isDark ? '#050a14' : '#ffffff';
-    const hdrBg   = isDark ? 'rgba(10,15,28,0.78)' : 'rgba(255,255,255,0.92)';
-    const hdrBdr  = isDark ? 'rgba(127,171,206,0.16)' : '#b6c3d3';
+    // Fondo del area de trabajo: distinto de las tarjetas para que cada bloque se distinga
+    const mainBg  = isDark ? '#0a0f17' : '#f3f5f9';
+    const hdrBg   = isDark ? '#0d131d' : '#ffffff';
+    const hdrBdr  = isDark ? 'rgba(148,163,184,0.24)' : '#d3dbe6';
     const txt     = isDark ? '#f1f5f9' : '#020617';
-    const mut     = isDark ? 'rgba(241,245,249,0.55)' : '#111827';
-    const navMut  = 'rgba(203,213,225,0.55)';
+    const mut     = isDark ? 'rgba(241,245,249,0.72)' : '#475569';
+    const navMut  = 'rgba(214,222,232,0.74)';
+    const crumbAcc = isDark ? GOLD_LIGHT : GOLD_DEEP;
 
     const handleLogout = () => { logout(); toast.success('Sesion cerrada'); navigate('/admin/login'); };
     const opcionVisible = (c) => (c.soloSuperadmin ? esSuperadmin : (!c.permiso || puedeAlguno(c.permiso)));
@@ -370,7 +372,7 @@ export default function Layout() {
                 {/* Nav */}
                 <nav className="layout-sidebar-nav" style={{ flex: 1, paddingTop: 14, paddingBottom: 12, position: 'relative', zIndex: 1 }}>
                     {!collapsed && (
-                        <p style={{ padding: '0 24px 8px', fontFamily: "'Sora'", fontWeight: 600, fontSize: '.72rem', letterSpacing: '.14em', color: 'rgba(127,171,206,0.5)' }}>MENÚ</p>
+                        <p style={{ padding: '0 24px 8px', fontFamily: "'Sora'", fontWeight: 600, fontSize: '.72rem', letterSpacing: '.14em', color: 'rgba(127,171,206,0.72)' }}>MENÚ</p>
                     )}
                     {grupos.map((g, idx) => {
                         const abierto = grupoAbierto === g.id && !(collapsed && !isMobile);
@@ -393,13 +395,13 @@ export default function Layout() {
                                     <span className="sb-icon" style={{ flexShrink: 0, display: 'flex', color: grupoActivo ? GOLD_LIGHT : 'inherit', position: 'relative' }}>
                                         <g.icon />
                                         {g.badgeCredito && creditosPorVencer > 0 && (
-                                            <span title="Compras a crédito por vencer" style={{ position: 'absolute', top: -6, right: -8, minWidth: 16, height: 16, borderRadius: 999, background: '#f59e0b', color: '#fff', fontSize: '.5rem', fontFamily: "'Bebas Neue'", display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px', boxShadow: '0 2px 6px rgba(245,158,11,.55)' }}>{creditosPorVencer}</span>
+                                            <span title="Compras a crédito por vencer" style={{ position: 'absolute', top: -6, right: -8, minWidth: 16, height: 16, borderRadius: 999, background: '#f59e0b', color: '#fff', fontSize: '.6rem', fontFamily: "'Bebas Neue'", display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px', boxShadow: '0 2px 6px rgba(245,158,11,.55)' }}>{creditosPorVencer}</span>
                                         )}
                                         {g.badgePagare && pagaresVencidos > 0 && (
-                                            <span title="Pagarés de clientes vencidos" style={{ position: 'absolute', top: -6, right: -8, minWidth: 16, height: 16, borderRadius: 999, background: '#ef4444', color: '#fff', fontSize: '.5rem', fontFamily: "'Bebas Neue'", display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px', boxShadow: '0 2px 6px rgba(239,68,68,.55)' }}>{pagaresVencidos}</span>
+                                            <span title="Pagarés de clientes vencidos" style={{ position: 'absolute', top: -6, right: -8, minWidth: 16, height: 16, borderRadius: 999, background: '#ef4444', color: '#fff', fontSize: '.6rem', fontFamily: "'Bebas Neue'", display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px', boxShadow: '0 2px 6px rgba(239,68,68,.55)' }}>{pagaresVencidos}</span>
                                         )}
                                         {g.badgeStock && bajoStockCount > 0 && (
-                                            <span style={{ position: 'absolute', top: -6, right: -8, minWidth: 16, height: 16, borderRadius: 999, background: '#ef4444', color: '#fff', fontSize: '.5rem', fontFamily: "'Bebas Neue'", display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px', boxShadow: '0 2px 6px rgba(239,68,68,.55)' }}>{bajoStockCount}</span>
+                                            <span style={{ position: 'absolute', top: -6, right: -8, minWidth: 16, height: 16, borderRadius: 999, background: '#ef4444', color: '#fff', fontSize: '.6rem', fontFamily: "'Bebas Neue'", display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px', boxShadow: '0 2px 6px rgba(239,68,68,.55)' }}>{bajoStockCount}</span>
                                         )}
                                     </span>
                                     {!(collapsed && !isMobile) && <span style={{ whiteSpace: 'nowrap', flex: 1 }}>{g.label}</span>}
@@ -436,7 +438,7 @@ export default function Layout() {
                         margin: '0 14px 16px', padding: '10px',
                         borderRadius: 10, border: `1px solid ${sbBdr}`,
                         background: 'rgba(127,171,206,0.06)', color: GOLD_LIGHT,
-                        cursor: 'pointer', fontFamily: "'Sora'", fontWeight: 600, fontSize: '.66rem', letterSpacing: '.08em',
+                        cursor: 'pointer', fontFamily: "'Sora'", fontWeight: 600, fontSize: '.76rem', letterSpacing: '.08em',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
                         transition: 'all .2s', position: 'relative', zIndex: 1,
                     }}
@@ -454,36 +456,36 @@ export default function Layout() {
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
 
                 {/* Header */}
-                <header style={{
+                <header className="layout-header" style={{
                     background: hdrBg,
                     borderBottom: `1px solid ${hdrBdr}`,
                     padding: '0 32px', height: 64,
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     flexShrink: 0, position: 'relative', zIndex: 5,
                 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div className="hdr-left" style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
                         {/* Hamburger — mobile only */}
                         {isMobile && (
-                            <button onClick={() => setMobileOpen(o => !o)}
+                            <button onClick={() => setMobileOpen(o => !o)} aria-label={mobileOpen ? 'Cerrar menú' : 'Abrir menú'} aria-expanded={mobileOpen}
                                 style={{ background: 'none', border: `1px solid ${isDark ? 'rgba(127,171,206,0.20)' : '#b6c3d3'}`, borderRadius: 8, padding: '6px 8px', cursor: 'pointer', color: mut, display: 'flex', marginRight: 4 }}>
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
                             </button>
                         )}
-                        <p style={{ fontFamily: "'Sora'", fontWeight: 700, fontSize: '.74rem', letterSpacing: '.14em', color: SKY_DEEP }}>ADMIN</p>
+                        <p className="hdr-admin" style={{ fontFamily: "'Sora'", fontWeight: 700, fontSize: '.74rem', letterSpacing: '.14em', color: crumbAcc }}>ADMIN</p>
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={mut} strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
-                        <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.95rem', color: txt }}>{crumb}</p>
+                        <p className="hdr-crumb" title={crumb} style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.95rem', color: txt, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>{crumb}</p>
                         {/* Empresa de la sesion (la decide el servidor) */}
                         {(empresa || esSuperadmin) && (
-                            <span className="hdr-empresa" title="Empresa en la que estas trabajando" style={{ marginLeft: 10, padding: '3px 10px', borderRadius: 999, fontFamily: "'Sora'", fontWeight: 600, fontSize: '.68rem', letterSpacing: '.06em',
-                                color: soporte ? '#b45309' : SKY_DEEP, background: soporte ? 'rgba(245,158,11,.12)' : 'rgba(59,123,171,.10)', border: `1px solid ${soporte ? 'rgba(245,158,11,.45)' : 'rgba(59,123,171,.30)'}`, whiteSpace: 'nowrap' }}>
+                            <span className="hdr-empresa" title="Empresa en la que estas trabajando" style={{ marginLeft: 10, padding: '3px 10px', borderRadius: 999, fontFamily: "'Sora'", fontWeight: 600, fontSize: '.76rem', letterSpacing: '.06em',
+                                color: soporte ? (isDark ? '#fbbf24' : '#b45309') : crumbAcc, background: soporte ? 'rgba(245,158,11,.12)' : (isDark ? 'rgba(127,171,206,.12)' : 'rgba(59,123,171,.10)'), border: `1px solid ${soporte ? 'rgba(245,158,11,.45)' : 'rgba(59,123,171,.30)'}`, whiteSpace: 'nowrap' }}>
                                 {empresa ? empresa.nombre.toUpperCase() : 'PLATAFORMA'}
                             </span>
                         )}
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
                         {/* Theme toggle */}
-                        <button onClick={toggle} className="btn-icon" title={isDark ? 'Modo claro' : 'Modo oscuro'} style={{ color: mut }}>
+                        <button onClick={toggle} className="btn-icon" title={isDark ? 'Modo claro' : 'Modo oscuro'} aria-label={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'} style={{ color: mut }}>
                             {isDark
                                 ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
                                 : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -511,14 +513,14 @@ export default function Layout() {
                             </div>
                             <div className="hdr-username">
                                 <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.9rem', color: txt, lineHeight: 1 }}>{usuario?.nombre}</p>
-                                <p style={{ fontFamily: "'Sora'", fontWeight: 600, fontSize: '.7rem', letterSpacing: '.08em', color: ROL_COLOR[usuario?.rol] || SKY, lineHeight: 1.5 }}>{ROL_LABEL[usuario?.rol] || usuario?.rol}</p>
+                                <p style={{ fontFamily: "'Sora'", fontWeight: 600, fontSize: '.7rem', letterSpacing: '.08em', color: (!isDark && usuario?.rol === 'administrador') ? GOLD_DEEP : (ROL_COLOR[usuario?.rol] || SKY), lineHeight: 1.5 }}>{ROL_LABEL[usuario?.rol] || usuario?.rol}</p>
                             </div>
                         </button>
 
                         {/* Logout */}
                         <button onClick={handleLogout} className="btn-icon"
                             style={{ color: '#ef4444', borderColor: 'rgba(239,68,68,0.2)' }}
-                            title="Cerrar sesion"
+                            title="Cerrar sesion" aria-label="Cerrar sesión"
                             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.45)'; }}
                             onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.2)'; }}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -532,9 +534,9 @@ export default function Layout() {
                     {soporte && (
                         <div role="status" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 18, padding: '10px 14px', borderRadius: 12,
                             background: 'rgba(245,158,11,.10)', border: '1px solid rgba(245,158,11,.45)', fontFamily: "'Outfit'", fontSize: '.85rem', color: txt }}>
-                            <strong style={{ color: '#b45309' }}>MODO SOPORTE{soporte.modo === 'lectura' ? ' · SOLO LECTURA' : ''}</strong>
+                            <strong style={{ color: isDark ? '#fbbf24' : '#b45309' }}>MODO SOPORTE{soporte.modo === 'lectura' ? ' · SOLO LECTURA' : ''}</strong>
                             <span>en {empresa?.nombre} · {soporte.motivo} · vence a las {new Date(soporte.expira).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })} — todo lo que hagas queda en su auditoría</span>
-                            <button type="button" onClick={terminarSoporte} style={{ marginLeft: 'auto', background: 'none', border: '1px solid rgba(245,158,11,.6)', borderRadius: 8, padding: '5px 12px', cursor: 'pointer', color: '#b45309', fontFamily: "'Bebas Neue'", letterSpacing: '.1em' }}>TERMINAR SOPORTE</button>
+                            <button type="button" onClick={terminarSoporte} style={{ marginLeft: 'auto', background: 'none', border: '1px solid rgba(245,158,11,.6)', borderRadius: 8, padding: '5px 12px', cursor: 'pointer', color: isDark ? '#fbbf24' : '#b45309', fontFamily: "'Bebas Neue'", letterSpacing: '.1em' }}>TERMINAR SOPORTE</button>
                         </div>
                     )}
                     <AvisoPendientes />

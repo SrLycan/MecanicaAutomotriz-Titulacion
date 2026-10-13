@@ -60,7 +60,7 @@ export default function Contratacion() {
                 <h1 style={{ ...bebas('2.5rem', '.04em'), color: p.txt, lineHeight: 1 }}>Contratación del servicio</h1>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(300px, 100%), 1fr))', gap: 16 }}>
                 <div style={seccion}>
                     <p style={{ ...bebas('.8rem', '.18em'), color: p.SKY_DEEP, marginBottom: 8 }}>PROVEEDOR DEL SERVICIO</p>
                     {d.proveedor?.razon_social ? (
@@ -128,7 +128,7 @@ export default function Contratacion() {
                     {[...new Map(historial.map(h => [h.transaccion_id, h])).values()].map(h => (
                         <div key={h.transaccion_id} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, ...outfit('.84rem'), color: p.txtSf, padding: '6px 0', borderTop: `1px solid ${p.bdr}` }}>
                             <span>{fechaHora(h.aceptado_at)} · {h.contexto.replace(/_/g, ' ')}</span>
-                            <button type="button" onClick={() => descargar(`/legal/constancias/${h.transaccion_id}`, 'constancia.pdf')} style={{ background: 'none', border: 'none', color: p.SKY_DEEP, cursor: 'pointer', ...bebas('.66rem') }}>CONSTANCIA</button>
+                            <button type="button" onClick={() => descargar(`/legal/constancias/${h.transaccion_id}`, 'constancia.pdf')} style={{ background: 'none', border: 'none', color: p.SKY_DEEP, cursor: 'pointer', ...bebas('.76rem') }}>CONSTANCIA</button>
                         </div>
                     ))}
                 </div>

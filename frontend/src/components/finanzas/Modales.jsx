@@ -15,7 +15,7 @@ export function Kpi({ theme, label, value, color, hint, grande }) {
     const { card, bdr, cardSh, txt, mut } = theme;
     return (
         <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, padding: '14px 16px', boxShadow: cardSh, borderTop: `3px solid ${color}` }}>
-            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.16em', color, marginBottom: 6 }}>{label}</p>
+            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.16em', color, marginBottom: 6 }}>{label}</p>
             <p style={{ fontFamily: "'Bebas Neue'", fontSize: grande ? '2rem' : '1.4rem', color: txt, lineHeight: 1 }}>{value}</p>
             {hint && <p style={{ fontFamily: "'Outfit'", fontSize: '.72rem', color: mut, marginTop: 6 }}>{hint}</p>}
         </div>
@@ -43,7 +43,7 @@ export function Modal({ theme, etiqueta, titulo, onClose, children, ancho = 560 
             <div className="modal-box" style={{ maxWidth: ancho, background: boxBg, border: `1px solid ${bdr}`, padding: 28 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
                     <div>
-                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 6 }}>{etiqueta}</p>
+                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 6 }}>{etiqueta}</p>
                         <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.6rem', letterSpacing: '.04em', color: txt }}>{titulo}</h2>
                     </div>
                     <button type="button" onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: `1px solid ${bdr}`, borderRadius: 9, padding: 7, cursor: 'pointer', color: mut }}><IconX /></button>
@@ -78,7 +78,7 @@ function useEnvio(onGuardado, onClose) {
     return [saving, enviar];
 }
 
-const grid2 = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 13 };
+const grid2 = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: 13 };
 
 // ── Ingreso / egreso manual ────────────────────────────────────
 export function ModalMovimiento({ theme, tipo: tipoInicial = 'egreso', categorias, cuentas, onClose, onGuardado }) {

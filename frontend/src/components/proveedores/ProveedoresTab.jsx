@@ -168,7 +168,7 @@ function ModalProveedor({ theme, data, onClose, onGuardar }) {
             <div className="modal-box" style={{ maxWidth: 640, background: boxBg, border: `1px solid ${bdr}`, padding: 28 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
                     <div>
-                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 6 }}>PROVEEDORES</p>
+                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 6 }}>PROVEEDORES</p>
                         <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.6rem', letterSpacing: '.04em', color: txt }}>{esEdicion ? 'Editar Proveedor' : 'Nuevo Proveedor'}</h2>
                     </div>
                     <button onClick={onClose} style={{ background: 'none', border: `1px solid ${bdr}`, borderRadius: 9, padding: 7, cursor: 'pointer', color: mut }}><IconX /></button>
@@ -288,7 +288,7 @@ function ModalContactos({ theme, proveedor, onClose }) {
             <div className="modal-box" style={{ maxWidth: 620, background: boxBg, border: `1px solid ${bdr}`, padding: 28 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
                     <div>
-                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 6 }}>CONTACTOS</p>
+                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 6 }}>CONTACTOS</p>
                         <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.5rem', letterSpacing: '.04em', color: txt }}>{proveedor.nombre_comercial}</h2>
                     </div>
                     <button onClick={onClose} style={{ background: 'none', border: `1px solid ${bdr}`, borderRadius: 9, padding: 7, cursor: 'pointer', color: mut }}><IconX /></button>
@@ -320,7 +320,7 @@ function ModalContactos({ theme, proveedor, onClose }) {
                 )}
 
                 <form onSubmit={guardar} style={{ borderTop: `1px solid ${bdr}`, paddingTop: 16 }}>
-                    <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.65rem', letterSpacing: '.18em', color: SKY_DEEP, marginBottom: 10 }}>
+                    <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.18em', color: SKY_DEEP, marginBottom: 10 }}>
                         {editId ? 'EDITAR CONTACTO' : 'AGREGAR CONTACTO'}
                     </p>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>

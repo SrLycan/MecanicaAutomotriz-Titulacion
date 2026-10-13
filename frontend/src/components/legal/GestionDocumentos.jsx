@@ -105,15 +105,15 @@ export default function GestionDocumentos({ ambito = 'empresa' }) {
                                             {doc.versiones.map(v => (
                                                 <tr key={v.id} style={{ borderTop: `1px solid ${p.bdr}`, ...outfit('.82rem'), color: p.txtSf }}>
                                                     <td style={{ padding: '7px 4px', whiteSpace: 'nowrap' }}><strong>v{v.version}</strong></td>
-                                                    <td style={{ padding: '7px 4px' }}><span style={{ color: ESTADO_COLOR[v.estado], ...bebas('.68rem') }}>{v.estado.toUpperCase()}</span>{v.cambio_material && v.estado !== 'borrador' && <span style={{ ...bebas('.6rem'), color: '#8b5cf6', marginLeft: 6 }}>CAMBIO MATERIAL</span>}</td>
+                                                    <td style={{ padding: '7px 4px' }}><span style={{ color: ESTADO_COLOR[v.estado], ...bebas('.76rem') }}>{v.estado.toUpperCase()}</span>{v.cambio_material && v.estado !== 'borrador' && <span style={{ ...bebas('.72rem'), color: '#8b5cf6', marginLeft: 6 }}>CAMBIO MATERIAL</span>}</td>
                                                     <td style={{ padding: '7px 4px' }}>{v.vigente_desde ? `vigente desde ${String(v.vigente_desde).slice(0, 10)}` : 'sin publicar'}{v.publicada_por_nombre ? ` · ${v.publicada_por_nombre}` : ''}</td>
                                                     <td style={{ padding: '7px 4px' }}>{v.aceptaciones} aceptación(es)</td>
                                                     <td style={{ padding: '7px 4px' }}>{v.revision_profesional === 'revisado' ? '✓ revisado por profesional' : 'revisión profesional pendiente'}</td>
                                                     <td style={{ padding: '7px 4px', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                                                        <button type="button" onClick={() => verVersion(v, doc)} style={{ background: 'none', border: 'none', color: p.SKY_DEEP, cursor: 'pointer', ...bebas('.66rem') }}>VER</button>
-                                                        {v.estado === 'borrador' && puedeEditar && <button type="button" onClick={async () => setEditor({ documento: doc, version: (await api.get(`/legal/versiones/${v.id}${q}`)).data.version })} style={{ background: 'none', border: 'none', color: p.SKY_DEEP, cursor: 'pointer', ...bebas('.66rem') }}>EDITAR</button>}
-                                                        {v.estado === 'borrador' && puedePublicar && <button type="button" onClick={() => setPublicar({ documento: doc, version: v, primera: !doc.versiones.some(x => x.estado !== 'borrador') })} style={{ background: 'none', border: 'none', color: '#10b981', cursor: 'pointer', ...bebas('.66rem') }}>PUBLICAR</button>}
-                                                        {v.estado === 'borrador' && puedeEditar && <button type="button" onClick={async () => { try { await api.delete(`/legal/versiones/${v.id}${q}`); cargar(); } catch (err) { toast.error(err.response?.data?.error || 'No se pudo eliminar.'); } }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', ...bebas('.66rem') }}>ELIMINAR</button>}
+                                                        <button type="button" onClick={() => verVersion(v, doc)} style={{ background: 'none', border: 'none', color: p.SKY_DEEP, cursor: 'pointer', ...bebas('.76rem') }}>VER</button>
+                                                        {v.estado === 'borrador' && puedeEditar && <button type="button" onClick={async () => setEditor({ documento: doc, version: (await api.get(`/legal/versiones/${v.id}${q}`)).data.version })} style={{ background: 'none', border: 'none', color: p.SKY_DEEP, cursor: 'pointer', ...bebas('.76rem') }}>EDITAR</button>}
+                                                        {v.estado === 'borrador' && puedePublicar && <button type="button" onClick={() => setPublicar({ documento: doc, version: v, primera: !doc.versiones.some(x => x.estado !== 'borrador') })} style={{ background: 'none', border: 'none', color: '#10b981', cursor: 'pointer', ...bebas('.76rem') }}>PUBLICAR</button>}
+                                                        {v.estado === 'borrador' && puedeEditar && <button type="button" onClick={async () => { try { await api.delete(`/legal/versiones/${v.id}${q}`); cargar(); } catch (err) { toast.error(err.response?.data?.error || 'No se pudo eliminar.'); } }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', ...bebas('.76rem') }}>ELIMINAR</button>}
                                                     </td>
                                                 </tr>
                                             ))}
@@ -282,7 +282,7 @@ function Aceptaciones({ q, documentos }) {
             {!filas ? <p style={{ ...outfit('.85rem'), color: p.mut }}>Cargando…</p> : filas.length === 0 ? <p style={{ ...outfit('.85rem'), color: p.mut }}>Sin aceptaciones para estos filtros.</p> : (
                 <div style={{ overflowX: 'auto', background: p.card, border: `1px solid ${p.bdr}`, borderRadius: 12 }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 820 }}>
-                        <thead><tr>{['Fecha (servidor)', 'Persona', 'Empresa', 'Documento', 'Evento', 'Contexto', 'IP', ''].map(h => <th key={h} style={{ ...bebas('.6rem', '.18em'), color: p.SKY_DEEP, textAlign: 'left', padding: 8 }}>{h}</th>)}</tr></thead>
+                        <thead><tr>{['Fecha (servidor)', 'Persona', 'Empresa', 'Documento', 'Evento', 'Contexto', 'IP', ''].map(h => <th key={h} style={{ ...bebas('.72rem', '.18em'), color: p.SKY_DEEP, textAlign: 'left', padding: 8 }}>{h}</th>)}</tr></thead>
                         <tbody>
                             {filas.map(a => (
                                 <tr key={a.id} style={{ borderTop: `1px solid ${p.bdr}`, ...outfit('.8rem'), color: p.txtSf }}>
@@ -293,7 +293,7 @@ function Aceptaciones({ q, documentos }) {
                                     <td style={{ padding: 8, color: a.evento === 'revocacion' ? '#ef4444' : '#10b981' }}>{a.evento}</td>
                                     <td style={{ padding: 8 }}>{a.contexto.replace(/_/g, ' ')}</td>
                                     <td style={{ padding: 8 }}>{a.ip || '—'}</td>
-                                    <td style={{ padding: 8 }}><button type="button" onClick={() => descargar(`/legal/constancias/${a.transaccion_id}${q}`, 'constancia.pdf')} style={{ background: 'none', border: 'none', color: p.SKY_DEEP, cursor: 'pointer', ...bebas('.64rem') }}>CONSTANCIA</button></td>
+                                    <td style={{ padding: 8 }}><button type="button" onClick={() => descargar(`/legal/constancias/${a.transaccion_id}${q}`, 'constancia.pdf')} style={{ background: 'none', border: 'none', color: p.SKY_DEEP, cursor: 'pointer', ...bebas('.75rem') }}>CONSTANCIA</button></td>
                                 </tr>
                             ))}
                         </tbody>

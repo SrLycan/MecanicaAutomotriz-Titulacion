@@ -16,9 +16,9 @@ export default function AccesoDenegado() {
     const desde = location.state?.desde;
 
     const txt = isDark ? '#f1f5f9' : '#0f172a';
-    const mut = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
-    const bdr = isDark ? 'rgba(148,163,184,0.18)' : '#b6c3d3';
-    const card = isDark ? 'rgba(255,255,255,0.025)' : '#ffffff';
+    const mut = isDark ? 'rgba(241,245,249,0.72)' : '#526075';
+    const bdr = isDark ? 'rgba(148,163,184,0.28)' : '#b6c3d3';
+    const card = isDark ? 'rgba(255,255,255,0.045)' : '#ffffff';
 
     return (
         <div style={{ animation: 'fadeIn .35s ease', maxWidth: 620, margin: '6vh auto 0', textAlign: 'center' }}>

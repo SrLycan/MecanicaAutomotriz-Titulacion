@@ -27,9 +27,9 @@ export default function Bitacora() {
     const [tab, setTab] = useState('conversaciones'); // 'conversaciones' | 'ordenes'
 
     const txt   = isDark ? '#f1f5f9' : '#0f172a';
-    const mut   = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
-    const bdr   = isDark ? 'rgba(148,163,184,0.18)' : '#b6c3d3';
-    const card  = isDark ? 'rgba(255,255,255,0.025)' : '#ffffff';
+    const mut   = isDark ? 'rgba(241,245,249,0.72)' : '#526075';
+    const bdr   = isDark ? 'rgba(148,163,184,0.28)' : '#b6c3d3';
+    const card  = isDark ? 'rgba(255,255,255,0.045)' : '#ffffff';
     const pale  = isDark ? 'rgba(99,102,241,0.10)' : 'rgba(99,102,241,0.06)';
 
     const estilos = { isDark, txt, mut, bdr, card, pale };
@@ -56,7 +56,7 @@ export default function Bitacora() {
             </div>
 
             {/* ── Tabs ── */}
-            <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: `1px solid ${bdr}` }}>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: `1px solid ${bdr}`, overflowX: 'auto' }}>
                 <TabButton active={tab === 'conversaciones'} onClick={() => setTab('conversaciones')} icon={<IconChat />} label="Conversaciones" txt={txt} mut={mut} />
                 <TabButton active={tab === 'ordenes'}        onClick={() => setTab('ordenes')}        icon={<IconClock />} label="Historial de Órdenes" txt={txt} mut={mut} />
                 <TabButton active={tab === 'otras'}          onClick={() => setTab('otras')}          icon={<IconTruck />} label="Otras acciones" txt={txt} mut={mut} />
@@ -143,7 +143,7 @@ function PanelConversaciones({ isDark, txt, mut, bdr, card, pale }) {
                                 style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, background: 'none', border: 'none', cursor: 'pointer', padding: '13px 16px', textAlign: 'left' }}>
                                 <IconChevron open={expandida} />
                                 <span style={{
-                                    fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.1em',
+                                    fontFamily: "'Bebas Neue'", fontSize: '.72rem', letterSpacing: '.1em',
                                     padding: '3px 9px', borderRadius: 999, whiteSpace: 'nowrap',
                                     background: c.canal === 'panel_cliente' ? 'rgba(16,185,129,.10)' : pale,
                                     color: c.canal === 'panel_cliente' ? '#10b981' : ACCENT,
@@ -176,7 +176,7 @@ function PanelConversaciones({ isDark, txt, mut, bdr, card, pale }) {
                                             border: `1px solid ${m.rol === 'user' ? bdr : ACCENT + '30'}`,
                                             borderRadius: 10, padding: '8px 12px',
                                         }}>
-                                            <p style={{ fontFamily: "'Outfit'", fontSize: '.68rem', fontWeight: 700, letterSpacing: '.05em', color: m.rol === 'user' ? mut : ACCENT, marginBottom: 3 }}>
+                                            <p style={{ fontFamily: "'Outfit'", fontSize: '.76rem', fontWeight: 700, letterSpacing: '.05em', color: m.rol === 'user' ? mut : ACCENT, marginBottom: 3 }}>
                                                 {m.rol === 'user' ? 'VISITANTE' : 'SWAPBOT'}
                                             </p>
                                             <p style={{ fontFamily: "'Outfit'", fontSize: '.8rem', color: txt }}>{m.texto}</p>
@@ -231,7 +231,7 @@ function PanelHistorialOrdenes({ txt, mut, bdr, card }) {
                     <thead>
                         <tr style={{ borderBottom: `1px solid ${bdr}` }}>
                             {['Fecha', 'Orden', 'Cliente', 'Cambio', 'Realizado por', 'Notas'].map(h => (
-                                <th key={h} style={{ padding: '11px 16px', textAlign: 'left', fontFamily: "'Bebas Neue'", fontSize: '.66rem', letterSpacing: '.12em', color: mut }}>{h}</th>
+                                <th key={h} style={{ padding: '11px 16px', textAlign: 'left', fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.12em', color: mut }}>{h}</th>
                             ))}
                         </tr>
                     </thead>
@@ -306,7 +306,7 @@ function PanelOtrasAcciones({ txt, mut, bdr, card }) {
 
     const filtro = (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-            <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.16em', color: mut }}>ENTIDAD</span>
+            <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.74rem', letterSpacing: '.16em', color: mut }}>ENTIDAD</span>
             <select value={entidad} onChange={e => { setEntidad(e.target.value); setPagina(1); }}
                 style={{ padding: '7px 10px', borderRadius: 9, border: `1px solid ${bdr}`, background: card, color: txt, fontFamily: "'Outfit'", fontSize: '.8rem' }}>
                 <option value="">Todas</option>
@@ -338,7 +338,7 @@ function PanelOtrasAcciones({ txt, mut, bdr, card }) {
                     <thead>
                         <tr style={{ borderBottom: `1px solid ${bdr}` }}>
                             {['Fecha', 'Entidad', 'Acción', 'Detalle', 'Realizado por'].map(h => (
-                                <th key={h} style={{ padding: '11px 16px', textAlign: 'left', fontFamily: "'Bebas Neue'", fontSize: '.66rem', letterSpacing: '.12em', color: mut }}>{h}</th>
+                                <th key={h} style={{ padding: '11px 16px', textAlign: 'left', fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.12em', color: mut }}>{h}</th>
                             ))}
                         </tr>
                     </thead>
@@ -351,7 +351,7 @@ function PanelOtrasAcciones({ txt, mut, bdr, card }) {
                                         {h.created_at ? new Date(h.created_at).toLocaleString('es-EC', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}
                                     </td>
                                     <td style={{ padding: '11px 16px', whiteSpace: 'nowrap' }}>
-                                        <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.1em', padding: '3px 9px', borderRadius: 999, background: `${info.color}18`, border: `1px solid ${info.color}44`, color: info.color }}>
+                                        <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.74rem', letterSpacing: '.1em', padding: '3px 9px', borderRadius: 999, background: `${info.color}18`, border: `1px solid ${info.color}44`, color: info.color }}>
                                             {info.label.toUpperCase()} #{h.entidad_id}
                                         </span>
                                     </td>

@@ -265,7 +265,7 @@ function ModalNuevaCompra({ theme, proveedores, onClose, onGuardar }) {
             <div className="modal-box" style={{ maxWidth: 760, background: boxBg, border: `1px solid ${bdr}`, padding: 28 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
                     <div>
-                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 6 }}>COMPRAS</p>
+                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 6 }}>COMPRAS</p>
                         <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.6rem', letterSpacing: '.04em', color: txt }}>Nueva Orden de Compra</h2>
                     </div>
                     <button onClick={onClose} style={{ background: 'none', border: `1px solid ${bdr}`, borderRadius: 9, padding: 7, cursor: 'pointer', color: mut }}><IconX /></button>
@@ -313,7 +313,7 @@ function ModalNuevaCompra({ theme, proveedores, onClose, onGuardar }) {
 
                     <div>
                         <label style={labelSt}>FORMA DE PAGO *</label>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, marginTop: 4 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: 10, marginTop: 4 }}>
                             {[
                                 { id: 'contado', t: 'Contado', d: 'Se paga ahora mismo' },
                                 { id: 'credito', t: `Crédito ${DIAS_CREDITO} días`, d: `Vence el ${venceEl(fecha)} · aviso 3 días antes` },
@@ -424,7 +424,7 @@ function ModalDetalleCompra({ theme, compra, onClose, onActualizado }) {
             <div className="modal-box" style={{ maxWidth: 680, background: boxBg, border: `1px solid ${bdr}`, padding: 28 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
                     <div>
-                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 6 }}>COMPRA #{compra.id}</p>
+                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 6 }}>COMPRA #{compra.id}</p>
                         <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.5rem', letterSpacing: '.04em', color: txt }}>{compra.proveedor_nombre}</h2>
                     </div>
                     <button onClick={onClose} style={{ background: 'none', border: `1px solid ${bdr}`, borderRadius: 9, padding: 7, cursor: 'pointer', color: mut }}><IconX /></button>

@@ -24,12 +24,12 @@ export default function ModalMiCuenta({ onClose }) {
 
     const SKY = '#0ea5e9'; const SKY_DEEP = '#0284c7';
     const txt = isDark ? '#f1f5f9' : '#0f172a';
-    const mut = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
-    const bdr = isDark ? 'rgba(148,163,184,0.18)' : '#b6c3d3';
+    const mut = isDark ? 'rgba(241,245,249,0.72)' : '#526075';
+    const bdr = isDark ? 'rgba(148,163,184,0.28)' : '#b6c3d3';
     const inputBg = isDark ? '#0b1220' : '#f8fafc';
-    const boxBg = isDark ? '#0a0f1c' : '#ffffff';
+    const boxBg = isDark ? '#111826' : '#ffffff';
     const inputSt = { width: '100%', boxSizing: 'border-box', padding: '10px 13px', borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: txt, fontFamily: "'Outfit'", fontSize: '.88rem', outline: 'none' };
-    const labelSt = { display: 'block', marginBottom: 6, fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.22em', color: SKY_DEEP };
+    const labelSt = { display: 'block', marginBottom: 6, fontFamily: "'Bebas Neue'", fontSize: '.74rem', letterSpacing: '.22em', color: SKY_DEEP };
 
     const onChange = (e) => { setForm({ ...form, [e.target.name]: e.target.value }); setError(''); };
 
@@ -58,7 +58,7 @@ export default function ModalMiCuenta({ onClose }) {
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, transparent, ${SKY}, ${SKY_DEEP}, ${SKY}, transparent)`, borderRadius: '20px 20px 0 0' }} />
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
                     <div>
-                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 6 }}>MI CUENTA</p>
+                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 6 }}>MI CUENTA</p>
                         <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.7rem', letterSpacing: '.04em', color: txt }}>{usuario?.nombre}</h2>
                         <p style={{ fontFamily: "'Outfit'", fontSize: '.8rem', color: mut, marginTop: 4 }}>{usuario?.email}</p>
                         <p style={{ fontFamily: "'Outfit'", fontSize: '.8rem', color: mut }}>{ROL_TEXTO[usuario?.rol] || usuario?.rol} · Permisos: {totalPermisos}</p>

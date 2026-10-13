@@ -32,8 +32,8 @@ export default function ModalCategorias({ onCambio, onCerrar }) {
     const SKY_PALE = isDark ? 'rgba(14,165,233,0.10)' : 'rgba(14,165,233,0.06)';
     const SKY_BDR  = isDark ? 'rgba(56,189,248,0.22)' : 'rgba(14,165,233,0.22)';
     const txt     = isDark ? '#f1f5f9'                : '#0f172a';
-    const mut     = isDark ? 'rgba(241,245,249,0.55)' : 'rgba(15,23,42,0.55)';
-    const bdr     = isDark ? 'rgba(148,163,184,0.18)' : '#b6c3d3';
+    const mut     = isDark ? 'rgba(241,245,249,0.72)' : '#526075';
+    const bdr     = isDark ? 'rgba(148,163,184,0.28)' : '#b6c3d3';
     const inputBg = isDark ? '#0b1220'                : '#f8fafc';
     const boxBg   = isDark ? '#0a0f1c'                : '#ffffff';
 
@@ -44,7 +44,7 @@ export default function ModalCategorias({ onCambio, onCerrar }) {
     };
     const labelSt = {
         display: 'block', marginBottom: 6, fontFamily: "'Bebas Neue', sans-serif",
-        fontSize: '.62rem', letterSpacing: '.22em', color: SKY_DEEP,
+        fontSize: '.74rem', letterSpacing: '.22em', color: SKY_DEEP,
     };
     const btnIcon = (color) => ({
         background: 'none', border: `1px solid ${bdr}`, borderRadius: 8, padding: 6,
@@ -106,7 +106,7 @@ export default function ModalCategorias({ onCambio, onCerrar }) {
                     <div>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '3px 9px', borderRadius: 999, background: SKY_PALE, border: `1px solid ${SKY_BDR}`, marginBottom: 6 }}>
                             <span style={{ width: 5, height: 5, borderRadius: '50%', background: SKY }} />
-                            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.24em', color: SKY_DEEP }}><NombreEmpresa /> · ALMACEN</p>
+                            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.24em', color: SKY_DEEP }}><NombreEmpresa /> · ALMACEN</p>
                         </div>
                         <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.7rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>Categorías de Repuesto</h2>
                     </div>

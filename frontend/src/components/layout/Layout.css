@@ -42,6 +42,11 @@
 @media (max-width: 768px) {
     .main-content-pad { padding: 18px 16px !important; }
     .hdr-username { display: none; }
+    .layout-header { padding: 0 14px !important; }
+}
+/* Encabezado en pantallas angostas: la ruta se trunca y el chip de empresa se oculta */
+@media (max-width: 560px) {
+    .hdr-empresa, .hdr-admin, .hdr-admin + svg { display: none !important; }
 }
 
 /* ── Menú acordeón (secciones con submenú) ── */
@@ -57,11 +62,11 @@
     display: flex; align-items: center; gap: 10px;
     padding: 9px 22px 9px 50px; margin: 1px 0;
     font-family: 'Outfit', sans-serif; font-size: .88rem; font-weight: 400;
-    color: rgba(203,213,225,0.55); text-decoration: none;
+    color: rgba(214,222,232,0.72); text-decoration: none;
     transition: color .15s, background .15s;
 }
-.sb-subitem:hover { color: #fff; background: rgba(43,92,133,0.12); }
-.sb-subitem.is-active { color: #7fabce; font-weight: 600; background: linear-gradient(90deg, rgba(43,92,133,0.22), rgba(43,92,133,0.02)); }
+.sb-subitem:hover { color: #fff; background: rgba(127,171,206,0.10); }
+.sb-subitem.is-active { color: #a9cbe6; font-weight: 600; background: linear-gradient(90deg, rgba(59,123,171,0.30), rgba(59,123,171,0.04)); }
 .sb-subdot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: .55; flex-shrink: 0; }
 .sb-subitem.is-active .sb-subdot { opacity: 1; box-shadow: 0 0 8px #7fabce; }
 @media (prefers-reduced-motion: reduce) {

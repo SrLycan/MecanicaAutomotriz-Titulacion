@@ -193,7 +193,7 @@ function ModalIngreso({ theme, onClose, onFactura }) {
             <div className="modal-box" style={{ maxWidth: manual ? 880 : 600, background: boxBg, border: `1px solid ${bdr}`, padding: 28 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
                     <div>
-                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 6 }}>FACTURAS DE COMPRA</p>
+                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 6 }}>FACTURAS DE COMPRA</p>
                         <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.6rem', letterSpacing: '.04em', color: txt }}>Registrar factura del proveedor</h2>
                     </div>
                     <button onClick={onClose} disabled={trabajando} style={{ background: 'none', border: `1px solid ${bdr}`, borderRadius: 9, padding: 7, cursor: 'pointer', color: mut }}><IconX /></button>
@@ -453,7 +453,7 @@ function ModalFactura({ theme, id, proveedores, onClose, onCambio }) {
             <div className="modal-box" style={{ maxWidth: 1180, width: '96vw', background: boxBg, border: `1px solid ${bdr}`, padding: 26 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14, gap: 12 }}>
                     <div>
-                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 6 }}>FACTURA DE COMPRA {f.numero}</p>
+                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 6 }}>FACTURA DE COMPRA {f.numero}</p>
                         <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.55rem', letterSpacing: '.04em', color: txt }}>{f.emisor_razon_social || f.emisor_ruc}</h2>
                         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
                             <Badge color={sriInfo.color}>{sriInfo.label}</Badge>
@@ -584,7 +584,7 @@ function ModalFactura({ theme, id, proveedores, onClose, onCambio }) {
                 </div>
 
                 {pendiente && puede('proveedores', 'crear') && (
-                    <div className="no-print" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 12, marginTop: 16 }}>
+                    <div className="no-print" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(210px, 100%), 1fr))', gap: 12, marginTop: 16 }}>
                         <div>
                             <label style={labelSt}>PROVEEDOR</label>
                             <select style={inputSt} value={prov} onChange={e => setProv(e.target.value)}>

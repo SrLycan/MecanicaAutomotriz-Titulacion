@@ -15,7 +15,7 @@ import LectorDocumento from '../legal/LectorDocumento';
 import { descargar, dinero, fechaCorta, fechaHora } from '../../pages/facturacion/comun';
 
 const txt = 'rgba(241,245,249,1)';
-const mut = 'rgba(241,245,249,.55)';
+const mut = 'rgba(241,245,249,.72)';
 const card = 'rgba(255,255,255,.04)';
 const bdr = 'rgba(255,255,255,.08)';
 const ACCENT = '#3b7bab';

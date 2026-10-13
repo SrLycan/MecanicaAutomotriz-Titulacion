@@ -119,7 +119,7 @@ export default function Caja() {
             )}
 
             {!sesion ? (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 18, marginBottom: 24, alignItems: 'start' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(300px, 100%), 1fr))', gap: 18, marginBottom: 24, alignItems: 'start' }}>
                     <div style={seccion}>
                         <Badge color={mut}>CAJA CERRADA</Badge>
                         <p style={{ fontFamily: "'Outfit'", fontSize: '.85rem', color: txtSf, marginTop: 14 }}>Según el sistema, en caja debería haber:</p>
@@ -307,7 +307,7 @@ function ModalCierre({ theme, estado, onClose, onGuardado }) {
     return (
         <Modal theme={theme} etiqueta="CAJA · REPORTE DE CUADRE" titulo="Cerrar caja" onClose={onClose} ancho={980}>
             <form onSubmit={submit}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 18, alignItems: 'start' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(320px, 100%), 1fr))', gap: 18, alignItems: 'start' }}>
                     {/* Lo que dice el sistema */}
                     <div style={{ border: `1px solid ${bdr}`, borderRadius: 12, overflow: 'hidden' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse' }}>

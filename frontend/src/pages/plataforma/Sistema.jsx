@@ -18,7 +18,7 @@ export default function Sistema() {
     }, []);
 
     const caja = { background: p.card, border: `1px solid ${p.bdr}`, borderRadius: 14, boxShadow: p.cardSh, overflowX: 'auto', marginBottom: 22 };
-    const th = { padding: '11px 14px', textAlign: 'left', ...bebas('.62rem', '.2em'), color: p.SKY_DEEP, whiteSpace: 'nowrap' };
+    const th = { padding: '11px 14px', textAlign: 'left', ...bebas('.74rem', '.2em'), color: p.SKY_DEEP, whiteSpace: 'nowrap' };
     const td = { padding: '10px 14px', ...outfit('.8rem'), color: p.txtSf, verticalAlign: 'top' };
     const titulo = (t) => <h2 style={{ ...bebas('1.3rem', '.05em'), color: p.txt, margin: '6px 0 10px' }}>{t}</h2>;
 

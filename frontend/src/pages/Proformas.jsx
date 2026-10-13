@@ -39,9 +39,9 @@ export default function Proformas() {
     const SKY_PALE = isDark ? 'rgba(14,165,233,0.10)' : 'rgba(14,165,233,0.12)';
     const txt = isDark ? '#f1f5f9' : '#0f172a';
     const txtSf = isDark ? '#cbd5e1' : '#334155';
-    const mut = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
-    const bdr = isDark ? 'rgba(148,163,184,0.18)' : '#b6c3d3';
-    const card = isDark ? 'rgba(255,255,255,0.025)' : '#ffffff';
+    const mut = isDark ? 'rgba(241,245,249,0.72)' : '#526075';
+    const bdr = isDark ? 'rgba(148,163,184,0.28)' : '#b6c3d3';
+    const card = isDark ? 'rgba(255,255,255,0.045)' : '#ffffff';
     const inputBg = isDark ? '#0b1220' : '#f8fafc';
     const cardSh = isDark ? '0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 40px -16px rgba(0,0,0,0.55)' : '0 1px 2px rgba(15,23,42,0.06), 0 8px 22px -8px rgba(15,23,42,0.20)';
     const theme = { txt, txtSf, mut, bdr, card };
@@ -112,7 +112,7 @@ export default function Proformas() {
     };
 
     const filtroSel = { padding: '8px 10px', fontSize: '.8rem', borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: txt, fontFamily: "'Outfit'", outline: 'none' };
-    const labelSt = { display: 'block', marginBottom: 6, fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.2em', color: SKY_DEEP };
+    const labelSt = { display: 'block', marginBottom: 6, fontFamily: "'Bebas Neue'", fontSize: '.72rem', letterSpacing: '.2em', color: SKY_DEEP };
 
     return (
         <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1500, '--pf-bdr': bdr, '--pf-sky': SKY_DEEP }}>

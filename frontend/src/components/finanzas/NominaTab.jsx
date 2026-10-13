@@ -100,11 +100,11 @@ export default function NominaTab({ theme, cuentas, version, onCambio }) {
                                         </td>
                                         <td>
                                             <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                                                {puede('finanzas', 'editar') && <button className="prov-icon-btn" style={{ color: SKY_DEEP, fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.12em', padding: '5px 9px' }} onClick={() => setModal({ tipo: 'perfil', empleado: e })}>
+                                                {puede('finanzas', 'editar') && <button className="prov-icon-btn" style={{ color: SKY_DEEP, fontFamily: "'Bebas Neue'", fontSize: '.74rem', letterSpacing: '.12em', padding: '5px 9px' }} onClick={() => setModal({ tipo: 'perfil', empleado: e })}>
                                                     {e.tiene_perfil ? 'EDITAR' : 'CONFIGURAR'}
                                                 </button>}
                                                 {e.activo && (
-                                                    puede('finanzas', 'crear') && <button className="prov-icon-btn" style={{ color: VERDE, fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.12em', padding: '5px 9px' }} onClick={() => setModal({ tipo: 'pago', empleado: e })}>PAGAR</button>
+                                                    puede('finanzas', 'crear') && <button className="prov-icon-btn" style={{ color: VERDE, fontFamily: "'Bebas Neue'", fontSize: '.74rem', letterSpacing: '.12em', padding: '5px 9px' }} onClick={() => setModal({ tipo: 'pago', empleado: e })}>PAGAR</button>
                                                 )}
                                             </div>
                                         </td>
@@ -150,7 +150,7 @@ export default function NominaTab({ theme, cuentas, version, onCambio }) {
                                         <td style={{ color: txtSf, whiteSpace: 'nowrap' }}>{p.cuenta_nombre}</td>
                                         <td style={{ textAlign: 'right' }}>
                                             {!anulado && (
-                                                puede('finanzas', 'eliminar') && <button className="prov-icon-btn" style={{ color: ROJO, fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.12em', padding: '5px 9px' }} onClick={() => setModal({ tipo: 'anular', pago: p })}>ANULAR</button>
+                                                puede('finanzas', 'eliminar') && <button className="prov-icon-btn" style={{ color: ROJO, fontFamily: "'Bebas Neue'", fontSize: '.74rem', letterSpacing: '.12em', padding: '5px 9px' }} onClick={() => setModal({ tipo: 'anular', pago: p })}>ANULAR</button>
                                             )}
                                         </td>
                                     </tr>

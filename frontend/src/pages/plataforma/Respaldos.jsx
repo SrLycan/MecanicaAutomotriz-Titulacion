@@ -52,7 +52,7 @@ export default function Respaldos() {
             <span style={{ color: p.mut }}>{l}</span><span style={{ color: alerta ? '#ef4444' : p.txt, fontWeight: 600, textAlign: 'right', wordBreak: 'break-all' }}>{v}</span>
         </div>
     );
-    const th = { padding: '11px 14px', textAlign: 'left', ...bebas('.62rem', '.2em'), color: p.SKY_DEEP, whiteSpace: 'nowrap' };
+    const th = { padding: '11px 14px', textAlign: 'left', ...bebas('.74rem', '.2em'), color: p.SKY_DEEP, whiteSpace: 'nowrap' };
     const td = { padding: '10px 14px', ...outfit('.8rem'), color: p.txtSf, verticalAlign: 'top' };
 
     return (

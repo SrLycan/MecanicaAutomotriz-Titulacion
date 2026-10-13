@@ -120,7 +120,7 @@ export default function FacturaEditor() {
     const quitarLinea = (i) => setForm(f => ({ ...f, lineas: f.lineas.filter((_, j) => j !== i) }));
 
     const inputSt = { width: '100%', boxSizing: 'border-box', padding: '9px 11px', borderRadius: 9, border: `1px solid ${p.bdr}`, background: p.inputBg, color: p.txt, ...outfit('.85rem'), outline: 'none' };
-    const label = (t, htmlFor) => <label htmlFor={htmlFor} style={{ display: 'block', marginBottom: 5, ...bebas('.6rem', '.2em'), color: p.SKY_DEEP }}>{t}</label>;
+    const label = (t, htmlFor) => <label htmlFor={htmlFor} style={{ display: 'block', marginBottom: 5, ...bebas('.72rem', '.2em'), color: p.SKY_DEEP }}>{t}</label>;
     const seccion = { background: p.card, border: `1px solid ${p.bdr}`, borderRadius: 14, boxShadow: p.cardSh, padding: 18, marginBottom: 16 };
     const esNc = modo === 'nc';
     const consumidorFinal = comp.tipo_identificacion === '07';
@@ -168,7 +168,7 @@ export default function FacturaEditor() {
             {/* Comprador */}
             <div style={seccion}>
                 <p style={{ ...bebas('.8rem', '.18em'), color: p.txt, marginBottom: 12 }}>COMPRADOR {esNc && '(DE LA FACTURA ORIGINAL)'}</p>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: 12 }}>
                     <div>
                         {label('TIPO DE IDENTIFICACIÓN', 'c-tipo')}
                         <select id="c-tipo" disabled={esNc} value={comp.tipo_identificacion} onChange={e => setComp('tipo_identificacion', e.target.value)} style={inputSt}>
@@ -216,7 +216,7 @@ export default function FacturaEditor() {
                 <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 860 }}>
                         <thead>
-                            <tr>{['Código', 'Descripción', 'Cant.', 'P. unitario', 'Descuento', 'IVA', 'Subtotal', ''].map(h => <th key={h} style={{ ...bebas('.6rem', '.18em'), color: p.SKY_DEEP, textAlign: 'left', padding: '6px 6px' }}>{h}</th>)}</tr>
+                            <tr>{['Código', 'Descripción', 'Cant.', 'P. unitario', 'Descuento', 'IVA', 'Subtotal', ''].map(h => <th key={h} style={{ ...bebas('.72rem', '.18em'), color: p.SKY_DEEP, textAlign: 'left', padding: '6px 6px' }}>{h}</th>)}</tr>
                         </thead>
                         <tbody>
                             {form.lineas.map((l, i) => (
@@ -240,7 +240,7 @@ export default function FacturaEditor() {
                 </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(320px, 100%), 1fr))', gap: 16 }}>
                 <div style={seccion}>
                     {esNc ? (<>
                         <p style={{ ...bebas('.8rem', '.18em'), color: p.txt, marginBottom: 10 }}>MOTIVO *</p>

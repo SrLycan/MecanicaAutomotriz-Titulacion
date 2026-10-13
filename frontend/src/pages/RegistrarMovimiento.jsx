@@ -34,10 +34,10 @@ export default function RegistrarMovimiento() {
     const SKY_BDR  = isDark ? 'rgba(56,189,248,0.22)' : 'rgba(14,165,233,0.35)';
     const txt    = isDark ? '#f1f5f9' : '#0f172a';
     const txtSf  = isDark ? '#cbd5e1' : '#334155';
-    const mut    = isDark ? 'rgba(241,245,249,0.55)' : '#111827';
-    const faint  = isDark ? 'rgba(241,245,249,0.38)' : '#2d3748';
-    const bdr    = isDark ? 'rgba(148,163,184,0.18)' : '#b6c3d3';
-    const card   = isDark ? 'rgba(255,255,255,0.025)' : '#ffffff';
+    const mut    = isDark ? 'rgba(241,245,249,0.72)' : '#526075';
+    const faint  = isDark ? 'rgba(241,245,249,0.56)' : '#5f6b7d';
+    const bdr    = isDark ? 'rgba(148,163,184,0.28)' : '#b6c3d3';
+    const card   = isDark ? 'rgba(255,255,255,0.045)' : '#ffffff';
     const cardSh = isDark
         ? '0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 40px -16px rgba(0,0,0,0.55)'
         : '0 1px 2px rgba(15,23,42,0.06), 0 8px 22px -8px rgba(15,23,42,0.20)';
@@ -69,7 +69,7 @@ export default function RegistrarMovimiento() {
     const stockNuevo = selected ? (esEntrada ? Math.round((Number(selected.stock_actual) + qty) * 100) / 100 : Math.round((Number(selected.stock_actual) - qty) * 100) / 100) : 0;
 
     const inputSt = { width: '100%', boxSizing: 'border-box', padding: '10px 13px', borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: txt, fontFamily: "'Outfit', sans-serif", fontWeight: 400, fontSize: '.88rem', outline: 'none' };
-    const labelSt = { display: 'block', marginBottom: 6, fontFamily: "'Bebas Neue', sans-serif", fontSize: '.62rem', letterSpacing: '.22em', color: SKY_DEEP, WebkitTextFillColor: SKY_DEEP, background: 'none' };
+    const labelSt = { display: 'block', marginBottom: 6, fontFamily: "'Bebas Neue', sans-serif", fontSize: '.74rem', letterSpacing: '.22em', color: SKY_DEEP, WebkitTextFillColor: SKY_DEEP, background: 'none' };
 
     const handleSelect = (r) => {
         setSelected(r);
@@ -116,7 +116,7 @@ export default function RegistrarMovimiento() {
             <div style={{ marginBottom: 22 }}>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 10px', borderRadius: 999, background: SKY_PALE, border: `1px solid ${SKY_BDR}`, marginBottom: 8 }}>
                     <span style={{ width: 6, height: 6, borderRadius: '50%', background: SKY, boxShadow: `0 0 8px ${SKY}` }} />
-                    <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.24em', color: SKY_DEEP }}><NombreEmpresa /> · REGISTRO RAPIDO</p>
+                    <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.24em', color: SKY_DEEP }}><NombreEmpresa /> · REGISTRO RAPIDO</p>
                 </div>
                 <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.8rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>
                     {step === 'select' ? 'Registrar Movimiento' : step === 'form' ? 'Confirmar Movimiento' : 'Movimiento Completado'}
@@ -211,15 +211,15 @@ export default function RegistrarMovimiento() {
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 3 }}>
                                                 <code style={{ fontFamily: 'monospace', fontSize: '.7rem', fontWeight: 600, background: SKY_PALE, padding: '1px 7px', borderRadius: 5, color: SKY_DEEP, border: `1px solid ${SKY_BDR}` }}>{r.codigo}</code>
                                                 {r.categoria_nombre && <span style={{ fontFamily: "'Outfit'", fontSize: '.72rem', color: mut }}>{r.categoria_nombre}</span>}
-                                                {r.area && <span style={{ fontFamily: "'Outfit'", fontSize: '.68rem', color: r.area === 'colisiones' ? '#f97316' : SKY_DEEP, marginLeft: 6 }}>{r.area === 'colisiones' ? 'COLISIONES / PINTURA' : 'MECÁNICA'}</span>}
+                                                {r.area && <span style={{ fontFamily: "'Outfit'", fontSize: '.76rem', color: r.area === 'colisiones' ? '#f97316' : SKY_DEEP, marginLeft: 6 }}>{r.area === 'colisiones' ? 'COLISIONES / PINTURA' : 'MECÁNICA'}</span>}
                                             </div>
                                         </div>
 
                                         {/* Stock */}
                                         <div style={{ textAlign: 'right', flexShrink: 0 }}>
                                             <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.3rem', letterSpacing: '.02em', color: bajo ? '#ef4444' : txt, lineHeight: 1 }}>{r.stock_actual}</p>
-                                            <p style={{ fontFamily: "'Outfit'", fontSize: '.64rem', color: mut }}>stock</p>
-                                            {bajo && <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.54rem', letterSpacing: '.14em', color: '#ef4444' }}>BAJO</span>}
+                                            <p style={{ fontFamily: "'Outfit'", fontSize: '.75rem', color: mut }}>stock</p>
+                                            {bajo && <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.14em', color: '#ef4444' }}>BAJO</span>}
                                         </div>
 
                                         {/* Arrow */}
@@ -239,7 +239,7 @@ export default function RegistrarMovimiento() {
                     <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, padding: 22, boxShadow: cardSh }}>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '3px 9px', borderRadius: 999, background: SKY_PALE, border: `1px solid ${SKY_BDR}`, marginBottom: 12 }}>
                             <span style={{ width: 5, height: 5, borderRadius: '50%', background: SKY }} />
-                            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.24em', color: SKY_DEEP }}>PRODUCTO SELECCIONADO</p>
+                            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.24em', color: SKY_DEEP }}>PRODUCTO SELECCIONADO</p>
                         </div>
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
@@ -256,19 +256,19 @@ export default function RegistrarMovimiento() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '18px 14px', background: SKY_PALE, borderRadius: 12, border: `1px solid ${SKY_BDR}` }}>
                             <div style={{ textAlign: 'center', flex: 1 }}>
                                 <p style={{ fontFamily: "'Bebas Neue'", fontSize: '2.4rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>{selected.stock_actual}</p>
-                                <p style={{ fontFamily: "'Outfit'", fontSize: '.6rem', color: mut, marginTop: 4, textTransform: 'uppercase', letterSpacing: '.14em' }}>Actual</p>
+                                <p style={{ fontFamily: "'Outfit'", fontSize: '.72rem', color: mut, marginTop: 4, textTransform: 'uppercase', letterSpacing: '.14em' }}>Actual</p>
                             </div>
                             {qty > 0 && (
                                 <>
                                     <div style={{ color: accentColor, fontSize: '1.8rem', fontFamily: "'Bebas Neue'" }}>{esEntrada ? '+' : '−'}</div>
                                     <div style={{ textAlign: 'center', flex: 1 }}>
                                         <p style={{ fontFamily: "'Bebas Neue'", fontSize: '2.4rem', letterSpacing: '.04em', color: accentColor, lineHeight: 1 }}>{qty}</p>
-                                        <p style={{ fontFamily: "'Outfit'", fontSize: '.6rem', color: accentColor, marginTop: 4, textTransform: 'uppercase', letterSpacing: '.14em', opacity: .85 }}>{esEntrada ? 'Entrada' : 'Salida'}</p>
+                                        <p style={{ fontFamily: "'Outfit'", fontSize: '.72rem', color: accentColor, marginTop: 4, textTransform: 'uppercase', letterSpacing: '.14em', opacity: .85 }}>{esEntrada ? 'Entrada' : 'Salida'}</p>
                                     </div>
                                     <div style={{ color: mut, fontSize: '1.4rem' }}>=</div>
                                     <div style={{ textAlign: 'center', flex: 1, background: stockNuevo < 0 ? 'rgba(239,68,68,.08)' : SKY_PALE, borderRadius: 10, padding: '8px 6px', border: `1px solid ${stockNuevo < 0 ? 'rgba(239,68,68,.25)' : SKY_BDR}` }}>
                                         <p style={{ fontFamily: "'Bebas Neue'", fontSize: '2.4rem', letterSpacing: '.04em', color: stockNuevo < 0 ? '#ef4444' : SKY_DEEP, lineHeight: 1 }}>{stockNuevo}</p>
-                                        <p style={{ fontFamily: "'Outfit'", fontSize: '.6rem', color: stockNuevo < 0 ? '#ef4444' : SKY_DEEP, marginTop: 4, textTransform: 'uppercase', letterSpacing: '.14em', opacity: .85 }}>Resultado</p>
+                                        <p style={{ fontFamily: "'Outfit'", fontSize: '.72rem', color: stockNuevo < 0 ? '#ef4444' : SKY_DEEP, marginTop: 4, textTransform: 'uppercase', letterSpacing: '.14em', opacity: .85 }}>Resultado</p>
                                     </div>
                                 </>
                             )}

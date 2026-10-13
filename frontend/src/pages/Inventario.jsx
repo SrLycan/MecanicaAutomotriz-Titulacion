@@ -39,7 +39,7 @@ function StockAlertModal({ repuestos, onCerrar, onIrAAlertas, isDark }) {
         <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onCerrar()}>
             <div style={{
                 maxWidth: 520, width: '92%',
-                background: isDark ? '#0a0f1c' : '#ffffff',
+                background: isDark ? '#111826' : '#ffffff',
                 border: '1px solid ' + (isDark ? 'rgba(239,68,68,.25)' : 'rgba(239,68,68,.18)'),
                 borderRadius: 18, padding: 28,
                 position: 'relative', overflow: 'hidden',
@@ -77,7 +77,7 @@ function StockAlertModal({ repuestos, onCerrar, onIrAAlertas, isDark }) {
                             }}>Stock Bajo Detectado</p>
                             <p style={{
                                 fontFamily: "'Outfit', sans-serif",
-                                fontSize: '.78rem', color: isDark ? 'rgba(241,245,249,.55)' : '#64748b',
+                                fontSize: '.78rem', color: isDark ? 'rgba(241,245,249,.72)' : '#64748b',
                                 marginTop: 4,
                             }}>
                                 {repuestos.length} repuesto{repuestos.length !== 1 ? 's' : ''} necesita{repuestos.length === 1 ? '' : 'n'} atencion
@@ -88,12 +88,12 @@ function StockAlertModal({ repuestos, onCerrar, onIrAAlertas, isDark }) {
                         style={{
                             background: 'none', border: '1px solid ' + (isDark ? 'rgba(148,163,184,.18)' : '#b6c3d3'),
                             borderRadius: 8, padding: 6, cursor: 'pointer',
-                            color: isDark ? 'rgba(241,245,249,.55)' : '#64748b',
+                            color: isDark ? 'rgba(241,245,249,.72)' : '#64748b',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             transition: 'all .15s', flexShrink: 0,
                         }}
                         onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,.1)'; e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.borderColor = 'rgba(239,68,68,.25)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = isDark ? 'rgba(241,245,249,.55)' : '#64748b'; e.currentTarget.style.borderColor = isDark ? 'rgba(148,163,184,.18)' : '#b6c3d3'; }}>
+                        onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = isDark ? 'rgba(241,245,249,.72)' : '#64748b'; e.currentTarget.style.borderColor = isDark ? 'rgba(148,163,184,.18)' : '#b6c3d3'; }}>
                         <IconXSm />
                     </button>
                 </div>
@@ -123,7 +123,7 @@ function StockAlertModal({ repuestos, onCerrar, onIrAAlertas, isDark }) {
                             </div>
                             <div style={{ textAlign: 'right', flexShrink: 0 }}>
                                 <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.1rem', color: '#ef4444', lineHeight: 1 }}>{r.stock_actual}</p>
-                                <p style={{ fontFamily: "'Outfit'", fontSize: '.62rem', color: isDark ? 'rgba(241,245,249,.4)' : '#94a3b8' }}>min {r.stock_minimo}</p>
+                                <p style={{ fontFamily: "'Outfit'", fontSize: '.74rem', color: isDark ? 'rgba(241,245,249,.4)' : '#94a3b8' }}>min {r.stock_minimo}</p>
                             </div>
                         </div>
                     ))}
@@ -136,11 +136,11 @@ function StockAlertModal({ repuestos, onCerrar, onIrAAlertas, isDark }) {
                             fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.14em',
                             background: 'none', border: '1px solid ' + (isDark ? 'rgba(148,163,184,.18)' : '#b6c3d3'),
                             borderRadius: 9, padding: '9px 18px', cursor: 'pointer',
-                            color: isDark ? 'rgba(241,245,249,.55)' : '#64748b',
+                            color: isDark ? 'rgba(241,245,249,.72)' : '#64748b',
                             transition: 'all .18s',
                         }}
                         onMouseEnter={e => { e.currentTarget.style.borderColor = isDark ? 'rgba(56,189,248,.25)' : 'rgba(14,165,233,.25)'; e.currentTarget.style.color = isDark ? '#f1f5f9' : '#0f172a'; }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = isDark ? 'rgba(148,163,184,.18)' : '#b6c3d3'; e.currentTarget.style.color = isDark ? 'rgba(241,245,249,.55)' : '#64748b'; }}>
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = isDark ? 'rgba(148,163,184,.18)' : '#b6c3d3'; e.currentTarget.style.color = isDark ? 'rgba(241,245,249,.72)' : '#64748b'; }}>
                         IGNORAR
                     </button>
                     <button onClick={onIrAAlertas}
@@ -223,10 +223,10 @@ export default function Inventario() {
 
     const txt     = isDark ? '#f1f5f9'                    : '#0f172a';
     const txtSoft = isDark ? '#cbd5e1'                    : '#334155';
-    const mut     = isDark ? 'rgba(241,245,249,0.55)'     : '#64748b';
-    const faint   = isDark ? 'rgba(241,245,249,0.38)'     : '#94a3b8';
-    const bdr     = isDark ? 'rgba(148,163,184,0.18)'     : '#b6c3d3';
-    const card    = isDark ? 'rgba(255,255,255,0.025)'    : '#ffffff';
+    const mut     = isDark ? 'rgba(241,245,249,0.72)'     : '#526075';
+    const faint   = isDark ? 'rgba(241,245,249,0.56)'     : '#5f6b7d';
+    const bdr     = isDark ? 'rgba(148,163,184,0.28)'     : '#b6c3d3';
+    const card    = isDark ? 'rgba(255,255,255,0.045)'    : '#ffffff';
     const cardSh  = isDark
         ? '0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 40px -16px rgba(0,0,0,0.55)'
         : '0 1px 2px rgba(15,23,42,0.06), 0 8px 22px -8px rgba(15,23,42,0.20)';
@@ -485,10 +485,10 @@ export default function Inventario() {
                 <div>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 10px', borderRadius: 999, background: SKY_PALE, border: `1px solid ${SKY_BDR}`, marginBottom: 8 }}>
                         <span style={{ width: 6, height: 6, borderRadius: '50%', background: SKY, boxShadow: `0 0 8px ${SKY}` }} />
-                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.24em', color: SKY_DEEP }}><NombreEmpresa /> · ALMACEN</p>
+                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.24em', color: SKY_DEEP }}><NombreEmpresa /> · ALMACEN</p>
                     </div>
                     <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.6rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>Inventario</h1>
-                    <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.85rem', color: mut, marginTop: 6 }}>Catalogo de repuestos y control de stock en tiempo real</p>
+                    <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.85rem', color: mut, marginTop: 6 }}>Catalogo de repuestos y control de stock en tiempo real</p>
                 </div>
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                 {puedeEditar && (
@@ -550,9 +550,9 @@ export default function Inventario() {
                 background: card, border: `1px solid ${bdr}`, borderRadius: 14, boxShadow: cardSh,
             }}>
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-                    <div style={{ position: 'relative' }}>
+                    <div style={{ position: 'relative', flex: '1 1 320px', minWidth: 220, maxWidth: 460 }}>
                         <span style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: faint, display: 'flex' }}><IconSearch /></span>
-                        <input className="inv-input" placeholder="Buscar por nombre, referencia o código de proveedor..." value={busqueda} onChange={handleBusqueda} style={inputStyle} />
+                        <input className="inv-input" placeholder="Buscar por nombre, referencia o código de proveedor..." aria-label="Buscar repuestos" value={busqueda} onChange={handleBusqueda} style={{ ...inputStyle, width: '100%', boxSizing: 'border-box' }} />
                     </div>
                     <select className="inv-input" value={filtroCateg} onChange={handleFiltroCateg} style={selStyle}>
                         <option value="">Todas las categorias</option>
@@ -589,7 +589,7 @@ export default function Inventario() {
                 {/* Chips de filtros activos */}
                 {hayFiltros && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, paddingTop: 12, borderTop: `1px solid ${bdr}`, flexWrap: 'wrap' }}>
-                        <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.22em', color: mut }}>FILTROS ACTIVOS</span>
+                        <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.72rem', letterSpacing: '.22em', color: mut }}>FILTROS ACTIVOS</span>
                         {busqueda && (
                             <FilterChip label={`"${busqueda}"`} onRemove={() => { setBusqueda(''); cargarRepuestos('', filtroCateg, soloAlerta); }} color={SKY_DEEP} bg={SKY_PALE} bdr={SKY_BDR} />
                         )}
@@ -602,7 +602,7 @@ export default function Inventario() {
                         <button onClick={limpiarFiltros}
                             style={{
                                 marginLeft: 'auto',
-                                fontFamily: "'Bebas Neue'", fontSize: '.66rem', letterSpacing: '.16em',
+                                fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.16em',
                                 background: 'transparent', border: 'none', cursor: 'pointer',
                                 color: mut, transition: 'color .15s',
                                 display: 'inline-flex', alignItems: 'center', gap: 5,
@@ -658,14 +658,14 @@ export default function Inventario() {
                 {loading ? (
                     <div style={{ padding: 80, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
                         <div style={{ width: 38, height: 38, borderRadius: '50%', border: `2px solid ${bdr}`, borderTopColor: SKY, animation: 'spin 1s linear infinite' }} />
-                        <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.85rem', color: mut }}>Cargando inventario...</p>
+                        <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.85rem', color: mut }}>Cargando inventario...</p>
                     </div>
                 ) : repuestos.length === 0 ? (
                     <div style={{ padding: 90, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18 }}>
                         <div style={{ width: 72, height: 72, borderRadius: 20, background: SKY_PALE, border: `1px solid ${SKY_BDR}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: SKY }}><IconPkg /></div>
                         <div>
                             <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.4rem', letterSpacing: '.06em', color: txt }}>Sin repuestos</p>
-                            <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.82rem', color: mut, marginTop: 4 }}>No se encontraron resultados con los filtros aplicados</p>
+                            <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.82rem', color: mut, marginTop: 4 }}>No se encontraron resultados con los filtros aplicados</p>
                         </div>
                         {puedeCrear && (
                             <button onClick={() => setModalRep({ open: true, data: null })}
@@ -682,7 +682,7 @@ export default function Inventario() {
                                     {['Referencia','Repuesto','Categoria','Stock','P. Venta','Estado','Acciones'].map(h => (
                                         <th key={h} style={{
                                             padding: '13px 18px', textAlign: 'left',
-                                            fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.22em',
+                                            fontFamily: "'Bebas Neue'", fontSize: '.74rem', letterSpacing: '.22em',
                                             color: SKY_DEEP, whiteSpace: 'nowrap',
                                         }}>{h}</th>
                                     ))}
@@ -707,11 +707,11 @@ export default function Inventario() {
                                                     background: SKY_PALE, padding: '3px 9px', borderRadius: 6,
                                                     color: SKY_DEEP, border: `1px solid ${SKY_BDR}`,
                                                 }}>{r.codigo}</code>
-                                                {r.codigo_proveedor && <span title="Código de proveedor / fabricante" style={{ display: 'block', marginTop: 4, fontFamily: "'Outfit'", fontSize: '.68rem', color: mut }}>Prov.: {r.codigo_proveedor}</span>}
+                                                {r.codigo_proveedor && <span title="Código de proveedor / fabricante" style={{ display: 'block', marginTop: 4, fontFamily: "'Outfit'", fontSize: '.76rem', color: mut }}>Prov.: {r.codigo_proveedor}</span>}
                                             </td>
                                             <td style={{ padding: '13px 18px', maxWidth: 260 }}>
-                                                <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.92rem', color: txt, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', letterSpacing: '.005em' }}>{r.nombre}</p>
-                                                {r.descripcion && <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.72rem', color: mut, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.descripcion}</p>}
+                                                <p title={r.nombre} style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.92rem', color: txt, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', letterSpacing: '.005em' }}>{r.nombre}</p>
+                                                {r.descripcion && <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.72rem', color: mut, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.descripcion}</p>}
                                             </td>
                                             <td style={{ padding: '13px 18px', whiteSpace: 'nowrap' }}>
                                                 {r.categoria_nombre
@@ -721,7 +721,7 @@ export default function Inventario() {
                                             <td style={{ padding: '13px 18px', minWidth: 150 }}>
                                                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
                                                     <span style={{ fontFamily: "'Bebas Neue'", fontSize: '1.25rem', letterSpacing: '.02em', color: stockColor, lineHeight: 1 }}>{r.stock_actual}</span>
-                                                    <span style={{ fontFamily: "'Outfit'", fontSize: '.68rem', color: mut, fontWeight: 400 }}>/ min {r.stock_minimo}</span>
+                                                    <span style={{ fontFamily: "'Outfit'", fontSize: '.76rem', color: mut, fontWeight: 400 }}>/ min {r.stock_minimo}</span>
                                                 </div>
                                                 <div style={{ marginTop: 5, height: 4, background: isDark ? 'rgba(148,163,184,0.12)' : '#b6c3d3', borderRadius: 999, overflow: 'hidden' }}>
                                                     <div className="inv-stock-bar" style={{
@@ -740,18 +740,18 @@ export default function Inventario() {
                                             </td>
                                             <td style={{ padding: '13px 18px' }}>
                                                 {bajo ? (
-                                                    <span className="inv-alert-dot" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.14em', padding: '4px 10px', borderRadius: 999, background: 'rgba(239,68,68,.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,.25)' }}>
+                                                    <span className="inv-alert-dot" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'Bebas Neue'", fontSize: '.72rem', letterSpacing: '.14em', padding: '4px 10px', borderRadius: 999, background: 'rgba(239,68,68,.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,.25)' }}>
                                                         <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#ef4444' }} /> ALERTA
                                                     </span>
                                                 ) : r.activo ? (
-                                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.14em', padding: '4px 10px', borderRadius: 999, background: 'rgba(16,185,129,.08)', color: '#10b981', border: '1px solid rgba(16,185,129,.22)' }}>
+                                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'Bebas Neue'", fontSize: '.72rem', letterSpacing: '.14em', padding: '4px 10px', borderRadius: 999, background: 'rgba(16,185,129,.08)', color: '#10b981', border: '1px solid rgba(16,185,129,.22)' }}>
                                                         <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#10b981' }} /> ACTIVO
                                                     </span>
                                                 ) : (
-                                                    <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.14em', padding: '4px 10px', borderRadius: 999, background: 'rgba(148,163,184,.1)', color: mut, border: `1px solid ${bdr}` }}>INACTIVO</span>
+                                                    <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.72rem', letterSpacing: '.14em', padding: '4px 10px', borderRadius: 999, background: 'rgba(148,163,184,.1)', color: mut, border: `1px solid ${bdr}` }}>INACTIVO</span>
                                                 )}
                                                 {r.en_venta && (
-                                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginLeft: 4, fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.12em', padding: '3px 8px', borderRadius: 999, background: 'rgba(201,162,39,.1)', color: '#c9a227', border: '1px solid rgba(201,162,39,.28)' }}>
+                                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginLeft: 4, fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.12em', padding: '3px 8px', borderRadius: 999, background: 'rgba(201,162,39,.1)', color: '#c9a227', border: '1px solid rgba(201,162,39,.28)' }}>
                                                         <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
                                                         EN VENTA
                                                     </span>
@@ -881,7 +881,7 @@ function KpiCard({ label, value, icon, color, bg, bdr, mut, txt, sub, shadow }) 
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>{icon}</div>
             <div style={{ minWidth: 0, flex: 1 }}>
-                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.56rem', letterSpacing: '.22em', color: mut, marginBottom: 4 }}>{label}</p>
+                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.22em', color: mut, marginBottom: 4 }}>{label}</p>
                 <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.7rem', letterSpacing: '.02em', color: txt, lineHeight: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{value}</p>
                 {sub && <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.7rem', color, marginTop: 4, opacity: .85 }}>{sub}</p>}
             </div>

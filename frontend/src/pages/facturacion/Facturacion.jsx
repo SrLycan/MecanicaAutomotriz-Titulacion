@@ -52,7 +52,7 @@ export default function Facturacion() {
     useEffect(() => { cargar(); }, [cargar]);
 
     const filtroSel = { padding: '8px 10px', fontSize: '.8rem', borderRadius: 10, border: `1px solid ${p.bdr}`, background: p.inputBg, color: p.txt, fontFamily: "'Outfit'", outline: 'none' };
-    const labelSt = { display: 'block', marginBottom: 6, ...bebas('.6rem', '.2em'), color: p.SKY_DEEP };
+    const labelSt = { display: 'block', marginBottom: 6, ...bebas('.72rem', '.2em'), color: p.SKY_DEEP };
     const prod = resumen?.produccion;
     const pruebas = resumen?.pruebas;
     const ambiente = catalogos?.ambiente || 1;
@@ -164,7 +164,7 @@ export default function Facturacion() {
                                         <td style={{ color: p.txt, fontWeight: 600 }}>{dinero(c.importe_total)}</td>
                                         <td><span className="pf-badge" title={est.ayuda} style={{ background: `${est.color}18`, border: `1px solid ${est.color}44`, color: est.color }}>{est.etiqueta.toUpperCase()}</span></td>
                                         <td style={{ color: c.correo_estado === 'error' ? '#ef4444' : p.mut, fontSize: '.76rem' }}>{c.estado === 'autorizado' ? ({ enviado: 'Enviado', error: 'Error', sin_correo: 'Sin correo', pendiente: 'Pendiente' }[c.correo_estado]) : '—'}</td>
-                                        <td><Link to={`/dashboard/facturacion/${c.id}`} className="pf-icon-btn" style={{ color: p.SKY_DEEP, padding: '6px 10px', ...bebas('.62rem') }}>VER</Link></td>
+                                        <td><Link to={`/dashboard/facturacion/${c.id}`} className="pf-icon-btn" style={{ color: p.SKY_DEEP, padding: '6px 10px', ...bebas('.74rem') }}>VER</Link></td>
                                     </tr>
                                 );
                             })}

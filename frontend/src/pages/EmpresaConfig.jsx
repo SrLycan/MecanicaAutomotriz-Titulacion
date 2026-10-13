@@ -92,10 +92,10 @@ export default function EmpresaConfig() {
 
             <form style={seccion} onSubmit={(e) => { e.preventDefault(); guardar(form); }}>
                 <p style={{ ...bebas('.8rem', '.18em'), color: p.txt, marginBottom: 12 }}>DATOS COMERCIALES</p>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 13 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))', gap: 13 }}>
                     {CAMPOS.map(c => (
                         <div key={c.k}>
-                            <label htmlFor={`emp-${c.k}`} style={{ display: 'block', marginBottom: 6, ...bebas('.62rem', '.22em'), color: p.SKY_DEEP }}>{c.l}</label>
+                            <label htmlFor={`emp-${c.k}`} style={{ display: 'block', marginBottom: 6, ...bebas('.74rem', '.22em'), color: p.SKY_DEEP }}>{c.l}</label>
                             <input id={`emp-${c.k}`} type={c.tipo || 'text'} value={form[c.k] || ''} maxLength={c.max} disabled={!editable}
                                 required={c.k === 'nombre'} onChange={e => setForm({ ...form, [c.k]: e.target.value })} style={inputSt} />
                         </div>

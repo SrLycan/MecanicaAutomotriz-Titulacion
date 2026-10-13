@@ -6,14 +6,14 @@
 .prov-tabs {
     display: flex;
     gap: 6px;
-    border-bottom: 1px solid var(--prov-bdr, rgba(148,163,184,0.18));
+    border-bottom: 1px solid var(--prov-bdr, var(--border));
     margin-bottom: 20px;
     overflow-x: auto;
 }
 
 .prov-tab-btn {
     font-family: 'Bebas Neue', sans-serif;
-    font-size: .8rem;
+    font-size: .86rem;
     letter-spacing: .12em;
     background: none;
     border: none;
@@ -45,7 +45,7 @@
     text-align: left;
     padding: 12px 14px;
     font-family: 'Bebas Neue', sans-serif;
-    font-size: .66rem;
+    font-size: .76rem;
     letter-spacing: .18em;
     white-space: nowrap;
 }
@@ -53,12 +53,12 @@
 .prov-table td {
     padding: 12px 14px;
     font-family: 'Outfit', sans-serif;
-    font-size: .85rem;
+    font-size: .88rem;
     vertical-align: middle;
 }
 
 .prov-table tbody tr {
-    border-top: 1px solid var(--prov-bdr, rgba(148,163,184,0.14));
+    border-top: 1px solid var(--prov-bdr, var(--border));
     transition: background .15s;
 }
 
@@ -69,14 +69,14 @@
     padding: 3px 10px;
     border-radius: 999px;
     font-family: 'Bebas Neue', sans-serif;
-    font-size: .62rem;
+    font-size: .72rem;
     letter-spacing: .12em;
     white-space: nowrap;
 }
 
 .prov-icon-btn {
     background: none;
-    border: 1px solid var(--prov-bdr, rgba(148,163,184,0.18));
+    border: 1px solid var(--prov-bdr, var(--border));
     border-radius: 8px;
     padding: 7px;
     cursor: pointer;

@@ -164,7 +164,7 @@ export default function Usuarios() {
                         {ESTADOS.map(s => <option key={s.val} value={s.val}>{s.label}</option>)}
                     </select>
                     {hayFiltros && (
-                        <button onClick={limpiar} style={{ marginLeft: 'auto', ...bebas('.66rem', '.16em'), background: 'transparent', border: 'none', cursor: 'pointer', color: p.mut }}>LIMPIAR TODO ×</button>
+                        <button onClick={limpiar} style={{ marginLeft: 'auto', ...bebas('.76rem', '.16em'), background: 'transparent', border: 'none', cursor: 'pointer', color: p.mut }}>LIMPIAR TODO ×</button>
                     )}
                 </div>
             </div>
@@ -174,13 +174,13 @@ export default function Usuarios() {
                 {loading ? (
                     <div style={{ padding: 80, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
                         <div style={{ width: 38, height: 38, borderRadius: '50%', border: `2px solid ${p.bdr}`, borderTopColor: p.SKY, animation: 'spin 1s linear infinite' }} />
-                        <p style={{ ...outfit('.85rem', 300), color: p.mut }}>Cargando usuarios...</p>
+                        <p style={{ ...outfit('.85rem', 400), color: p.mut }}>Cargando usuarios...</p>
                     </div>
                 ) : usuarios.length === 0 ? (
                     <div style={{ padding: 90, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
                         <div style={{ width: 64, height: 64, borderRadius: 18, background: p.SKY_PALE, border: `1px solid ${p.SKY_BDR}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: p.SKY }}><IconUsers /></div>
                         <p style={{ ...bebas('1.4rem', '.06em'), color: p.txt }}>Sin usuarios</p>
-                        <p style={{ ...outfit('.82rem', 300), color: p.mut }}>No hay resultados con los filtros aplicados</p>
+                        <p style={{ ...outfit('.82rem', 400), color: p.mut }}>No hay resultados con los filtros aplicados</p>
                     </div>
                 ) : (
                     <div style={{ overflowX: 'auto' }}>
@@ -188,7 +188,7 @@ export default function Usuarios() {
                             <thead>
                                 <tr style={{ borderBottom: `1px solid ${p.bdr}`, background: p.SKY_PALE }}>
                                     {['Usuario', 'Rol', 'Estado', 'Permisos', 'Último acceso', ''].map(h => (
-                                        <th key={h} style={{ padding: '13px 18px', textAlign: 'left', ...bebas('.62rem', '.22em'), color: p.SKY_DEEP, whiteSpace: 'nowrap' }}>{h}</th>
+                                        <th key={h} style={{ padding: '13px 18px', textAlign: 'left', ...bebas('.74rem', '.22em'), color: p.SKY_DEEP, whiteSpace: 'nowrap' }}>{h}</th>
                                     ))}
                                 </tr>
                             </thead>
@@ -228,7 +228,7 @@ export default function Usuarios() {
                                             <td style={{ padding: '12px 18px', ...outfit('.78rem'), color: p.mut, whiteSpace: 'nowrap' }}>{fechaHora(u.ultimo_acceso)}</td>
                                             <td style={{ padding: '12px 18px', textAlign: 'right' }}>
                                                 {esSuper ? (
-                                                    <span title="Se gestiona desde el servidor (npm run superadmin)" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, ...bebas('.6rem', '.12em'), color: p.faint }}><IconLock /> PROTEGIDO</span>
+                                                    <span title="Se gestiona desde el servidor (npm run superadmin)" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, ...bebas('.72rem', '.12em'), color: p.faint }}><IconLock /> PROTEGIDO</span>
                                                 ) : (
                                                     <BotonSecundario color={p.SKY_DEEP} onClick={(e) => { e.stopPropagation(); setFichaId(u.id); }}>
                                                         {ROLES_STAFF.includes(u.rol) ? 'PERMISOS Y CUENTA' : 'GESTIONAR'}
@@ -339,7 +339,7 @@ export function EditorPermisos({ catalogo, valor, onChange, rol }) {
                                                 aria-label={`Todo el módulo ${m.nombre}`} />
                                             <span style={{ ...outfit('.86rem', 600), color: marcadas ? p.txt : p.mut }}>{m.nombre}</span>
                                         </label>
-                                        {m.descripcion && <p style={{ ...outfit('.72rem', 300), color: p.mut, marginTop: 3, marginLeft: 24 }}>{m.descripcion}</p>}
+                                        {m.descripcion && <p style={{ ...outfit('.72rem', 400), color: p.mut, marginTop: 3, marginLeft: 24 }}>{m.descripcion}</p>}
                                     </div>
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                                         {m.acciones.map(a => {
@@ -383,7 +383,7 @@ function ModalNuevoUsuario({ catalogo, onClose, onCreado }) {
     const esStaff = form.rol !== 'cliente';
 
     const inputSt = { width: '100%', boxSizing: 'border-box', padding: '10px 13px', borderRadius: 10, border: `1px solid ${p.bdr}`, background: p.inputBg, color: p.txt, ...outfit('.88rem'), outline: 'none' };
-    const labelSt = { display: 'block', marginBottom: 6, ...bebas('.62rem', '.22em'), color: p.SKY_DEEP };
+    const labelSt = { display: 'block', marginBottom: 6, ...bebas('.74rem', '.22em'), color: p.SKY_DEEP };
 
     const onChange = (e) => {
         const { name, value } = e.target;
@@ -408,7 +408,7 @@ function ModalNuevoUsuario({ catalogo, onClose, onCreado }) {
     return (
         <Modal titulo="Nuevo usuario" subtitulo="Cuenta del personal con acceso solo a los módulos que marques." onClose={onClose} ancho={860}>
             <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 13 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))', gap: 13 }}>
                     <div><label style={labelSt} htmlFor="nu-nombre">NOMBRE *</label><input id="nu-nombre" name="nombre" value={form.nombre} onChange={onChange} required maxLength={100} style={inputSt} /></div>
                     <div><label style={labelSt} htmlFor="nu-email">CORREO (USUARIO DE ACCESO) *</label><input id="nu-email" type="email" name="email" value={form.email} onChange={onChange} required maxLength={150} style={inputSt} /></div>
                     <div>
@@ -631,7 +631,7 @@ function FichaUsuario({ id, catalogo, onClose, onCambio, onPasswordTemporal }) {
     ];
     const tabActual = TABS.some(t => t.id === tab) ? tab : TABS[0].id;
     const inputSt = { width: '100%', boxSizing: 'border-box', padding: '10px 13px', borderRadius: 10, border: `1px solid ${p.bdr}`, background: p.inputBg, color: p.txt, ...outfit('.88rem'), outline: 'none' };
-    const labelSt = { display: 'block', marginBottom: 6, ...bebas('.62rem', '.22em'), color: p.SKY_DEEP };
+    const labelSt = { display: 'block', marginBottom: 6, ...bebas('.74rem', '.22em'), color: p.SKY_DEEP };
     const tituloSeccion = (t) => <p style={{ ...bebas('.78rem', '.18em'), color: p.txt, margin: '4px 0 10px' }}>{t}</p>;
 
     return (
@@ -668,7 +668,7 @@ function FichaUsuario({ id, catalogo, onClose, onCambio, onPasswordTemporal }) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
                     <form onSubmit={guardarDatos}>
                         {tituloSeccion('DATOS DE LA CUENTA')}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 13 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))', gap: 13 }}>
                             <div><label style={labelSt} htmlFor="fu-nombre">NOMBRE *</label><input id="fu-nombre" value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} required maxLength={100} style={inputSt} /></div>
                             <div><label style={labelSt} htmlFor="fu-email">CORREO *</label><input id="fu-email" type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} required maxLength={150} style={inputSt} /></div>
                             <div><label style={labelSt} htmlFor="fu-tel">TELÉFONO</label><input id="fu-tel" value={form.telefono} onChange={e => setForm({ ...form, telefono: e.target.value })} maxLength={20} style={inputSt} /></div>
@@ -687,7 +687,7 @@ function FichaUsuario({ id, catalogo, onClose, onCambio, onPasswordTemporal }) {
                             </select>
                             <BotonSecundario color={p.SKY_DEEP} disabled={rolNuevo === u.rol || saving} onClick={cambiarRol}>CAMBIAR ROL</BotonSecundario>
                         </div>
-                        <p style={{ ...outfit('.74rem', 300), color: p.mut, marginTop: 6 }}>El rol es una etiqueta y una plantilla; lo que la persona puede hacer lo deciden sus permisos.</p>
+                        <p style={{ ...outfit('.74rem', 400), color: p.mut, marginTop: 6 }}>El rol es una etiqueta y una plantilla; lo que la persona puede hacer lo deciden sus permisos.</p>
                     </div>
 
                     <div>
@@ -707,7 +707,7 @@ function FichaUsuario({ id, catalogo, onClose, onCambio, onPasswordTemporal }) {
                     {puedeEliminar && <div style={{ paddingTop: 14, borderTop: `1px solid ${p.bdr}` }}>
                         {tituloSeccion('ZONA DE RIESGO')}
                         <BotonSecundario color="#ef4444" disabled={saving} onClick={eliminar}>ELIMINAR CUENTA</BotonSecundario>
-                        <p style={{ ...outfit('.74rem', 300), color: p.mut, marginTop: 6 }}>Solo para cuentas sin operaciones. Si trabajó en el taller, desactívala para conservar su historial.</p>
+                        <p style={{ ...outfit('.74rem', 400), color: p.mut, marginTop: 6 }}>Solo para cuentas sin operaciones. Si trabajó en el taller, desactívala para conservar su historial.</p>
                     </div>}
                 </div>
             )}

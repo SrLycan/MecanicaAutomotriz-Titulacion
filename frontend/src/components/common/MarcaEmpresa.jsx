@@ -62,7 +62,7 @@ export function LogoEmpresa({ empresa: propia, alto = 56, ancho = '100%', fondo 
     const inicial = String(empresa?.nombre || 'S').trim().charAt(0).toUpperCase();
     const puedeSubir = conSubida && !propia && auth.puede?.('empresa', 'editar');
     return (
-        <div style={{ ...caja, flexDirection: 'column', gap: 6, border: `1.5px dashed ${colorTexto}55` }} aria-label="Empresa sin logo">
+        <div className="color-fijo" style={{ ...caja, flexDirection: 'column', gap: 6, border: `1.5px dashed ${colorTexto}55` }} aria-label="Empresa sin logo">
             <span style={{ fontFamily: "'Bebas Neue'", fontSize: Math.max(18, Math.min(alto * 0.42, 64)), color: colorTexto, lineHeight: 1 }}>{inicial}</span>
             {puedeSubir && alto >= 90 && (
                 <Link to="/dashboard/empresa" style={{ fontFamily: "'Bebas Neue'", fontSize: '.72rem', letterSpacing: '.14em', color: colorTexto, textDecoration: 'none', padding: '5px 12px', borderRadius: 999, border: `1px solid ${colorTexto}55` }}>

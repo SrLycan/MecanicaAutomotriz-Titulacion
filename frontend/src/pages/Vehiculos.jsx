@@ -43,9 +43,9 @@ export default function Vehiculos() {
     const SKY_BDR  = isDark ? 'rgba(56,189,248,0.22)' : 'rgba(14,165,233,0.35)';
     const txt    = isDark ? '#f1f5f9' : '#0f172a';
     const txtSf  = isDark ? '#cbd5e1' : '#334155';
-    const mut    = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
-    const bdr    = isDark ? 'rgba(148,163,184,0.18)' : '#b6c3d3';
-    const card   = isDark ? 'rgba(255,255,255,0.025)' : '#ffffff';
+    const mut    = isDark ? 'rgba(241,245,249,0.72)' : '#526075';
+    const bdr    = isDark ? 'rgba(148,163,184,0.28)' : '#b6c3d3';
+    const card   = isDark ? 'rgba(255,255,255,0.045)' : '#ffffff';
     const cardSh = isDark
         ? '0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 40px -16px rgba(0,0,0,0.55)'
         : '0 1px 2px rgba(15,23,42,0.06), 0 8px 22px -8px rgba(15,23,42,0.20)';
@@ -158,7 +158,7 @@ export default function Vehiculos() {
                             <thead>
                                 <tr style={{ borderBottom: `1px solid ${bdr}`, background: SKY_PALE }}>
                                     {['Placa', 'Marca', 'Modelo', 'Año', 'Color', 'Propietario', 'Acciones'].map(h => (
-                                        <th key={h} style={{ padding: '13px 18px', textAlign: 'left', fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.22em', color: SKY_DEEP, whiteSpace: 'nowrap' }}>{h}</th>
+                                        <th key={h} style={{ padding: '13px 18px', textAlign: 'left', fontFamily: "'Bebas Neue'", fontSize: '.74rem', letterSpacing: '.22em', color: SKY_DEEP, whiteSpace: 'nowrap' }}>{h}</th>
                                     ))}
                                 </tr>
                             </thead>
@@ -237,9 +237,9 @@ function ActionBtn({ color, bdr, title, onClick, children }) {
 function ModalHistorial({ vehiculo, ordenes, onClose, isDark }) {
     const SKY = '#0ea5e9'; const SKY_DEEP = '#0284c7';
     const txt = isDark ? '#f1f5f9' : '#0f172a';
-    const mut = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
-    const bdr = isDark ? 'rgba(148,163,184,0.18)' : '#b6c3d3';
-    const boxBg = isDark ? '#0a0f1c' : '#ffffff';
+    const mut = isDark ? 'rgba(241,245,249,0.72)' : '#526075';
+    const bdr = isDark ? 'rgba(148,163,184,0.28)' : '#b6c3d3';
+    const boxBg = isDark ? '#111826' : '#ffffff';
 
     return (
         <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -247,7 +247,7 @@ function ModalHistorial({ vehiculo, ordenes, onClose, isDark }) {
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, transparent, ${SKY}, ${SKY_DEEP}, ${SKY}, transparent)`, borderRadius: '20px 20px 0 0' }} />
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
                     <div>
-                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 4 }}>TALLER · HISTORIAL</p>
+                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 4 }}>TALLER · HISTORIAL</p>
                         <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.5rem', letterSpacing: '.04em', color: txt }}>{vehiculo.placa}</h2>
                         <p style={{ fontFamily: "'Outfit'", fontSize: '.82rem', color: mut }}>{vehiculo.marca} {vehiculo.modelo || ''} · {vehiculo.cliente_nombre}</p>
                     </div>
@@ -268,14 +268,14 @@ function ModalHistorial({ vehiculo, ordenes, onClose, isDark }) {
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, flexWrap: 'wrap', gap: 6 }}>
                                         <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.9rem', letterSpacing: '.03em', color: txt }}>{o.numero || `OT-${String(o.id).padStart(6, '0')}`}</span>
                                         <div style={{ display: 'flex', gap: 6 }}>
-                                            <span style={{ padding: '2px 9px', borderRadius: 999, background: `${est.color}14`, border: `1px solid ${est.color}35`, color: est.color, fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.16em' }}>{est.label.toUpperCase()}</span>
+                                            <span style={{ padding: '2px 9px', borderRadius: 999, background: `${est.color}14`, border: `1px solid ${est.color}35`, color: est.color, fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.16em' }}>{est.label.toUpperCase()}</span>
                                             {prog && (
-                                                <span style={{ padding: '2px 9px', borderRadius: 999, background: `${prog.color}14`, border: `1px solid ${prog.color}35`, color: prog.color, fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.16em' }}>{prog.label.toUpperCase()}</span>
+                                                <span style={{ padding: '2px 9px', borderRadius: 999, background: `${prog.color}14`, border: `1px solid ${prog.color}35`, color: prog.color, fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.16em' }}>{prog.label.toUpperCase()}</span>
                                             )}
                                         </div>
                                     </div>
                                     <p style={{ fontFamily: "'Outfit'", fontSize: '.78rem', color: mut, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{o.descripcion}</p>
-                                    <p style={{ fontFamily: "'Outfit'", fontSize: '.68rem', color: mut, marginTop: 4 }}>{new Date(o.created_at).toLocaleDateString('es-EC')} · {o.usuario_nombre}</p>
+                                    <p style={{ fontFamily: "'Outfit'", fontSize: '.76rem', color: mut, marginTop: 4 }}>{new Date(o.created_at).toLocaleDateString('es-EC')} · {o.usuario_nombre}</p>
                                 </div>
                             );
                         })}
@@ -302,12 +302,12 @@ function ModalVehiculo({ data, onClose, onGuardar, isDark }) {
 
     const SKY = '#0ea5e9'; const SKY_DEEP = '#0284c7';
     const txt = isDark ? '#f1f5f9' : '#0f172a';
-    const mut = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
-    const bdr = isDark ? 'rgba(148,163,184,0.18)' : '#b6c3d3';
+    const mut = isDark ? 'rgba(241,245,249,0.72)' : '#526075';
+    const bdr = isDark ? 'rgba(148,163,184,0.28)' : '#b6c3d3';
     const inputBg = isDark ? '#0b1220' : '#f8fafc';
-    const boxBg = isDark ? '#0a0f1c' : '#ffffff';
+    const boxBg = isDark ? '#111826' : '#ffffff';
     const inputSt = { width: '100%', boxSizing: 'border-box', padding: '10px 13px', borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: txt, fontFamily: "'Outfit'", fontSize: '.88rem', outline: 'none' };
-    const labelSt = { display: 'block', marginBottom: 6, fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.22em', color: SKY_DEEP };
+    const labelSt = { display: 'block', marginBottom: 6, fontFamily: "'Bebas Neue'", fontSize: '.74rem', letterSpacing: '.22em', color: SKY_DEEP };
 
     useEffect(() => {
         api.get('/ordenes/clientes').then(r => setClientes(r.data.clientes)).catch(() => {});
@@ -330,7 +330,7 @@ function ModalVehiculo({ data, onClose, onGuardar, isDark }) {
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, transparent, ${SKY}, ${SKY_DEEP}, ${SKY}, transparent)`, borderRadius: '20px 20px 0 0' }} />
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
                     <div>
-                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 6 }}>TALLER · VEHICULOS</p>
+                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 6 }}>TALLER · VEHICULOS</p>
                         <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.7rem', letterSpacing: '.04em', color: txt }}>{esEdicion ? 'Asociar / Editar Vehiculo' : 'Nuevo Vehiculo'}</h2>
                     </div>
                     <button onClick={onClose} style={{ background: 'none', border: `1px solid ${bdr}`, borderRadius: 9, padding: 7, cursor: 'pointer', color: mut, display: 'flex' }}><IconX /></button>

@@ -76,7 +76,7 @@ export default function EditorLogo({ empresa, rutaBase, editable, onGuardado }) 
     return (
         <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', alignItems: 'center' }}>
             <div>
-                <p style={{ ...bebas('.6rem', '.2em'), color: p.mut, marginBottom: 6 }}>{preview ? 'VISTA PREVIA (SIN GUARDAR)' : 'LOGO ACTUAL'}</p>
+                <p style={{ ...bebas('.72rem', '.2em'), color: p.mut, marginBottom: 6 }}>{preview ? 'VISTA PREVIA (SIN GUARDAR)' : 'LOGO ACTUAL'}</p>
                 <div style={marco}>
                     {preview
                         ? <img src={preview} alt="Vista previa del logo" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />

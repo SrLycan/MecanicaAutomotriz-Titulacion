@@ -113,9 +113,9 @@ export default function Pedidos() {
                                         <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                                             {s.estado === 'pendiente' && puedeAtender && (<>
                                                 <button className="prov-icon-btn" disabled={sinStock} title={sinStock ? 'Repón el stock para poder entregarlo' : ''}
-                                                    style={{ color: sinStock ? mut : VERDE, fontFamily: "'Bebas Neue'", fontSize: '.64rem', letterSpacing: '.12em', padding: '6px 10px', marginRight: 6, cursor: sinStock ? 'not-allowed' : 'pointer' }}
+                                                    style={{ color: sinStock ? mut : VERDE, fontFamily: "'Bebas Neue'", fontSize: '.75rem', letterSpacing: '.12em', padding: '6px 10px', marginRight: 6, cursor: sinStock ? 'not-allowed' : 'pointer' }}
                                                     onClick={() => setEntregando(s)}>ENTREGAR</button>
-                                                <button className="prov-icon-btn" style={{ color: ROJO, fontFamily: "'Bebas Neue'", fontSize: '.64rem', letterSpacing: '.12em', padding: '6px 10px' }} onClick={() => setCancelando(s)}>CANCELAR</button>
+                                                <button className="prov-icon-btn" style={{ color: ROJO, fontFamily: "'Bebas Neue'", fontSize: '.75rem', letterSpacing: '.12em', padding: '6px 10px' }} onClick={() => setCancelando(s)}>CANCELAR</button>
                                             </>)}
                                         </td>
                                     </tr>

@@ -53,10 +53,10 @@ export default function Movimientos() {
     const SKY_DEEP = '#0284c7';
     const txt     = isDark ? '#f1f5f9' : '#0f172a';
     const txtSf   = isDark ? '#cbd5e1' : '#334155';
-    const mut     = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
-    const faint   = isDark ? 'rgba(241,245,249,0.38)' : '#94a3b8';
-    const bdr     = isDark ? 'rgba(148,163,184,0.18)' : '#b6c3d3';
-    const card    = isDark ? 'rgba(255,255,255,0.025)' : '#ffffff';
+    const mut     = isDark ? 'rgba(241,245,249,0.72)' : '#526075';
+    const faint   = isDark ? 'rgba(241,245,249,0.56)' : '#5f6b7d';
+    const bdr     = isDark ? 'rgba(148,163,184,0.28)' : '#b6c3d3';
+    const card    = isDark ? 'rgba(255,255,255,0.045)' : '#ffffff';
     const cardSh  = isDark
         ? '0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 40px -16px rgba(0,0,0,0.55)'
         : '0 1px 2px rgba(15,23,42,0.06), 0 8px 22px -8px rgba(15,23,42,0.20)';
@@ -127,7 +127,7 @@ export default function Movimientos() {
 
     const inputStyle = { padding: '10px 12px 10px 32px', background: inputBg, border: `1px solid ${bdr}`, borderRadius: 10, color: txt, fontFamily: "'Outfit'", fontSize: '.85rem', outline: 'none', width: 260 };
     const selStyle   = { padding: '10px 12px', background: inputBg, border: `1px solid ${bdr}`, borderRadius: 10, color: txt, fontFamily: "'Outfit'", fontSize: '.85rem', outline: 'none' };
-    const etiq = { fontFamily: "'Bebas Neue'", fontSize: '.56rem', letterSpacing: '.2em', color: mut, display: 'block', marginBottom: 4 };
+    const etiq = { fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.2em', color: mut, display: 'block', marginBottom: 4 };
 
     return (
         <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1500 }}>
@@ -221,12 +221,12 @@ export default function Movimientos() {
                 {loading ? (
                     <div style={{ padding: 80, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
                         <div style={{ width: 38, height: 38, borderRadius: '50%', border: `2px solid ${bdr}`, borderTopColor: SKY, animation: 'spin 1s linear infinite' }} />
-                        <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.85rem', color: mut }}>Cargando registros...</p>
+                        <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.85rem', color: mut }}>Cargando registros...</p>
                     </div>
                 ) : movimientos.length === 0 ? (
                     <div style={{ padding: 80, textAlign: 'center' }}>
                         <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.4rem', letterSpacing: '.06em', color: txt }}>Sin registros</p>
-                        <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.82rem', color: mut, marginTop: 4 }}>No hay movimientos para los filtros seleccionados</p>
+                        <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.82rem', color: mut, marginTop: 4 }}>No hay movimientos para los filtros seleccionados</p>
                     </div>
                 ) : (
                     <div style={{ overflowX: 'auto' }}>
@@ -234,7 +234,7 @@ export default function Movimientos() {
                             <thead>
                                 <tr style={{ borderBottom: `1px solid ${bdr}`, background: headBg }}>
                                     {['Fecha', 'Movimiento', 'Producto', 'Cant.', 'Stock', 'Usuario', 'Origen / relación', 'Motivo'].map(h => (
-                                        <th key={h} style={{ padding: '13px 14px', textAlign: 'left', fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.2em', color: SKY_DEEP, whiteSpace: 'nowrap' }}>{h}</th>
+                                        <th key={h} style={{ padding: '13px 14px', textAlign: 'left', fontFamily: "'Bebas Neue'", fontSize: '.74rem', letterSpacing: '.2em', color: SKY_DEEP, whiteSpace: 'nowrap' }}>{h}</th>
                                     ))}
                                 </tr>
                             </thead>
@@ -249,7 +249,7 @@ export default function Movimientos() {
                                                 <span style={{ display: 'block', fontSize: '.72rem', color: mut }}>{fecha.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}</span>
                                             </td>
                                             <td style={{ padding: '12px 14px' }}>
-                                                <span className="mov-pill" style={{ display: 'inline-flex', padding: '4px 10px', borderRadius: 999, background: `${cls.color}18`, border: `1px solid ${cls.color}55`, color: cls.color, fontFamily: "'Bebas Neue'", fontSize: '.66rem', letterSpacing: '.1em', whiteSpace: 'nowrap' }}>{cls.label}</span>
+                                                <span className="mov-pill" style={{ display: 'inline-flex', padding: '4px 10px', borderRadius: 999, background: `${cls.color}18`, border: `1px solid ${cls.color}55`, color: cls.color, fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.1em', whiteSpace: 'nowrap' }}>{cls.label}</span>
                                                 {m.revertido_at && <span style={{ display: 'block', fontFamily: "'Outfit'", fontSize: '.7rem', color: mut, marginTop: 3 }}>Devuelta al inventario</span>}
                                             </td>
                                             <td style={{ padding: '12px 14px' }}>
@@ -303,7 +303,7 @@ function MiniStat({ label, value, sub, color, bg, bdr, mut, txt, shadow }) {
             onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.borderColor = color + '55'; }}
             onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.borderColor = bdr; }}>
             <div style={{ position: 'absolute', top: 0, left: 0, width: 3, height: '100%', background: `linear-gradient(180deg, ${color}, transparent)` }} />
-            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.56rem', letterSpacing: '.22em', color: mut }}>{label.toUpperCase()}</p>
+            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.22em', color: mut }}>{label.toUpperCase()}</p>
             <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.7rem', letterSpacing: '.02em', color, lineHeight: 1, marginTop: 4 }}>{value}</p>
             {sub && <p style={{ fontFamily: "'Outfit'", fontWeight: 500, fontSize: '.72rem', color, marginTop: 4, opacity: .85 }}>{sub}</p>}
         </div>

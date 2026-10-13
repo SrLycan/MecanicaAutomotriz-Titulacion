@@ -82,7 +82,7 @@ export default function ResumenTab({ theme, version, onAccion, irA }) {
                 <div style={{ display: 'flex', gap: 6, background: card, border: `1px solid ${bdr}`, borderRadius: 11, padding: 4 }}>
                     {PERIODOS.map(p => (
                         <button key={p.id} onClick={() => setPeriodo(p.id)}
-                            style={{ fontFamily: "'Bebas Neue'", fontSize: '.68rem', letterSpacing: '.1em', padding: '7px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', background: periodo === p.id ? `linear-gradient(135deg, ${SKY_DEEP}, ${SKY})` : 'transparent', color: periodo === p.id ? '#fff' : mut }}>
+                            style={{ fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.1em', padding: '7px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', background: periodo === p.id ? `linear-gradient(135deg, ${SKY_DEEP}, ${SKY})` : 'transparent', color: periodo === p.id ? '#fff' : mut }}>
                             {p.label.toUpperCase()}
                         </button>
                     ))}
@@ -90,7 +90,7 @@ export default function ResumenTab({ theme, version, onAccion, irA }) {
             </div>
 
             {/* Dinero disponible */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginBottom: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))', gap: 12, marginBottom: 12 }}>
                 <Kpi theme={theme} grande label="DINERO DISPONIBLE HOY" value={dinero(data.disponible)} color={SKY_DEEP}
                     hint={data.cuentas.filter(c => c.activa).map(c => `${c.nombre}: ${dinero(c.saldo)}`).join(' · ')} />
                 <Kpi theme={theme} grande label="PATRIMONIO ESTIMADO" value={dinero(data.patrimonio)} color={VIOLETA}
@@ -118,7 +118,7 @@ export default function ResumenTab({ theme, version, onAccion, irA }) {
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={data.serie.map(s => ({ ...s, etiqueta: nombreMes(s.mes).slice(0, 3) + ' ' + s.mes.slice(2, 4) }))} margin={{ top: 4, right: 8, left: 0, bottom: 4 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke={bdr} vertical={false} />
-                            <XAxis dataKey="etiqueta" tick={{ fontFamily: 'Outfit', fontSize: 10, fill: mut }} />
+                            <XAxis dataKey="etiqueta" tick={{ fontFamily: 'Outfit', fontSize: 11, fill: mut }} />
                             <YAxis tick={{ fontFamily: 'Outfit', fontSize: 11, fill: mut }} width={60} />
                             <Tooltip formatter={(v) => dinero(v)} contentStyle={{ background: theme.boxBg, border: `1px solid ${bdr}`, borderRadius: 10, fontFamily: 'Outfit', fontSize: 12, color: txt }} />
                             <Legend wrapperStyle={{ fontFamily: 'Outfit', fontSize: 12 }} />
@@ -130,7 +130,7 @@ export default function ResumenTab({ theme, version, onAccion, irA }) {
             </div>
 
             {/* De donde viene y a donde va */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 18, marginBottom: 18 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(300px, 100%), 1fr))', gap: 18, marginBottom: 18 }}>
                 <div style={seccion}><p style={tituloSec}>¿DE DÓNDE ENTRA EL DINERO?</p>{barras(ingresosCat)}</div>
                 <div style={seccion}><p style={tituloSec}>¿EN QUÉ SE VA EL DINERO?</p>{barras(egresosCat)}</div>
             </div>

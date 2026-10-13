@@ -118,7 +118,7 @@ export default function FacturaDetalle() {
                 </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(330px, 1fr))', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(330px, 100%), 1fr))', gap: 16 }}>
                 <div style={seccion}>
                     <p style={{ ...bebas('.8rem', '.18em'), color: p.txt, marginBottom: 8 }}>COMPROBANTE</p>
                     {fila('Fecha de emisión', fechaCorta(c.fecha_emision))}
@@ -149,7 +149,7 @@ export default function FacturaDetalle() {
                 <p style={{ ...bebas('.8rem', '.18em'), color: p.txt, marginBottom: 8 }}>DETALLE</p>
                 <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 700 }}>
-                        <thead><tr>{['Código', 'Descripción', 'Cant.', 'P. unit.', 'Desc.', 'IVA', 'Total'].map(h => <th key={h} style={{ ...bebas('.6rem', '.18em'), color: p.SKY_DEEP, textAlign: 'left', padding: 6 }}>{h}</th>)}</tr></thead>
+                        <thead><tr>{['Código', 'Descripción', 'Cant.', 'P. unit.', 'Desc.', 'IVA', 'Total'].map(h => <th key={h} style={{ ...bebas('.72rem', '.18em'), color: p.SKY_DEEP, textAlign: 'left', padding: 6 }}>{h}</th>)}</tr></thead>
                         <tbody>
                             {c.detalles.map(d => (
                                 <tr key={d.id} style={{ borderTop: `1px solid ${p.bdr}`, ...outfit('.84rem'), color: p.txt }}>

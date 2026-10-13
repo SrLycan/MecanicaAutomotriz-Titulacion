@@ -150,7 +150,7 @@ export default function FlujoTab({ theme, categorias, cuentas, version, onCambio
                                         <td><Monto tipo={m.tipo} monto={m.monto} /></td>
                                         <td style={{ textAlign: 'right' }}>
                                             {anulable ? (
-                                                puede('finanzas', 'eliminar') && <button className="prov-icon-btn" style={{ color: ROJO, fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.12em', padding: '5px 9px' }} onClick={() => setAnulando(m)}>ANULAR</button>
+                                                puede('finanzas', 'eliminar') && <button className="prov-icon-btn" style={{ color: ROJO, fontFamily: "'Bebas Neue'", fontSize: '.74rem', letterSpacing: '.12em', padding: '5px 9px' }} onClick={() => setAnulando(m)}>ANULAR</button>
                                             ) : MODULO_DE[m.origen] ? (
                                                 <span title={`Se corrige en ${MODULO_DE[m.origen]}`} style={{ fontSize: '.7rem', color: mut, cursor: 'help' }}>ⓘ</span>
                                             ) : null}

@@ -27,12 +27,12 @@ export default function CuentasTab({ theme, cuentas, onCambio, onTransferir, irA
                 </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))', gap: 14 }}>
                 {cuentas.map(c => (
                     <div key={c.id} style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 16, boxShadow: cardSh, padding: 18, opacity: c.activa ? 1 : .55, display: 'flex', flexDirection: 'column', gap: 10 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
                             <div>
-                                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.18em', color: SKY_DEEP }}>{TIPO_LABEL[c.tipo]}</p>
+                                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.72rem', letterSpacing: '.18em', color: SKY_DEEP }}>{TIPO_LABEL[c.tipo]}</p>
                                 <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '1rem', color: txt, marginTop: 2 }}>{c.nombre}</p>
                                 {(c.banco || c.numero_cuenta) && <p style={{ fontFamily: "'Outfit'", fontSize: '.75rem', color: mut }}>{[c.banco, c.numero_cuenta].filter(Boolean).join(' · ')}</p>}
                             </div>
@@ -49,8 +49,8 @@ export default function CuentasTab({ theme, cuentas, onCambio, onTransferir, irA
                         </div>
                         {c.saldo < 0 && <p style={{ fontFamily: "'Outfit'", fontSize: '.72rem', color: ROJO }}>Saldo negativo: revisa el saldo inicial o si falta registrar un ingreso.</p>}
                         <div style={{ display: 'flex', gap: 8, marginTop: 'auto' }}>
-                            {puede('finanzas', 'editar') && <button className="prov-icon-btn" style={{ color: SKY_DEEP, fontFamily: "'Bebas Neue'", fontSize: '.64rem', letterSpacing: '.12em', padding: '6px 10px' }} onClick={() => setEditando(c)}>EDITAR</button>}
-                            <button className="prov-icon-btn" style={{ color: txtSf, fontFamily: "'Bebas Neue'", fontSize: '.64rem', letterSpacing: '.12em', padding: '6px 10px' }} onClick={() => irA('movimientos', c.id)}>VER MOVIMIENTOS ({c.movimientos})</button>
+                            {puede('finanzas', 'editar') && <button className="prov-icon-btn" style={{ color: SKY_DEEP, fontFamily: "'Bebas Neue'", fontSize: '.75rem', letterSpacing: '.12em', padding: '6px 10px' }} onClick={() => setEditando(c)}>EDITAR</button>}
+                            <button className="prov-icon-btn" style={{ color: txtSf, fontFamily: "'Bebas Neue'", fontSize: '.75rem', letterSpacing: '.12em', padding: '6px 10px' }} onClick={() => irA('movimientos', c.id)}>VER MOVIMIENTOS ({c.movimientos})</button>
                         </div>
                     </div>
                 ))}

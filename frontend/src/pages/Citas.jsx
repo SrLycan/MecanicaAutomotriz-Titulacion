@@ -71,7 +71,7 @@ export default function Citas() {
                             transition: 'all .15s',
                         }}>
                         <div style={{ position: 'absolute', top: 0, left: 0, width: 3, height: '100%', background: `linear-gradient(180deg, ${k.color}, transparent)` }} />
-                        <p style={{ fontSize: '.62rem', fontWeight: 800, letterSpacing: '.14em', color: muted, margin: 0, textTransform: 'uppercase' }}>{k.label}</p>
+                        <p style={{ fontSize: '.74rem', fontWeight: 800, letterSpacing: '.14em', color: muted, margin: 0, textTransform: 'uppercase' }}>{k.label}</p>
                         <p style={{ fontSize: '1.7rem', fontWeight: 800, color: k.color, margin: '4px 0 0', lineHeight: 1 }}>{k.n}</p>
                     </button>
                 );

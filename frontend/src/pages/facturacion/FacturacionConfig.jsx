@@ -53,7 +53,7 @@ export default function FacturacionConfig() {
     if (!d) return <div className="sk-pulse" style={{ height: 300, borderRadius: 16, background: p.card }} />;
     const cfg = d.config;
     const inputSt = { width: '100%', boxSizing: 'border-box', padding: '10px 12px', borderRadius: 10, border: `1px solid ${p.bdr}`, background: p.inputBg, color: p.txt, ...outfit('.86rem'), outline: 'none' };
-    const label = (t, htmlFor) => <label htmlFor={htmlFor} style={{ display: 'block', marginBottom: 6, ...bebas('.6rem', '.2em'), color: p.SKY_DEEP }}>{t}</label>;
+    const label = (t, htmlFor) => <label htmlFor={htmlFor} style={{ display: 'block', marginBottom: 6, ...bebas('.72rem', '.2em'), color: p.SKY_DEEP }}>{t}</label>;
     const seccion = { background: p.card, border: `1px solid ${p.bdr}`, borderRadius: 14, boxShadow: p.cardSh, padding: 20, marginBottom: 18 };
     const titulo = (t) => <p style={{ ...bebas('.82rem', '.18em'), color: p.txt, marginBottom: 12 }}>{t}</p>;
 
@@ -114,7 +114,7 @@ export default function FacturacionConfig() {
             {/* 2. Emisor */}
             <form style={seccion} onSubmit={guardar}>
                 {titulo('DATOS DEL EMISOR')}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 13 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(230px, 100%), 1fr))', gap: 13 }}>
                     {CAMPOS.map(c => (
                         <div key={c.k} style={c.ancho ? { gridColumn: `span ${c.ancho}` } : undefined}>
                             {label(c.l, `cfg-${c.k}`)}
@@ -231,7 +231,7 @@ function Certificado({ cfg, editable, onCargado }) {
         <div style={{ background: p.card, border: `1px solid ${p.bdr}`, borderRadius: 14, boxShadow: p.cardSh, padding: 20, marginBottom: 18 }}>
             <p style={{ ...bebas('.82rem', '.18em'), color: p.txt, marginBottom: 12 }}>FIRMA ELECTRÓNICA (.P12)</p>
             {cfg?.certificado_cargado ? (
-                <div style={{ ...outfit('.86rem'), color: p.txtSf, display: 'grid', gap: 4, marginBottom: 14 }}>
+                <div style={{ ...outfit('.86rem'), color: p.txtSf, display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 4, marginBottom: 14, overflowWrap: 'anywhere' }}>
                     <span><strong>Titular:</strong> {cfg.certificado_titular}</span>
                     <span><strong>Emitido por:</strong> {cfg.certificado_emisor}</span>
                     <span style={{ color: vencido ? '#ef4444' : diasRestantes < 30 ? '#b45309' : p.txtSf }}>
@@ -244,11 +244,11 @@ function Certificado({ cfg, editable, onCargado }) {
             {editable && cfg && (
                 <form onSubmit={subir} style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
                     <div>
-                        <label htmlFor="cert-archivo" style={{ display: 'block', marginBottom: 6, ...bebas('.6rem', '.2em'), color: p.SKY_DEEP }}>ARCHIVO .P12 / .PFX</label>
+                        <label htmlFor="cert-archivo" style={{ display: 'block', marginBottom: 6, ...bebas('.72rem', '.2em'), color: p.SKY_DEEP }}>ARCHIVO .P12 / .PFX</label>
                         <input id="cert-archivo" type="file" accept=".p12,.pfx" onChange={e => setArchivo(e.target.files[0] || null)} style={{ ...outfit('.82rem'), color: p.txt }} />
                     </div>
                     <div>
-                        <label htmlFor="cert-clave" style={{ display: 'block', marginBottom: 6, ...bebas('.6rem', '.2em'), color: p.SKY_DEEP }}>CLAVE DEL CERTIFICADO</label>
+                        <label htmlFor="cert-clave" style={{ display: 'block', marginBottom: 6, ...bebas('.72rem', '.2em'), color: p.SKY_DEEP }}>CLAVE DEL CERTIFICADO</label>
                         <input id="cert-clave" type="password" autoComplete="new-password" value={clave} onChange={e => setClave(e.target.value)}
                             style={{ padding: '9px 12px', borderRadius: 10, border: `1px solid ${p.bdr}`, background: p.inputBg, color: p.txt }} />
                     </div>

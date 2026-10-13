@@ -37,9 +37,9 @@ export default function ProformaView() {
     const SKY_DEEP = '#0284c7'; const SKY_PALE = isDark ? 'rgba(14,165,233,0.10)' : 'rgba(14,165,233,0.12)';
     const txt = isDark ? '#f1f5f9' : '#0f172a';
     const txtSf = isDark ? '#cbd5e1' : '#334155';
-    const mut = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
-    const bdr = isDark ? 'rgba(148,163,184,0.18)' : '#b6c3d3';
-    const card = isDark ? 'rgba(255,255,255,0.025)' : '#ffffff';
+    const mut = isDark ? 'rgba(241,245,249,0.72)' : '#526075';
+    const bdr = isDark ? 'rgba(148,163,184,0.28)' : '#b6c3d3';
+    const card = isDark ? 'rgba(255,255,255,0.045)' : '#ffffff';
     const cardSh = isDark ? '0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 40px -16px rgba(0,0,0,0.55)' : '0 1px 2px rgba(15,23,42,0.06), 0 8px 22px -8px rgba(15,23,42,0.20)';
 
     const [proforma, setProforma] = useState(null);
@@ -181,13 +181,13 @@ export default function ProformaView() {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 18 }}>
                 <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, padding: 18, boxShadow: cardSh }}>
-                    <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.64rem', letterSpacing: '.18em', color: SKY_DEEP, marginBottom: 8 }}>CLIENTE</p>
+                    <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.75rem', letterSpacing: '.18em', color: SKY_DEEP, marginBottom: 8 }}>CLIENTE</p>
                     <p style={{ fontFamily: "'Outfit'", fontWeight: 600, color: txt }}>{proforma.cliente_nombre}</p>
                     <p style={{ fontFamily: "'Outfit'", fontSize: '.82rem', color: txtSf }}>{[proforma.cliente_ruc, proforma.cliente_telefono, proforma.cliente_email].filter(Boolean).join(' · ')}</p>
                     {proforma.cliente_direccion && <p style={{ fontFamily: "'Outfit'", fontSize: '.8rem', color: mut, marginTop: 2 }}>{proforma.cliente_direccion}</p>}
                 </div>
                 <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, padding: 18, boxShadow: cardSh }}>
-                    <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.64rem', letterSpacing: '.18em', color: SKY_DEEP, marginBottom: 8 }}>VEHÍCULO</p>
+                    <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.75rem', letterSpacing: '.18em', color: SKY_DEEP, marginBottom: 8 }}>VEHÍCULO</p>
                     <p style={{ fontFamily: "'Outfit'", fontWeight: 600, color: txt }}>{[proforma.vehiculo_marca, proforma.vehiculo_modelo].filter(Boolean).join(' ')}</p>
                     <p style={{ fontFamily: "'Outfit'", fontSize: '.82rem', color: txtSf }}>{[proforma.vehiculo_tipo, proforma.vehiculo_color, proforma.vehiculo_anio].filter(Boolean).join(' · ')}</p>
                     <p style={{ fontFamily: "'Outfit'", fontSize: '.8rem', color: mut, marginTop: 2 }}>{[proforma.vehiculo_placa ? `Placa: ${proforma.vehiculo_placa}` : null, proforma.vehiculo_vin ? `VIN: ${proforma.vehiculo_vin}` : null].filter(Boolean).join(' · ')}</p>
@@ -205,7 +205,7 @@ export default function ProformaView() {
                         </p>
                     </div>
                     <Diagrama puertas={proforma.carroceria_puertas} seleccion={proforma.zonas_danadas || []} isDark={isDark} />
-                    <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.66rem', letterSpacing: '.16em', color: SKY_DEEP, margin: '12px 0 6px' }}>ZONAS AFECTADAS ({(proforma.zonas_danadas || []).length})</p>
+                    <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.16em', color: SKY_DEEP, margin: '12px 0 6px' }}>ZONAS AFECTADAS ({(proforma.zonas_danadas || []).length})</p>
                     {(proforma.zonas_danadas_detalle || []).length
                         ? <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>{proforma.zonas_danadas_detalle.map(z => <span key={z.codigo} className="vd-chip" style={{ paddingRight: 10 }}>{z.etiqueta}</span>)}</div>
                         : <p style={{ fontFamily: "'Outfit'", fontSize: '.82rem', color: mut }}>No se marcaron zonas.</p>}
@@ -363,8 +363,8 @@ function ResumenLinea({ label, val, mut, txt, grande, negrita }) {
 }
 
 function btnSec(bdr, txt) {
-    return { display: 'inline-flex', alignItems: 'center', gap: 7, fontFamily: "'Bebas Neue'", fontSize: '.68rem', letterSpacing: '.12em', background: 'none', border: `1px solid ${bdr}`, borderRadius: 10, padding: '9px 14px', cursor: 'pointer', color: txt };
+    return { display: 'inline-flex', alignItems: 'center', gap: 7, fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.12em', background: 'none', border: `1px solid ${bdr}`, borderRadius: 10, padding: '9px 14px', cursor: 'pointer', color: txt };
 }
 function btnPrim(sky) {
-    return { display: 'inline-flex', alignItems: 'center', gap: 7, fontFamily: "'Bebas Neue'", fontSize: '.68rem', letterSpacing: '.12em', background: sky, border: 'none', borderRadius: 10, padding: '9px 14px', cursor: 'pointer', color: '#fff' };
+    return { display: 'inline-flex', alignItems: 'center', gap: 7, fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.12em', background: sky, border: 'none', borderRadius: 10, padding: '9px 14px', cursor: 'pointer', color: '#fff' };
 }

@@ -1,14 +1,14 @@
 .graf-tabs {
     display: flex;
     gap: 6px;
-    border-bottom: 1px solid var(--graf-bdr, rgba(148,163,184,0.18));
+    border-bottom: 1px solid var(--graf-bdr, var(--border));
     margin-bottom: 20px;
     overflow-x: auto;
 }
 
 .graf-tab-btn {
     font-family: 'Bebas Neue', sans-serif;
-    font-size: .8rem;
+    font-size: .86rem;
     letter-spacing: .12em;
     background: none;
     border: none;
@@ -27,7 +27,7 @@
 
 .graf-periodo-btn {
     font-family: 'Bebas Neue', sans-serif;
-    font-size: .68rem;
+    font-size: .76rem;
     letter-spacing: .1em;
     padding: 7px 14px;
     border-radius: 8px;
@@ -45,7 +45,7 @@
     text-align: left;
     padding: 11px 14px;
     font-family: 'Bebas Neue', sans-serif;
-    font-size: .64rem;
+    font-size: .8rem;
     letter-spacing: .16em;
     white-space: nowrap;
 }
@@ -57,16 +57,16 @@
 }
 
 .graf-table tbody tr {
-    border-top: 1px solid var(--graf-bdr, rgba(148,163,184,0.14));
+    border-top: 1px solid var(--graf-bdr, var(--border));
 }
 
 .graf-metric-chip {
     font-family: 'Outfit', sans-serif;
-    font-size: .74rem;
+    font-size: .8rem;
     padding: 6px 12px;
     border-radius: 999px;
     cursor: pointer;
-    border: 1px solid var(--graf-bdr, rgba(148,163,184,0.2));
+    border: 1px solid var(--graf-bdr, var(--border));
     display: inline-flex;
     align-items: center;
     gap: 6px;
