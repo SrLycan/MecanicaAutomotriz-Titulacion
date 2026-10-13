@@ -13,6 +13,7 @@ import ProveedoresTab from '../components/proveedores/ProveedoresTab';
 import GastosTab from '../components/proveedores/GastosTab';
 import ComprasTab, { textoVencimiento } from '../components/proveedores/ComprasTab';
 import HistorialTab from '../components/proveedores/HistorialTab';
+import FacturasCompraTab from '../components/proveedores/FacturasCompraTab';
 import './Proveedores.css';
 
 import { NombreEmpresa } from '../components/common/MarcaEmpresa';
@@ -20,6 +21,7 @@ const TABS = [
     { id: 'proveedores', label: 'PROVEEDORES' },
     { id: 'gastos', label: 'GASTOS' },
     { id: 'compras', label: 'COMPRAS' },
+    { id: 'facturas', label: 'FACTURAS DE COMPRA' },
     { id: 'historial', label: 'HISTORIAL FINANCIERO' },
 ];
 
@@ -178,6 +180,7 @@ export default function Proveedores() {
             )}
             {tab === 'gastos' && <GastosTab theme={theme} proveedores={proveedores} />}
             {tab === 'compras' && <ComprasTab theme={theme} proveedores={proveedores} onCambio={() => { cargarAlertas(); cargarResumen(); }} />}
+            {tab === 'facturas' && <FacturasCompraTab theme={theme} proveedores={proveedores} onCambio={() => { cargarAlertas(); cargarResumen(); cargarProveedores(); }} />}
             {tab === 'historial' && <HistorialTab theme={theme} proveedores={proveedores} onCambio={() => { cargarAlertas(); cargarResumen(); }} />}
         </div>
     );

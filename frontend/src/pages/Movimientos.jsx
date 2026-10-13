@@ -8,7 +8,7 @@
  * ajuste, devolucion) con la proforma, OT, cliente y vehiculo relacionados.
  */
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
@@ -19,7 +19,7 @@ function IconDownload() { return <svg width="14" height="14" viewBox="0 0 24 24"
 function IconSearch()   { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>; }
 
 const POR_PAGINA = 25;
-const FILTROS_VACIOS = { q: '', tipo: '', origen: '', area: '', usuario_id: '', proforma: '', orden_id: '', fecha_inicio: '', fecha_fin: '' };
+const FILTROS_VACIOS = { q: '', tipo: '', origen: '', area: '', usuario_id: '', proforma: '', orden_id: '', fecha_inicio: '', fecha_fin: '', repuesto_id: '' };
 
 /** Etiqueta legible de tipo + origen (los 6 casos que pide el negocio). */
 export function clasificarMovimiento(m) {
@@ -35,15 +35,19 @@ const AREA_LABEL = { mecanica: 'Mecánica', colisiones: 'Colisiones / Pintura' }
 
 export default function Movimientos() {
     const { isDark } = useTheme();
+    // ?repuesto_id= : historial de un producto (desde Inventario o una factura de compra).
+    const [searchParams] = useSearchParams();
+    const repuestoUrl = /^\d+$/.test(searchParams.get('repuesto_id') || '') ? searchParams.get('repuesto_id') : '';
+    const filtrosIniciales = { ...FILTROS_VACIOS, repuesto_id: repuestoUrl };
     const [movimientos, setMovimientos] = useState([]);
     const [loading, setLoading]         = useState(true);
-    const [filtros, setFiltros]         = useState(FILTROS_VACIOS);
+    const [filtros, setFiltros]         = useState(filtrosIniciales);
     const [page, setPage]               = useState(1);
     const [total, setTotal]             = useState(0);
     const [totalPages, setTotalPages]   = useState(1);
     const [usuarios, setUsuarios]       = useState([]);
     const debounceRef = useRef(null);
-    const [filtrosAplicados, setFiltrosAplicados] = useState(FILTROS_VACIOS);
+    const [filtrosAplicados, setFiltrosAplicados] = useState(filtrosIniciales);
 
     const SKY      = '#0ea5e9';
     const SKY_DEEP = '#0284c7';
@@ -80,9 +84,9 @@ export default function Movimientos() {
     }, []);
 
     useEffect(() => {
-        cargar(FILTROS_VACIOS, 1);
+        cargar({ ...FILTROS_VACIOS, repuesto_id: repuestoUrl }, 1);
         api.get('/inventory/movimientos/filtros').then(r => setUsuarios(r.data.usuarios || [])).catch(() => {});
-    }, [cargar]);
+    }, [cargar, repuestoUrl]);
 
     // Texto libre / proforma / OT con debounce; selects y fechas al instante
     const cambiarFiltro = (campo, valor, inmediato = false) => {
@@ -202,6 +206,11 @@ export default function Movimientos() {
                         <input type="date" className="mov-input" value={filtros.fecha_fin} onChange={e => cambiarFiltro('fecha_fin', e.target.value, true)} style={selStyle} />
                     </div>
                     <div style={{ flex: 1 }} />
+                    {filtrosAplicados.repuesto_id && (
+                        <span style={{ ...etiq, alignSelf: 'center', color: SKY_DEEP }}>
+                            HISTORIAL DE UN PRODUCTO{movimientos[0]?.repuesto_codigo ? `: ${movimientos[0].repuesto_codigo}` : ''}
+                        </span>
+                    )}
                     {hayFiltros && <button onClick={limpiarFiltros} className="btn-ghost">LIMPIAR</button>}
                     <button onClick={exportCSV} className="btn-ghost"><IconDownload /> EXPORTAR CSV</button>
                 </div>

@@ -6,6 +6,7 @@
  */
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import useParamUrl from '../hooks/useParamUrl';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
@@ -206,6 +207,8 @@ export default function Inventario() {
     const puedeEditar   = puede(moduloArea(area), 'editar');
     const puedeEliminar = puede(moduloArea(area), 'eliminar');
     const puedeMov      = puede('registros_inventario', 'crear');
+    const puedeHistorial = puede('registros_inventario', 'ver');
+    const navigate = useNavigate();
     const areasVisibles = ['mecanica', 'colisiones'].filter(a => puede(moduloArea(a), 'ver'));
     const [showAlertModal, setShowAlertModal] = useState(false);
     const [bajoStockList, setBajoStockList] = useState([]);
@@ -756,6 +759,12 @@ export default function Inventario() {
                                             </td>
                                             <td style={{ padding: '13px 18px' }}>
                                                 <div style={{ display: 'flex', gap: 6 }}>
+                                                    {puedeHistorial && (
+                                                        <ActionBtn color={SKY_DEEP} hoverBg={SKY_PALE} bdr={bdr} title="Historial de entradas y salidas"
+                                                            onClick={() => navigate(`/dashboard/movimientos?repuesto_id=${r.id}`)}>
+                                                            <IconHistorial />
+                                                        </ActionBtn>
+                                                    )}
                                                     {puedeMov && (
                                                         <ActionBtn color={SKY} hoverBg={SKY_PALE} bdr={bdr} title="Registrar movimiento"
                                                             onClick={() => setModalMov({ open: true, repuesto: r })}>
@@ -962,6 +971,8 @@ function PageNumBtn({ active, onClick, isDark, SKY, SKY_DEEP, SKY_PALE, txt, mut
         </button>
     );
 }
+
+function IconHistorial() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><polyline points="3 3 3 8 8 8"/><polyline points="12 7 12 12 15 14"/></svg>; }
 
 function ActionBtn({ color, hoverBg, bdr, title, onClick, children }) {
     return (

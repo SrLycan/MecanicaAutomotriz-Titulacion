@@ -56,6 +56,7 @@ const NAV_GROUPS = [
     { id: 'proveedores', label: 'Proveedores', icon: IconTruck, badgeCredito: true, children: [
         { to: '/dashboard/proveedores',               label: 'Visualizar', permiso: 'proveedores:ver' },
         { to: '/dashboard/proveedores?tab=compras',   label: 'Compras', permiso: 'proveedores:ver' },
+        { to: '/dashboard/proveedores?tab=facturas',  label: 'Facturas de compra', permiso: 'proveedores:ver' },
         { to: '/dashboard/proveedores?tab=gastos',    label: 'Gastos', permiso: 'proveedores:ver' },
         { to: '/dashboard/proveedores?tab=historial', label: 'Pagos / Historial', permiso: 'proveedores:ver' },
     ] },
