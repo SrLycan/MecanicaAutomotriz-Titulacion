@@ -11,6 +11,7 @@ import ProformasTab from '../components/graficas/ProformasTab';
 import './Proveedores.css';
 import './Graficas.css';
 
+import { NombreEmpresa } from '../components/common/MarcaEmpresa';
 const TABS = [
     { id: 'productos', label: 'PRODUCTOS MÁS VENDIDOS' },
     { id: 'servicios', label: 'SERVICIOS MÁS SOLICITADOS' },
@@ -40,7 +41,7 @@ export default function Graficas() {
             <div style={{ marginBottom: 20 }}>
                 <div className="ssswap-chip" style={{ marginBottom: 8 }}>
                     <span className="dot" />
-                    <span>SS SWAP · ADMIN · GRÁFICAS</span>
+                    <span><NombreEmpresa /> · ADMIN · GRÁFICAS</span>
                 </div>
                 <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.6rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>Gráficas</h1>
                 <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.85rem', color: mut, marginTop: 6 }}>

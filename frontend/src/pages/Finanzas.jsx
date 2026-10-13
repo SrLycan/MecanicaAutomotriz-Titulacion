@@ -17,6 +17,7 @@ import NominaTab from '../components/finanzas/NominaTab';
 import CuentasTab from '../components/finanzas/CuentasTab';
 import './Proveedores.css';
 
+import { NombreEmpresa } from '../components/common/MarcaEmpresa';
 const TABS = [
     { id: 'resumen', label: 'RESUMEN' },
     { id: 'movimientos', label: 'MOVIMIENTOS DE DINERO' },
@@ -61,7 +62,7 @@ export default function Finanzas() {
             <div style={{ marginBottom: 20 }}>
                 <div className="ssswap-chip" style={{ marginBottom: 8 }}>
                     <span className="dot" />
-                    <span>SS SWAP · ADMIN · FINANZAS</span>
+                    <span><NombreEmpresa /> · ADMIN · FINANZAS</span>
                 </div>
                 <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.6rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>Finanzas del taller</h1>
                 <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.85rem', color: mut, marginTop: 6 }}>

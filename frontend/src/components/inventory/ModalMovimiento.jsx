@@ -6,6 +6,7 @@ import React, { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import api from '../../services/api';
 
+import { NombreEmpresa } from '../common/MarcaEmpresa';
 function IconX()    { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>; }
 function IconIn()   { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>; }
 function IconOut()  { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>; }
@@ -80,7 +81,7 @@ export default function ModalMovimiento({ repuesto, onGuardado, onCerrar }) {
                     <div>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '3px 9px', borderRadius: 999, background: SKY_PALE, border: `1px solid ${SKY_BDR}`, marginBottom: 6 }}>
                             <span style={{ width: 5, height: 5, borderRadius: '50%', background: SKY }} />
-                            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.24em', color: SKY_DEEP }}>SS SWAP · ALMACEN</p>
+                            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.24em', color: SKY_DEEP }}><NombreEmpresa /> · ALMACEN</p>
                         </div>
                         <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.7rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>
                             Movimiento de Stock

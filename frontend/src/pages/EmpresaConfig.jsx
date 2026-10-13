@@ -12,6 +12,7 @@ import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useConfirm } from '../components/common/ConfirmDialog';
 import { usePaleta, bebas, outfit, BotonPrimario, Pildora } from '../components/common/PanelUI';
+import EditorLogo from '../components/common/EditorLogo';
 
 const CAMPOS = [
     { k: 'nombre', l: 'NOMBRE DE LA EMPRESA *', max: 120 },
@@ -74,12 +75,19 @@ export default function EmpresaConfig() {
                 <div className="ssswap-chip" style={{ marginBottom: 8 }}><span className="dot" /><span>{empresa.nombre.toUpperCase()} · CONFIGURACIÓN</span></div>
                 <h1 style={{ ...bebas('2.6rem', '.04em'), color: p.txt, lineHeight: 1 }}>Configuración de la empresa</h1>
                 <p style={{ ...outfit('.85rem'), color: p.mut, marginTop: 6 }}>
-                    Estos datos identifican a tu mecánica en proformas, PDF y Excel. Solo los ve y usa tu empresa.
+                    Estos datos identifican a tu mecánica en el panel, proformas, órdenes de trabajo, PDF y Excel. Solo los ve y usa tu empresa.
+                    Los documentos ya emitidos conservan los datos con los que se crearon.
                 </p>
                 <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
                     <Pildora color={empresa.estado === 'activa' ? '#10b981' : '#f59e0b'}>{empresa.estado.toUpperCase()}</Pildora>
                     <Pildora color={p.SKY_DEEP}>IDENTIFICADOR: {empresa.slug}</Pildora>
                 </div>
+            </div>
+
+            <div style={seccion}>
+                <p style={{ ...bebas('.8rem', '.18em'), color: p.txt, marginBottom: 12 }}>LOGOTIPO</p>
+                <EditorLogo empresa={empresa} rutaBase="/empresa" editable={editable}
+                    onGuardado={(e) => { setEmpresa(e); refrescarSesion(); }} />
             </div>
 
             <form style={seccion} onSubmit={(e) => { e.preventDefault(); guardar(form); }}>

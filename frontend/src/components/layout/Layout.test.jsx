@@ -98,7 +98,18 @@ describe('Layout — menú lateral según permisos', () => {
         renderLayout();
         expect(menu().getByText('Mi empresa')).toBeInTheDocument();
         expect(menu().queryByText('Plataforma')).not.toBeInTheDocument();
-        expect(screen.getByText('TALLER NORTE')).toBeInTheDocument();
+        expect(screen.getByTitle('Empresa en la que estas trabajando')).toHaveTextContent('TALLER NORTE');
+        // Sprint 24: la barra lateral muestra la identidad de la empresa de la sesion, no "SS SWAP".
+        expect(screen.getByTitle('Taller Norte')).toHaveTextContent('TALLER NORTE');
+    });
+
+    test('Sprint 24: con logo, la barra lateral muestra el logo de la empresa', () => {
+        mockEstadoAuth.usuario = { id: 2, nombre: 'Admin Norte', rol: 'administrador' };
+        mockEstadoAuth.permisos = ['empresa:ver'];
+        mockEstadoAuth.empresa = { id: 5, nombre: 'Taller Norte', slug: 'taller-norte', logo_url: '/uploads/logos/abc.png' };
+        renderLayout();
+        const logo = screen.getByAltText('Logo de Taller Norte');
+        expect(logo.getAttribute('src')).toMatch(/\/uploads\/logos\/abc\.png$/);
     });
 
     test('Sprint 22: en modo soporte se ve un aviso con el motivo y el boton para terminar', () => {

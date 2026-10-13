@@ -17,6 +17,7 @@ import {
 import { useConfirm } from '../components/common/ConfirmDialog';
 import './OrdenesTrabajo.css';
 
+import { NombreEmpresa } from '../components/common/MarcaEmpresa';
 // ── Iconos ────────────────────────────────────────────────────
 function IconPlus()  { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>; }
 function IconSearch(){ return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>; }
@@ -112,6 +113,17 @@ export default function OrdenesTrabajo() {
         } catch (err) { toast.error(err.response?.data?.error || 'Error.'); }
     };
 
+    const descargarPdf = async (o) => {
+        try {
+            const { data } = await api.get(`/ordenes/ordenes/${o.id}/pdf`, { responseType: 'blob' });
+            const url = window.URL.createObjectURL(new Blob([data], { type: 'application/pdf' }));
+            const a = document.createElement('a');
+            a.href = url; a.download = `${o.numero || `OT-${o.id}`}.pdf`;
+            document.body.appendChild(a); a.click(); a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch { toast.error('No se pudo generar el PDF de la orden.'); }
+    };
+
     const toggleHistorial = async (id) => {
         const abrir = !historialAbierto[id];
         setHistorialAbierto(prev => ({ ...prev, [id]: abrir }));
@@ -169,7 +181,7 @@ export default function OrdenesTrabajo() {
                 <div>
                     <div className="ssswap-chip" style={{ marginBottom: 8 }}>
                         <span className="dot" />
-                        <span>SS SWAP · TALLER · ORDENES DE TRABAJO</span>
+                        <span><NombreEmpresa /> · TALLER · ORDENES DE TRABAJO</span>
                     </div>
                     <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.6rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>Ordenes de Trabajo</h1>
                     <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.85rem', color: mut, marginTop: 6 }}>
@@ -356,6 +368,11 @@ export default function OrdenesTrabajo() {
                                                     <IconEdit /> EDITAR / ASIGNAR
                                                 </button>
                                             )}
+                                            {/* PDF de la orden con la identidad de la empresa y quien la registro */}
+                                            <button onClick={() => descargarPdf(o)}
+                                                style={{ background: 'none', border: `1px solid ${bdr}`, borderRadius: 8, padding: '7px 12px', cursor: 'pointer', color: txtSf, display: 'flex', alignItems: 'center', gap: 6, fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.14em' }}>
+                                                <IconFileText /> PDF
+                                            </button>
                                             {/* Generar Proforma: requiere crear proformas */}
                                             {o.vehiculo_id && puedeProforma && (
                                                 <button onClick={() => navigate(`/dashboard/proformas/nueva?desde_orden=${o.id}`)}

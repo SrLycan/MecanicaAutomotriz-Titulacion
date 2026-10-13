@@ -13,6 +13,7 @@ import ItemsEditor from '../components/proformas/ItemsEditor';
 import PictogramaColisiones from '../components/proformas/PictogramaColisiones';
 import './Proformas.css';
 
+import { NombreEmpresa } from '../components/common/MarcaEmpresa';
 const EMPTY = {
     tipo: 'mecanica', cliente_id: '', vehiculo_id: '', sucursal_id: '', orden_id: null,
     cliente_nombre: '', cliente_ruc: '', cliente_direccion: '', cliente_telefono: '', cliente_email: '',
@@ -196,7 +197,7 @@ export default function ProformaForm() {
 
     return (
         <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1100 }}>
-            <div className="ssswap-chip" style={{ marginBottom: 8 }}><span className="dot" /><span>SS SWAP · PROFORMAS</span></div>
+            <div className="ssswap-chip" style={{ marginBottom: 8 }}><span className="dot" /><span><NombreEmpresa /> · PROFORMAS</span></div>
             <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.4rem', letterSpacing: '.04em', color: txt, lineHeight: 1, marginBottom: 22 }}>
                 {esEdicion ? 'Editar Proforma' : 'Nueva Proforma'}
             </h1>

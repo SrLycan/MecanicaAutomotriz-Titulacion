@@ -14,6 +14,7 @@ import toast from 'react-hot-toast';
 import CargandoPagina from '../common/CargandoPagina';
 import ModalMiCuenta from './ModalMiCuenta';
 import AvisoPendientes from '../legal/AvisoPendientes';
+import { LogoEmpresa } from '../common/MarcaEmpresa';
 import './Layout.css';
 
 // Icono exclusivo de Proveedores (solo administradores)
@@ -340,6 +341,12 @@ export default function Layout() {
                     justifyContent: collapsed ? 'center' : 'flex-start',
                     minHeight: 70, position: 'relative', zIndex: 1,
                 }}>
+                    {empresa?.logo_url ? (
+                        // Logo de la empresa de la sesion (fondo claro: los logos suelen ser oscuros).
+                        <div title={empresa.nombre} style={{ width: 40, height: 40, borderRadius: 10, background: '#fff', padding: 3, flexShrink: 0, boxSizing: 'border-box' }}>
+                            <LogoEmpresa alto={34} radio={7} />
+                        </div>
+                    ) : (
                     <div style={{
                         width: 36, height: 36, borderRadius: 10,
                         background: `linear-gradient(135deg, ${GOLD_DEEP}, ${GOLD})`,
@@ -350,9 +357,10 @@ export default function Layout() {
                             <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
                         </svg>
                     </div>
+                    )}
                     {!collapsed && (
-                        <div>
-                            <p style={{ fontFamily: "'Sora'", fontWeight: 700, fontSize: '1.05rem', letterSpacing: '.02em', color: '#fff', lineHeight: 1 }}>SS SWAP</p>
+                        <div style={{ minWidth: 0 }}>
+                            <p title={empresa?.nombre || 'SS SWAP'} style={{ fontFamily: "'Sora'", fontWeight: 700, fontSize: '1.05rem', letterSpacing: '.02em', color: '#fff', lineHeight: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 170 }}>{(empresa?.nombre || 'SS SWAP').toUpperCase()}</p>
                             <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.7rem', color: GOLD_LIGHT, marginTop: 2, letterSpacing: '.18em' }}>ADMIN PANEL</p>
                         </div>
                     )}

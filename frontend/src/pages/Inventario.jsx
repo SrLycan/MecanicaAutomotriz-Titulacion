@@ -17,6 +17,7 @@ import { useConfirm } from '../components/common/ConfirmDialog';
 import { stockBajo, areaConAlerta } from '../utils/stock';
 import './Inventario.css';
 
+import { NombreEmpresa } from '../components/common/MarcaEmpresa';
 function IconSearch() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>; }
 function IconPlus()   { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>; }
 function IconDownload(){ return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>; }
@@ -481,7 +482,7 @@ export default function Inventario() {
                 <div>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 10px', borderRadius: 999, background: SKY_PALE, border: `1px solid ${SKY_BDR}`, marginBottom: 8 }}>
                         <span style={{ width: 6, height: 6, borderRadius: '50%', background: SKY, boxShadow: `0 0 8px ${SKY}` }} />
-                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.24em', color: SKY_DEEP }}>SS SWAP · ALMACEN</p>
+                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.24em', color: SKY_DEEP }}><NombreEmpresa /> · ALMACEN</p>
                     </div>
                     <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.6rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>Inventario</h1>
                     <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.85rem', color: mut, marginTop: 6 }}>Catalogo de repuestos y control de stock en tiempo real</p>

@@ -15,6 +15,8 @@ import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useConfirm } from '../../components/common/ConfirmDialog';
 import { usePaleta, bebas, outfit, Pildora, BotonPrimario, BotonSecundario, Modal, KpiCard } from '../../components/common/PanelUI';
+import EditorLogo, { validarArchivoLogo } from '../../components/common/EditorLogo';
+import { LogoEmpresa } from '../../components/common/MarcaEmpresa';
 import '../Usuarios.css';
 
 const COLOR_ESTADO = { activa: '#10b981', suspendida: '#f59e0b', inactiva: '#ef4444' };
@@ -56,7 +58,19 @@ function ModalEmpresa({ empresa, onClose, onGuardada }) {
         admin_nombre: '', admin_email: '',
     });
     const [saving, setSaving] = useState(false);
+    const [actual, setActual] = useState(empresa);          // para refrescar el logo al editar
+    const [logoNuevo, setLogoNuevo] = useState(null);        // { archivo, preview } al crear
     const set = (k) => (v) => setF({ ...f, [k]: v });
+    useEffect(() => () => { if (logoNuevo) URL.revokeObjectURL(logoNuevo.preview); }, [logoNuevo]);
+
+    const elegirLogo = (e) => {
+        const archivo = e.target.files?.[0];
+        e.target.value = '';
+        if (!archivo) return;
+        const error = validarArchivoLogo(archivo);
+        if (error) { toast.error(error); return; }
+        setLogoNuevo({ archivo, preview: URL.createObjectURL(archivo) });
+    };
 
     const enviar = async (e) => {
         e.preventDefault();
@@ -66,6 +80,16 @@ function ModalEmpresa({ empresa, onClose, onGuardada }) {
             const { data } = nueva
                 ? await api.post('/plataforma/empresas', { ...datos, slug: f.slug || undefined, admin: { nombre: f.admin_nombre, email: f.admin_email } })
                 : await api.put(`/plataforma/empresas/${empresa.id}`, datos);
+            // El logo se sube cuando la empresa ya existe (necesita su id).
+            if (nueva && logoNuevo) {
+                try {
+                    const fd = new FormData();
+                    fd.append('logo', logoNuevo.archivo);
+                    await api.post(`/plataforma/empresas/${data.empresa.id}/logo`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+                } catch (errLogo) {
+                    toast.error(`Empresa creada, pero el logo no se guardó: ${errLogo.response?.data?.error || 'intenta de nuevo desde Editar.'}`);
+                }
+            }
             toast.success(nueva ? 'Empresa creada.' : 'Empresa actualizada.');
             onGuardada(data);
         } catch (err) {
@@ -86,6 +110,25 @@ function ModalEmpresa({ empresa, onClose, onGuardada }) {
                     <CampoTexto id="e-dir" label="DIRECCIÓN" value={f.direccion} onChange={set('direccion')} maxLength={255} />
                     <CampoTexto id="e-tel" label="TELÉFONO" value={f.telefono} onChange={set('telefono')} maxLength={30} />
                     <CampoTexto id="e-mail" label="CORREO" type="email" value={f.email} onChange={set('email')} maxLength={150} />
+                </div>
+                <div>
+                    <p style={{ ...bebas('.8rem', '.18em'), marginBottom: 8 }}>LOGOTIPO</p>
+                    {nueva ? (
+                        <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
+                            <div style={{ width: 180, height: 100, borderRadius: 12, border: '1px solid #cbd5e1', background: '#fff', padding: 8, boxSizing: 'border-box' }}>
+                                {logoNuevo
+                                    ? <img src={logoNuevo.preview} alt="Vista previa del logo" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
+                                    : <LogoEmpresa empresa={{ nombre: f.nombre || '?' }} alto={82} />}
+                            </div>
+                            <label style={{ ...bebas('.72rem'), cursor: 'pointer', padding: '9px 16px', borderRadius: 10, border: '1px solid #94a3b8' }}>
+                                {logoNuevo ? 'CAMBIAR IMAGEN' : 'ELEGIR LOGO (PNG/JPG, MÁX. 2 MB)'}
+                                <input type="file" accept="image/png,image/jpeg" onChange={elegirLogo} style={{ display: 'none' }} />
+                            </label>
+                            {logoNuevo && <BotonSecundario onClick={() => setLogoNuevo(null)}>QUITAR</BotonSecundario>}
+                        </div>
+                    ) : (
+                        <EditorLogo empresa={actual} rutaBase={`/plataforma/empresas/${empresa.id}`} editable onGuardado={setActual} />
+                    )}
                 </div>
                 {nueva && (
                     <div>
@@ -268,8 +311,15 @@ export default function Empresas() {
                         ) : empresas.map(e => (
                             <tr key={e.id} className="u-row" style={{ borderBottom: `1px solid ${p.bdr}` }}>
                                 <td style={td}>
-                                    <strong style={{ color: p.txt }}>{e.nombre}</strong>
-                                    <span style={{ display: 'block', fontSize: '.72rem', color: p.mut }}>{e.slug}{e.es_publica ? ' · web pública' : ''}{e.ruc ? ` · RUC ${e.ruc}` : ''}</span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                        <div style={{ width: 46, height: 34, background: '#fff', borderRadius: 8, padding: 2, boxSizing: 'border-box', flexShrink: 0 }}>
+                                            <LogoEmpresa empresa={e} alto={30} radio={6} />
+                                        </div>
+                                        <div>
+                                            <strong style={{ color: p.txt }}>{e.nombre}</strong>
+                                            <span style={{ display: 'block', fontSize: '.72rem', color: p.mut }}>{e.slug}{e.es_publica ? ' · web pública' : ''}{e.ruc ? ` · RUC ${e.ruc}` : ''}{e.creada_por_nombre ? ` · creada por ${e.creada_por_nombre}` : ''}</span>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td style={td}><Pildora color={COLOR_ESTADO[e.estado]}>{e.estado.toUpperCase()}</Pildora></td>
                                 <td style={td}>{e.personal_activo}</td>
@@ -296,7 +346,7 @@ export default function Empresas() {
             </div>
 
             {modal?.tipo === 'empresa' && (
-                <ModalEmpresa empresa={modal.empresa} onClose={() => setModal(null)} onGuardada={(data) => {
+                <ModalEmpresa empresa={modal.empresa} onClose={() => { setModal(null); cargar(); }} onGuardada={(data) => {
                     setModal(null);
                     cargar();
                     if (data.password_temporal) setPassword({ titulo: 'Empresa creada', email: data.administrador.email, password: data.password_temporal });

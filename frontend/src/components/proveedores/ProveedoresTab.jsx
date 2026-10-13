@@ -3,11 +3,12 @@
  * CRUD de proveedores + gestion de sus contactos (subseccion "Usuarios" del
  * prompt: son contactos de referencia, no usuarios del sistema de login).
  */
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { useConfirm } from '../common/ConfirmDialog';
 import { useAuth } from '../../context/AuthContext';
+import { nuevaClaveIdempotencia, conClave } from '../../utils/idempotencia';
 
 function IconPlus()  { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>; }
 function IconEdit()  { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>; }
@@ -27,13 +28,26 @@ export default function ProveedoresTab({ theme, proveedores, loading, cargarProv
     const [modal, setModal]         = useState({ open: false, data: null });
     const [modalCont, setModalCont] = useState({ open: false, proveedor: null });
 
-    const guardar = async (form) => {
+    // Editar actualiza el registro existente por su id (PUT); crear usa una
+    // clave de idempotencia por formulario para que un doble envio no duplique.
+    const guardar = async (form, clave) => {
+        const datos = {
+            nombre_comercial: form.nombre_comercial, razon_social: form.razon_social, ruc: form.ruc, categoria: form.categoria,
+            direccion: form.direccion, telefono: form.telefono, email: form.email, notas: form.notas, activo: form.activo,
+        };
         try {
             if (modal.data) {
-                await api.put(`/proveedores/proveedores/${modal.data.id}`, form);
+                await api.put(`/proveedores/proveedores/${modal.data.id}`, datos);
                 toast.success('Proveedor actualizado.');
             } else {
-                await api.post('/proveedores/proveedores', form);
+                try {
+                    await api.post('/proveedores/proveedores', datos, conClave(clave));
+                } catch (err) {
+                    // Mismo nombre sin RUC: puede ser otro proveedor real; se pide confirmacion.
+                    if (err.response?.data?.codigo !== 'POSIBLE_DUPLICADO') throw err;
+                    if (!(await confirm({ title: 'Posible proveedor repetido', message: `${err.response.data.error} ¿Crear de todas formas un proveedor nuevo con el mismo nombre?`, confirmLabel: 'Crear otro', danger: false }))) return;
+                    await api.post('/proveedores/proveedores', { ...datos, confirmar_duplicado: true }, conClave(nuevaClaveIdempotencia()));
+                }
                 toast.success('Proveedor creado.');
             }
             setModal({ open: false, data: null });
@@ -41,13 +55,16 @@ export default function ProveedoresTab({ theme, proveedores, loading, cargarProv
         } catch (err) { toast.error(err.response?.data?.error || 'Error al guardar el proveedor.'); }
     };
 
-    const desactivar = async (p) => {
-        if (!(await confirm({ message: `Desactivar al proveedor "${p.nombre_comercial}"? Su historial se conserva.` }))) return;
+    // Sin historial se elimina; con compras/gastos/pagos el servidor lo desactiva para conservarlos.
+    const eliminar = async (p) => {
+        if (!(await confirm({ title: 'Eliminar proveedor', danger: true, confirmLabel: 'Eliminar',
+            message: `¿Eliminar al proveedor "${p.nombre_comercial}"? Si tiene compras, gastos o pagos registrados no se borra: se desactiva y su historial se conserva.` }))) return;
         try {
-            await api.delete(`/proveedores/proveedores/${p.id}`);
-            toast.success('Proveedor desactivado.');
+            const { data } = await api.delete(`/proveedores/proveedores/${p.id}`);
+            if (data.accion === 'desactivado') toast(data.mensaje, { icon: 'ℹ️', duration: 7000 });
+            else toast.success(data.mensaje || 'Proveedor eliminado.');
             cargarProveedores();
-        } catch (err) { toast.error(err.response?.data?.error || 'Error al desactivar.'); }
+        } catch (err) { toast.error(err.response?.data?.error || 'Error al eliminar el proveedor.'); }
     };
 
     return (
@@ -106,7 +123,7 @@ export default function ProveedoresTab({ theme, proveedores, loading, cargarProv
                                             <button className="prov-icon-btn" title="Contactos" style={{ color: SKY_DEEP }} onClick={() => setModalCont({ open: true, proveedor: p })}><IconUsers /></button>
                                             {puede('proveedores', 'editar') && <button className="prov-icon-btn" title="Editar" style={{ color: SKY_DEEP }} onClick={() => setModal({ open: true, data: p })}><IconEdit /></button>}
                                             {p.activo && (
-                                                puede('proveedores', 'eliminar') && <button className="prov-icon-btn" title="Desactivar" style={{ color: '#ef4444' }} onClick={() => desactivar(p)}><IconTrash /></button>
+                                                puede('proveedores', 'eliminar') && <button className="prov-icon-btn" title="Eliminar o desactivar" style={{ color: '#ef4444' }} onClick={() => eliminar(p)}><IconTrash /></button>
                                             )}
                                         </div>
                                     </td>
@@ -131,13 +148,20 @@ function ModalProveedor({ theme, data, onClose, onGuardar }) {
     const { txt, mut, bdr, inputBg, boxBg, SKY, SKY_DEEP, labelSt, inputSt } = theme;
     const [form, setForm] = useState(data ? { ...EMPTY_PROV, ...data } : EMPTY_PROV);
     const [saving, setSaving] = useState(false);
+    const enviando = useRef(false);                       // bloquea el doble clic antes de re-renderizar
+    const [clave] = useState(nuevaClaveIdempotencia);     // una clave por formulario abierto
     const esEdicion = Boolean(data);
 
     const onChange = (e) => {
         const { name, value, type, checked } = e.target;
         setForm({ ...form, [name]: type === 'checkbox' ? checked : value });
     };
-    const onSubmit = async (e) => { e.preventDefault(); setSaving(true); await onGuardar(form); setSaving(false); };
+    const onSubmit = async (e) => {
+        e.preventDefault();
+        if (enviando.current) return;
+        enviando.current = true; setSaving(true);
+        try { await onGuardar(form, clave); } finally { enviando.current = false; setSaving(false); }
+    };
 
     return (
         <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>

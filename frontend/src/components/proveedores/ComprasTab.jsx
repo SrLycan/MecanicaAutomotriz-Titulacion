@@ -6,11 +6,13 @@
  * movimiento en movimientos_inventario (Fase 3). Items sin repuesto_id
  * vinculado (herramientas, insumos fuera de catalogo) no afectan stock.
  */
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import Paginador from './Paginador';
 import { useAuth } from '../../context/AuthContext';
+import { useConfirm } from '../common/ConfirmDialog';
+import { nuevaClaveIdempotencia, conClave } from '../../utils/idempotencia';
 
 function IconPlus() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>; }
 function IconX()    { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>; }
@@ -87,9 +89,9 @@ export default function ComprasTab({ theme, proveedores, onCambio }) {
     useEffect(() => { setPagina(1); }, [filtros]);
     useEffect(() => { cargar(); }, [cargar]);
 
-    const crear = async (payload) => {
+    const crear = async (payload, clave) => {
         try {
-            await api.post('/proveedores/compras', payload);
+            await api.post('/proveedores/compras', payload, conClave(clave));
             toast.success(payload.forma_pago === 'contado' ? 'Compra registrada y pagada.' : `Compra a crédito registrada (vence en ${DIAS_CREDITO} días).`);
             setModal(false);
             cargar();
@@ -209,6 +211,8 @@ function ModalNuevaCompra({ theme, proveedores, onClose, onGuardar }) {
     const [items, setItems]             = useState([{ ...ITEM_VACIO }]);
     const [repuestos, setRepuestos]     = useState([]);
     const [saving, setSaving]           = useState(false);
+    const enviando = useRef(false);
+    const [clave] = useState(nuevaClaveIdempotencia);   // un doble envio no crea dos compras
 
     useEffect(() => {
         api.get('/inventory/repuestos?limit=200').then(({ data }) => setRepuestos(data.repuestos || [])).catch(() => {});
@@ -237,8 +241,10 @@ function ModalNuevaCompra({ theme, proveedores, onClose, onGuardar }) {
         if (!proveedorId) return toast.error('Selecciona un proveedor.');
         const itemsValidos = items.filter(it => it.descripcion.trim() && parseFloat(it.cantidad) > 0);
         if (itemsValidos.length === 0) return toast.error('Agrega al menos un item valido.');
+        if (enviando.current) return;
+        enviando.current = true;
         setSaving(true);
-        await onGuardar({
+        try { await onGuardar({
             proveedor_id: proveedorId,
             fecha_solicitud: fecha || undefined,
             notas,
@@ -251,8 +257,7 @@ function ModalNuevaCompra({ theme, proveedores, onClose, onGuardar }) {
                 cantidad: parseInt(it.cantidad),
                 precio_unitario: parseFloat(it.precio_unitario) || 0,
             })),
-        });
-        setSaving(false);
+        }, clave); } finally { enviando.current = false; setSaving(false); }
     };
 
     return (
@@ -360,19 +365,24 @@ function ModalDetalleCompra({ theme, compra, onClose, onActualizado }) {
     const saldo = Number(compra.saldo) || 0;
     const [pago, setPago] = useState({ monto: saldo ? saldo.toFixed(2) : '', metodo_pago: 'efectivo', referencia: '' });
     const [pagando, setPagando] = useState(false);
+    const confirm = useConfirm();
+    const clavePago = useRef(nuevaClaveIdempotencia());
 
     const registrarPago = async (e) => {
         e.preventDefault();
         const monto = parseFloat(pago.monto);
         if (!(monto > 0)) return toast.error('Ingresa un monto mayor a cero.');
+        if (pagando) return;
         setPagando(true);
         try {
+            const total = monto >= saldo - 0.005;
             await api.post('/proveedores/movimientos', {
                 proveedor_id: compra.proveedor_id, compra_id: compra.id,
-                tipo: monto >= saldo - 0.005 ? 'pago' : 'abono',
-                descripcion: `${monto >= saldo - 0.005 ? 'Pago' : 'Abono'} compra a crédito #${compra.id}`,
+                tipo: total ? 'pago' : 'abono',
+                descripcion: `${total ? 'Pago' : 'Abono'} compra ${compra.forma_pago === 'contado' ? 'al contado' : 'a crédito'} #${compra.id}`,
                 monto, metodo_pago: pago.metodo_pago, referencia: pago.referencia || undefined,
-            });
+            }, conClave(clavePago.current));
+            clavePago.current = nuevaClaveIdempotencia();  // el siguiente pago es otra operacion
             toast.success(monto >= saldo - 0.005 ? 'Compra pagada por completo.' : 'Abono registrado.');
             onActualizado();
         } catch (err) { toast.error(err.response?.data?.error || 'No se pudo registrar el pago.'); }
@@ -381,6 +391,13 @@ function ModalDetalleCompra({ theme, compra, onClose, onActualizado }) {
     const [cantidades, setCantidades] = useState(() => Object.fromEntries((compra.items || []).map(i => [i.id, i.cantidad_recibida ?? i.cantidad])));
 
     const avanzarEstado = async (nuevoEstado) => {
+        if (nuevoEstado === 'cancelada') {
+            if (Number(compra.pagado) > 0.005) {
+                toast.error(`Esta compra tiene pagos por $${Number(compra.pagado).toFixed(2)}. Si el proveedor devolvió el dinero o el pago fue un error, anúlalo en "Historial financiero" y luego cancela la compra.`, { duration: 8000 });
+                return;
+            }
+            if (!(await confirm({ title: 'Cancelar compra', message: `¿Cancelar la compra #${compra.id}? Deja de contar como deuda con el proveedor y queda registrada la cancelación en el historial.`, confirmLabel: 'Cancelar compra' }))) return;
+        }
         setCambiando(true);
         try {
             const body = { estado: nuevoEstado };

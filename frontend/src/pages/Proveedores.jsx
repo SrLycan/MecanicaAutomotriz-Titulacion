@@ -15,6 +15,7 @@ import ComprasTab, { textoVencimiento } from '../components/proveedores/ComprasT
 import HistorialTab from '../components/proveedores/HistorialTab';
 import './Proveedores.css';
 
+import { NombreEmpresa } from '../components/common/MarcaEmpresa';
 const TABS = [
     { id: 'proveedores', label: 'PROVEEDORES' },
     { id: 'gastos', label: 'GASTOS' },
@@ -122,7 +123,7 @@ export default function Proveedores() {
                 <div>
                     <div className="ssswap-chip" style={{ marginBottom: 8 }}>
                         <span className="dot" />
-                        <span>SS SWAP · ADMIN · PROVEEDORES</span>
+                        <span><NombreEmpresa /> · ADMIN · PROVEEDORES</span>
                     </div>
                     <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.6rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>Proveedores</h1>
                     <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.85rem', color: mut, marginTop: 6 }}>
@@ -140,6 +141,16 @@ export default function Proveedores() {
             </div>
 
             <AvisoCreditos alertas={alertas} onVer={() => setTab('compras')} />
+
+            {/* Datos anteriores a la correccion: pagos que siguen vigentes en compras ya canceladas. */}
+            {resumen?.pagos_en_compras_canceladas?.cantidad > 0 && (
+                <div role="alert" style={{ background: '#ef444414', border: '1px solid #ef444466', borderLeft: '4px solid #ef4444', borderRadius: 12, padding: '14px 16px', marginBottom: 20, fontFamily: "'Outfit'", fontSize: '.86rem', color: txt }}>
+                    <strong style={{ color: '#ef4444' }}>Revisar: {resumen.pagos_en_compras_canceladas.cantidad} pago(s) por ${Number(resumen.pagos_en_compras_canceladas.total).toFixed(2)} siguen confirmados en compras canceladas.</strong>{' '}
+                    Ese dinero figura como pagado sin una compra vigente (por eso “Total pagado” supera a “Total comprado”). Si el proveedor lo devolvió o el pago fue un error,
+                    anúlalo en <button onClick={() => setTab('historial')} style={{ background: 'none', border: 'none', padding: 0, color: SKY_DEEP, cursor: 'pointer', fontWeight: 600, textDecoration: 'underline' }}>Historial financiero</button>.
+                    Si el pago fue real y el proveedor no lo devolvió, déjalo como está.
+                </div>
+            )}
 
             {/* Resumen financiero */}
             {resumen && (
@@ -167,7 +178,7 @@ export default function Proveedores() {
             )}
             {tab === 'gastos' && <GastosTab theme={theme} proveedores={proveedores} />}
             {tab === 'compras' && <ComprasTab theme={theme} proveedores={proveedores} onCambio={() => { cargarAlertas(); cargarResumen(); }} />}
-            {tab === 'historial' && <HistorialTab theme={theme} proveedores={proveedores} />}
+            {tab === 'historial' && <HistorialTab theme={theme} proveedores={proveedores} onCambio={() => { cargarAlertas(); cargarResumen(); }} />}
         </div>
     );
 }

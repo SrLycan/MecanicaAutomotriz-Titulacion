@@ -20,8 +20,7 @@ import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
 import { ESTADO_PROGRESO_MAP } from '../constants/ordenes';
 import { dinero, nombreMes } from '../components/finanzas/tema';
-import adminImg from '../assets/admin.png';
-import techImg from '../assets/tecnico.png';
+import { LogoEmpresa } from '../components/common/MarcaEmpresa';
 import './Dashboard.css';
 
 const ROL_META = {
@@ -72,7 +71,6 @@ export default function Dashboard() {
     useEffect(() => { const t = setInterval(cargar, 60000); return () => clearInterval(t); }, [cargar]);
 
     const rol = usuario?.rol;
-    const esAdmin = rol === 'administrador' || rol === 'superadministrador';
     const esTecnico = rol === 'tecnico';
     const veDinero = Boolean(d?.finanzas); // el servidor solo la envia con permiso de Finanzas
     const meta = ROL_META[rol] || ROL_META.recepcionista;
@@ -125,7 +123,7 @@ export default function Dashboard() {
     return (
         <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1400, '--sky-bdr': SKY_BDR }}>
             {/* ── Saludo ── */}
-            <div className="dash-hero-grid" style={{ ...(esAdmin || esTecnico ? {} : { gridTemplateColumns: '1fr' }),
+            <div className="dash-hero-grid" style={{ ...(empresa ? {} : { gridTemplateColumns: '1fr' }),
                 position: 'relative', marginBottom: 22, overflow: 'hidden', boxShadow: cardSh, borderRadius: 22, padding: '26px 30px', minHeight: 170,
                 background: isDark ? 'linear-gradient(135deg, #0a0f1c 0%, #0c2237 50%, #0a0f1c 100%)' : 'linear-gradient(135deg, #ffffff 0%, #f0f9ff 60%, #e0f2fe 100%)',
                 border: `1px solid ${SKY_BDR}`,
@@ -140,9 +138,11 @@ export default function Dashboard() {
                         <IconClock /><span style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.85rem', textTransform: 'capitalize' }}>{fechaHoy}</span>
                     </div>
                 </div>
-                {(esAdmin || esTecnico) && (
-                    <div className="dash-hero-car" style={{ position: 'relative', zIndex: 1, overflow: 'hidden', borderRadius: 16, minHeight: 170 }}>
-                        <img src={esAdmin ? adminImg : techImg} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', borderRadius: 16 }} />
+                {/* Logo de la empresa de la sesion (se cambia en Configuracion de la empresa). */}
+                {empresa && (
+                    <div className="dash-hero-car" style={{ position: 'relative', zIndex: 1, borderRadius: 16, minHeight: 170, padding: 14,
+                        background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.75)', border: `1px solid ${SKY_BDR}` }}>
+                        <LogoEmpresa alto={180} conSubida colorTexto={SKY_DEEP} />
                     </div>
                 )}
             </div>

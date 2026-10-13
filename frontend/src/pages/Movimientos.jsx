@@ -14,6 +14,7 @@ import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
 import './Movimientos.css';
 
+import { NombreEmpresa } from '../components/common/MarcaEmpresa';
 function IconDownload() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>; }
 function IconSearch()   { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>; }
 
@@ -128,7 +129,7 @@ export default function Movimientos() {
         <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1500 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 18, flexWrap: 'wrap', gap: 12 }}>
                 <div>
-                    <div className="ssswap-chip" style={{ marginBottom: 8 }}><span className="dot" /><span>SS SWAP · TRAZABILIDAD</span></div>
+                    <div className="ssswap-chip" style={{ marginBottom: 8 }}><span className="dot" /><span><NombreEmpresa /> · TRAZABILIDAD</span></div>
                     <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.6rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>Registros de inventario</h1>
                     <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.85rem', color: mut, marginTop: 6 }}>
                         Qué pasó con cada producto: entradas, salidas, compras, ajustes, devoluciones y salidas por proforma

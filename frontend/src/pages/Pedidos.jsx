@@ -15,6 +15,7 @@ import Paginador from '../components/proveedores/Paginador';
 import './Proveedores.css';
 import { useAuth } from '../context/AuthContext';
 
+import { NombreEmpresa } from '../components/common/MarcaEmpresa';
 const ESTADOS = [
     { id: 'pendiente', label: 'POR ATENDER', color: AMBAR },
     { id: 'atendida', label: 'ENTREGADOS', color: VERDE },
@@ -61,7 +62,7 @@ export default function Pedidos() {
     return (
         <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1400, '--prov-bdr': bdr, '--prov-mut': mut, '--prov-sky': SKY_DEEP }}>
             <div style={{ marginBottom: 20 }}>
-                <div className="ssswap-chip" style={{ marginBottom: 8 }}><span className="dot" /><span>SS SWAP · INVENTARIO · TIENDA</span></div>
+                <div className="ssswap-chip" style={{ marginBottom: 8 }}><span className="dot" /><span><NombreEmpresa /> · INVENTARIO · TIENDA</span></div>
                 <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.6rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>Pedidos de la tienda</h1>
                 <p style={{ fontFamily: "'Outfit'", fontSize: '.85rem', color: mut, marginTop: 6 }}>
                     Lo que los clientes piden desde la página de productos. Al entregar, el producto sale del inventario y, si ya se cobró, el dinero entra en Finanzas.

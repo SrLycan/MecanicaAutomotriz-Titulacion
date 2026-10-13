@@ -4,11 +4,13 @@
  * 'compra', 'gasto' y 'cancelacion' se generan automaticamente (solo lectura);
  * 'pago', 'abono' y 'ajuste' se registran manualmente desde aqui.
  */
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import Paginador from './Paginador';
 import { useAuth } from '../../context/AuthContext';
+import { useConfirm } from '../common/ConfirmDialog';
+import { nuevaClaveIdempotencia, conClave } from '../../utils/idempotencia';
 
 function IconPlus() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>; }
 function IconX()    { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>; }
@@ -20,8 +22,9 @@ const METODOS = ['efectivo', 'transferencia', 'tarjeta', 'cheque', 'otro'];
 const TIPO_COLOR = { compra: '#0ea5e9', pago: '#10b981', abono: '#22c55e', gasto: '#f59e0b', cancelacion: '#ef4444', ajuste: '#8b5cf6' };
 const EMPTY = { proveedor_id: '', tipo: 'pago', compra_id: '', descripcion: '', monto: '', metodo_pago: 'efectivo', referencia: '' };
 
-export default function HistorialTab({ theme, proveedores }) {
+export default function HistorialTab({ theme, proveedores, onCambio }) {
     const { puede } = useAuth();
+    const confirm = useConfirm();
     const { txt, txtSf, mut, bdr, card, cardSh, SKY, SKY_DEEP, SKY_PALE, labelSt, inputSt } = theme;
     const [movimientos, setMovimientos] = useState([]);
     const [total, setTotal] = useState(0);
@@ -48,21 +51,26 @@ export default function HistorialTab({ theme, proveedores }) {
     useEffect(() => { setPagina(1); }, [filtros]);
     useEffect(() => { cargar(); }, [cargar]);
 
-    const registrar = async (form) => {
+    const registrar = async (form, clave) => {
         try {
-            await api.post('/proveedores/movimientos', form);
+            await api.post('/proveedores/movimientos', form, conClave(clave));
             toast.success('Movimiento registrado.');
             setModal(false);
             cargar();
+            onCambio?.();
         } catch (err) { toast.error(err.response?.data?.error || 'Error al registrar el movimiento.'); }
     };
 
+    // Anular un pago = el dinero vuelve a la cuenta (no salio o fue devuelto). Se confirma antes.
     const anular = async (m) => {
+        if (!(await confirm({ title: `Anular ${m.tipo}`, confirmLabel: 'Anular',
+            message: `¿Anular "${m.descripcion || m.tipo}" por $${Number(m.monto).toFixed(2)}? Úsalo solo si el pago no se hizo o el proveedor devolvió el dinero: deja de restar de la cuenta y la compra vuelve a tener saldo pendiente.` }))) return;
         try {
             await api.patch(`/proveedores/movimientos/${m.id}/estado`, { estado: 'anulado' });
             toast.success('Movimiento anulado.');
             cargar();
-        } catch (err) { toast.error('Error al anular el movimiento.'); }
+            onCambio?.();
+        } catch (err) { toast.error(err.response?.data?.error || 'Error al anular el movimiento.'); }
     };
 
     const filtroSel = { ...inputSt, padding: '8px 10px', fontSize: '.8rem' };
@@ -98,7 +106,10 @@ export default function HistorialTab({ theme, proveedores }) {
                 </button>}
             </div>
 
-            <p style={{ fontFamily: "'Outfit'", fontSize: '.82rem', color: mut, marginBottom: 12 }}>{total} movimiento{total !== 1 ? 's' : ''}</p>
+            <p style={{ fontFamily: "'Outfit'", fontSize: '.82rem', color: mut, marginBottom: 12 }}>
+                {total} movimiento{total !== 1 ? 's' : ''} · cada fila es una operación de dinero (compra, pago, cancelación…) de un proveedor, no un proveedor distinto.
+                Los proveedores se editan o eliminan en la pestaña “Proveedores”.
+            </p>
 
             {loading ? (
                 <p style={{ fontFamily: "'Outfit'", color: mut, padding: 40, textAlign: 'center' }}>Cargando historial...</p>
@@ -126,7 +137,10 @@ export default function HistorialTab({ theme, proveedores }) {
                                             {m.tipo.toUpperCase()}
                                         </span>
                                     </td>
-                                    <td style={{ color: txtSf, maxWidth: 200 }}>{m.descripcion || '—'}</td>
+                                    <td style={{ color: txtSf, maxWidth: 220 }}>
+                                        {m.descripcion || '—'}
+                                        {m.compra_id && <span style={{ display: 'block', fontSize: '.72rem', color: mut }}>Compra #{m.compra_id}{m.compra_estado === 'cancelada' ? ' (cancelada)' : ''}</span>}
+                                    </td>
                                     <td style={{ color: txt, fontWeight: 600 }}>${parseFloat(m.monto).toFixed(2)}</td>
                                     <td style={{ color: txtSf, textTransform: 'capitalize' }}>{m.metodo_pago || '—'}</td>
                                     <td style={{ color: txtSf, textTransform: 'capitalize' }}>{m.estado}</td>
@@ -157,6 +171,8 @@ function ModalMovimiento({ theme, proveedores, onClose, onGuardar }) {
     const [form, setForm] = useState(EMPTY);
     const [compras, setCompras] = useState([]);
     const [saving, setSaving] = useState(false);
+    const enviando = useRef(false);
+    const [clave] = useState(nuevaClaveIdempotencia);   // un doble envio no registra dos pagos
 
     useEffect(() => {
         if (!form.proveedor_id) { setCompras([]); return; }
@@ -170,9 +186,10 @@ function ModalMovimiento({ theme, proveedores, onClose, onGuardar }) {
         e.preventDefault();
         if (!form.proveedor_id) return toast.error('Selecciona un proveedor.');
         if (!form.monto || parseFloat(form.monto) <= 0) return toast.error('El monto debe ser mayor a cero.');
-        setSaving(true);
-        await onGuardar({ ...form, compra_id: form.compra_id || undefined });
-        setSaving(false);
+        if (enviando.current) return;
+        enviando.current = true; setSaving(true);
+        try { await onGuardar({ ...form, compra_id: form.compra_id || undefined }, clave); }
+        finally { enviando.current = false; setSaving(false); }
     };
 
     return (

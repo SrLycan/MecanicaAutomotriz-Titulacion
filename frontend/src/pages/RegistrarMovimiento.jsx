@@ -11,6 +11,7 @@ import api from '../services/api';
 import toast from 'react-hot-toast';
 import './RegistrarMovimiento.css';
 
+import { NombreEmpresa } from '../components/common/MarcaEmpresa';
 function IconSearch() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>; }
 function IconIn()    { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>; }
 function IconOut()   { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>; }
@@ -115,7 +116,7 @@ export default function RegistrarMovimiento() {
             <div style={{ marginBottom: 22 }}>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 10px', borderRadius: 999, background: SKY_PALE, border: `1px solid ${SKY_BDR}`, marginBottom: 8 }}>
                     <span style={{ width: 6, height: 6, borderRadius: '50%', background: SKY, boxShadow: `0 0 8px ${SKY}` }} />
-                    <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.24em', color: SKY_DEEP }}>SS SWAP · REGISTRO RAPIDO</p>
+                    <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.24em', color: SKY_DEEP }}><NombreEmpresa /> · REGISTRO RAPIDO</p>
                 </div>
                 <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.8rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>
                     {step === 'select' ? 'Registrar Movimiento' : step === 'form' ? 'Confirmar Movimiento' : 'Movimiento Completado'}

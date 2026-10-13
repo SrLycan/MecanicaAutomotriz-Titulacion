@@ -16,6 +16,7 @@ import ConteoEfectivo, { totalConteo, conteoParaBackend, conteoVacio } from '../
 import './Proveedores.css';
 import { useAuth } from '../context/AuthContext';
 
+import { NombreEmpresa } from '../components/common/MarcaEmpresa';
 const OTROS_METODOS = [
     { id: 'transferencia', label: 'Transferencia' },
     { id: 'tarjeta', label: 'Tarjeta' },
@@ -96,7 +97,7 @@ export default function Caja() {
         <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1300, '--prov-bdr': bdr, '--prov-mut': mut, '--prov-sky': SKY_DEEP }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
                 <div>
-                    <div className="ssswap-chip" style={{ marginBottom: 8 }}><span className="dot" /><span>SS SWAP · FINANZAS · CAJA</span></div>
+                    <div className="ssswap-chip" style={{ marginBottom: 8 }}><span className="dot" /><span><NombreEmpresa /> · FINANZAS · CAJA</span></div>
                     <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.6rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>Caja diaria</h1>
                     <p style={{ fontFamily: "'Outfit'", fontSize: '.85rem', color: mut, marginTop: 6 }}>
                         {estado?.caja ? `${estado.caja.nombre} · ` : ''}Efectivo del taller: apertura, movimientos y cierre con conteo.
