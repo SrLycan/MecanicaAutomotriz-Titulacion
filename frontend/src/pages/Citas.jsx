@@ -8,6 +8,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import api from '../services/api';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 
 const ESTADOS = { pendiente: '#d97706', confirmada: '#0284c7', completada: '#059669', cancelada: '#dc2626' };
 const NOMBRES = { pendiente: 'Pendiente', confirmada: 'Confirmada', completada: 'Completada', cancelada: 'Cancelada' };
@@ -15,6 +16,8 @@ const SKY = '#0ea5e9';
 
 export default function Citas() {
     const { isDark } = useTheme();
+    const { puede } = useAuth();
+    const puedeEditar = puede('citas', 'editar');
     const [citas, setCitas] = useState([]);       // SIEMPRE todas (el filtro se aplica del lado del cliente)
     const [estado, setEstado] = useState('pendiente');
     const [orden, setOrden] = useState('fecha_asc');
@@ -68,7 +71,7 @@ export default function Citas() {
                             transition: 'all .15s',
                         }}>
                         <div style={{ position: 'absolute', top: 0, left: 0, width: 3, height: '100%', background: `linear-gradient(180deg, ${k.color}, transparent)` }} />
-                        <p style={{ fontSize: '.62rem', fontWeight: 800, letterSpacing: '.14em', color: muted, margin: 0, textTransform: 'uppercase' }}>{k.label}</p>
+                        <p style={{ fontSize: '.74rem', fontWeight: 800, letterSpacing: '.14em', color: muted, margin: 0, textTransform: 'uppercase' }}>{k.label}</p>
                         <p style={{ fontSize: '1.7rem', fontWeight: 800, color: k.color, margin: '4px 0 0', lineHeight: 1 }}>{k.n}</p>
                     </button>
                 );
@@ -79,10 +82,10 @@ export default function Citas() {
             <select className="appointments-select" aria-label="Filtrar por estado" value={estado} onChange={e => setEstado(e.target.value)} style={control(bg, text, border)}><option value="pendiente">Pendientes</option><option value="confirmada">Confirmadas</option><option value="completada">Completadas</option><option value="todas">Todas</option><option value="cancelada">Canceladas</option></select>
             <select className="appointments-select" aria-label="Ordenar citas" value={orden} onChange={e => setOrden(e.target.value)} style={control(bg, text, border)}><option value="fecha_asc">Fecha de cita: próxima primero</option><option value="fecha_desc">Fecha de cita: más reciente primero</option><option value="registro_desc">Registro: más reciente primero</option><option value="registro_asc">Registro: más antiguo primero</option></select>
         </div>
-        {cargando ? <p style={{ color: muted }}>Cargando agenda…</p> : visibles.length === 0 ? <div className="SS SWAP-card" style={card(bg, border)}><p style={{ color: muted, margin: 0 }}>No hay citas con este filtro.</p></div> : <div style={{ display: 'grid', gap: 12 }}>{visibles.map((c, index) => <div key={c.id} className="appointments-card" style={{ ...card(bg, border), animationDelay: `${index * 45}ms` }}>
+        {cargando ? <p style={{ color: muted }}>Cargando agenda…</p> : visibles.length === 0 ? <div className="ssswap-card" style={card(bg, border)}><p style={{ color: muted, margin: 0 }}>No hay citas con este filtro.</p></div> : <div style={{ display: 'grid', gap: 12 }}>{visibles.map((c, index) => <div key={c.id} className="appointments-card" style={{ ...card(bg, border), animationDelay: `${index * 45}ms` }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}><div><div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}><strong style={{ color: text }}>{c.servicio_nombre}</strong><span className="appointments-status" style={{ color: ESTADOS[c.estado], fontWeight: 800, fontSize: '.72rem' }}>{NOMBRES[c.estado]}</span></div><p style={{ color: muted, margin: '6px 0 0', fontSize: '.85rem' }}>{c.cliente_nombre} {c.cliente_telefono ? `· ${c.cliente_telefono}` : ''}{c.placa ? ` · ${c.placa}` : ''}</p></div><div style={{ textAlign: 'right', color: text, fontSize: '.86rem' }}>{new Date(c.fecha + 'T00:00:00').toLocaleDateString('es-EC')}<br/><span style={{ color: '#3b7bab', fontWeight: 700 }}>{c.hora_inicio?.slice(0,5)} – {c.hora_fin?.slice(0,5)}</span></div></div>
             <p style={{ color: muted, fontSize: '.8rem', margin: '12px 0 0' }}>{c.sucursal_nombre} · Registrada: {new Date(c.created_at).toLocaleString('es-EC')}</p>{c.notas && <p style={{ color: muted, fontSize: '.8rem', fontStyle: 'italic', margin: '7px 0 0' }}>“{c.notas}”</p>}
-            {c.estado === 'pendiente' && <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}><button className="appointments-action" onClick={() => cambiar(c.id, 'confirmada')} style={action('#059669')}>✓ Aceptar cita</button><button className="appointments-action" onClick={() => cambiar(c.id, 'cancelada')} style={action('#dc2626')}>Cancelar</button></div>}
+            {c.estado === 'pendiente' && puedeEditar && <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}><button className="appointments-action" onClick={() => cambiar(c.id, 'confirmada')} style={action('#059669')}>✓ Aceptar cita</button><button className="appointments-action" onClick={() => cambiar(c.id, 'cancelada')} style={action('#dc2626')}>Cancelar</button></div>}
         </div>)}</div>}
     </div>;
 }

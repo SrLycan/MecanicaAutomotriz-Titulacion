@@ -1,10 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700;800&display=swap');
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: #050505; }
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #050505; }
-::-webkit-scrollbar-thumb { background: rgba(59,123,171,.3); border-radius: 8px; }
-@keyframes fadeUp { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform:none; } }
+/* El fondo oscuro lo pone el contenedor raiz del portal: aqui no se toca body,
+   la barra de desplazamiento ni las animaciones globales (antes se filtraban al panel). */
 .pc-fade { animation: fadeUp .4s ease both; }
 .pc-tab { transition: color .2s, border-color .2s, background .2s; }
 .pc-tab:hover { color: #fff !important; }

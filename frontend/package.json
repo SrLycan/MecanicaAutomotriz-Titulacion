@@ -1,14 +1,15 @@
 {
-  "name": "SS SWAP-frontend",
+  "name": "ssswap-frontend",
   "version": "1.0.0",
   "private": true,
   "dependencies": {
-    "axios": "^1.7.2",
+    "axios": "^1.20.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hot-toast": "^2.4.1",
     "react-router-dom": "^6.24.0",
-    "react-scripts": "5.0.1"
+    "react-scripts": "5.0.1",
+    "recharts": "^3.10.1"
   },
   "scripts": {
     "start": "react-scripts start",

@@ -6,3 +6,8 @@
 .u-input:focus { border-color: #0ea5e9 !important; box-shadow: 0 0 0 3px rgba(14,165,233,.14); }
 .u-kpi { transition: transform .25s, border-color .25s; }
 .u-kpi:hover { transform: translateY(-3px); border-color: var(--sky-bdr); }
+
+/* Editor de permisos: en pantallas angostas el modulo y sus acciones se apilan */
+@media (max-width: 640px) {
+    .perm-fila { grid-template-columns: 1fr !important; }
+}

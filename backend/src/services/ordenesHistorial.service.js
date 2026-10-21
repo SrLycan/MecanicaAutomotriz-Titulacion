@@ -10,6 +10,7 @@
  */
 const pool = require('../config/db');
 const { getMongoDb } = require('../config/mongo');
+const { marcaEmpresa, filtroEmpresa } = require('./mongoEmpresa');
 
 /**
  * Registra una entrada en el historial de cambios de una orden.
@@ -32,7 +33,9 @@ const registrarHistorial = async ({
     }
     try {
         await db.collection('ordenes_historial').insertOne({
+            ...marcaEmpresa(),
             orden_id: Number(orden_id),
+            entidad_tipo: 'orden', entidad_id: Number(orden_id),
             estado_anterior, estado_nuevo, progreso_anterior, progreso_nuevo,
             usuario_id, usuario_nombre, notas,
             created_at: new Date(),
@@ -42,13 +45,50 @@ const registrarHistorial = async ({
     }
 };
 
+/**
+ * Registra una accion generica de auditoria (Fase 3: Proveedores, Compras,
+ * Gastos, etc.) en la MISMA coleccion `ordenes_historial` que ya usa la
+ * bitacora de ordenes — no se crea una bitacora paralela. Se distingue por
+ * `entidad_tipo` (!= 'orden'), por lo que NO aparece en la pestaña
+ * "Historial de Ordenes" del panel (que sigue mostrando solo ordenes,
+ * exactamente igual que antes) sino en la pestaña "Otras acciones".
+ * Best-effort: nunca lanza, igual que registrarHistorial.
+ */
+const registrarAccionBitacora = async ({
+    entidad_tipo, entidad_id = null, accion,
+    usuario_id = null, usuario_nombre = null, detalle = null,
+    // Sprint 14: datos estructurados opcionales (ids relacionados, montos,
+    // productos...) para que la bitacora indique "ID relacionado" e
+    // "informacion relevante" sin tener que parsear el texto de `detalle`.
+    metadata = null,
+}) => {
+    const db = getMongoDb();
+    if (!db) {
+        console.warn(`[bitacora] Mongo no esta conectado — NO se guardo la accion "${accion}" sobre ${entidad_tipo}#${entidad_id}.`);
+        return;
+    }
+    try {
+        await db.collection('ordenes_historial').insertOne({
+            ...marcaEmpresa(),
+            orden_id: null,
+            entidad_tipo, entidad_id: entidad_id !== null ? Number(entidad_id) : null,
+            accion, detalle,
+            ...(metadata ? { metadata } : {}),
+            usuario_id, usuario_nombre,
+            created_at: new Date(),
+        });
+    } catch (err) {
+        console.error(`[bitacora] Error al registrar accion "${accion}" sobre ${entidad_tipo}#${entidad_id}:`, err.message);
+    }
+};
+
 /** Historial de UNA orden, mas antiguo primero (igual que la version SQL original). */
 const obtenerHistorialPorOrden = async (ordenId) => {
     const db = getMongoDb();
     if (!db) return [];
     try {
         const docs = await db.collection('ordenes_historial')
-            .find({ orden_id: Number(ordenId) })
+            .find(await filtroEmpresa({ orden_id: Number(ordenId) }))
             .sort({ created_at: 1, _id: 1 })
             .toArray();
         return docs.map(formatearEntrada);
@@ -59,20 +99,41 @@ const obtenerHistorialPorOrden = async (ordenId) => {
 };
 
 /**
- * Panel de administracion: bitacora general de TODAS las ordenes,
- * paginada, mas reciente primero. Se enriquece con nombre del cliente y
- * placa consultando Postgres (fuente de verdad de esos datos) solo para
- * las ordenes presentes en la pagina actual.
+ * Panel de administracion: bitacora general, paginada, mas reciente primero.
+ *
+ * `tipo` ('orden' por defecto, o 'otras'):
+ *  - 'orden' (o ausente): SOLO entradas de ordenes de trabajo — exactamente
+ *    el mismo comportamiento y forma de datos que tenia esta funcion antes
+ *    de la Fase 3 (incluye los documentos legacy que no tienen
+ *    `entidad_tipo` porque se escribieron antes de este cambio).
+ *  - 'otras': entradas generadas por registrarAccionBitacora (Proveedores,
+ *    Compras, Gastos, Movimientos financieros, etc.), SIN el enriquecido
+ *    con Postgres de ordenes (join distinto, no aplica).
  */
-const listarHistorialGeneral = async ({ pagina = 1, porPagina = 20 } = {}) => {
+const listarHistorialGeneral = async ({ pagina = 1, porPagina = 20, tipo = 'orden', entidad = null } = {}) => {
     const db = getMongoDb();
     if (!db) return { total: 0, registros: [] };
     try {
+        // `entidad` (Sprint 14, opcional): filtra "Otras acciones" por un
+        // entidad_tipo concreto (proforma, inventario, cuenta_cobrar, pago...).
+        // Solo la empresa de la peticion (MongoDB no tiene RLS: se filtra aqui).
+        const filtro = await filtroEmpresa(tipo === 'otras'
+            ? { entidad_tipo: entidad ? String(entidad) : { $exists: true, $ne: 'orden' } }
+            : { $or: [{ entidad_tipo: 'orden' }, { entidad_tipo: { $exists: false } }] });
+
         const skip = (pagina - 1) * porPagina;
         const [docs, total] = await Promise.all([
-            db.collection('ordenes_historial').find({}).sort({ created_at: -1 }).skip(skip).limit(porPagina).toArray(),
-            db.collection('ordenes_historial').countDocuments(),
+            db.collection('ordenes_historial').find(filtro).sort({ created_at: -1 }).skip(skip).limit(porPagina).toArray(),
+            db.collection('ordenes_historial').countDocuments(filtro),
         ]);
+
+        if (tipo === 'otras') {
+            const registros = docs.map(d => ({
+                ...formatearEntrada(d),
+                orden_id: d.orden_id,
+            }));
+            return { total, registros };
+        }
 
         const ordenIds = [...new Set(docs.map(d => d.orden_id))];
         let contexto = {};
@@ -104,6 +165,11 @@ const listarHistorialGeneral = async ({ pagina = 1, porPagina = 20 } = {}) => {
 
 const formatearEntrada = (d) => ({
     id: d._id.toString(),
+    entidad_tipo: d.entidad_tipo || 'orden',
+    entidad_id: d.entidad_id ?? d.orden_id ?? null,
+    accion: d.accion || null,
+    detalle: d.detalle || null,
+    metadata: d.metadata || null,
     estado_anterior: d.estado_anterior,
     estado_nuevo: d.estado_nuevo,
     progreso_anterior: d.progreso_anterior,
@@ -113,4 +179,4 @@ const formatearEntrada = (d) => ({
     created_at: d.created_at,
 });
 
-module.exports = { registrarHistorial, obtenerHistorialPorOrden, listarHistorialGeneral };
+module.exports = { registrarHistorial, registrarAccionBitacora, obtenerHistorialPorOrden, listarHistorialGeneral };

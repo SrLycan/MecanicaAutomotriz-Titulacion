@@ -12,8 +12,13 @@
  *   (ver services/ordenesHistorial.service.js).
  */
 const pool = require('../config/db');
+const { validarIdentificacion } = require('../sri/identificacion');
+const { errorBD } = require('../utils/erroresBD');
+const { puede } = require('../middleware/auth.middleware');
+const { COLUMNAS_EMPRESA_SQL } = require('../services/marcaEmpresa');
+const { generarOrdenPdf, numeroOrden } = require('../services/ordenPdf.service');
 const {
-    registrarHistorial, obtenerHistorialPorOrden,
+    registrarHistorial, obtenerHistorialPorOrden, registrarAccionBitacora,
     listarHistorialGeneral: listarHistorialGeneralService,
 } = require('../services/ordenesHistorial.service');
 
@@ -39,23 +44,46 @@ const validarDatosCliente = ({ nombre, email, telefono, cedula }) => {
  * e indica si el cliente posee una cuenta de acceso al portal web vinculada.
  */
 const listarClientes = async (req, res) => {
-    const { q } = req.query;
-    let query = `SELECT c.*,
-                        (u.id IS NOT NULL) AS cuenta_web
-                 FROM clientes c
+    const { q, page, limit } = req.query;
+    const desde = `FROM clientes c
                  LEFT JOIN usuarios u ON LOWER(u.email) = LOWER(c.email) AND u.rol = 'cliente'
+                 LEFT JOIN usuarios uc ON uc.id = c.creado_por
                  WHERE 1=1`;
+    let filtro = '';
     const params = [];
     if (q) {
         params.push(`%${q}%`);
-        query += ` AND (c.nombre ILIKE $${params.length} OR c.cedula ILIKE $${params.length} OR c.telefono ILIKE $${params.length} OR c.email ILIKE $${params.length})`;
+        filtro += ` AND (c.nombre ILIKE $${params.length} OR c.cedula ILIKE $${params.length} OR c.telefono ILIKE $${params.length} OR c.email ILIKE $${params.length})`;
     }
-    query += ' ORDER BY c.nombre ASC';
+    const query = `SELECT c.*,
+                        (u.id IS NOT NULL) AS cuenta_web,
+                        uc.nombre AS creado_por_nombre
+                 ${desde}${filtro}
+                 ORDER BY c.nombre ASC`;
     try {
-        const { rows } = await pool.query(query, params);
-        return res.json({ clientes: rows });
+        // Sin "page" se devuelve la lista completa (selectores de ordenes,
+        // proformas, vehiculos y pagares). La pagina Clientes pide por paginas.
+        if (page === undefined) {
+            const { rows } = await pool.query(query, params);
+            return res.json({ clientes: rows });
+        }
+        const pageNum = Math.max(1, parseInt(page, 10) || 1);
+        const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+        const [{ rows }, { rows: [r] }] = await Promise.all([
+            pool.query(`${query}, c.id LIMIT $${params.length + 1} OFFSET $${params.length + 2}`, [...params, limitNum, (pageNum - 1) * limitNum]),
+            pool.query(`SELECT COUNT(*)::int AS total,
+                               COUNT(*) FILTER (WHERE NULLIF(c.email, '') IS NOT NULL)::int AS con_email,
+                               COUNT(*) FILTER (WHERE NULLIF(c.telefono, '') IS NOT NULL)::int AS con_telefono
+                        ${desde}${filtro}`, params),
+        ]);
+        return res.json({
+            clientes: rows, total: r.total, page: pageNum, limit: limitNum,
+            totalPages: Math.ceil(r.total / limitNum),
+            resumen: { total: r.total, con_email: r.con_email, con_telefono: r.con_telefono },
+        });
     } catch (err) {
         console.error('Error listarClientes:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener clientes.' });
     }
 };
@@ -99,6 +127,7 @@ const obtenerCliente = async (req, res) => {
         });
     } catch (err) {
         console.error('Error obtenerCliente:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener cliente.' });
     }
 };
@@ -106,23 +135,40 @@ const obtenerCliente = async (req, res) => {
 /**
  * Registra un nuevo cliente en el taller validando unicidad de cédula.
  */
+/**
+ * Sprint 23: tipo de identificación SRI (opcional). Si se indica, se valida el
+ * FORMATO de la cédula/RUC/pasaporte (el SRI no publica un servicio de
+ * consulta de datos). Devuelve { error } o { tipo, advertencias }.
+ */
+function validarIdentificacionCliente(tipo, cedula) {
+    if (tipo === undefined || tipo === null || tipo === '') return { tipo: null, advertencias: [] };
+    if (!['04', '05', '06', '08'].includes(String(tipo))) return { error: 'Tipo de identificación no válido.' };
+    if (!cedula) return { error: 'Ingrese el número de identificación.' };
+    const v = validarIdentificacion(String(tipo), cedula);
+    if (!v.valido) return { error: v.errores.join(' ') };
+    return { tipo: String(tipo), advertencias: v.advertencias };
+}
+
 const crearCliente = async (req, res) => {
-    const { nombre, email, telefono, cedula, direccion } = req.body;
+    const { nombre, email, telefono, cedula, direccion, tipo_identificacion } = req.body;
     const errVal = validarDatosCliente({ nombre, email, telefono, cedula });
     if (errVal) return res.status(400).json({ error: errVal });
+    const ident = validarIdentificacionCliente(tipo_identificacion, cedula);
+    if (ident.error) return res.status(400).json({ error: ident.error });
     try {
         if (cedula) {
             const { rows: dup } = await pool.query('SELECT id FROM clientes WHERE cedula = $1', [cedula]);
             if (dup.length > 0) return res.status(409).json({ error: 'Ya existe un cliente con esa cedula.' });
         }
         const { rows } = await pool.query(
-            `INSERT INTO clientes (nombre, email, telefono, cedula, direccion)
-             VALUES ($1,$2,$3,$4,$5) RETURNING *`,
-            [nombre.trim(), email || null, telefono || null, cedula || null, direccion || null]
+            `INSERT INTO clientes (nombre, email, telefono, cedula, direccion, tipo_identificacion)
+             VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+            [nombre.trim(), email || null, telefono || null, cedula || null, direccion || null, ident.tipo]
         );
-        return res.status(201).json({ cliente: rows[0] });
+        return res.status(201).json({ cliente: rows[0], advertencias: ident.advertencias });
     } catch (err) {
         console.error('Error crearCliente:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al crear cliente.' });
     }
 };
@@ -133,11 +179,25 @@ const crearCliente = async (req, res) => {
 const eliminarCliente = async (req, res) => {
     const { id } = req.params;
     try {
+        // Sprint 15: un cliente con historial (ordenes, proformas, pagares)
+        // no se borra: antes el DELETE fallaba con error 500 o borraba sus
+        // vehiculos en cascada dejando proformas sin vehiculo.
+        const { rows: hist } = await pool.query(
+            `SELECT (SELECT COUNT(*)::int FROM ordenes_trabajo WHERE cliente_id = $1) AS ordenes,
+                    (SELECT COUNT(*)::int FROM proformas WHERE cliente_id = $1) AS proformas,
+                    (SELECT COUNT(*)::int FROM cuentas_cobrar WHERE cliente_id = $1) AS cuentas`,
+            [id]
+        );
+        const h = hist[0];
+        if (h.ordenes || h.proformas || h.cuentas) {
+            return res.status(409).json({ error: `No se puede eliminar: el cliente tiene ${[h.ordenes && `${h.ordenes} orden(es)`, h.proformas && `${h.proformas} proforma(s)`, h.cuentas && `${h.cuentas} cuenta(s) por cobrar`].filter(Boolean).join(', ')} registradas.` });
+        }
         const { rowCount } = await pool.query('DELETE FROM clientes WHERE id = $1', [id]);
         if (rowCount === 0) return res.status(404).json({ error: 'Cliente no encontrado.' });
         return res.json({ ok: true });
     } catch (err) {
         console.error('Error eliminarCliente:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al eliminar cliente.' });
     }
 };
@@ -147,9 +207,11 @@ const eliminarCliente = async (req, res) => {
  */
 const actualizarCliente = async (req, res) => {
     const { id } = req.params;
-    const { nombre, email, telefono, cedula, direccion } = req.body;
+    const { nombre, email, telefono, cedula, direccion, tipo_identificacion } = req.body;
     const errVal = validarDatosCliente({ nombre, email, telefono, cedula });
     if (errVal) return res.status(400).json({ error: errVal });
+    const ident = validarIdentificacionCliente(tipo_identificacion, cedula);
+    if (ident.error) return res.status(400).json({ error: ident.error });
     try {
         if (cedula) {
             const { rows: dup } = await pool.query(
@@ -158,13 +220,19 @@ const actualizarCliente = async (req, res) => {
             if (dup.length > 0) return res.status(409).json({ error: 'Ya existe otro cliente con esa cedula.' });
         }
         const { rows } = await pool.query(
-            `UPDATE clientes SET nombre=$1, email=$2, telefono=$3, cedula=$4, direccion=$5 WHERE id=$6 RETURNING *`,
-            [nombre.trim(), email || null, telefono || null, cedula || null, direccion || null, id]
+            // Si cambia la identificación o la razón social, la confirmación anterior deja de valer.
+            `UPDATE clientes SET nombre=$1, email=$2, telefono=$3, cedula=$4, direccion=$5,
+                    tipo_identificacion = COALESCE($7, tipo_identificacion),
+                    identificacion_confirmada_at = CASE WHEN cedula IS DISTINCT FROM $4 OR nombre IS DISTINCT FROM $1 THEN NULL ELSE identificacion_confirmada_at END,
+                    identificacion_confirmada_por = CASE WHEN cedula IS DISTINCT FROM $4 OR nombre IS DISTINCT FROM $1 THEN NULL ELSE identificacion_confirmada_por END
+             WHERE id=$6 RETURNING *`,
+            [nombre.trim(), email || null, telefono || null, cedula || null, direccion || null, id, ident.tipo]
         );
         if (!rows[0]) return res.status(404).json({ error: 'Cliente no encontrado.' });
-        return res.json({ cliente: rows[0] });
+        return res.json({ cliente: rows[0], advertencias: ident.advertencias });
     } catch (err) {
         console.error('Error actualizarCliente:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al actualizar cliente.' });
     }
 };
@@ -179,9 +247,10 @@ const actualizarCliente = async (req, res) => {
  */
 const listarVehiculos = async (req, res) => {
     const { cliente_id, q } = req.query;
-    let query = `SELECT v.*, c.nombre AS cliente_nombre
+    let query = `SELECT v.*, c.nombre AS cliente_nombre, uc.nombre AS creado_por_nombre
                  FROM vehiculos v
                  JOIN clientes c ON c.id = v.cliente_id
+                 LEFT JOIN usuarios uc ON uc.id = v.creado_por
                  WHERE 1=1`;
     const params = [];
     if (cliente_id) { params.push(cliente_id); query += ` AND v.cliente_id = $${params.length}`; }
@@ -195,6 +264,7 @@ const listarVehiculos = async (req, res) => {
         return res.json({ vehiculos: rows });
     } catch (err) {
         console.error('Error listarVehiculos:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener vehiculos.' });
     }
 };
@@ -217,6 +287,7 @@ const crearVehiculo = async (req, res) => {
         return res.status(201).json({ vehiculo: rows[0] });
     } catch (err) {
         console.error('Error crearVehiculo:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al crear vehiculo.' });
     }
 };
@@ -229,15 +300,17 @@ const actualizarVehiculo = async (req, res) => {
     const { placa, marca, modelo, anio, color, vin } = req.body;
     try {
         const { rows } = await pool.query(
-            `UPDATE vehiculos SET placa=$1, marca=$2, modelo=$3, anio=$4, color=$5, vin=$6
+            `UPDATE vehiculos SET placa=COALESCE(NULLIF($1, ''), placa), marca=COALESCE(NULLIF($2, ''), marca),
+             modelo=$3, anio=$4, color=$5, vin=$6
              WHERE id=$7 RETURNING *`,
-            [placa?.trim().toUpperCase(), marca?.trim(), modelo || null,
+            [placa?.trim().toUpperCase() || null, marca?.trim() || null, modelo || null,
              anio || null, color || null, vin || null, id]
         );
         if (!rows[0]) return res.status(404).json({ error: 'Vehiculo no encontrado.' });
         return res.json({ vehiculo: rows[0] });
     } catch (err) {
         console.error('Error actualizarVehiculo:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al actualizar vehiculo.' });
     }
 };
@@ -248,11 +321,22 @@ const actualizarVehiculo = async (req, res) => {
 const eliminarVehiculo = async (req, res) => {
     const { id } = req.params;
     try {
+        const { rows: hist } = await pool.query(
+            `SELECT (SELECT COUNT(*)::int FROM ordenes_trabajo WHERE vehiculo_id = $1) AS ordenes,
+                    (SELECT COUNT(*)::int FROM proformas WHERE vehiculo_id = $1) AS proformas,
+                    (SELECT COUNT(*)::int FROM cuentas_cobrar WHERE vehiculo_id = $1) AS cuentas`,
+            [id]
+        );
+        const h = hist[0];
+        if (h.ordenes || h.proformas || h.cuentas) {
+            return res.status(409).json({ error: `No se puede eliminar: el vehículo tiene ${[h.ordenes && `${h.ordenes} orden(es)`, h.proformas && `${h.proformas} proforma(s)`, h.cuentas && `${h.cuentas} cuenta(s) por cobrar`].filter(Boolean).join(', ')} registradas.` });
+        }
         const { rowCount } = await pool.query('DELETE FROM vehiculos WHERE id = $1', [id]);
         if (rowCount === 0) return res.status(404).json({ error: 'Vehiculo no encontrado.' });
         return res.json({ ok: true });
     } catch (err) {
         console.error('Error eliminarVehiculo:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al eliminar vehiculo.' });
     }
 };
@@ -297,6 +381,7 @@ const listarOrdenes = async (req, res) => {
         return res.json({ ordenes: rows });
     } catch (err) {
         console.error('Error listarOrdenes:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener ordenes.' });
     }
 };
@@ -326,7 +411,52 @@ const obtenerOrden = async (req, res) => {
         return res.json(rows[0]);
     } catch (err) {
         console.error('Error obtenerOrden:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener orden.' });
+    }
+};
+
+/**
+ * GET /api/ordenes/ordenes/:id/pdf
+ * Orden de trabajo en PDF con la identidad de SU empresa (copia guardada al
+ * crearla o, en órdenes anteriores, los datos actuales de la empresa) y el
+ * usuario que la registró (siempre el autenticado al crearla, nunca el
+ * navegador). RLS: solo existe para la empresa dueña.
+ */
+const descargarOrdenPdf = async (req, res) => {
+    const { id } = req.params;
+    if (!/^\d+$/.test(String(id))) return res.status(404).json({ error: 'Orden no encontrada.' });
+    try {
+        const { rows } = await pool.query(`
+            SELECT o.*,
+                   c.nombre AS cliente_nombre, c.email AS cliente_email, c.telefono AS cliente_telefono,
+                   c.cedula AS cliente_cedula, c.direccion AS cliente_direccion,
+                   v.placa, v.marca, v.modelo, v.anio, v.color, v.vin,
+                   u.nombre AS usuario_nombre, t.nombre AS tecnico_nombre,
+                   ${COLUMNAS_EMPRESA_SQL}
+            FROM ordenes_trabajo o
+            JOIN empresas e ON e.id = o.empresa_id
+            JOIN clientes c ON c.id = o.cliente_id
+            LEFT JOIN vehiculos v ON v.id = o.vehiculo_id
+            LEFT JOIN usuarios u ON u.id = o.usuario_id
+            LEFT JOIN usuarios t ON t.id = o.tecnico_id
+            WHERE o.id = $1`, [id]);
+        const orden = rows[0];
+        if (!orden) return res.status(404).json({ error: 'Orden no encontrada.' });
+        const [{ rows: proformas }, { rows: ultima }] = await Promise.all([
+            pool.query(`SELECT numero, total, estado FROM proformas WHERE orden_id = $1 OR orden_generada_id = $1 ORDER BY id`, [id]),
+            pool.query(`SELECT h.created_at, u.nombre AS usuario_nombre FROM ordenes_historial h
+                        LEFT JOIN usuarios u ON u.id = h.usuario_id WHERE h.orden_id = $1 ORDER BY h.created_at DESC, h.id DESC LIMIT 1`, [id]),
+        ]);
+        const pdf = await generarOrdenPdf({ ...orden, proformas, ultima_modificacion: ultima[0] || null });
+        const archivo = `${numeroOrden(orden)}-${String(orden.cliente_nombre || 'CLIENTE').normalize('NFD').replace(/[̀-ͯ]/g, '')
+            .replace(/[^\w-]+/g, '_').slice(0, 50).toUpperCase()}.pdf`;
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${archivo}"`);
+        return res.send(pdf);
+    } catch (err) {
+        console.error('Error descargarOrdenPdf:', err.message);
+        if (!res.headersSent) return res.status(500).json({ error: 'Error al generar el PDF de la orden.' });
     }
 };
 
@@ -337,14 +467,13 @@ const obtenerOrden = async (req, res) => {
 const crearOrden = async (req, res) => {
     const { cliente_id, vehiculo_id, descripcion, diagnostico, kilometraje, tecnico_id } = req.body;
     const usuario_id = req.usuario.id;
-    const rol = req.usuario?.rol;
 
     if (!cliente_id || !descripcion) {
         return res.status(400).json({ error: 'cliente_id y descripcion son obligatorios.' });
     }
 
-    // Solo admin y recepcionista pueden asignar tecnico al crear
-    const puedeAsignar = ['administrador', 'recepcionista'].includes(rol);
+    // Solo quien tiene el permiso "Asignar tecnico" puede asignarlo al crear
+    const puedeAsignar = puede(req.usuario, 'ordenes', 'asignar');
     const tecnicoFinal = puedeAsignar ? (tecnico_id || null) : null;
 
     try {
@@ -364,6 +493,7 @@ const crearOrden = async (req, res) => {
         return res.status(201).json({ orden: rows[0] });
     } catch (err) {
         console.error('Error crearOrden:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al crear orden de trabajo.' });
     }
 };
@@ -372,7 +502,7 @@ const crearOrden = async (req, res) => {
  * Actualiza los datos o el estado de una orden.
  * Aplica reglas de negocio y control de acceso:
  * - Técnicos solo pueden modificar órdenes que tengan asignadas.
- * - Administradores poseen control total.
+ * - Permiso "Cambiar estado de cualquier orden" (ordenes:aprobar): control total del estado.
  * - Recepción no puede cambiar estados técnicos/mecánicos.
  * - Registra cambios de estado y notas en el historial de auditoría (MongoDB).
  */
@@ -407,21 +537,19 @@ const actualizarOrden = async (req, res) => {
     const cambiaEstado = estado !== undefined || estado_progreso !== undefined || notas_progreso !== undefined;
 
     if (cambiaEstado) {
-        if (rol === 'administrador') {
-            // El admin puede cambiar cualquier estado sin restriccion
+        if (puede(req.usuario, 'ordenes', 'aprobar')) {
+            // Permiso "Cambiar estado de cualquier orden": sin restriccion
+        } else if (ordenActual.tecnico_id === usuarioId) {
+            // El tecnico asignado actualiza el avance de SU orden
         } else if (rol === 'tecnico') {
-            // El tecnico solo puede actualizar si es el tecnico asignado
-            if (ordenActual.tecnico_id !== usuarioId) {
-                return res.status(403).json({ error: 'Solo el tecnico asignado puede actualizar el estado de esta orden.' });
-            }
+            return res.status(403).json({ error: 'Solo el tecnico asignado puede actualizar el estado de esta orden.' });
         } else {
-            // Recepcionista y otros no pueden cambiar estado
             return res.status(403).json({ error: 'No tienes permiso para cambiar el estado de la orden.' });
         }
     }
 
-    // Solo admin y recepcionista pueden asignar/cambiar el tecnico
-    const puedeAsignar = ['administrador', 'recepcionista'].includes(rol);
+    // Solo quien tiene el permiso "Asignar tecnico" puede asignarlo/cambiarlo
+    const puedeAsignar = puede(req.usuario, 'ordenes', 'asignar');
     const tecnicoFinal = tecnico_id !== undefined
         ? (puedeAsignar ? (tecnico_id || null) : undefined)
         : undefined;
@@ -472,6 +600,7 @@ const actualizarOrden = async (req, res) => {
         return res.json({ orden: rows[0] });
     } catch (err) {
         console.error('Error actualizarOrden:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al actualizar orden.' });
     }
 };
@@ -491,6 +620,7 @@ const obtenerHistorialOrden = async (req, res) => {
         return res.json({ historial });
     } catch (err) {
         console.error('Error obtenerHistorialOrden:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener el historial de la orden.' });
     }
 };
@@ -502,7 +632,9 @@ const obtenerHistorialOrden = async (req, res) => {
 const listarHistorialGeneral = async (req, res) => {
     const pagina    = parseInt(req.query.pagina, 10) || 1;
     const porPagina = Math.min(parseInt(req.query.porPagina, 10) || 20, 100);
-    const resultado = await listarHistorialGeneralService({ pagina, porPagina });
+    const tipo      = req.query.tipo === 'otras' ? 'otras' : 'orden';
+    const entidad   = typeof req.query.entidad === 'string' && /^[a-z_]{1,40}$/.test(req.query.entidad) ? req.query.entidad : null;
+    const resultado = await listarHistorialGeneralService({ pagina, porPagina, tipo, entidad });
     return res.json(resultado);
 };
 
@@ -512,11 +644,29 @@ const listarHistorialGeneral = async (req, res) => {
 const eliminarOrden = async (req, res) => {
     const { id } = req.params;
     try {
-        const { rowCount } = await pool.query('DELETE FROM ordenes_trabajo WHERE id = $1', [id]);
+        // Sprint 14: una OT con pagare/pagos o con salidas de inventario es
+        // parte del historial financiero y de inventario: no se borra.
+        const { rows: ligados } = await pool.query(
+            `SELECT
+                (SELECT COUNT(*)::int FROM cuentas_cobrar WHERE orden_id = $1 AND estado <> 'anulado') AS cuentas,
+                (SELECT COUNT(*)::int FROM movimientos_inventario WHERE orden_id = $1) AS movimientos`,
+            [id]
+        );
+        if (ligados[0].cuentas > 0) return res.status(409).json({ error: 'Esta orden tiene un pagare/cuenta por cobrar activo. Anulalo antes de eliminar la orden.' });
+        if (ligados[0].movimientos > 0) return res.status(409).json({ error: 'Esta orden tiene movimientos de inventario asociados y no se puede eliminar.' });
+
+        const { rows: delRows, rowCount } = await pool.query('DELETE FROM ordenes_trabajo WHERE id = $1 RETURNING id, cliente_id', [id]);
         if (rowCount === 0) return res.status(404).json({ error: 'Orden no encontrada.' });
+        registrarAccionBitacora({
+            entidad_tipo: 'orden_eliminada', entidad_id: Number(id), accion: 'eliminada',
+            usuario_id: req.usuario?.id || null, usuario_nombre: req.usuario?.nombre || null,
+            detalle: `Orden de trabajo OT-${String(id).padStart(6, '0')} eliminada.`,
+            metadata: { orden_id: Number(id), cliente_id: delRows[0].cliente_id },
+        });
         return res.json({ ok: true });
     } catch (err) {
         console.error('Error eliminarOrden:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al eliminar orden.' });
     }
 };
@@ -525,5 +675,5 @@ module.exports = {
     listarClientes, obtenerCliente, crearCliente, actualizarCliente, eliminarCliente,
     listarVehiculos, crearVehiculo, actualizarVehiculo, eliminarVehiculo,
     listarOrdenes, obtenerOrden, crearOrden, actualizarOrden, eliminarOrden,
-    obtenerHistorialOrden, listarHistorialGeneral,
+    obtenerHistorialOrden, listarHistorialGeneral, descargarOrdenPdf,
 };

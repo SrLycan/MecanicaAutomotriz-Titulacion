@@ -6,45 +6,47 @@
  */
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTheme } from '../context/ThemeContext';
+import { stockBajo } from '../utils/stock';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import './RegistrarMovimiento.css';
 
+import { NombreEmpresa } from '../components/common/MarcaEmpresa';
 function IconSearch() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>; }
 function IconIn()    { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>; }
 function IconOut()   { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>; }
 function IconPkg()   { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>; }
 function IconCheck() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>; }
 
-export default function RegistrarMovimiento() {
+export default function RegistrarMovimiento({ embebido = false }) {
     const { isDark } = useTheme();
     const [repuestos, setRepuestos] = useState([]);
     const [search, setSearch] = useState('');
     const [selected, setSelected] = useState(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [form, setForm] = useState({ tipo: 'entrada', cantidad: '', motivo: '', referencia: '' });
+    const [form, setForm] = useState({ tipo: 'entrada', cantidad: '', motivo: '', referencia: '', origen: 'manual' });
     const [error, setError] = useState('');
     const [step, setStep] = useState('select'); // 'select' | 'form' | 'done'
 
     const SKY = '#0ea5e9'; const SKY_DEEP = '#0284c7';
-    const SKY_PALE = isDark ? 'rgba(14,165,233,0.10)' : 'rgba(14,165,233,0.05)';
-    const SKY_BDR  = isDark ? 'rgba(56,189,248,0.22)' : 'rgba(14,165,233,0.18)';
+    const SKY_PALE = isDark ? 'rgba(14,165,233,0.10)' : 'rgba(14,165,233,0.12)';
+    const SKY_BDR  = isDark ? 'rgba(56,189,248,0.22)' : 'rgba(14,165,233,0.35)';
     const txt    = isDark ? '#f1f5f9' : '#0f172a';
     const txtSf  = isDark ? '#cbd5e1' : '#334155';
-    const mut    = isDark ? 'rgba(241,245,249,0.55)' : '#111827';
-    const faint  = isDark ? 'rgba(241,245,249,0.38)' : '#2d3748';
-    const bdr    = isDark ? 'rgba(148,163,184,0.18)' : 'rgba(15,23,42,0.07)';
-    const card   = isDark ? 'rgba(255,255,255,0.025)' : '#ffffff';
+    const mut    = isDark ? 'rgba(241,245,249,0.72)' : '#526075';
+    const faint  = isDark ? 'rgba(241,245,249,0.56)' : '#5f6b7d';
+    const bdr    = isDark ? 'rgba(148,163,184,0.28)' : '#b6c3d3';
+    const card   = isDark ? 'rgba(255,255,255,0.045)' : '#ffffff';
     const cardSh = isDark
         ? '0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 40px -16px rgba(0,0,0,0.55)'
-        : '0 4px 16px -4px rgba(15,23,42,0.08), 0 2px 4px -2px rgba(15,23,42,0.04)';
+        : '0 1px 2px rgba(15,23,42,0.06), 0 8px 22px -8px rgba(15,23,42,0.20)';
     const inputBg = isDark ? '#0b1220' : '#fafcff';
     const rowHov  = isDark ? 'rgba(14,165,233,0.06)' : 'rgba(14,165,233,0.04)';
 
     useEffect(() => {
         setLoading(true);
-        api.get('/inventory/repuestos')
+        api.get('/inventory/repuestos?limit=500')
             .then(r => setRepuestos(r.data.repuestos || []))
             .catch(() => toast.error('Error al cargar repuestos'))
             .finally(() => setLoading(false));
@@ -56,21 +58,22 @@ export default function RegistrarMovimiento() {
         return repuestos.filter(r =>
             r.nombre?.toLowerCase().includes(q) ||
             r.codigo?.toLowerCase().includes(q) ||
+            r.codigo_proveedor?.toLowerCase().includes(q) ||
             r.categoria_nombre?.toLowerCase().includes(q)
         );
     }, [repuestos, search]);
 
     const esEntrada = form.tipo === 'entrada';
     const accentColor = esEntrada ? '#10b981' : '#ef4444';
-    const qty = parseInt(form.cantidad) || 0;
-    const stockNuevo = selected ? (esEntrada ? selected.stock_actual + qty : selected.stock_actual - qty) : 0;
+    const qty = Math.round((parseFloat(form.cantidad) || 0) * 100) / 100; // stock decimal (Sprint 14)
+    const stockNuevo = selected ? (esEntrada ? Math.round((Number(selected.stock_actual) + qty) * 100) / 100 : Math.round((Number(selected.stock_actual) - qty) * 100) / 100) : 0;
 
     const inputSt = { width: '100%', boxSizing: 'border-box', padding: '10px 13px', borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: txt, fontFamily: "'Outfit', sans-serif", fontWeight: 400, fontSize: '.88rem', outline: 'none' };
-    const labelSt = { display: 'block', marginBottom: 6, fontFamily: "'Bebas Neue', sans-serif", fontSize: '.62rem', letterSpacing: '.22em', color: SKY_DEEP, WebkitTextFillColor: SKY_DEEP, background: 'none' };
+    const labelSt = { display: 'block', marginBottom: 6, fontFamily: "'Bebas Neue', sans-serif", fontSize: '.74rem', letterSpacing: '.22em', color: SKY_DEEP, WebkitTextFillColor: SKY_DEEP, background: 'none' };
 
     const handleSelect = (r) => {
         setSelected(r);
-        setForm({ tipo: 'entrada', cantidad: '', motivo: '', referencia: '' });
+        setForm({ tipo: 'entrada', cantidad: '', motivo: '', referencia: '', origen: 'manual' });
         setError('');
         setStep('form');
     };
@@ -87,6 +90,7 @@ export default function RegistrarMovimiento() {
                 cantidad: qty,
                 motivo: form.motivo,
                 referencia: form.referencia,
+                origen: form.origen,
             });
             toast.success(`Movimiento registrado: ${esEntrada ? '+' : '-'}${qty} ${selected.nombre}`);
             // Update local stock
@@ -100,7 +104,7 @@ export default function RegistrarMovimiento() {
 
     const resetAll = () => {
         setSelected(null);
-        setForm({ tipo: 'entrada', cantidad: '', motivo: '', referencia: '' });
+        setForm({ tipo: 'entrada', cantidad: '', motivo: '', referencia: '', origen: 'manual' });
         setError('');
         setStep('select');
     };
@@ -108,11 +112,11 @@ export default function RegistrarMovimiento() {
     return (
         <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1200, '--sky-bdr': SKY_BDR, '--sky-pale': SKY_PALE, '--row-hov': rowHov }}>
 
-            {/* Header */}
-            <div style={{ marginBottom: 22 }}>
+            {/* Header (dentro de "Entradas y salidas" el título lo pone la página contenedora) */}
+            <div style={{ marginBottom: 22, display: embebido ? 'none' : undefined }}>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 10px', borderRadius: 999, background: SKY_PALE, border: `1px solid ${SKY_BDR}`, marginBottom: 8 }}>
                     <span style={{ width: 6, height: 6, borderRadius: '50%', background: SKY, boxShadow: `0 0 8px ${SKY}` }} />
-                    <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.24em', color: SKY_DEEP }}>SS SWAP · REGISTRO RAPIDO</p>
+                    <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.24em', color: SKY_DEEP }}><NombreEmpresa /> · REGISTRO RAPIDO</p>
                 </div>
                 <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.8rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>
                     {step === 'select' ? 'Registrar Movimiento' : step === 'form' ? 'Confirmar Movimiento' : 'Movimiento Completado'}
@@ -157,7 +161,7 @@ export default function RegistrarMovimiento() {
                         <div style={{ position: 'relative', maxWidth: 400 }}>
                             <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: faint, display: 'flex' }}><IconSearch /></span>
                             <input
-                                placeholder="Buscar por codigo, nombre o categoria..."
+                                placeholder="Buscar por referencia, código de proveedor, nombre o categoría..."
                                 value={search} onChange={e => setSearch(e.target.value)}
                                 style={{ width: '100%', padding: '10px 12px 10px 34px', background: inputBg, border: `1px solid ${bdr}`, borderRadius: 10, color: txt, fontFamily: "'Outfit'", fontSize: '.85rem', outline: 'none' }}
                             />
@@ -179,7 +183,7 @@ export default function RegistrarMovimiento() {
                     ) : (
                         <div style={{ maxHeight: 480, overflowY: 'auto', padding: 4 }}>
                             {filtrados.map((r, i) => {
-                                const bajo = r.stock_actual <= r.stock_minimo;
+                                const bajo = stockBajo(r);
                                 return (
                                     <div key={r.id} className="reg-item"
                                         onClick={() => handleSelect(r)}
@@ -207,14 +211,15 @@ export default function RegistrarMovimiento() {
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 3 }}>
                                                 <code style={{ fontFamily: 'monospace', fontSize: '.7rem', fontWeight: 600, background: SKY_PALE, padding: '1px 7px', borderRadius: 5, color: SKY_DEEP, border: `1px solid ${SKY_BDR}` }}>{r.codigo}</code>
                                                 {r.categoria_nombre && <span style={{ fontFamily: "'Outfit'", fontSize: '.72rem', color: mut }}>{r.categoria_nombre}</span>}
+                                                {r.area && <span style={{ fontFamily: "'Outfit'", fontSize: '.76rem', color: r.area === 'colisiones' ? '#f97316' : SKY_DEEP, marginLeft: 6 }}>{r.area === 'colisiones' ? 'COLISIONES / PINTURA' : 'MECÁNICA'}</span>}
                                             </div>
                                         </div>
 
                                         {/* Stock */}
                                         <div style={{ textAlign: 'right', flexShrink: 0 }}>
                                             <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.3rem', letterSpacing: '.02em', color: bajo ? '#ef4444' : txt, lineHeight: 1 }}>{r.stock_actual}</p>
-                                            <p style={{ fontFamily: "'Outfit'", fontSize: '.64rem', color: mut }}>stock</p>
-                                            {bajo && <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.54rem', letterSpacing: '.14em', color: '#ef4444' }}>BAJO</span>}
+                                            <p style={{ fontFamily: "'Outfit'", fontSize: '.75rem', color: mut }}>stock</p>
+                                            {bajo && <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.14em', color: '#ef4444' }}>BAJO</span>}
                                         </div>
 
                                         {/* Arrow */}
@@ -234,7 +239,7 @@ export default function RegistrarMovimiento() {
                     <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, padding: 22, boxShadow: cardSh }}>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '3px 9px', borderRadius: 999, background: SKY_PALE, border: `1px solid ${SKY_BDR}`, marginBottom: 12 }}>
                             <span style={{ width: 5, height: 5, borderRadius: '50%', background: SKY }} />
-                            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.24em', color: SKY_DEEP }}>PRODUCTO SELECCIONADO</p>
+                            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.24em', color: SKY_DEEP }}>PRODUCTO SELECCIONADO</p>
                         </div>
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
@@ -251,19 +256,19 @@ export default function RegistrarMovimiento() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '18px 14px', background: SKY_PALE, borderRadius: 12, border: `1px solid ${SKY_BDR}` }}>
                             <div style={{ textAlign: 'center', flex: 1 }}>
                                 <p style={{ fontFamily: "'Bebas Neue'", fontSize: '2.4rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>{selected.stock_actual}</p>
-                                <p style={{ fontFamily: "'Outfit'", fontSize: '.6rem', color: mut, marginTop: 4, textTransform: 'uppercase', letterSpacing: '.14em' }}>Actual</p>
+                                <p style={{ fontFamily: "'Outfit'", fontSize: '.72rem', color: mut, marginTop: 4, textTransform: 'uppercase', letterSpacing: '.14em' }}>Actual</p>
                             </div>
                             {qty > 0 && (
                                 <>
                                     <div style={{ color: accentColor, fontSize: '1.8rem', fontFamily: "'Bebas Neue'" }}>{esEntrada ? '+' : '−'}</div>
                                     <div style={{ textAlign: 'center', flex: 1 }}>
                                         <p style={{ fontFamily: "'Bebas Neue'", fontSize: '2.4rem', letterSpacing: '.04em', color: accentColor, lineHeight: 1 }}>{qty}</p>
-                                        <p style={{ fontFamily: "'Outfit'", fontSize: '.6rem', color: accentColor, marginTop: 4, textTransform: 'uppercase', letterSpacing: '.14em', opacity: .85 }}>{esEntrada ? 'Entrada' : 'Salida'}</p>
+                                        <p style={{ fontFamily: "'Outfit'", fontSize: '.72rem', color: accentColor, marginTop: 4, textTransform: 'uppercase', letterSpacing: '.14em', opacity: .85 }}>{esEntrada ? 'Entrada' : 'Salida'}</p>
                                     </div>
                                     <div style={{ color: mut, fontSize: '1.4rem' }}>=</div>
                                     <div style={{ textAlign: 'center', flex: 1, background: stockNuevo < 0 ? 'rgba(239,68,68,.08)' : SKY_PALE, borderRadius: 10, padding: '8px 6px', border: `1px solid ${stockNuevo < 0 ? 'rgba(239,68,68,.25)' : SKY_BDR}` }}>
                                         <p style={{ fontFamily: "'Bebas Neue'", fontSize: '2.4rem', letterSpacing: '.04em', color: stockNuevo < 0 ? '#ef4444' : SKY_DEEP, lineHeight: 1 }}>{stockNuevo}</p>
-                                        <p style={{ fontFamily: "'Outfit'", fontSize: '.6rem', color: stockNuevo < 0 ? '#ef4444' : SKY_DEEP, marginTop: 4, textTransform: 'uppercase', letterSpacing: '.14em', opacity: .85 }}>Resultado</p>
+                                        <p style={{ fontFamily: "'Outfit'", fontSize: '.72rem', color: stockNuevo < 0 ? '#ef4444' : SKY_DEEP, marginTop: 4, textTransform: 'uppercase', letterSpacing: '.14em', opacity: .85 }}>Resultado</p>
                                     </div>
                                 </>
                             )}
@@ -294,7 +299,7 @@ export default function RegistrarMovimiento() {
                                                     fontFamily: "'Bebas Neue'", fontSize: '.78rem', letterSpacing: '.14em',
                                                     cursor: 'pointer', transition: 'all .18s',
                                                 }}
-                                                onClick={() => { setForm(f => ({ ...f, tipo: t.val })); setError(''); }}>
+                                                onClick={() => { setForm(f => ({ ...f, tipo: t.val, origen: t.val === 'salida' && f.origen === 'devolucion' ? 'manual' : f.origen })); setError(''); }}>
                                                 {t.icon} {t.label}
                                             </button>
                                         );
@@ -302,10 +307,21 @@ export default function RegistrarMovimiento() {
                                 </div>
                             </div>
 
+                            {/* Origen (Sprint 14): diferencia salida manual / ajuste / devolucion.
+                                Las salidas por proforma y entradas por compra las registra el sistema. */}
+                            <div>
+                                <label style={labelSt}>ORIGEN DEL MOVIMIENTO</label>
+                                <select value={form.origen} onChange={e => { const o = e.target.value; setForm(f => ({ ...f, origen: o, tipo: o === 'devolucion' ? 'entrada' : f.tipo })); setError(''); }} style={inputSt}>
+                                    <option value="manual">{esEntrada ? 'Entrada manual' : 'Salida manual'}</option>
+                                    <option value="ajuste">Ajuste de inventario (conteo físico, merma, daño)</option>
+                                    <option value="devolucion">Devolución (entrada)</option>
+                                </select>
+                            </div>
+
                             {/* Cantidad */}
                             <div>
                                 <label style={labelSt}>CANTIDAD *</label>
-                                <input type="number" min="1" name="cantidad"
+                                <input type="number" min="0.01" step="0.01" name="cantidad"
                                     value={form.cantidad} onChange={e => { setForm(f => ({ ...f, cantidad: e.target.value })); setError(''); }}
                                     required placeholder="0"
                                     style={{ ...inputSt, fontSize: '1.15rem', textAlign: 'center', fontFamily: "'Bebas Neue'", letterSpacing: '.04em', padding: '12px' }} />
@@ -373,7 +389,7 @@ export default function RegistrarMovimiento() {
                         Se ha registrado {esEntrada ? 'una entrada' : 'una salida'} de <strong style={{ color: txt }}>{qty} {qty === 1 ? 'unidad' : 'unidades'}</strong> de <strong style={{ color: txt }}>{selected?.nombre}</strong>.
                     </p>
                     <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-                        <button onClick={() => { resetAll(); setRepuestos([]); setLoading(true); api.get('/inventory/repuestos').then(r => setRepuestos(r.data.repuestos || [])).finally(() => setLoading(false)); }}
+                        <button onClick={() => { resetAll(); setRepuestos([]); setLoading(true); api.get('/inventory/repuestos?limit=500').then(r => setRepuestos(r.data.repuestos || [])).finally(() => setLoading(false)); }}
                             style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontFamily: "'Bebas Neue'", fontSize: '.78rem', letterSpacing: '.14em', color: '#fff', background: `linear-gradient(135deg, ${SKY_DEEP}, ${SKY})`, border: 'none', borderRadius: 10, padding: '11px 24px', cursor: 'pointer', boxShadow: `0 6px 18px -6px ${SKY}` }}>
                             NUEVO MOVIMIENTO
                         </button>

@@ -1,324 +1,279 @@
 /**
- * SS SWAP - Historial de Movimientos de Inventario
+ * SS SWAP - Registros / Historial de Movimientos de Inventario
  * Registro auditado de todas las entradas y salidas de stock del taller.
- * Soporta filtros por tipo, búsqueda por repuesto o usuario, exportación a CSV
- * y paginación del historial completo para trazabilidad administrativa.
+ *
+ * Sprint 14: los filtros se aplican en el SERVIDOR (antes se traian 200
+ * filas y se filtraba en el navegador) y cada movimiento muestra su ORIGEN
+ * (entrada manual, salida manual, salida por proforma, entrada por compra,
+ * ajuste, devolucion) con la proforma, OT, cliente y vehiculo relacionados.
  */
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
 import './Movimientos.css';
 
+import { NombreEmpresa } from '../components/common/MarcaEmpresa';
 function IconDownload() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>; }
 function IconSearch()   { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>; }
-function IconIn()       { return <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>; }
-function IconOut()      { return <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>; }
 
-const TIPO_META = {
-    entrada: { color: '#10b981', bg: 'rgba(16,185,129,.10)',  border: 'rgba(16,185,129,.28)', label: 'ENTRADA', icon: IconIn },
-    salida:  { color: '#ef4444', bg: 'rgba(239,68,68,.10)',   border: 'rgba(239,68,68,.28)',  label: 'SALIDA',  icon: IconOut },
-};
+const POR_PAGINA = 25;
+const FILTROS_VACIOS = { q: '', tipo: '', origen: '', area: '', usuario_id: '', proforma: '', orden_id: '', fecha_inicio: '', fecha_fin: '', repuesto_id: '' };
 
-export default function Movimientos() {
+/** Etiqueta legible de tipo + origen (los 6 casos que pide el negocio). */
+export function clasificarMovimiento(m) {
+    if (m.origen === 'proforma') return { label: 'SALIDA POR PROFORMA', color: '#f97316' };
+    if (m.origen === 'compra') return { label: 'ENTRADA POR COMPRA', color: '#10b981' };
+    if (m.origen === 'ajuste') return { label: m.tipo === 'entrada' ? 'AJUSTE (+)' : 'AJUSTE (−)', color: '#8b5cf6' };
+    if (m.origen === 'devolucion') return { label: 'DEVOLUCIÓN', color: '#0ea5e9' };
+    if (m.origen === 'venta') return { label: 'VENTA A CLIENTE', color: '#e11d48' };
+    return m.tipo === 'entrada' ? { label: 'ENTRADA MANUAL', color: '#10b981' } : { label: 'SALIDA MANUAL', color: '#ef4444' };
+}
+const fmtCant = (n) => (Number(n) % 1 === 0 ? String(Number(n)) : Number(n).toFixed(2));
+const AREA_LABEL = { mecanica: 'Mecánica', colisiones: 'Colisiones / Pintura' };
+
+export default function Movimientos({ embebido = false }) {
     const { isDark } = useTheme();
+    // ?repuesto_id= : historial de un producto (desde Inventario o una factura de compra).
+    const [searchParams] = useSearchParams();
+    const repuestoUrl = /^\d+$/.test(searchParams.get('repuesto_id') || '') ? searchParams.get('repuesto_id') : '';
+    const filtrosIniciales = { ...FILTROS_VACIOS, repuesto_id: repuestoUrl };
     const [movimientos, setMovimientos] = useState([]);
     const [loading, setLoading]         = useState(true);
-    const [filtroTipo, setFiltroTipo]   = useState('');
-    const [busqueda, setBusqueda]       = useState('');
+    const [filtros, setFiltros]         = useState(filtrosIniciales);
+    const [page, setPage]               = useState(1);
+    const [total, setTotal]             = useState(0);
+    const [totalPages, setTotalPages]   = useState(1);
+    const [usuarios, setUsuarios]       = useState([]);
+    const debounceRef = useRef(null);
+    const [filtrosAplicados, setFiltrosAplicados] = useState(filtrosIniciales);
 
-    // ── Paleta celeste / blanco / negro ──
     const SKY      = '#0ea5e9';
     const SKY_DEEP = '#0284c7';
-    const SKY_PALE = isDark ? 'rgba(14,165,233,0.10)' : 'rgba(14,165,233,0.05)';
-    const SKY_BDR  = isDark ? 'rgba(56,189,248,0.22)' : 'rgba(14,165,233,0.18)';
-
     const txt     = isDark ? '#f1f5f9' : '#0f172a';
     const txtSf   = isDark ? '#cbd5e1' : '#334155';
-    const mut     = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
-    const faint   = isDark ? 'rgba(241,245,249,0.38)' : '#94a3b8';
-    const bdr     = isDark ? 'rgba(148,163,184,0.18)' : 'rgba(15,23,42,0.07)';
-    const card    = isDark ? 'rgba(255,255,255,0.025)' : '#ffffff';
+    const mut     = isDark ? 'rgba(241,245,249,0.72)' : '#526075';
+    const faint   = isDark ? 'rgba(241,245,249,0.56)' : '#5f6b7d';
+    const bdr     = isDark ? 'rgba(148,163,184,0.28)' : '#b6c3d3';
+    const card    = isDark ? 'rgba(255,255,255,0.045)' : '#ffffff';
     const cardSh  = isDark
         ? '0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 40px -16px rgba(0,0,0,0.55)'
-        : '0 4px 16px -4px rgba(15,23,42,0.08), 0 2px 4px -2px rgba(15,23,42,0.04)';
+        : '0 1px 2px rgba(15,23,42,0.06), 0 8px 22px -8px rgba(15,23,42,0.20)';
     const inputBg = isDark ? '#0b1220' : '#fafcff';
-    const headBg  = isDark ? 'rgba(14,165,233,0.06)' : 'rgba(14,165,233,0.025)';
-    const rowHov  = isDark ? 'rgba(14,165,233,0.06)' : 'rgba(14,165,233,0.04)';
+    const headBg  = isDark ? 'rgba(14,165,233,0.06)' : 'rgba(14,165,233,0.12)';
+
+    const construirParams = (f, pg, limit = POR_PAGINA) => {
+        const params = new URLSearchParams();
+        Object.entries(f).forEach(([k, v]) => { if (v) params.set(k, v); });
+        params.set('page', pg);
+        params.set('limit', limit);
+        return params;
+    };
+
+    const cargar = useCallback(async (f, pg) => {
+        setLoading(true);
+        try {
+            const { data } = await api.get(`/inventory/movimientos?${construirParams(f, pg)}`);
+            setMovimientos(data.movimientos || []);
+            setTotal(data.total || 0);
+            setTotalPages(data.totalPages || 1);
+            setPage(pg);
+        } catch { toast.error('Error al cargar los registros.'); }
+        finally { setLoading(false); }
+    }, []);
 
     useEffect(() => {
-        setLoading(true);
-        const params = filtroTipo ? `?tipo=${filtroTipo}&limit=200` : '?limit=200';
-        api.get(`/inventory/movimientos${params}`)
-            .then(r => setMovimientos(r.data.movimientos))
-            .finally(() => setLoading(false));
-    }, [filtroTipo]);
+        cargar({ ...FILTROS_VACIOS, repuesto_id: repuestoUrl }, 1);
+        api.get('/inventory/movimientos/filtros').then(r => setUsuarios(r.data.usuarios || [])).catch(() => {});
+    }, [cargar, repuestoUrl]);
 
-    const filtrados = useMemo(() => movimientos.filter(m =>
-        !busqueda ||
-        m.repuesto_nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
-        m.repuesto_codigo?.toLowerCase().includes(busqueda.toLowerCase()) ||
-        m.usuario_nombre?.toLowerCase().includes(busqueda.toLowerCase())
-    ), [movimientos, busqueda]);
+    // Texto libre / proforma / OT con debounce; selects y fechas al instante
+    const cambiarFiltro = (campo, valor, inmediato = false) => {
+        const nuevos = { ...filtros, [campo]: valor };
+        setFiltros(nuevos);
+        clearTimeout(debounceRef.current);
+        const aplicar = () => { setFiltrosAplicados(nuevos); cargar(nuevos, 1); };
+        if (inmediato) aplicar(); else debounceRef.current = setTimeout(aplicar, 350);
+    };
+    const limpiarFiltros = () => { setFiltros(FILTROS_VACIOS); setFiltrosAplicados(FILTROS_VACIOS); cargar(FILTROS_VACIOS, 1); };
+    const hayFiltros = Object.values(filtrosAplicados).some(Boolean);
 
-    // Stats rápidos
+    // Stats de la pagina visible
     const stats = useMemo(() => {
-        const ent = filtrados.filter(m => m.tipo === 'entrada');
-        const sal = filtrados.filter(m => m.tipo === 'salida');
-        return {
-            total:      filtrados.length,
-            entradas:   ent.length,
-            salidas:    sal.length,
-            unidadesIn: ent.reduce((s, m) => s + (parseInt(m.cantidad) || 0), 0),
-            unidadesOut:sal.reduce((s, m) => s + (parseInt(m.cantidad) || 0), 0),
-        };
-    }, [filtrados]);
+        const ent = movimientos.filter(m => m.tipo === 'entrada');
+        const sal = movimientos.filter(m => m.tipo === 'salida');
+        const porProforma = sal.filter(m => m.origen === 'proforma');
+        const suma = (l) => Math.round(l.reduce((s, m) => s + (Number(m.cantidad) || 0), 0) * 100) / 100;
+        return { entradas: ent.length, salidas: sal.length, proforma: porProforma.length, unidadesIn: suma(ent), unidadesOut: suma(sal) };
+    }, [movimientos]);
 
-    const exportCSV = () => {
-        const rows = [['Fecha','Tipo','Codigo','Repuesto','Cantidad','Stock Anterior','Stock Nuevo','Motivo','Referencia','Usuario']];
-        filtrados.forEach(m => rows.push([
-            new Date(m.created_at).toLocaleString('es-EC'), m.tipo, m.repuesto_codigo, m.repuesto_nombre,
-            m.cantidad, m.stock_anterior, m.stock_nuevo, m.motivo || '', m.referencia || '', m.usuario_nombre
-        ]));
-        const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-        a.download = `movimientos_${new Date().toISOString().slice(0,10)}.csv`;
-        a.click();
+    const exportCSV = async () => {
+        try {
+            const { data } = await api.get(`/inventory/movimientos?${construirParams(filtrosAplicados, 1, 500)}`);
+            const rows = [['Fecha','Tipo','Origen','Inventario','Codigo','Producto','Cantidad','Stock Anterior','Stock Nuevo','Usuario','Proforma','Orden de trabajo','Cliente','Vehiculo','Motivo','Referencia']];
+            (data.movimientos || []).forEach(m => rows.push([
+                new Date(m.created_at).toLocaleString('es-EC'), m.tipo, clasificarMovimiento(m).label, AREA_LABEL[m.area] || '', m.repuesto_codigo, m.repuesto_nombre,
+                m.cantidad, m.stock_anterior, m.stock_nuevo, m.usuario_nombre, m.proforma_numero || '', m.orden_numero || '',
+                m.cliente_nombre || '', [m.vehiculo_descripcion, m.vehiculo_placa].filter(Boolean).join(' '), m.motivo || '', m.referencia || '',
+            ]));
+            const csv = rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' }));
+            a.download = `registros_inventario_${new Date().toISOString().slice(0,10)}.csv`;
+            a.click();
+        } catch { toast.error('Error al exportar.'); }
     };
 
-    const inputStyle = { padding: '10px 12px 10px 32px', background: inputBg, border: `1px solid ${bdr}`, borderRadius: 10, color: txt, fontFamily: "'Outfit'", fontSize: '.85rem', outline: 'none', width: 240, transition: 'border-color .18s, box-shadow .18s' };
-    const selStyle   = { padding: '10px 12px', background: inputBg, border: `1px solid ${bdr}`, borderRadius: 10, color: txt, fontFamily: "'Outfit'", fontSize: '.85rem', outline: 'none', transition: 'border-color .18s, box-shadow .18s' };
-
-    // Etiqueta relativa de fecha (Hoy / Ayer / etc.)
-    const fechaLabel = (iso) => {
-        const d = new Date(iso);
-        const hoy = new Date(); hoy.setHours(0,0,0,0);
-        const dia = new Date(d); dia.setHours(0,0,0,0);
-        const diff = Math.round((hoy - dia) / 86400000);
-        if (diff === 0) return 'HOY';
-        if (diff === 1) return 'AYER';
-        if (diff < 7)   return 'ESTA SEMANA';
-        if (diff < 30)  return 'ESTE MES';
-        return 'ANTERIORES';
-    };
-    const hayFiltros = Boolean(busqueda || filtroTipo);
-    const limpiarFiltros = () => { setBusqueda(''); setFiltroTipo(''); };
+    const inputStyle = { padding: '10px 12px 10px 32px', background: inputBg, border: `1px solid ${bdr}`, borderRadius: 10, color: txt, fontFamily: "'Outfit'", fontSize: '.85rem', outline: 'none', width: 260 };
+    const selStyle   = { padding: '10px 12px', background: inputBg, border: `1px solid ${bdr}`, borderRadius: 10, color: txt, fontFamily: "'Outfit'", fontSize: '.85rem', outline: 'none' };
+    const etiq = { fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.2em', color: mut, display: 'block', marginBottom: 4 };
 
     return (
         <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1500 }}>
-
-            {/* ── Header ── */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 18, flexWrap: 'wrap', gap: 12 }}>
+            <div style={{ display: embebido ? 'none' : 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 18, flexWrap: 'wrap', gap: 12 }}>
                 <div>
-                    <div className="SS SWAP-chip" style={{ marginBottom: 8 }}>
-                        <span className="dot" />
-                        <span>SS SWAP · TRAZABILIDAD</span>
-                    </div>
-                    <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.6rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>Movimientos</h1>
+                    <div className="ssswap-chip" style={{ marginBottom: 8 }}><span className="dot" /><span><NombreEmpresa /> · TRAZABILIDAD</span></div>
+                    <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.6rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>Registros de inventario</h1>
                     <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.85rem', color: mut, marginTop: 6 }}>
-                        Historial completo de entradas y salidas de inventario
+                        Qué pasó con cada producto: entradas, salidas, compras, ajustes, devoluciones y salidas por proforma
                     </p>
                 </div>
             </div>
 
-            {/* ── Mini KPIs ── */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, marginBottom: 18 }}>
-                <MiniStat label="Total" value={stats.total} color={SKY} bg={card} bdr={bdr} mut={mut} txt={txt} shadow={cardSh} />
-                <MiniStat label="Entradas" value={stats.entradas} sub={`+${stats.unidadesIn} und`} color="#10b981" bg={card} bdr={bdr} mut={mut} txt={txt} shadow={cardSh} />
-                <MiniStat label="Salidas" value={stats.salidas} sub={`-${stats.unidadesOut} und`} color="#ef4444" bg={card} bdr={bdr} mut={mut} txt={txt} shadow={cardSh} />
-                <MiniStat label="Balance neto" value={stats.unidadesIn - stats.unidadesOut} color={stats.unidadesIn - stats.unidadesOut >= 0 ? SKY_DEEP : '#ef4444'} bg={card} bdr={bdr} mut={mut} txt={txt} shadow={cardSh} />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 14, marginBottom: 18 }}>
+                <MiniStat label="Registros" value={total} sub={hayFiltros ? 'con los filtros actuales' : 'en total'} color={SKY} bg={card} bdr={bdr} mut={mut} txt={txt} shadow={cardSh} />
+                <MiniStat label="Entradas (página)" value={stats.entradas} sub={`+${fmtCant(stats.unidadesIn)} und`} color="#10b981" bg={card} bdr={bdr} mut={mut} txt={txt} shadow={cardSh} />
+                <MiniStat label="Salidas (página)" value={stats.salidas} sub={`-${fmtCant(stats.unidadesOut)} und`} color="#ef4444" bg={card} bdr={bdr} mut={mut} txt={txt} shadow={cardSh} />
+                <MiniStat label="Por proforma (página)" value={stats.proforma} color="#f97316" bg={card} bdr={bdr} mut={mut} txt={txt} shadow={cardSh} />
             </div>
 
-            {/* ── Toolbar ── */}
-            <div style={{
-                padding: 16, marginBottom: 16,
-                background: card, border: `1px solid ${bdr}`, borderRadius: 14, boxShadow: cardSh,
-            }}>
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-                    <div style={{ position: 'relative' }}>
-                        <span style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: faint, display: 'flex' }}><IconSearch /></span>
-                        <input className="mov-input"
-                            placeholder="Buscar repuesto, codigo o usuario..."
-                            value={busqueda} onChange={e => setBusqueda(e.target.value)}
-                            style={inputStyle} />
+            {/* ── Filtros ── */}
+            <div style={{ padding: 16, marginBottom: 16, background: card, border: `1px solid ${bdr}`, borderRadius: 14, boxShadow: cardSh }}>
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                    <div>
+                        <span style={etiq}>PRODUCTO / CLIENTE / PLACA</span>
+                        <div style={{ position: 'relative' }}>
+                            <span style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: faint, display: 'flex' }}><IconSearch /></span>
+                            <input className="mov-input" placeholder="Nombre, código, cliente, placa..." value={filtros.q} onChange={e => cambiarFiltro('q', e.target.value)} style={inputStyle} />
+                        </div>
                     </div>
-                    <select className="mov-input" value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)} style={selStyle}>
-                        <option value="">Todos los tipos</option>
-                        <option value="entrada">Solo entradas</option>
-                        <option value="salida">Solo salidas</option>
-                    </select>
+                    <div>
+                        <span style={etiq}>TIPO DE MOVIMIENTO</span>
+                        <select className="mov-input" value={`${filtros.tipo}|${filtros.origen}`} style={selStyle}
+                            onChange={e => { const [tipo, origen] = e.target.value.split('|'); const n = { ...filtros, tipo, origen }; setFiltros(n); setFiltrosAplicados(n); cargar(n, 1); }}>
+                            <option value="|">Todos</option>
+                            <option value="entrada|manual">Entrada manual</option>
+                            <option value="salida|manual">Salida manual</option>
+                            <option value="salida|proforma">Salida por proforma</option>
+                            <option value="salida|venta">Venta a cliente (tienda)</option>
+                            <option value="entrada|compra">Entrada por compra</option>
+                            <option value="|ajuste">Ajuste de inventario</option>
+                            <option value="entrada|devolucion">Devolución</option>
+                            <option value="entrada|">Todas las entradas</option>
+                            <option value="salida|">Todas las salidas</option>
+                        </select>
+                    </div>
+                    <div>
+                        <span style={etiq}>TIPO DE INVENTARIO</span>
+                        <select className="mov-input" value={filtros.area} onChange={e => cambiarFiltro('area', e.target.value, true)} style={selStyle}>
+                            <option value="">Ambos</option>
+                            <option value="mecanica">Mecánica</option>
+                            <option value="colisiones">Colisiones / Pintura</option>
+                        </select>
+                    </div>
+                    <div>
+                        <span style={etiq}>USUARIO</span>
+                        <select className="mov-input" value={filtros.usuario_id} onChange={e => cambiarFiltro('usuario_id', e.target.value, true)} style={selStyle}>
+                            <option value="">Todos</option>
+                            {usuarios.map(u => <option key={u.id} value={u.id}>{u.nombre}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <span style={etiq}>PROFORMA</span>
+                        <input className="mov-input" placeholder="PROFORMA-000123" value={filtros.proforma} onChange={e => cambiarFiltro('proforma', e.target.value.trim())} style={{ ...selStyle, width: 160 }} />
+                    </div>
+                    <div>
+                        <span style={etiq}>ORDEN DE TRABAJO</span>
+                        <input className="mov-input" placeholder="OT-000045" value={filtros.orden_id} onChange={e => cambiarFiltro('orden_id', e.target.value.trim())} style={{ ...selStyle, width: 130 }} />
+                    </div>
+                    <div>
+                        <span style={etiq}>DESDE</span>
+                        <input type="date" className="mov-input" value={filtros.fecha_inicio} onChange={e => cambiarFiltro('fecha_inicio', e.target.value, true)} style={selStyle} />
+                    </div>
+                    <div>
+                        <span style={etiq}>HASTA</span>
+                        <input type="date" className="mov-input" value={filtros.fecha_fin} onChange={e => cambiarFiltro('fecha_fin', e.target.value, true)} style={selStyle} />
+                    </div>
                     <div style={{ flex: 1 }} />
+                    {filtrosAplicados.repuesto_id && (
+                        <span style={{ ...etiq, alignSelf: 'center', color: SKY_DEEP }}>
+                            HISTORIAL DE UN PRODUCTO{movimientos[0]?.repuesto_codigo ? `: ${movimientos[0].repuesto_codigo}` : ''}
+                        </span>
+                    )}
+                    {hayFiltros && <button onClick={limpiarFiltros} className="btn-ghost">LIMPIAR</button>}
                     <button onClick={exportCSV} className="btn-ghost"><IconDownload /> EXPORTAR CSV</button>
                 </div>
-
-                {hayFiltros && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, paddingTop: 12, borderTop: `1px solid ${bdr}`, flexWrap: 'wrap' }}>
-                        <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.22em', color: mut }}>FILTROS ACTIVOS</span>
-                        {busqueda && (
-                            <Chip label={`"${busqueda}"`} onRemove={() => setBusqueda('')} color={SKY_DEEP} bg={SKY_PALE} bdr={SKY_BDR} />
-                        )}
-                        {filtroTipo && (
-                            <Chip label={filtroTipo === 'entrada' ? 'Solo entradas' : 'Solo salidas'} onRemove={() => setFiltroTipo('')}
-                                  color={filtroTipo === 'entrada' ? '#10b981' : '#ef4444'}
-                                  bg={filtroTipo === 'entrada' ? 'rgba(16,185,129,.08)' : 'rgba(239,68,68,.08)'}
-                                  bdr={filtroTipo === 'entrada' ? 'rgba(16,185,129,.28)' : 'rgba(239,68,68,.28)'} />
-                        )}
-                        <button onClick={limpiarFiltros}
-                            style={{
-                                marginLeft: 'auto',
-                                fontFamily: "'Bebas Neue'", fontSize: '.66rem', letterSpacing: '.16em',
-                                background: 'transparent', border: 'none', cursor: 'pointer',
-                                color: mut, transition: 'color .15s',
-                            }}
-                            onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
-                            onMouseLeave={e => e.currentTarget.style.color = mut}>
-                            LIMPIAR TODO ×
-                        </button>
-                    </div>
-                )}
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, paddingLeft: 4 }}>
-                <span style={{ fontFamily: "'Outfit'", fontWeight: 500, fontSize: '.82rem', color: txtSf }}>
-                    {filtrados.length} <span style={{ color: mut, fontWeight: 400 }}>movimiento{filtrados.length !== 1 ? 's' : ''}</span>
-                </span>
-                {hayFiltros && <span style={{ fontFamily: "'Outfit'", fontSize: '.76rem', color: faint }}>· filtrado</span>}
-            </div>
-
-            {/* ── Tabla ── */}
+            {/* ── Registros ── */}
             <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, overflow: 'hidden', boxShadow: cardSh }}>
                 {loading ? (
                     <div style={{ padding: 80, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
                         <div style={{ width: 38, height: 38, borderRadius: '50%', border: `2px solid ${bdr}`, borderTopColor: SKY, animation: 'spin 1s linear infinite' }} />
-                        <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.85rem', color: mut }}>Cargando movimientos...</p>
+                        <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.85rem', color: mut }}>Cargando registros...</p>
                     </div>
-                ) : filtrados.length === 0 ? (
-                    <div style={{ padding: 90, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-                        <div style={{ width: 64, height: 64, borderRadius: 18, background: SKY_PALE, border: `1px solid ${SKY_BDR}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: SKY }}>
-                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
-                        </div>
-                        <div>
-                            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.4rem', letterSpacing: '.06em', color: txt }}>Sin registros</p>
-                            <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.82rem', color: mut, marginTop: 4 }}>No hay movimientos para los filtros seleccionados</p>
-                        </div>
+                ) : movimientos.length === 0 ? (
+                    <div style={{ padding: 80, textAlign: 'center' }}>
+                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.4rem', letterSpacing: '.06em', color: txt }}>Sin registros</p>
+                        <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.82rem', color: mut, marginTop: 4 }}>No hay movimientos para los filtros seleccionados</p>
                     </div>
                 ) : (
                     <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 1000 }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 1180 }}>
                             <thead>
                                 <tr style={{ borderBottom: `1px solid ${bdr}`, background: headBg }}>
-                                    {['Fecha','Tipo','Repuesto','Cant.','Stock Ant.','Stock Nuevo','Motivo','Referencia','Usuario'].map(h => (
-                                        <th key={h} style={{
-                                            padding: '13px 16px', textAlign: 'left',
-                                            fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.22em',
-                                            color: SKY_DEEP, whiteSpace: 'nowrap',
-                                        }}>{h}</th>
+                                    {['Fecha', 'Movimiento', 'Producto', 'Cant.', 'Stock', 'Usuario', 'Origen / relación', 'Motivo'].map(h => (
+                                        <th key={h} style={{ padding: '13px 14px', textAlign: 'left', fontFamily: "'Bebas Neue'", fontSize: '.74rem', letterSpacing: '.2em', color: SKY_DEEP, whiteSpace: 'nowrap' }}>{h}</th>
                                     ))}
                                 </tr>
                             </thead>
                             <tbody>
-                                {filtrados.map((m, idx) => {
-                                    const meta = TIPO_META[m.tipo] || TIPO_META.entrada;
-                                    const TipoIcon = meta.icon;
-                                    const lbl = fechaLabel(m.created_at);
-                                    const prevLbl = idx > 0 ? fechaLabel(filtrados[idx - 1].created_at) : null;
-                                    const mostrarSeparador = lbl !== prevLbl;
+                                {movimientos.map((m, idx) => {
+                                    const cls = clasificarMovimiento(m);
+                                    const fecha = new Date(m.created_at);
                                     return (
-                                        <React.Fragment key={m.id}>
-                                            {mostrarSeparador && (
-                                                <tr>
-                                                    <td colSpan={9} style={{ padding: '14px 16px 6px', background: isDark ? 'rgba(14,165,233,0.03)' : 'rgba(14,165,233,0.02)' }}>
-                                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                                                            <span style={{
-                                                                display: 'inline-flex', alignItems: 'center', gap: 5,
-                                                                padding: '3px 9px', borderRadius: 999,
-                                                                background: SKY_PALE, border: `1px solid ${SKY_BDR}`,
-                                                                fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.22em', color: SKY_DEEP,
-                                                            }}>
-                                                                <span style={{ width: 5, height: 5, borderRadius: '50%', background: SKY }} />
-                                                                {lbl}
-                                                            </span>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            )}
-                                        <tr className="mov-row"
-                                            style={{ borderBottom: `1px solid ${bdr}`, transition: 'background .15s', animationDelay: `${Math.min(idx * 14, 220)}ms` }}
-                                            onMouseEnter={e => e.currentTarget.style.background = rowHov}
-                                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-
-                                            {/* Fecha */}
-                                            <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
-                                                <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.82rem', color: txt }}>{new Date(m.created_at).toLocaleDateString('es-EC')}</p>
-                                                <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.72rem', color: mut }}>{new Date(m.created_at).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}</p>
+                                        <tr key={m.id} className="mov-row" style={{ borderBottom: `1px solid ${bdr}`, animationDelay: `${Math.min(idx, 20) * 15}ms`, opacity: m.revertido_at ? 0.6 : 1 }}>
+                                            <td style={{ padding: '12px 14px', fontFamily: "'Outfit'", fontSize: '.8rem', color: txtSf, whiteSpace: 'nowrap' }}>
+                                                {fecha.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                                <span style={{ display: 'block', fontSize: '.72rem', color: mut }}>{fecha.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}</span>
                                             </td>
-
-                                            {/* Tipo */}
-                                            <td style={{ padding: '12px 16px' }}>
-                                                <span className="mov-pill" style={{
-                                                    display: 'inline-flex', alignItems: 'center', gap: 5,
-                                                    fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.14em',
-                                                    padding: '4px 9px', borderRadius: 999,
-                                                    background: meta.bg, color: meta.color, border: `1px solid ${meta.border}`,
-                                                    whiteSpace: 'nowrap',
-                                                }}>
-                                                    <TipoIcon /> {meta.label}
-                                                </span>
+                                            <td style={{ padding: '12px 14px' }}>
+                                                <span className="mov-pill" style={{ display: 'inline-flex', padding: '4px 10px', borderRadius: 999, background: `${cls.color}18`, border: `1px solid ${cls.color}55`, color: cls.color, fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.1em', whiteSpace: 'nowrap' }}>{cls.label}</span>
+                                                {m.revertido_at && <span style={{ display: 'block', fontFamily: "'Outfit'", fontSize: '.7rem', color: mut, marginTop: 3 }}>Devuelta al inventario</span>}
                                             </td>
-
-                                            {/* Repuesto */}
-                                            <td style={{ padding: '12px 16px', maxWidth: 220 }}>
-                                                <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.88rem', color: txt, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.repuesto_nombre}</p>
-                                                <code style={{
-                                                    display: 'inline-block', marginTop: 2,
-                                                    fontFamily: 'monospace', fontSize: '.7rem', fontWeight: 600,
-                                                    background: SKY_PALE, padding: '1px 7px', borderRadius: 5,
-                                                    color: SKY_DEEP, border: `1px solid ${SKY_BDR}`,
-                                                }}>{m.repuesto_codigo}</code>
+                                            <td style={{ padding: '12px 14px' }}>
+                                                <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.86rem', color: txt }}>{m.repuesto_nombre}</p>
+                                                <p style={{ fontFamily: "'Outfit'", fontSize: '.72rem', color: mut }}>{m.repuesto_codigo} · {AREA_LABEL[m.area] || '—'}</p>
                                             </td>
-
-                                            {/* Cantidad */}
-                                            <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                                                <span style={{ fontFamily: "'Bebas Neue'", fontSize: '1.25rem', letterSpacing: '.02em', color: meta.color }}>
-                                                    {m.tipo === 'entrada' ? '+' : '−'}{m.cantidad}
-                                                </span>
+                                            <td style={{ padding: '12px 14px', fontFamily: "'Bebas Neue'", fontSize: '1.1rem', color: m.tipo === 'entrada' ? '#10b981' : '#ef4444', whiteSpace: 'nowrap' }}>
+                                                {m.tipo === 'entrada' ? '+' : '−'}{fmtCant(m.cantidad)} <span style={{ fontFamily: "'Outfit'", fontSize: '.7rem', color: mut }}>{m.unidad_medida}</span>
                                             </td>
-
-                                            {/* Stock anterior */}
-                                            <td style={{ padding: '12px 16px', textAlign: 'center', fontFamily: "'Bebas Neue'", fontSize: '1rem', letterSpacing: '.04em', color: mut }}>
-                                                {m.stock_anterior}
+                                            <td style={{ padding: '12px 14px', fontFamily: "'Outfit'", fontSize: '.82rem', color: txtSf, whiteSpace: 'nowrap' }}>{fmtCant(m.stock_anterior)} → <strong style={{ color: txt }}>{fmtCant(m.stock_nuevo)}</strong></td>
+                                            <td style={{ padding: '12px 14px', fontFamily: "'Outfit'", fontSize: '.82rem', color: txtSf }}>{m.usuario_nombre}</td>
+                                            <td style={{ padding: '12px 14px', fontFamily: "'Outfit'", fontSize: '.78rem', color: txtSf, lineHeight: 1.45 }}>
+                                                {m.proforma_numero && <div>Proforma: <Link to={`/dashboard/proformas/${m.proforma_id}`} style={{ color: SKY_DEEP, fontWeight: 600 }}>{m.proforma_numero}</Link></div>}
+                                                {m.orden_numero && <div>Orden de trabajo: <strong style={{ color: txt }}>{m.orden_numero}</strong></div>}
+                                                {m.cliente_nombre && <div>Cliente: {m.cliente_nombre}</div>}
+                                                {(m.vehiculo_descripcion || m.vehiculo_placa) && <div>Vehículo: {[m.vehiculo_descripcion, m.vehiculo_placa].filter(Boolean).join(' · ')}</div>}
+                                                {m.origen === 'compra' && m.referencia && <div>Compra: {m.referencia}</div>}
+                                                {!m.proforma_numero && !m.orden_numero && m.origen !== 'compra' && <span style={{ color: faint }}>—</span>}
                                             </td>
-
-                                            {/* Stock nuevo */}
-                                            <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                                                <span style={{ fontFamily: "'Bebas Neue'", fontSize: '1.05rem', letterSpacing: '.02em', color: m.stock_nuevo < 5 ? '#ef4444' : SKY_DEEP }}>
-                                                    {m.stock_nuevo}
-                                                </span>
-                                            </td>
-
-                                            {/* Motivo */}
-                                            <td style={{ padding: '12px 16px', fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.8rem', color: txtSf, maxWidth: 160 }}>
-                                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>{m.motivo || <span style={{ color: mut }}>—</span>}</span>
-                                            </td>
-
-                                            {/* Referencia */}
-                                            <td style={{ padding: '12px 16px' }}>
-                                                {m.referencia
-                                                    ? <code style={{ fontFamily: 'monospace', fontSize: '.74rem', fontWeight: 500, background: isDark ? 'rgba(148,163,184,0.08)' : 'rgba(15,23,42,0.05)', padding: '2px 7px', borderRadius: 5, color: txtSf, border: `1px solid ${bdr}` }}>{m.referencia}</code>
-                                                    : <span style={{ color: mut, fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.8rem' }}>—</span>}
-                                            </td>
-
-                                            {/* Usuario */}
-                                            <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
-                                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
-                                                    <div style={{ width: 22, height: 22, borderRadius: '50%', background: `linear-gradient(135deg, ${SKY_DEEP}, ${SKY})`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                                        <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.62rem', color: '#fff' }}>{m.usuario_nombre?.[0]?.toUpperCase()}</span>
-                                                    </div>
-                                                    <span style={{ fontFamily: "'Outfit'", fontWeight: 500, fontSize: '.8rem', color: txtSf }}>{m.usuario_nombre}</span>
-                                                </div>
+                                            <td style={{ padding: '12px 14px', fontFamily: "'Outfit'", fontSize: '.78rem', color: mut, maxWidth: 240 }}>
+                                                {m.motivo || '—'}
+                                                {m.referencia && m.origen !== 'compra' && m.referencia !== m.proforma_numero && <span style={{ display: 'block' }}>Ref: {m.referencia}</span>}
                                             </td>
                                         </tr>
-                                        </React.Fragment>
                                     );
                                 })}
                             </tbody>
@@ -326,32 +281,15 @@ export default function Movimientos() {
                     </div>
                 )}
             </div>
-        </div>
-    );
-}
 
-function Chip({ label, onRemove, color, bg, bdr }) {
-    return (
-        <span style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '4px 4px 4px 11px', borderRadius: 999,
-            background: bg, border: `1px solid ${bdr}`, color,
-            fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.74rem',
-            animation: 'bounceIn .25s ease',
-        }}>
-            {label}
-            <button onClick={onRemove}
-                style={{
-                    width: 18, height: 18, borderRadius: '50%',
-                    background: 'rgba(0,0,0,0.06)', border: 'none', cursor: 'pointer',
-                    color, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'background .15s',
-                }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.12)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0.06)'}>
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-        </span>
+            {totalPages > 1 && (
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 10, marginTop: 14 }}>
+                    <button className="btn-ghost" disabled={page <= 1 || loading} onClick={() => cargar(filtrosAplicados, page - 1)}>‹ ANTERIOR</button>
+                    <span style={{ fontFamily: "'Outfit'", fontSize: '.82rem', color: mut }}>Página {page} de {totalPages}</span>
+                    <button className="btn-ghost" disabled={page >= totalPages || loading} onClick={() => cargar(filtrosAplicados, page + 1)}>SIGUIENTE ›</button>
+                </div>
+            )}
+        </div>
     );
 }
 
@@ -365,7 +303,7 @@ function MiniStat({ label, value, sub, color, bg, bdr, mut, txt, shadow }) {
             onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.borderColor = color + '55'; }}
             onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.borderColor = bdr; }}>
             <div style={{ position: 'absolute', top: 0, left: 0, width: 3, height: '100%', background: `linear-gradient(180deg, ${color}, transparent)` }} />
-            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.56rem', letterSpacing: '.22em', color: mut }}>{label.toUpperCase()}</p>
+            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.22em', color: mut }}>{label.toUpperCase()}</p>
             <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.7rem', letterSpacing: '.02em', color, lineHeight: 1, marginTop: 4 }}>{value}</p>
             {sub && <p style={{ fontFamily: "'Outfit'", fontWeight: 500, fontSize: '.72rem', color, marginTop: 4, opacity: .85 }}>{sub}</p>}
         </div>

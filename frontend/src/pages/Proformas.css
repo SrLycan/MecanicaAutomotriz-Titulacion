@@ -1,0 +1,19 @@
+.pf-table-wrap { overflow-x: auto; border-radius: 14px; }
+.pf-table { width: 100%; border-collapse: collapse; min-width: 760px; }
+.pf-table th { text-align: left; padding: 12px 14px; font-family: 'Bebas Neue', sans-serif; font-size: .74rem; letter-spacing: .14em; white-space: nowrap; }
+.pf-table td { padding: 12px 14px; font-family: 'Outfit', sans-serif; font-size: .88rem; vertical-align: middle; }
+.pf-table tbody tr { border-top: 1px solid var(--pf-bdr, var(--border)); }
+
+.pf-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 999px; font-family: 'Bebas Neue', sans-serif; font-size: .7rem; letter-spacing: .1em; white-space: nowrap; }
+.pf-icon-btn { background: none; border: 1px solid var(--pf-bdr, var(--border)); border-radius: 8px; padding: 7px; cursor: pointer; display: inline-flex; }
+
+.pf-tipo-card {
+    flex: 1; min-width: 180px; border-radius: 14px; padding: 18px; cursor: pointer;
+    border: 2px solid var(--pf-bdr, var(--border)); text-align: left; background: none;
+    font-family: 'Outfit', sans-serif; transition: border-color .15s, background .15s;
+}
+.pf-tipo-card.activo { border-color: var(--pf-sky, #0284c7); }
+
+@media print {
+    .no-print { display: none !important; }
+}

@@ -20,15 +20,16 @@ function IconChat()    { return <svg width="15" height="15" viewBox="0 0 24 24" 
 function IconClock()   { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>; }
 function IconChevron({ open }) { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ transform: open ? 'rotate(90deg)' : 'none', transition: 'transform .2s' }}><polyline points="9 18 15 12 9 6"/></svg>; }
 function IconLeaf()    { return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 11 13.5 11 11"/></svg>; }
+function IconTruck()   { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>; }
 
 export default function Bitacora() {
     const { isDark } = useTheme();
     const [tab, setTab] = useState('conversaciones'); // 'conversaciones' | 'ordenes'
 
     const txt   = isDark ? '#f1f5f9' : '#0f172a';
-    const mut   = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
-    const bdr   = isDark ? 'rgba(148,163,184,0.18)' : 'rgba(15,23,42,0.07)';
-    const card  = isDark ? 'rgba(255,255,255,0.025)' : '#ffffff';
+    const mut   = isDark ? 'rgba(241,245,249,0.72)' : '#526075';
+    const bdr   = isDark ? 'rgba(148,163,184,0.28)' : '#b6c3d3';
+    const card  = isDark ? 'rgba(255,255,255,0.045)' : '#ffffff';
     const pale  = isDark ? 'rgba(99,102,241,0.10)' : 'rgba(99,102,241,0.06)';
 
     const estilos = { isDark, txt, mut, bdr, card, pale };
@@ -55,14 +56,15 @@ export default function Bitacora() {
             </div>
 
             {/* ── Tabs ── */}
-            <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: `1px solid ${bdr}` }}>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: `1px solid ${bdr}`, overflowX: 'auto' }}>
                 <TabButton active={tab === 'conversaciones'} onClick={() => setTab('conversaciones')} icon={<IconChat />} label="Conversaciones" txt={txt} mut={mut} />
                 <TabButton active={tab === 'ordenes'}        onClick={() => setTab('ordenes')}        icon={<IconClock />} label="Historial de Órdenes" txt={txt} mut={mut} />
+                <TabButton active={tab === 'otras'}          onClick={() => setTab('otras')}          icon={<IconTruck />} label="Otras acciones" txt={txt} mut={mut} />
             </div>
 
-            {tab === 'conversaciones'
-                ? <PanelConversaciones {...estilos} />
-                : <PanelHistorialOrdenes {...estilos} />}
+            {tab === 'conversaciones' && <PanelConversaciones {...estilos} />}
+            {tab === 'ordenes'        && <PanelHistorialOrdenes {...estilos} />}
+            {tab === 'otras'          && <PanelOtrasAcciones {...estilos} />}
         </div>
     );
 }
@@ -141,7 +143,7 @@ function PanelConversaciones({ isDark, txt, mut, bdr, card, pale }) {
                                 style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, background: 'none', border: 'none', cursor: 'pointer', padding: '13px 16px', textAlign: 'left' }}>
                                 <IconChevron open={expandida} />
                                 <span style={{
-                                    fontFamily: "'Bebas Neue'", fontSize: '.6rem', letterSpacing: '.1em',
+                                    fontFamily: "'Bebas Neue'", fontSize: '.72rem', letterSpacing: '.1em',
                                     padding: '3px 9px', borderRadius: 999, whiteSpace: 'nowrap',
                                     background: c.canal === 'panel_cliente' ? 'rgba(16,185,129,.10)' : pale,
                                     color: c.canal === 'panel_cliente' ? '#10b981' : ACCENT,
@@ -174,7 +176,7 @@ function PanelConversaciones({ isDark, txt, mut, bdr, card, pale }) {
                                             border: `1px solid ${m.rol === 'user' ? bdr : ACCENT + '30'}`,
                                             borderRadius: 10, padding: '8px 12px',
                                         }}>
-                                            <p style={{ fontFamily: "'Outfit'", fontSize: '.68rem', fontWeight: 700, letterSpacing: '.05em', color: m.rol === 'user' ? mut : ACCENT, marginBottom: 3 }}>
+                                            <p style={{ fontFamily: "'Outfit'", fontSize: '.76rem', fontWeight: 700, letterSpacing: '.05em', color: m.rol === 'user' ? mut : ACCENT, marginBottom: 3 }}>
                                                 {m.rol === 'user' ? 'VISITANTE' : 'SWAPBOT'}
                                             </p>
                                             <p style={{ fontFamily: "'Outfit'", fontSize: '.8rem', color: txt }}>{m.texto}</p>
@@ -229,7 +231,7 @@ function PanelHistorialOrdenes({ txt, mut, bdr, card }) {
                     <thead>
                         <tr style={{ borderBottom: `1px solid ${bdr}` }}>
                             {['Fecha', 'Orden', 'Cliente', 'Cambio', 'Realizado por', 'Notas'].map(h => (
-                                <th key={h} style={{ padding: '11px 16px', textAlign: 'left', fontFamily: "'Bebas Neue'", fontSize: '.66rem', letterSpacing: '.12em', color: mut }}>{h}</th>
+                                <th key={h} style={{ padding: '11px 16px', textAlign: 'left', fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.12em', color: mut }}>{h}</th>
                             ))}
                         </tr>
                     </thead>
@@ -257,6 +259,109 @@ function PanelHistorialOrdenes({ txt, mut, bdr, card }) {
                                     <td style={{ padding: '11px 16px', fontFamily: "'Outfit'", fontSize: '.76rem', color: txt, maxWidth: 220 }}>
                                         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>{h.notas || '—'}</span>
                                     </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
+            <Paginador pagina={pagina} setPagina={setPagina} total={total} porPagina={POR_PAGINA} mut={mut} txt={txt} bdr={bdr} />
+        </div>
+    );
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TAB 3 — Otras acciones: Proveedores, Compras, Gastos, Pagos
+   (GET /ordenes/ordenes/historial/general?tipo=otras) — misma
+   coleccion de Mongo que el historial de ordenes, filtrada por
+   entidad_tipo != 'orden'. No es una bitacora paralela.
+   ══════════════════════════════════════════════════════════════ */
+const ENTIDAD_LABEL = {
+    proveedor: { label: 'Proveedor', color: '#0284c7' },
+    compra: { label: 'Compra', color: '#0ea5e9' },
+    gasto: { label: 'Gasto', color: '#f59e0b' },
+    movimiento_financiero: { label: 'Pago/Abono', color: '#10b981' },
+    // Sprint 14
+    proforma: { label: 'Proforma', color: '#8b5cf6' },
+    inventario: { label: 'Inventario', color: '#f97316' },
+    cuenta_cobrar: { label: 'Pagaré / Cuenta', color: '#c9a227' },
+    pago: { label: 'Pago de cliente', color: '#10b981' },
+    orden_eliminada: { label: 'Orden eliminada', color: '#ef4444' },
+};
+
+function PanelOtrasAcciones({ txt, mut, bdr, card }) {
+    const [registros, setRegistros] = useState([]);
+    const [total, setTotal]     = useState(0);
+    const [pagina, setPagina]   = useState(1);
+    const [loading, setLoading] = useState(true);
+    const [entidad, setEntidad] = useState('');
+
+    useEffect(() => {
+        setLoading(true);
+        api.get(`/ordenes/ordenes/historial/general?tipo=otras&pagina=${pagina}&porPagina=${POR_PAGINA}${entidad ? `&entidad=${entidad}` : ''}`)
+            .then(r => { setRegistros(r.data.registros || []); setTotal(r.data.total || 0); })
+            .catch(() => { setRegistros([]); setTotal(0); })
+            .finally(() => setLoading(false));
+    }, [pagina, entidad]);
+
+    const filtro = (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+            <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.74rem', letterSpacing: '.16em', color: mut }}>ENTIDAD</span>
+            <select value={entidad} onChange={e => { setEntidad(e.target.value); setPagina(1); }}
+                style={{ padding: '7px 10px', borderRadius: 9, border: `1px solid ${bdr}`, background: card, color: txt, fontFamily: "'Outfit'", fontSize: '.8rem' }}>
+                <option value="">Todas</option>
+                {Object.entries(ENTIDAD_LABEL).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+            </select>
+        </div>
+    );
+
+    if (loading) return <div>{filtro}<p style={{ fontFamily: "'Outfit'", fontSize: '.85rem', color: mut }}>Cargando historial…</p></div>;
+
+    if (!registros.length) {
+        return (
+            <div>
+                {filtro}
+                <div style={{ padding: '40px 24px', textAlign: 'center', background: card, border: `1px solid ${bdr}`, borderRadius: 14 }}>
+                    <p style={{ fontFamily: "'Outfit'", fontSize: '.88rem', color: mut }}>
+                        Todavía no hay acciones registradas{entidad ? ` para "${ENTIDAD_LABEL[entidad]?.label || entidad}"` : ' sobre proformas, inventario, pagarés, pagos, proveedores, compras o gastos'}.
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div>
+            {filtro}
+            <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                        <tr style={{ borderBottom: `1px solid ${bdr}` }}>
+                            {['Fecha', 'Entidad', 'Acción', 'Detalle', 'Realizado por'].map(h => (
+                                <th key={h} style={{ padding: '11px 16px', textAlign: 'left', fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.12em', color: mut }}>{h}</th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {registros.map((h, i) => {
+                            const info = ENTIDAD_LABEL[h.entidad_tipo] || { label: h.entidad_tipo, color: ACCENT_DEEP };
+                            return (
+                                <tr key={h.id} className="bit-row" style={{ animationDelay: `${i * 25}ms`, borderBottom: `1px solid ${bdr}` }}>
+                                    <td style={{ padding: '11px 16px', fontFamily: "'Outfit'", fontSize: '.76rem', color: mut, whiteSpace: 'nowrap' }}>
+                                        {h.created_at ? new Date(h.created_at).toLocaleString('es-EC', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}
+                                    </td>
+                                    <td style={{ padding: '11px 16px', whiteSpace: 'nowrap' }}>
+                                        <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.74rem', letterSpacing: '.1em', padding: '3px 9px', borderRadius: 999, background: `${info.color}18`, border: `1px solid ${info.color}44`, color: info.color }}>
+                                            {info.label.toUpperCase()} #{h.entidad_id}
+                                        </span>
+                                    </td>
+                                    <td style={{ padding: '11px 16px', fontFamily: "'Outfit'", fontWeight: 700, fontSize: '.8rem', color: txt, textTransform: 'capitalize' }}>
+                                        {(h.accion || '').replace(/_/g, ' ')}
+                                    </td>
+                                    <td style={{ padding: '11px 16px', fontFamily: "'Outfit'", fontSize: '.76rem', color: mut, maxWidth: 460, lineHeight: 1.45 }}>
+                                        <span style={{ display: 'block', whiteSpace: 'normal' }}>{h.detalle || '—'}</span>
+                                    </td>
+                                    <td style={{ padding: '11px 16px', fontFamily: "'Outfit'", fontSize: '.78rem', color: mut }}>{h.usuario_nombre || 'Sistema'}</td>
                                 </tr>
                             );
                         })}

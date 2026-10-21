@@ -1,0 +1,46 @@
+{
+  "id": "movimientos-historial",
+  "grupo": "INVENTARIO · ENTRADAS Y SALIDAS",
+  "titulo": "Historial de entradas y salidas",
+  "version": "1.0",
+  "actualizada": "2026-10-14",
+  "rutas": [{ "path": "/dashboard/movimientos", "query": { "tab": ["", "historial"] } }],
+  "descripcion": "Trazabilidad del inventario: cada entrada y salida de cada producto, con quién la hizo, cuándo, el stock antes y después, y su origen (manual, compra, proforma, venta en tienda, ajuste o devolución).",
+  "funciones": [
+    "Buscar por producto, cliente o placa.",
+    "Filtrar por tipo de movimiento, inventario, usuario, número de proforma, orden de trabajo y fechas.",
+    "Ver el historial de un solo producto (desde Inventario › Historial).",
+    "Exportar los registros filtrados a CSV (Excel)."
+  ],
+  "pasos": [
+    {
+      "titulo": "Lea los indicadores y la tabla",
+      "texto": ["Las tarjetas resumen los registros encontrados y las entradas, salidas y salidas por proforma de la página visible. Cada fila de la tabla muestra el movimiento, el producto, la cantidad, el stock resultante y su origen."],
+      "imagen": { "archivo": "v27/movimientos-historial/01-indicadores-y-tabla.png", "alt": "Historial de entradas y salidas con las pestañas, los indicadores y la tabla de registros", "tipo": "captura",
+        "captura": { "url": "/dashboard/movimientos", "esperar": { "texto": "Registros", "tag": "p" } } },
+      "marcas": [
+        { "texto": "Pestaña Historial (esta guía) y pestaña Registrar movimiento.", "objetivo": { "ayuda": "movimientos.tab-historial" } },
+        { "texto": "Total de registros encontrados.", "objetivo": { "texto": "Registros", "tag": "p", "subir": 1 } }
+      ]
+    },
+    {
+      "titulo": "Filtre y exporte",
+      "texto": ["Combine los filtros para encontrar un movimiento concreto: por ejemplo, «Salida por proforma» y el número de la proforma. «Limpiar» quita todos los filtros. «Exportar CSV» descarga lo filtrado (hasta 500 registros)."],
+      "imagen": { "archivo": "v27/movimientos-historial/02-filtros.png", "alt": "Filtros del historial: buscador, tipo de movimiento, inventario, usuario, proforma, orden de trabajo y fechas", "tipo": "captura",
+        "captura": { "url": "/dashboard/movimientos", "esperar": { "placeholder": "Nombre, código, cliente" } } },
+      "marcas": [
+        { "texto": "Buscar por producto, cliente o placa.", "objetivo": { "placeholder": "Nombre, código, cliente" } },
+        { "texto": "Tipo de movimiento (entrada, salida, compra, proforma…).", "objetivo": { "campo": "TIPO DE MOVIMIENTO" } },
+        { "texto": "Exportar a CSV.", "objetivo": { "texto": "EXPORTAR CSV", "tag": "button" } }
+      ]
+    }
+  ],
+  "resultado": "Encuentra exactamente qué pasó con un producto. Los registros no se pueden editar ni borrar: son la evidencia del inventario.",
+  "advertencias": [
+    "Las cifras de entradas y salidas de las tarjetas se calculan sobre la página visible, no sobre todo el filtro.",
+    "Necesita el permiso «Registros de inventario: ver»."
+  ],
+  "problemas": [
+    { "problema": "No aparece un movimiento que acabo de hacer.", "solucion": "Pulse «Limpiar» para quitar filtros; los registros se ordenan del más reciente al más antiguo." }
+  ]
+}

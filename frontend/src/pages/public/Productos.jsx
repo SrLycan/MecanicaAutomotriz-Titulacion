@@ -2,18 +2,21 @@
  * SS SWAP - Catálogo Público de Repuestos y Productos
  * Explora productos disponibles para venta con filtros por categoría, rango de precio,
  * indicador de stock y sistema de reserva/solicitud de compra para clientes.
+ * Estilos en Productos.css + styles/web-publica.css (todo bajo .web).
  */
-import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import Navbar from '../../components/public/Navbar';
 import Footer from '../../components/public/Footer';
+import FondoVivo from '../../components/public/FondoVivo';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import '../../styles/web-publica.css';
 import './Productos.css';
 
-const GOLD   = '#3b7bab';
-const GOLD_L = '#7fabce';
+const GOLD   = '#3db4ef';
+const GOLD_L = '#93d6f8';
 const ITEMS_PER_PAGE = 12;
 
 const ESTADO_SOLICITUD_LABELS = {
@@ -21,41 +24,6 @@ const ESTADO_SOLICITUD_LABELS = {
     atendida:  { label: 'Atendida',  color: '#10b981', bg: 'rgba(16,185,129,.12)', bdr: 'rgba(16,185,129,.25)' },
     cancelada: { label: 'Cancelada', color: '#ef4444', bg: 'rgba(239,68,68,.12)',  bdr: 'rgba(239,68,68,.25)'  },
 };
-
-/* ═══════════════════════════════════════════════════════════════
-   PARTÍCULAS DE FONDO — canvas, tonalidad azul de la marca
-   ═══════════════════════════════════════════════════════════════ */
-function ShopParticles() {
-    const ref = useRef(null);
-    const raf = useRef(null);
-    useEffect(() => {
-        const c = ref.current; if (!c) return;
-        const ctx = c.getContext('2d');
-        const resize = () => { c.width = c.offsetWidth; c.height = c.offsetHeight; };
-        resize();
-        const ro = new ResizeObserver(resize); ro.observe(c);
-        const clr = [59, 123, 171];
-        const pts = Array.from({ length: 32 }, () => ({
-            x: Math.random() * c.width, y: Math.random() * c.height,
-            r: Math.random() * 1.5 + 0.3, vx: (Math.random() - .5) * .2, vy: -(Math.random() * .26 + .05),
-            o: Math.random() * .4 + .06, life: Math.random(),
-        }));
-        const draw = () => {
-            ctx.clearRect(0, 0, c.width, c.height);
-            pts.forEach(p => {
-                p.x += p.vx; p.y += p.vy; p.life += .004;
-                if (p.life > 1) { p.life = 0; p.x = Math.random() * c.width; p.y = c.height + 4; }
-                const f = p.life < .2 ? p.life / .2 : p.life > .72 ? 1 - (p.life - .72) / .28 : 1;
-                ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(${clr[0]},${clr[1]},${clr[2]},${p.o * f})`; ctx.fill();
-            });
-            raf.current = requestAnimationFrame(draw);
-        };
-        draw();
-        return () => { cancelAnimationFrame(raf.current); ro.disconnect(); };
-    }, []);
-    return <canvas ref={ref} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0 }} />;
-}
 
 /* ═══════════════════════════════════════════════════════════════
    SLIDER DE PRECIO — solo desktop
@@ -90,7 +58,7 @@ function PriceRangeSlider({ min, max, value, onChange }) {
             </div>
             <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
                 {[value[0], value[1]].map((v, i) => (
-                    <div key={i} style={{ flex: 1, textAlign: 'center', background: 'rgba(59,123,171,0.08)', border: `1px solid rgba(59,123,171,0.22)`, borderRadius: '8px', padding: '7px 6px', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.05rem', letterSpacing: '.06em', color: GOLD_L }}>${v}</div>
+                    <div key={i} style={{ flex: 1, textAlign: 'center', background: 'rgba(59,123,171,0.08)', border: `1px solid rgba(59,123,171,0.22)`, borderRadius: '8px', padding: '7px 6px', fontFamily: "'Sora', sans-serif", fontWeight: 700, fontSize: '1.05rem', letterSpacing: '.06em', color: GOLD_L }}>${v}</div>
                 ))}
             </div>
         </div>
@@ -116,7 +84,7 @@ function PriceInputs({ min, max, value, onChange }) {
         width: '100%', boxSizing: 'border-box', padding: '14px 14px 14px 28px',
         background: 'rgba(59,123,171,0.08)', border: `1.5px solid rgba(59,123,171,0.25)`,
         borderRadius: '10px', color: GOLD_L,
-        fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', letterSpacing: '.06em',
+        fontFamily: "'Sora', sans-serif", fontWeight: 700, fontSize: '1.2rem', letterSpacing: '.06em',
         outline: 'none', textAlign: 'center', transition: 'border-color .2s',
     };
 
@@ -127,7 +95,7 @@ function PriceInputs({ min, max, value, onChange }) {
                     <div key={lbl} style={{ flex: 1 }}>
                         <label style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 300, fontSize: '.78rem', color: 'rgba(127,171,206,0.65)', display: 'block', marginBottom: '6px', letterSpacing: '.06em' }}>{lbl}</label>
                         <div style={{ position: 'relative' }}>
-                            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1rem', color: 'rgba(127,171,206,0.4)', pointerEvents: 'none' }}>$</span>
+                            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontFamily: "'Sora', sans-serif", fontWeight: 700, fontSize: '1rem', color: 'rgba(127,171,206,0.4)', pointerEvents: 'none' }}>$</span>
                             <input
                                 type="number" inputMode="numeric"
                                 value={val}
@@ -142,7 +110,7 @@ function PriceInputs({ min, max, value, onChange }) {
                     </div>
                 ))}
             </div>
-            <button onClick={() => apply(localMin, localMax)} style={{ width: '100%', padding: '15px', background: `linear-gradient(135deg, ${GOLD}, ${GOLD_L})`, border: 'none', borderRadius: '10px', color: '#fff', fontFamily: "'Bebas Neue', sans-serif", fontSize: '.9rem', letterSpacing: '.16em', cursor: 'pointer', transition: 'all .2s' }}
+            <button onClick={() => apply(localMin, localMax)} style={{ width: '100%', padding: '15px', background: `linear-gradient(135deg, ${GOLD}, ${GOLD_L})`, border: 'none', borderRadius: '10px', color: '#fff', fontFamily: "'Sora', sans-serif", fontWeight: 700, fontSize: '.9rem', letterSpacing: '.16em', cursor: 'pointer', transition: 'all .2s' }}
                 onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 18px rgba(127,171,206,0.45)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
                 onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'none'; }}
             >Aplicar precio</button>
@@ -247,7 +215,7 @@ function FPD({ categorias, categoria, setCategoria, sortBy, setSortBy, priceRang
                 <CbD checked={pocasUnidades} onChange={() => setPocasUnidades(v => !v)} label="Pocas unidades" accentColor="#f59e0b" />
             </SS>
             {activeFilters.length > 0 && (
-                <button onClick={clearAll} style={{ marginTop: '6px', width: '100%', padding: '10px', borderRadius: '9px', background: 'rgba(59,123,171,0.1)', border: '1px solid rgba(59,123,171,.4)', color: GOLD_L, fontFamily: "'Bebas Neue', sans-serif", fontSize: '.72rem', letterSpacing: '.14em', cursor: 'pointer', transition: 'all .2s' }}
+                <button onClick={clearAll} style={{ marginTop: '6px', width: '100%', padding: '10px', borderRadius: '9px', background: 'rgba(59,123,171,0.1)', border: '1px solid rgba(59,123,171,.4)', color: GOLD_L, fontFamily: "'Sora', sans-serif", fontWeight: 700, fontSize: '.72rem', letterSpacing: '.14em', cursor: 'pointer', transition: 'all .2s' }}
                     onMouseEnter={e => { e.currentTarget.style.background = 'rgba(59,123,171,0.18)'; e.currentTarget.style.boxShadow = '0 2px 14px rgba(59,123,171,.28)'; }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'rgba(59,123,171,0.1)'; e.currentTarget.style.boxShadow = 'none'; }}
                 >Limpiar filtros ({activeFilters.length})</button>
@@ -282,7 +250,7 @@ function FPM({ categorias, categoria, setCategoria, sortBy, setSortBy, priceRang
                 <CbM checked={pocasUnidades} onChange={() => setPocasUnidades(v => !v)} label="Solo pocas unidades" accentColor="#f59e0b" />
             </SSM>
             {activeFilters.length > 0 && (
-                <button onClick={clearAll} style={{ marginTop: '10px', width: '100%', padding: '15px', borderRadius: '10px', background: 'rgba(59,123,171,0.1)', border: '1.5px solid rgba(59,123,171,.4)', color: GOLD_L, fontFamily: "'Bebas Neue', sans-serif", fontSize: '.85rem', letterSpacing: '.14em', cursor: 'pointer' }}>
+                <button onClick={clearAll} style={{ marginTop: '10px', width: '100%', padding: '15px', borderRadius: '10px', background: 'rgba(59,123,171,0.1)', border: '1.5px solid rgba(59,123,171,.4)', color: GOLD_L, fontFamily: "'Sora', sans-serif", fontWeight: 700, fontSize: '.85rem', letterSpacing: '.14em', cursor: 'pointer' }}>
                     Limpiar todos los filtros ({activeFilters.length})
                 </button>
             )}
@@ -296,7 +264,7 @@ function FPM({ categorias, categoria, setCategoria, sortBy, setSortBy, priceRang
 function ProductoCard({ p, onVer }) {
     const pocasUnidades = p.stock_actual <= 3;
     return (
-        <div className="pr-card sp-card" onClick={onVer}>
+        <div className="pr-card sp-card" onClick={onVer} role="button" tabIndex={0} aria-label={`Ver ${p.nombre}`} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onVer(); } }}>
             {p.imagen_url ? (
                 <div style={{ width: '100%', height: 150, borderRadius: 10, overflow: 'hidden', marginBottom: 14, background: '#111' }}>
                     <img src={p.imagen_url} alt={p.nombre} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -310,7 +278,7 @@ function ProductoCard({ p, onVer }) {
             {p.categoria_nombre && <p style={{ fontFamily: "'Outfit'", fontSize: '.75rem', color: 'rgba(255,255,255,.5)', marginBottom: 10 }}>{p.categoria_nombre}</p>}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                    <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.3rem', color: GOLD, lineHeight: 1 }}>${parseFloat(p.precio_venta).toFixed(2)}</p>
+                    <p style={{ fontFamily: "'Sora'", fontWeight: 700, fontSize: '1.3rem', color: GOLD, lineHeight: 1 }}>${parseFloat(p.precio_venta).toFixed(2)}</p>
                     <p style={{ fontFamily: "'Outfit'", fontSize: '.7rem', color: 'rgba(255,255,255,.5)' }}>por {p.unidad_medida}</p>
                 </div>
                 <span style={{ fontFamily: "'Outfit'", fontSize: '.72rem', color: pocasUnidades ? '#f59e0b' : '#10b981', background: pocasUnidades ? 'rgba(245,158,11,.1)' : 'rgba(16,185,129,.1)', border: `1px solid ${pocasUnidades ? 'rgba(245,158,11,.25)' : 'rgba(16,185,129,.25)'}`, padding: '4px 10px', borderRadius: 999 }}>
@@ -324,7 +292,7 @@ function ProductoCard({ p, onVer }) {
 function ProductoRow({ p, onVer }) {
     const pocasUnidades = p.stock_actual <= 3;
     return (
-        <div className="pr-row sp-card" onClick={onVer}>
+        <div className="pr-row sp-card" onClick={onVer} role="button" tabIndex={0} aria-label={`Ver ${p.nombre}`} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onVer(); } }}>
             <div style={{ width: 64, height: 64, borderRadius: 10, overflow: 'hidden', background: 'rgba(59,123,171,.08)', border: '1px solid rgba(59,123,171,.15)', flexShrink: 0 }}>
                 {p.imagen_url
                     ? <img src={p.imagen_url} alt={p.nombre} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -338,7 +306,7 @@ function ProductoRow({ p, onVer }) {
                 <span style={{ fontFamily: "'Outfit'", fontSize: '.72rem', color: pocasUnidades ? '#f59e0b' : '#10b981', background: pocasUnidades ? 'rgba(245,158,11,.1)' : 'rgba(16,185,129,.1)', border: `1px solid ${pocasUnidades ? 'rgba(245,158,11,.25)' : 'rgba(16,185,129,.25)'}`, padding: '3px 9px', borderRadius: 999, whiteSpace: 'nowrap' }}>
                     {pocasUnidades ? `¡Solo ${p.stock_actual}!` : `Stock: ${p.stock_actual}`}
                 </span>
-                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.15rem', letterSpacing: '.03em', color: GOLD, minWidth: 66, textAlign: 'right' }}>${parseFloat(p.precio_venta).toFixed(2)}</p>
+                <p style={{ fontFamily: "'Sora'", fontWeight: 700, fontSize: '1.15rem', letterSpacing: '.03em', color: GOLD, minWidth: 66, textAlign: 'right' }}>${parseFloat(p.precio_venta).toFixed(2)}</p>
             </div>
         </div>
     );
@@ -394,17 +362,6 @@ export default function Productos() {
             setSolicitudes([]);
         }
     }, [esCliente]);
-
-    useEffect(() => {
-        const els = document.querySelectorAll('.reveal');
-        const io = new IntersectionObserver((entries) => {
-            entries.forEach(e => {
-                if (e.isIntersecting) { e.target.classList.add('in-view'); io.unobserve(e.target); }
-            });
-        }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
-        els.forEach(el => io.observe(el));
-        return () => io.disconnect();
-    }, [cargando, productoActivo]);
 
     useEffect(() => {
         const fn = () => setShowBackToTop(window.scrollY > 500);
@@ -470,82 +427,75 @@ export default function Productos() {
     const fp = { categorias, categoria, setCategoria, sortBy, setSortBy, priceRange, setPriceRange, priceMin, priceMax, pocasUnidades, setPocasUnidades, activeFilters, clearAll: limpiarFiltros };
 
     return (
-        <div style={{ background: '#050505', minHeight: '100vh', color: '#fff' }}>
+        <div className="web pr-pagina">
 
             <Navbar />
+            <FondoVivo />
 
             {productoActivo ? (
-                <section style={{ padding: '150px 28px 100px', maxWidth: 1200, margin: '0 auto' }}>
+                <section className="w-contenedor pr-detalle-seccion">
                     <ProductoDetalle
                         producto={productoActivo}
                         esCliente={esCliente}
                         estaLogueado={!!usuario}
                         onVolver={() => setProductoActivo(null)}
                         onIrALogin={() => navigate('/auth?modo=login')}
+                        onPedidoRegistrado={(sol) => setSolicitudes(prev => [sol, ...prev])}
                     />
                 </section>
             ) : (
                 <>
-                    <div style={{ position: 'relative', overflow: 'hidden', borderBottom: '1px solid rgba(255,255,255,.06)', paddingTop: 64 }}>
-                        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', backgroundImage: 'linear-gradient(rgba(59,123,171,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(59,123,171,0.05) 1px, transparent 1px)', backgroundSize: '52px 52px', maskImage: 'radial-gradient(ellipse 100% 100% at 50% 0%, black 0%, transparent 100%)', WebkitMaskImage: 'radial-gradient(ellipse 100% 100% at 50% 0%, black 0%, transparent 100%)' }} />
-                        <div style={{ position: 'absolute', top: '-30%', left: '-5%', width: '50vw', height: '50vw', borderRadius: '50%', background: 'radial-gradient(circle, rgba(59,123,171,0.1) 0%, transparent 65%)', pointerEvents: 'none' }} />
-                        <ShopParticles />
-                        <div className="reveal in-view" style={{ maxWidth: 1200, margin: '0 auto', padding: '54px 28px 40px', position: 'relative', zIndex: 2, textAlign: 'center' }}>
-                            <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: GOLD, marginBottom: 14, fontWeight: 500 }}>// NUESTROS PRODUCTOS</p>
-                            <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2.6rem, 5.5vw, 4.2rem)', letterSpacing: '.02em', lineHeight: 1, marginBottom: 16 }}>
-                                <span className="grad-text-rainbow">Repuestos</span><span className="grad-text-white"> y </span><span className="grad-text-rainbow">accesorios</span><span className="grad-text-white"> para tu vehículo.</span>
-                            </h1>
-                            <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '1rem', color: 'rgba(255,255,255,.55)', maxWidth: 560, margin: '0 auto 30px', lineHeight: 1.7 }}>
-                                Encuentra piezas certificadas para el mantenimiento y reparación de tu auto.
-                            </p>
-
-                            <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+                    <header className="w-cabecera pr-cabecera">
+                        <div className="w-contenedor pr-cabecera-in">
+                            <div>
+                                <p className="w-eyebrow w-entrada">Nuestros productos</p>
+                                <h1 className="w-entrada" style={{ '--w-retraso': '80ms' }}>
+                                    Repuestos y accesorios <span className="w-acento">para tu vehículo.</span>
+                                </h1>
+                                <p className="w-lead w-entrada" style={{ '--w-retraso': '160ms' }}>
+                                    Encuentra piezas certificadas para el mantenimiento y reparación de tu auto.
+                                </p>
+                                <ul className="pr-sellos w-entrada" style={{ '--w-retraso': '240ms' }}>
+                                    {['Piezas Certificadas', 'Diagnóstico Gratuito', 'Garantía Escrita', 'Repuestos Originales', 'Atención Técnica'].map(t => (
+                                        <li key={t} className="w-chip">{t}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                            <div className="pr-stats w-entrada" style={{ '--w-retraso': '200ms' }}>
                                 {[
                                     { n: cargando ? '…' : productos.length, label: 'Productos' },
                                     { n: cargando ? '…' : Math.max(categorias.length - 1, 0), label: 'Categorías' },
                                     { n: cargando ? '…' : pocasUnidadesCount, label: 'Pocas unidades' },
                                 ].map(({ n, label }) => (
                                     <div key={label} className="pr-stat">
-                                        <span key={n} className="sp-cnt-anim" style={{ fontFamily: "'Bebas Neue'", fontSize: '1.4rem', letterSpacing: '.03em', lineHeight: 1, color: GOLD_L }}>{n}</span>
-                                        <span style={{ fontFamily: "'Outfit'", fontWeight: 200, fontSize: '.55rem', letterSpacing: '.14em', textTransform: 'uppercase', color: 'rgba(255,255,255,.5)' }}>{label}</span>
+                                        <span key={n} className="sp-cnt-anim pr-stat-n">{n}</span>
+                                        <span className="pr-stat-l">{label}</span>
                                     </div>
                                 ))}
                             </div>
                         </div>
-                    </div>
-
-                    <div style={{ display: 'flex', overflow: 'hidden', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(59,123,171,0.02)', padding: '10px 0' }}>
-                        {[0, 1].map(k => (
-                            <div key={k} className="pr-marquee-track">
-                                {['Piezas Certificadas', 'Diagnóstico Gratuito', 'Garantía Escrita', 'Repuestos Originales', 'Atención Técnica'].map((t, i) => (
-                                    <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '14px', padding: '0 28px', whiteSpace: 'nowrap', fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.24em', color: 'rgba(127,171,206,.35)' }}>
-                                        {t}<span style={{ width: 3, height: 3, borderRadius: '50%', background: 'rgba(127,171,206,.4)', flexShrink: 0 }} />
-                                    </span>
-                                ))}
-                            </div>
-                        ))}
-                    </div>
+                    </header>
 
                     <div className="pr-toolbar-sticky">
                         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px' }}>
                             <div className="pr-toolbar-inner" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                                <button className={`pr-tog${sidebarVisible ? ' on' : ''}`} onClick={() => setSidebarVisible(v => !v)} title="Mostrar/ocultar filtros">
+                                <button className={`pr-tog${sidebarVisible ? ' on' : ''}`} onClick={() => setSidebarVisible(v => !v)} title="Mostrar/ocultar filtros" aria-label="Mostrar u ocultar filtros" aria-pressed={sidebarVisible}>
                                     <IconSliders />
                                 </button>
                                 <div style={{ position: 'relative', flex: 1, minWidth: 180, maxWidth: 420 }}>
                                     <IconSearch style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,.35)', pointerEvents: 'none' }} />
-                                    <input type="text" placeholder="Buscar productos..." value={q} onChange={e => setQ(e.target.value)} className="pr-search-in" />
+                                    <input type="search" aria-label="Buscar productos" placeholder="Buscar productos..." value={q} onChange={e => setQ(e.target.value)} className="pr-search-in" />
                                     {q && (
-                                        <button onClick={() => setQ('')} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,.5)', display: 'flex' }}>
+                                        <button type="button" aria-label="Borrar búsqueda" onClick={() => setQ('')} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,.5)', display: 'flex' }}>
                                             <IconX />
                                         </button>
                                     )}
                                 </div>
                                 <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                                    <button className={`pr-vbtn${viewMode === 'grid' ? ' on' : ''}`} onClick={() => setViewMode('grid')} title="Vista cuadrícula"><IconGrid /></button>
-                                    <button className={`pr-vbtn${viewMode === 'list' ? ' on' : ''}`} onClick={() => setViewMode('list')} title="Vista lista"><IconList /></button>
+                                    <button className={`pr-vbtn${viewMode === 'grid' ? ' on' : ''}`} onClick={() => setViewMode('grid')} title="Vista cuadrícula" aria-label="Vista en cuadrícula" aria-pressed={viewMode === 'grid'}><IconGrid /></button>
+                                    <button className={`pr-vbtn${viewMode === 'list' ? ' on' : ''}`} onClick={() => setViewMode('list')} title="Vista lista" aria-label="Vista en lista" aria-pressed={viewMode === 'list'}><IconList /></button>
                                 </div>
-                                <select className="pr-sort-sel" value={sortBy} onChange={e => setSortBy(e.target.value)}>
+                                <select className="pr-sort-sel" aria-label="Ordenar productos" value={sortBy} onChange={e => setSortBy(e.target.value)}>
                                     <option value="name_asc">Nombre A–Z</option>
                                     <option value="price_asc">Precio ↑</option>
                                     <option value="price_desc">Precio ↓</option>
@@ -580,7 +530,7 @@ export default function Productos() {
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0 14px', borderBottom: '1px solid rgba(255,255,255,.08)', marginBottom: 16, flexShrink: 0 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                     <IconSliders style={{ color: GOLD_L }} />
-                                    <span style={{ fontFamily: "'Bebas Neue'", fontSize: '1rem', letterSpacing: '.2em', color: '#fff' }}>Filtros</span>
+                                    <span style={{ fontFamily: "'Sora'", fontWeight: 700, fontSize: '1rem', letterSpacing: '.2em', color: '#fff' }}>Filtros</span>
                                     {activeFilters.length > 0 && <span style={{ background: GOLD, color: '#fff', borderRadius: '50%', width: 22, height: 22, fontSize: '.72rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Outfit'", fontWeight: 500 }}>{activeFilters.length}</span>}
                                 </div>
                                 <button onClick={() => setMobileFiltersOpen(false)} style={{ background: 'rgba(59,123,171,.1)', border: '1.5px solid rgba(255,255,255,.1)', borderRadius: 8, cursor: 'pointer', color: 'rgba(255,255,255,.6)', display: 'flex', padding: 8 }}>
@@ -611,25 +561,25 @@ export default function Productos() {
                                     {Array.from({ length: 8 }).map((_, i) => <div key={i} className="pr-sk" style={{ aspectRatio: '.82' }} />)}
                                 </div>
                             ) : productos.length === 0 ? (
-                                <div className="pr-empty reveal in-view">
+                                <div className="pr-empty">
                                     <div className="pr-empty-icon"><IconBox /></div>
-                                    <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', letterSpacing: '.02em', marginBottom: 12 }}>Aún no tenemos productos publicados</h2>
+                                    <h2 style={{ fontFamily: "'Sora'", fontWeight: 700, fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', letterSpacing: '.02em', marginBottom: 12 }}>Aún no tenemos productos publicados</h2>
                                     <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.92rem', color: 'rgba(255,255,255,.5)', maxWidth: 460, margin: '0 auto 28px', lineHeight: 1.7 }}>
                                         Estamos preparando nuestro catálogo de repuestos y accesorios. Mientras tanto, nuestro equipo puede asesorarte y conseguir la pieza exacta que necesitas.
                                     </p>
                                     <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
-                                        <a href="/servicios" className="ps-btn-primary"><span>Agendar Servicio</span></a>
-                                        <a href="/nosotros" className="ps-btn-outline">Hablar con un técnico</a>
+                                        <Link to="/servicios" className="w-btn w-btn--primario">Agendar Servicio</Link>
+                                        <Link to="/nosotros" className="w-btn w-btn--claro">Hablar con un técnico</Link>
                                     </div>
                                 </div>
                             ) : productosFiltrados.length === 0 ? (
-                                <div className="pr-empty reveal in-view">
+                                <div className="pr-empty">
                                     <div className="pr-empty-icon"><IconBox /></div>
-                                    <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', letterSpacing: '.02em', marginBottom: 12 }}>No encontramos productos con esos filtros</h2>
+                                    <h2 style={{ fontFamily: "'Sora'", fontWeight: 700, fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', letterSpacing: '.02em', marginBottom: 12 }}>No encontramos productos con esos filtros</h2>
                                     <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.92rem', color: 'rgba(255,255,255,.5)', maxWidth: 460, margin: '0 auto 28px', lineHeight: 1.7 }}>
                                         Intenta ajustar tu búsqueda, el rango de precio o selecciona otra categoría.
                                     </p>
-                                    <button type="button" className="ps-btn-outline" onClick={limpiarFiltros}><IconX /> Limpiar filtros</button>
+                                    <button type="button" className="w-btn w-btn--claro" onClick={limpiarFiltros}><IconX /> Limpiar filtros</button>
                                 </div>
                             ) : viewMode === 'grid' ? (
                                 <div className="pr-grid">
@@ -673,7 +623,7 @@ export default function Productos() {
 
                             {esCliente && solicitudes.length > 0 && (
                                 <div style={{ marginTop: 50 }}>
-                                    <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.65rem', letterSpacing: '.25em', color: GOLD, marginBottom: 14 }}>MIS SOLICITUDES</p>
+                                    <p style={{ fontFamily: "'Sora'", fontWeight: 700, fontSize: '.65rem', letterSpacing: '.25em', color: GOLD, marginBottom: 14 }}>MIS SOLICITUDES</p>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                                         {solicitudes.map(s => {
                                             const est = ESTADO_SOLICITUD_LABELS[s.estado] || ESTADO_SOLICITUD_LABELS.pendiente;
@@ -681,12 +631,13 @@ export default function Productos() {
                                                 <div key={s.id} style={{ background: 'linear-gradient(180deg, #141414 0%, #0e0e0e 100%)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 12, padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
                                                     <div>
                                                         <p style={{ fontFamily: "'Outfit'", fontWeight: 600, color: '#fff', fontSize: '.88rem' }}>{s.repuesto_nombre} <span style={{ color: 'rgba(255,255,255,.5)', fontWeight: 400 }}>× {s.cantidad}</span></p>
-                                                        <p style={{ fontFamily: "'Outfit'", fontSize: '.75rem', color: 'rgba(255,255,255,.5)' }}>${(parseFloat(s.precio_unitario) * s.cantidad).toFixed(2)} · {new Date(s.created_at).toLocaleDateString('es-EC', { day: '2-digit', month: 'short' })}</p>
+                                                        <p style={{ fontFamily: "'Outfit'", fontSize: '.75rem', color: 'rgba(255,255,255,.5)' }}>Pedido #{s.id} · ${(parseFloat(s.precio_unitario) * s.cantidad).toFixed(2)} · {new Date(s.created_at).toLocaleDateString('es-EC', { day: '2-digit', month: 'short' })}</p>
+                                                        {s.estado === 'cancelada' && s.motivo_cancelacion && <p style={{ fontFamily: "'Outfit'", fontSize: '.72rem', color: '#f87171' }}>Motivo: {s.motivo_cancelacion}</p>}
                                                     </div>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                        <span style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.14em', padding: '3px 9px', borderRadius: 999, background: est.bg, color: est.color, border: `1px solid ${est.bdr}` }}>{est.label}</span>
+                                                        <span style={{ fontFamily: "'Sora'", fontWeight: 700, fontSize: '.58rem', letterSpacing: '.14em', padding: '3px 9px', borderRadius: 999, background: est.bg, color: est.color, border: `1px solid ${est.bdr}` }}>{est.label}</span>
                                                         {s.estado === 'pendiente' && (
-                                                            <button className="ps-btn-outline" style={{ padding: '6px 14px', fontSize: '.75rem' }} onClick={() => cancelarSolicitud(s.id)}>Cancelar</button>
+                                                            <button className="w-btn w-btn--claro" style={{ padding: '6px 14px', fontSize: '.75rem' }} onClick={() => cancelarSolicitud(s.id)}>Cancelar</button>
                                                         )}
                                                     </div>
                                                 </div>
@@ -699,7 +650,7 @@ export default function Productos() {
                     </div>
 
                     {showBackToTop && (
-                        <button className="pr-btt" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+                        <button type="button" className="pr-btt" aria-label="Volver arriba" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
                             <IconArrowUp />
                         </button>
                     )}
@@ -712,22 +663,41 @@ export default function Productos() {
 }
 
 /* Detalle + solicitud */
-function ProductoDetalle({ producto, esCliente, estaLogueado, onVolver, onIrALogin }) {
+function ProductoDetalle({ producto, esCliente, estaLogueado, onVolver, onIrALogin, onPedidoRegistrado }) {
     const [cantidad, setCantidad] = useState(1);
     const [notas, setNotas]       = useState('');
+    const [enviando, setEnviando] = useState(false);
 
     const cambiarCantidad = (delta) => {
         setCantidad(c => Math.max(1, Math.min(producto.stock_actual, c + delta)));
     };
 
-    const solicitar = () => {
-        const detalle = `Hola, quiero comprar este producto:%0A%0A*${producto.nombre}*%0ACódigo: ${producto.codigo || 'N/A'}%0ACantidad: ${cantidad}%0APrecio referencial: $${Number(producto.precio_venta || 0).toFixed(2)}${notas.trim() ? `%0AConsulta: ${encodeURIComponent(notas.trim())}` : ''}`;
-        window.open(`https://wa.me/593963863847?text=${detalle}`, '_blank', 'noopener,noreferrer');
+    // 1) Registra el pedido en el sistema (el taller lo ve en "Pedidos de la
+    //    tienda" y lo entrega descontando el inventario); 2) abre WhatsApp con
+    //    el numero de pedido para coordinar pago y entrega.
+    const solicitar = async () => {
+        // La ventana se abre antes del await para que el navegador no la bloquee.
+        // (con 'noopener' window.open devuelve null, por eso se corta el opener a mano)
+        const ventana = window.open('', '_blank');
+        if (ventana) ventana.opener = null;
+        setEnviando(true);
+        let numero = null;
+        try {
+            const { data } = await api.post('/solicitudes/productos', { repuesto_id: producto.id, cantidad, notas: notas.trim() || undefined });
+            numero = data.solicitud.id;
+            onPedidoRegistrado?.({ ...data.solicitud, repuesto_nombre: producto.nombre });
+            toast.success(`Pedido #${numero} registrado. El taller lo verá enseguida.`);
+        } catch (err) {
+            toast.error(err.response?.data?.error || 'No se pudo registrar el pedido; igual puedes coordinarlo por WhatsApp.');
+        } finally { setEnviando(false); }
+        const detalle = `Hola, quiero comprar este producto:%0A%0A${numero ? `*Pedido #${numero}*%0A` : ''}*${encodeURIComponent(producto.nombre)}*%0ACódigo: ${producto.codigo || 'N/A'}%0ACantidad: ${cantidad}%0APrecio referencial: $${Number(producto.precio_venta || 0).toFixed(2)}${notas.trim() ? `%0AConsulta: ${encodeURIComponent(notas.trim())}` : ''}`;
+        const url = `https://wa.me/593963863847?text=${detalle}`;
+        if (ventana) ventana.location.href = url; else window.open(url, '_blank', 'noopener,noreferrer');
     };
 
     return (
-        <div className="reveal in-view">
-            <button className="ps-btn-outline" onClick={onVolver} style={{ marginBottom: 24, padding: '10px 20px' }}><IconBack /> Volver a productos</button>
+        <div className="pr-detalle">
+            <button className="w-btn w-btn--claro" onClick={onVolver} style={{ marginBottom: 24, padding: '10px 20px' }}><IconBack /> Volver a productos</button>
             <div className="pr-detail-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1.2fr)', gap: 32 }}>
                 <div>
                     {producto.imagen_url ? (
@@ -743,12 +713,12 @@ function ProductoDetalle({ producto, esCliente, estaLogueado, onVolver, onIrALog
 
                 <div>
                     {producto.categoria_nombre && <p style={{ fontFamily: "'Outfit'", fontSize: '.75rem', color: GOLD, textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>{producto.categoria_nombre}</p>}
-                    <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.9rem', letterSpacing: '.02em', color: '#fff', marginBottom: 10, lineHeight: 1.1 }}>{producto.nombre}</h2>
+                    <h2 style={{ fontFamily: "'Sora'", fontWeight: 700, fontSize: '1.9rem', letterSpacing: '.02em', color: '#fff', marginBottom: 10, lineHeight: 1.1 }}>{producto.nombre}</h2>
                     {producto.codigo && <p style={{ fontFamily: "'Outfit'", fontSize: '.75rem', color: 'rgba(255,255,255,.5)', marginBottom: 14 }}>Código: <code style={{ color: '#fff' }}>{producto.codigo}</code></p>}
                     {producto.descripcion && <p style={{ fontFamily: "'Outfit'", fontSize: '.9rem', color: 'rgba(255,255,255,.6)', lineHeight: 1.7, marginBottom: 18 }}>{producto.descripcion}</p>}
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 22 }}>
-                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '2.1rem', color: GOLD, lineHeight: 1 }}>${parseFloat(producto.precio_venta).toFixed(2)}</p>
+                        <p style={{ fontFamily: "'Sora'", fontWeight: 700, fontSize: '2.1rem', color: GOLD, lineHeight: 1 }}>${parseFloat(producto.precio_venta).toFixed(2)}</p>
                         <span style={{ fontFamily: "'Outfit'", fontSize: '.78rem', color: 'rgba(255,255,255,.5)' }}>por {producto.unidad_medida} · {producto.stock_actual} disponibles</span>
                     </div>
 
@@ -758,7 +728,7 @@ function ProductoDetalle({ producto, esCliente, estaLogueado, onVolver, onIrALog
                                 <p style={{ fontFamily: "'Outfit'", fontSize: '.85rem', color: 'rgba(255,255,255,.6)', marginBottom: 16, lineHeight: 1.6 }}>
                                     Inicia sesión con tu cuenta de cliente para solicitar este producto y coordinar su entrega con el taller.
                                 </p>
-                                <button className="ps-btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={onIrALogin}><span>Iniciar sesión</span></button>
+                                <button className="w-btn w-btn--primario" style={{ width: '100%', justifyContent: 'center' }} onClick={onIrALogin}>Iniciar sesión</button>
                             </>
                         ) : !esCliente ? (
                             <p style={{ fontFamily: "'Outfit'", fontSize: '.85rem', color: 'rgba(255,255,255,.6)', lineHeight: 1.6 }}>
@@ -777,11 +747,11 @@ function ProductoDetalle({ producto, esCliente, estaLogueado, onVolver, onIrALog
                                 <p className="pr-label">Notas para el taller (opcional)</p>
                                 <textarea className="pr-input" style={{ resize: 'vertical', minHeight: 64, marginBottom: 18 }} value={notas} onChange={e => setNotas(e.target.value)} placeholder="Ej. lo necesito para el viernes" maxLength={300} />
 
-                                <button className="ps-btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={solicitar}>
-                                    <span>Comprar por WhatsApp</span>
+                                <button className="w-btn w-btn--primario" style={{ width: '100%', justifyContent: 'center', opacity: enviando ? .6 : 1 }} onClick={solicitar} disabled={enviando}>
+                                    {enviando ? 'Registrando pedido...' : 'Pedir y coordinar por WhatsApp'}
                                 </button>
                                 <p style={{ fontFamily: "'Outfit'", fontSize: '.72rem', color: 'rgba(255,255,255,.3)', marginTop: 10, textAlign: 'center' }}>
-                                    Se abrirá WhatsApp con el producto y la cantidad seleccionada para coordinar la compra directamente con el taller.
+                                    Tu pedido queda registrado en el taller y se abrirá WhatsApp con su número para coordinar el pago y la entrega. Puedes ver su estado abajo en "Mis solicitudes".
                                 </p>
                             </>
                         )}

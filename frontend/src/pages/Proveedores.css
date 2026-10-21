@@ -1,0 +1,170 @@
+/**
+ * SS SWAP - Estilos de la seccion Proveedores
+ * Reutiliza .modal-backdrop / .modal-box / .ssswap-chip definidos en global.css
+ */
+
+.prov-tabs {
+    display: flex;
+    gap: 6px;
+    border-bottom: 1px solid var(--prov-bdr, var(--border));
+    margin-bottom: 20px;
+    overflow-x: auto;
+}
+
+.prov-tab-btn {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: .86rem;
+    letter-spacing: .12em;
+    background: none;
+    border: none;
+    padding: 12px 18px 14px;
+    cursor: pointer;
+    color: var(--prov-mut, #64748b);
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: color .15s, border-color .15s;
+}
+
+.prov-tab-btn.active {
+    color: var(--prov-sky, #0284c7);
+    border-bottom-color: var(--prov-sky, #0284c7);
+}
+
+.prov-table-wrap {
+    overflow-x: auto;
+    border-radius: 14px;
+}
+
+.prov-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 720px;
+}
+
+.prov-table th {
+    text-align: left;
+    padding: 12px 14px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: .76rem;
+    letter-spacing: .18em;
+    white-space: nowrap;
+}
+
+.prov-table td {
+    padding: 12px 14px;
+    font-family: 'Outfit', sans-serif;
+    font-size: .88rem;
+    vertical-align: middle;
+}
+
+.prov-table tbody tr {
+    border-top: 1px solid var(--prov-bdr, var(--border));
+    transition: background .15s;
+}
+
+.prov-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: .72rem;
+    letter-spacing: .12em;
+    white-space: nowrap;
+}
+
+.prov-icon-btn {
+    background: none;
+    border: 1px solid var(--prov-bdr, var(--border));
+    border-radius: 8px;
+    padding: 7px;
+    cursor: pointer;
+    display: inline-flex;
+}
+
+.prov-items-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr auto;
+    gap: 8px;
+    align-items: center;
+}
+
+@media (max-width: 640px) {
+    .prov-items-row { grid-template-columns: 1fr; }
+    .prov-pago-row  { grid-template-columns: 1fr !important; }
+}
+
+/* ── Compras (Sprint 26): lista, "Crear compra", revisión y detalle ── */
+.compras-filtros {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-end;
+}
+.compras-filtros > div { flex: 1 1 150px; min-width: 0; }
+.compras-filtros > button { flex: 0 0 auto; }
+.compras-indicadores {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 220px));
+    justify-content: center;
+    gap: 16px;
+    margin-top: 16px;
+}
+.crear-compra-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px 16px;
+    align-items: start;
+}
+.crear-compra-grid .span-2 { grid-column: span 2; }
+.crear-compra-grid .span-3 { grid-column: span 3; }
+.crear-compra-grid .span-full { grid-column: 1 / -1; }
+.crear-compra-grid .doc-num {
+    display: grid;
+    grid-template-columns: 1fr 1fr 2fr;
+    gap: 8px;
+}
+.crear-compra-grid input:disabled, .crear-compra-grid select:disabled { opacity: .78; }
+.compra-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 18px;
+    align-items: start;
+}
+.compra-aside { position: sticky; top: 8px; }
+/* Revisión y carga de artículos: la tabla usa todo el ancho y los totales van debajo, a la derecha */
+.compra-layout.apilado { grid-template-columns: minmax(0, 1fr); }
+.compra-layout.apilado .compra-aside { position: static; width: 100%; max-width: 440px; justify-self: end; }
+
+/* Hoja de impresión de una compra: fondo blanco en ambos temas */
+.compra-print-hoja {
+    width: 100%; max-width: 820px; max-height: 92vh; overflow-y: auto;
+    background: #ffffff; color: #0b1220; border-radius: 14px; padding: 34px 38px;
+    font-family: 'Outfit', sans-serif; box-shadow: var(--shadow-lg);
+}
+.compra-print-hoja p { line-height: 1.5; }
+
+@media (max-width: 1100px) {
+    .compra-layout { grid-template-columns: 1fr; }
+    .compra-aside { position: static; }
+}
+@media (max-width: 900px) {
+    .crear-compra-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .crear-compra-grid .span-3 { grid-column: 1 / -1; }
+}
+@media (max-width: 560px) {
+    .crear-compra-grid { grid-template-columns: minmax(0, 1fr); }
+    .crear-compra-grid .span-2, .crear-compra-grid .span-3 { grid-column: auto; }
+    .compras-filtros > div { flex-basis: 40%; }
+    .compras-indicadores { grid-template-columns: 1fr 1fr; }
+    .compra-print-hoja { padding: 22px 16px; }
+}
+
+@media print {
+    body * { visibility: hidden !important; }
+    .compra-print-hoja, .compra-print-hoja * { visibility: visible !important; }
+    .compra-print-overlay { position: static !important; background: none !important; padding: 0 !important; }
+    .compra-print-hoja { position: absolute; left: 0; top: 0; max-height: none; overflow: visible; box-shadow: none; border-radius: 0; padding: 0; max-width: none; }
+    .compra-print-hoja .no-print { display: none !important; }
+}

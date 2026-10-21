@@ -2,11 +2,12 @@
  * SS SWAP - Pie de Página Institucional (Footer)
  * Presenta horarios de atención, accesos rápidos, enlaces a servicios,
  * canales de contacto, redes sociales y llamada a la acción de registro.
- * Los estilos (footer-logo-link, footer-nav-link) viven en Footer.css.
+ * Los estilos (w-pie-*, footer-logo-link, footer-nav-link) viven en Footer.css.
  */
 import React from 'react';
 import { Link } from 'react-router-dom';
 import logoImg from '../../assets/logo.png';
+import '../../styles/web-publica.css';
 import './Footer.css';
 
 const SERVICIOS = [
@@ -26,26 +27,33 @@ const LINKS_RAPIDOS = [
     { label: 'Iniciar Sesión',    to: '/auth'       },
 ];
 
+const CONTACTO = [
+    { icon: <IconPin />,   text: 'Pasaje San Pedro S/N y, Av. Universitaria, 170184 Quito', href: 'https://maps.app.goo.gl/HfAkfW6noNjwu5vP9', label: 'Ver ubicación en Google Maps' },
+    { icon: <IconPhone />, text: '0963863847', href: 'https://wa.me/593963863847', label: 'Escribir por WhatsApp al 0963863847' },
+    { icon: <IconMail />,  text: 'contacto@ssswapcolisiones.com', href: 'mailto:contacto@ssswapcolisiones.com', label: 'Enviar un correo' },
+];
+
+const REDES = [
+    { icon: <IconFacebook />,  href: 'https://www.facebook.com/profile.php?id=61592819312325', label: 'Facebook' },
+    { icon: <IconInstagram />, href: 'https://www.instagram.com/ss_swap_01/', label: 'Instagram' },
+    { icon: <IconTikTok />,    href: 'https://www.tiktok.com/@mecanica_ss_swap', label: 'TikTok' },
+    { icon: <IconWhatsapp />,  href: 'https://wa.me/593963863847', label: 'WhatsApp' },
+];
+
 export default function Footer() {
     return (
-        <footer style={{ background: '#0c0f14', borderTop: '1px solid rgba(127,171,206,.14)', color: 'rgba(255,255,255,.65)', fontFamily: "'Outfit', sans-serif" }}>
-
-            {/* Main footer */}
-            <div style={{ maxWidth: 1200, margin: '0 auto', padding: '60px 24px 40px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 40 }}>
-
+        <footer className="w-pie">
+            <div className="w-pie-grid">
                 {/* Marca */}
-                <div>
-                    <Link to="/" className="footer-logo-link" style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none', marginBottom: 16 }}>
-                        <div style={{ width: 120, height: 50, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', overflow: 'hidden' }}>
-                            <img className="footer-logo-img" src={logoImg} alt="SS SWAP" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                        </div>
+                <div className="w-pie-marca">
+                    <Link to="/" className="footer-logo-link" aria-label="SS SWAP, ir al inicio">
+                        <img className="footer-logo-img" src={logoImg} alt="SS SWAP" width="120" height="50" />
                     </Link>
-                    <p style={{ fontWeight: 300, fontSize: '.85rem', lineHeight: 1.7, color: 'rgba(255,255,255,.5)', marginBottom: 20 }}>
+                    <p className="w-pie-desc">
                         Taller automotriz ubicado en Ponciano Alto, Quito. Más de 10 años brindando servicio técnico de calidad con tecnología de diagnóstico avanzada.
                     </p>
-                    {/* Horario */}
-                    <div style={{ fontSize: '.8rem', color: 'rgba(255,255,255,.4)' }}>
-                        <p style={{ fontWeight: 600, color: 'rgba(255,255,255,.6)', marginBottom: 6 }}>Horario de Atención</p>
+                    <div className="w-pie-horario">
+                        <p className="w-pie-horario-t">Horario de Atención</p>
                         <p>Lunes - Viernes: 8:00am - 5:00pm</p>
                         <p>Sabado: 8:00am - 1:00pm</p>
                         <p>Domingo: Cerrado</p>
@@ -54,85 +62,53 @@ export default function Footer() {
 
                 {/* Servicios */}
                 <div>
-                    <p style={{ fontFamily: "'Sora'", fontWeight: 700, fontSize: '.68rem', letterSpacing: '.1em', textTransform: 'uppercase', color: '#7fabce', marginBottom: 16 }}>SERVICIOS</p>
-                    <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                        {SERVICIOS.map(s => (
-                            <li key={s} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#7fabce', flexShrink: 0 }} />
-                                <span style={{ fontSize: '.85rem', fontWeight: 300 }}>{s}</span>
-                            </li>
-                        ))}
+                    <p className="w-pie-titulo">Servicios</p>
+                    <ul className="w-pie-lista">
+                        {SERVICIOS.map(s => <li key={s}>{s}</li>)}
                     </ul>
                 </div>
 
                 {/* Links rapidos */}
-                <div>
-                    <p style={{ fontFamily: "'Sora'", fontWeight: 700, fontSize: '.68rem', letterSpacing: '.1em', textTransform: 'uppercase', color: '#7fabce', marginBottom: 16 }}>NAVEGACION</p>
-                    <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <nav aria-label="Navegación del pie de página">
+                    <p className="w-pie-titulo">Navegación</p>
+                    <ul className="w-pie-lista w-pie-lista--enlaces">
                         {LINKS_RAPIDOS.map(l => (
                             <li key={l.to}>
-                                <Link to={l.to} className="footer-nav-link">
-                                    {l.label}
-                                </Link>
+                                <Link to={l.to} className="footer-nav-link">{l.label}</Link>
                             </li>
                         ))}
                     </ul>
-                </div>
+                </nav>
 
                 {/* Contacto */}
                 <div>
-                    <p style={{ fontFamily: "'Sora'", fontWeight: 700, fontSize: '.68rem', letterSpacing: '.1em', textTransform: 'uppercase', color: '#7fabce', marginBottom: 16 }}>CONTACTO</p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                        {[
-                            { icon: <IconPin />,   text: 'Pasaje San Pedro S/N y, Av. Universitaria, 170184 Quito', href: 'https://maps.app.goo.gl/HfAkfW6noNjwu5vP9' },
-                            { icon: <IconPhone />, text: '0963863847', href: 'https://wa.me/593963863847' },
-                            { icon: <IconMail />,  text: 'contacto@ssswapcolisiones.com', href: 'mailto:contacto@ssswapcolisiones.com' },
-                        ].map((item, i) => (
-                            <a key={i} href={item.href} target={item.href.startsWith('http') ? '_blank' : undefined} rel="noreferrer"
-                               style={{ display: 'flex', alignItems: 'flex-start', gap: 10, textDecoration: 'none', color: 'inherit', transition: 'color .2s' }}
-                               onMouseEnter={e => e.currentTarget.style.color = '#7fabce'}
-                               onMouseLeave={e => e.currentTarget.style.color = 'inherit'}>
-                                <span style={{ color: '#7fabce', flexShrink: 0, marginTop: 1 }}>{item.icon}</span>
-                                <span style={{ fontSize: '.85rem', fontWeight: 300, lineHeight: 1.5 }}>{item.text}</span>
+                    <p className="w-pie-titulo">Contacto</p>
+                    <div className="w-pie-contacto">
+                        {CONTACTO.map(item => (
+                            <a key={item.href} href={item.href} aria-label={item.label}
+                               target={item.href.startsWith('http') ? '_blank' : undefined} rel="noreferrer">
+                                <span className="w-pie-contacto-ic">{item.icon}</span>
+                                <span>{item.text}</span>
                             </a>
                         ))}
                     </div>
 
                     {/* Redes sociales */}
-                    <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-                        {[
-                            { icon: <IconFacebook />, href: 'https://www.facebook.com/profile.php?id=61592819312325', label: 'Facebook' },
-                            { icon: <IconInstagram />, href: 'https://www.instagram.com/ss_swap_01/', label: 'Instagram' },
-                            { icon: <IconTikTok />, href: 'https://www.tiktok.com/@mecanica_ss_swap', label: 'TikTok' },
-                            { icon: <IconWhatsapp />, href: 'https://wa.me/593963863847', label: 'WhatsApp' },
-                        ].map((s, i) => (
-                            <a key={i} href={s.href} target="_blank" rel="noreferrer" aria-label={s.label}
-                               style={{ width: 36, height: 36, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.14)', color: 'rgba(255,255,255,.65)', transition: 'all .2s' }}
-                               onMouseEnter={e => { e.currentTarget.style.borderColor = '#3b7bab'; e.currentTarget.style.color = '#7fabce'; e.currentTarget.style.background = 'rgba(59,123,171,.1)'; }}
-                               onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,.14)'; e.currentTarget.style.color = 'rgba(255,255,255,.65)'; e.currentTarget.style.background = 'rgba(255,255,255,.04)'; }}>
-                                {s.icon}
-                            </a>
+                    <div className="w-pie-redes">
+                        {REDES.map(s => (
+                            <a key={s.label} href={s.href} target="_blank" rel="noreferrer" aria-label={s.label} title={s.label}>{s.icon}</a>
                         ))}
                     </div>
 
-                    {/* CTA */}
-                    <Link to="/auth?modo=registro" style={{ display: 'inline-block', marginTop: 24, padding: '11px 24px', background: 'linear-gradient(135deg, #1b3a57, #2b5c85 60%, #3b7bab)', color: '#fff', fontFamily: "'Sora'", fontWeight: 600, fontSize: '.85rem', borderRadius: 8, textDecoration: 'none', transition: 'all .2s', boxShadow: '0 6px 18px -8px rgba(43,92,133,.6)' }}
-                        onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 10px 24px -8px rgba(43,92,133,.75)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 18px -8px rgba(43,92,133,.6)'; }}>
-                        Crear cuenta gratis
-                    </Link>
+                    <Link to="/auth?modo=registro" className="w-pie-cta">Crear cuenta gratis</Link>
                 </div>
             </div>
 
-            {/* Bottom bar */}
-            <div style={{ borderTop: '1px solid rgba(127,171,206,.14)', padding: '18px 24px' }}>
-                <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                    <p style={{ fontSize: '.78rem', fontWeight: 300, color: 'rgba(255,255,255,.3)' }}>
-                        &copy; {new Date().getFullYear()} Mecánica Automotriz SS SWAP. Todos los derechos reservados.
-                    </p>
-                    <p style={{ fontSize: '.78rem', fontWeight: 300, color: 'rgba(255,255,255,.25)' }}>
-                        Sistema desarrollado por Banda J, Sarango R, Vela D · PUCE TEC 2026
-                    </p>
+            {/* Barra inferior */}
+            <div className="w-pie-base">
+                <div className="w-pie-base-in">
+                    <p>&copy; {new Date().getFullYear()} Mecánica Automotriz SS SWAP. Todos los derechos reservados.</p>
+                    <p>Sistema desarrollado por Banda J, Sarango R, Vela D · PUCE TEC 2026</p>
                 </div>
             </div>
         </footer>

@@ -1,0 +1,136 @@
+{
+  "id": "ordenes",
+  "grupo": "TALLER",
+  "titulo": "Órdenes de trabajo",
+  "version": "1.0",
+  "actualizada": "2026-10-14",
+  "rutas": [
+    {
+      "path": "/dashboard/ordenes"
+    }
+  ],
+  "descripcion": "Control de cada reparación: qué vehículo entró, de qué cliente, qué hay que hacer, qué técnico lo hace y en qué etapa va. Desde una orden se genera la proforma o la factura.",
+  "funciones": [
+    "Crear una orden eligiendo (o creando ahí mismo) el cliente y el vehículo.",
+    "Asignar o cambiar el técnico y editar descripción y diagnóstico.",
+    "Actualizar el progreso de la reparación con notas (visibles para el cliente en su portal).",
+    "Filtrar por estado y buscar por cliente, placa o descripción.",
+    "Generar la proforma o facturar (SRI) desde la orden; ver su historial de cambios."
+  ],
+  "pasos": [
+    {
+      "titulo": "Busque y filtre las órdenes",
+      "texto": [
+        "Use los botones de estado y el buscador. Haga clic en una orden para desplegar sus detalles y acciones."
+      ],
+      "imagen": {
+        "archivo": "v27/ordenes/01-lista.png",
+        "alt": "Órdenes de trabajo con el botón Nueva orden, los filtros de estado y el buscador",
+        "tipo": "captura",
+        "captura": {
+          "url": "/dashboard/ordenes",
+          "esperar": {
+            "placeholder": "Buscar por cliente, placa"
+          }
+        }
+      },
+      "marcas": [
+        {
+          "texto": "Crear una nueva orden.",
+          "objetivo": {
+            "texto": "NUEVA ORDEN",
+            "tag": "button"
+          }
+        },
+        {
+          "texto": "Buscar por cliente, placa o descripción.",
+          "objetivo": {
+            "placeholder": "Buscar por cliente, placa"
+          }
+        }
+      ]
+    },
+    {
+      "titulo": "Cree una orden",
+      "texto": [
+        "Pulse «Nueva orden». Busque el cliente o créelo con «+ Nuevo»; asigne el técnico si ya lo sabe; elija el vehículo del cliente y describa el trabajo. Pulse «Crear orden»."
+      ],
+      "imagen": {
+        "archivo": "v27/ordenes/02-nueva-orden.png",
+        "alt": "Formulario Nueva orden con cliente, vehículo, descripción del trabajo, diagnóstico y técnico asignado",
+        "tipo": "captura",
+        "captura": {
+          "url": "/dashboard/ordenes",
+          "esperar": {
+            "texto": "NUEVA ORDEN",
+            "tag": "button"
+          },
+          "acciones": [
+            {
+              "clic": {
+                "texto": "NUEVA ORDEN",
+                "tag": "button"
+              }
+            }
+          ],
+          "recorte": {
+            "selector": ".modal-box"
+          }
+        }
+      },
+      "marcas": [
+        {
+          "texto": "Cliente: búsquelo en la lista.",
+          "objetivo": {
+            "placeholder": "Buscar cliente"
+          }
+        },
+        {
+          "texto": "Crear un cliente nuevo sin salir de la orden.",
+          "objetivo": {
+            "contiene": "NUEVO",
+            "tag": "button"
+          }
+        },
+        {
+          "texto": "Técnico asignado (solo él podrá actualizar el avance).",
+          "objetivo": {
+            "campo": "TECNICO ASIGNADO"
+          }
+        },
+        {
+          "texto": "Descripción del trabajo (obligatoria).",
+          "objetivo": {
+            "placeholder": "Describe el trabajo a realizar"
+          }
+        },
+        {
+          "texto": "Guardar la orden.",
+          "objetivo": {
+            "contiene": "CREAR ORDEN",
+            "tag": "button"
+          }
+        }
+      ]
+    },
+    {
+      "titulo": "Avance la reparación y genere documentos",
+      "texto": [
+        "Al desplegar una orden verá «Actualizar progreso de reparación» (etapa y nota), «Editar / Asignar», «Generar proforma», «Facturar (SRI)» y el «Historial de cambios». Cada cambio queda registrado con su autor."
+      ]
+    }
+  ],
+  "resultado": "La orden queda numerada (OT-000001…), visible para el técnico asignado y, en su portal, para el cliente. Su proforma y su factura quedan vinculadas a la orden.",
+  "advertencias": [
+    "Para registrar un cliente nuevo se necesita su teléfono o su correo.",
+    "El avance de una orden lo actualiza el técnico asignado o quien tenga el permiso «Órdenes: cambiar estado de cualquier orden».",
+    "Solo quien tiene el permiso «Órdenes: asignar técnico» puede asignarlo o cambiarlo.",
+    "No se puede eliminar una orden con un pagaré activo o con movimientos de inventario: así se conserva la trazabilidad."
+  ],
+  "problemas": [
+    {
+      "problema": "No aparece el vehículo del cliente.",
+      "solucion": "Regístrelo en la misma ventana con «Placa» y «Marca», o en Clientes › Vehículos."
+    }
+  ]
+}

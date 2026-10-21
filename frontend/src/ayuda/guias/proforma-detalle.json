@@ -1,0 +1,91 @@
+{
+  "id": "proforma-detalle",
+  "grupo": "TALLER · PROFORMAS",
+  "titulo": "Detalle de una proforma",
+  "version": "1.0",
+  "actualizada": "2026-10-14",
+  "rutas": [
+    {
+      "path": "/dashboard/proformas/:id"
+    }
+  ],
+  "descripcion": "La proforma completa tal como la verá el cliente, con las acciones de su ciclo: aprobar o rechazar, descargar, convertir en orden de trabajo, facturar y gestionar la salida de materiales del inventario.",
+  "funciones": [
+    "Descargar en PDF o Excel y editarla.",
+    "Aprobar o rechazar la proforma.",
+    "Convertirla en orden de trabajo y ver la orden vinculada.",
+    "Facturar (SRI) a partir de la proforma.",
+    "Confirmar el uso de materiales (salida de inventario) o devolverlos con un motivo."
+  ],
+  "pasos": [
+    {
+      "titulo": "Use la barra de acciones",
+      "texto": [
+        "Arriba están el estado y las acciones disponibles según ese estado: Editar, PDF, Excel, Aprobar, Rechazar, Convertir a orden y Facturar (SRI)."
+      ],
+      "imagen": {
+        "archivo": "v27/proforma-detalle/01-acciones.png",
+        "alt": "Detalle de proforma con los botones Editar, PDF, Excel, Aprobar, Rechazar, Convertir a orden y Facturar",
+        "tipo": "captura",
+        "captura": {
+          "url": "/dashboard/proformas",
+          "esperar": {
+            "etiqueta": "Ver"
+          },
+          "acciones": [
+            {
+              "clic": {
+                "etiqueta": "Ver"
+              }
+            },
+            {
+              "esperar": 1500
+            }
+          ]
+        }
+      },
+      "marcas": [
+        {
+          "texto": "Descargar en PDF.",
+          "objetivo": {
+            "texto": "PDF",
+            "tag": "button"
+          }
+        },
+        {
+          "texto": "Aprobar la proforma.",
+          "objetivo": {
+            "contiene": "APROBAR",
+            "tag": "button"
+          }
+        },
+        {
+          "texto": "Convertir en orden de trabajo.",
+          "objetivo": {
+            "texto": "CONVERTIR A ORDEN",
+            "tag": "button"
+          }
+        }
+      ]
+    },
+    {
+      "titulo": "Materiales del inventario",
+      "texto": [
+        "En una proforma aprobada, «Confirmar uso de materiales» descuenta del inventario los productos usados (queda como «Salida por proforma»). Si sobraron, «Devolver al inventario» los regresa indicando el motivo."
+      ]
+    }
+  ],
+  "resultado": "El estado de la proforma cambia y queda vinculada con su orden, su factura y sus salidas de inventario.",
+  "advertencias": [
+    "Si una proforma que ya descontó inventario deja de estar aprobada (rechazada, vencida o vuelve a borrador), los materiales regresan solos al inventario con un movimiento de devolución.",
+    "Al rechazarla, su pagaré automático se anula si todavía no tiene pagos.",
+    "Una proforma convertida en orden de trabajo ya no cambia de estado.",
+    "La devolución manual de materiales exige un motivo y queda registrada en Entradas y salidas."
+  ],
+  "problemas": [
+    {
+      "problema": "No aparece «Facturar (SRI)».",
+      "solucion": "Requiere el permiso de facturación y que la configuración tributaria esté completa."
+    }
+  ]
+}

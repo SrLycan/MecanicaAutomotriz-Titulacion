@@ -7,9 +7,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { useTheme } from '../../context/ThemeContext';
 import { resolveImagenSrc, fileToDataUrl, comprimirImagen } from '../../utils/imagen';
+import api from '../../services/api';
+
+// Grupos del selector de categoria: una seccion por inventario.
+const GRUPOS_CATEGORIA = [
+    { area: 'mecanica',   titulo: 'Mecánica' },
+    { area: 'colisiones', titulo: 'Colisiones / Pintura' },
+];
 
 const EMPTY = {
-    codigo: '',
+    codigo: '',            // referencia interna: la genera el sistema
+    codigo_proveedor: '',  // codigo del proveedor / fabricante (manual)
     nombre: '',
     descripcion: '',
     categoria_id: '',
@@ -20,6 +28,7 @@ const EMPTY = {
     unidad_medida: 'unidad',
     imagen_url: '',
     en_venta: false,
+    area: 'mecanica',
 };
 
 function IconX() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>; }
@@ -27,7 +36,7 @@ function IconImage() { return <svg width="28" height="28" viewBox="0 0 24 24" fi
 
 const getImagenSrc = (repuesto = {}) => resolveImagenSrc(repuesto.imagen_url || repuesto.imagen || repuesto.foto_url || repuesto.foto || '');
 
-export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerrar }) {
+export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerrar, areaInicial = 'mecanica' }) {
     const { isDark } = useTheme();
     const [form, setForm] = useState(EMPTY);
     const [preview, setPreview] = useState('');
@@ -42,8 +51,8 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
     const SKY_BDR  = isDark ? 'rgba(56,189,248,0.22)' : 'rgba(14,165,233,0.22)';
 
     const txt     = isDark ? '#f1f5f9'                : '#0f172a';
-    const mut     = isDark ? 'rgba(241,245,249,0.55)' : 'rgba(15,23,42,0.55)';
-    const bdr     = isDark ? 'rgba(148,163,184,0.18)' : 'rgba(15,23,42,0.10)';
+    const mut     = isDark ? 'rgba(241,245,249,0.72)' : '#526075';
+    const bdr     = isDark ? 'rgba(148,163,184,0.28)' : '#b6c3d3';
     const inputBg = isDark ? '#0b1220'                : '#f8fafc';
     const boxBg   = isDark ? '#0a0f1c'                : '#ffffff';
 
@@ -56,7 +65,7 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
     };
     const labelSt = {
         display: 'block', marginBottom: 6,
-        fontFamily: "'Bebas Neue', sans-serif", fontSize: '.62rem', letterSpacing: '.22em',
+        fontFamily: "'Bebas Neue', sans-serif", fontSize: '.74rem', letterSpacing: '.22em',
         color: SKY_DEEP, WebkitTextFillColor: SKY_DEEP, background: 'none',
     };
 
@@ -76,6 +85,7 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
             const imagen = repuesto.imagen_url || repuesto.imagen || repuesto.foto_url || repuesto.foto || '';
             const nextForm = {
                 codigo: repuesto.codigo || '',
+                codigo_proveedor: repuesto.codigo_proveedor || '',
                 nombre: repuesto.nombre || '',
                 descripcion: repuesto.descripcion || '',
                 categoria_id: repuesto.categoria_id || '',
@@ -86,16 +96,49 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
                 unidad_medida: repuesto.unidad_medida || 'unidad',
                 imagen_url: imagen,
                 en_venta: Boolean(repuesto.en_venta),
+                area: repuesto.area || 'mecanica',
             };
             setForm(nextForm);
             setPreview(resolveImagenSrc(imagen));
         } else {
-            setForm(EMPTY);
+            setForm({ ...EMPTY, area: areaInicial });
             setPreview('');
         }
-    }, [repuesto]);
+    }, [repuesto, areaInicial]);
+
+    // Categorias de los dos inventarios (las del area actual llegan por props;
+    // aqui se piden todas para mostrar Mecanica y Colisiones / Pintura).
+    const [todasCategorias, setTodasCategorias] = useState(null);
+    useEffect(() => {
+        let vivo = true;
+        api.get('/inventory/categorias')
+            .then(r => { if (vivo) setTodasCategorias(r.data.categorias || []); })
+            .catch(() => {});
+        return () => { vivo = false; };
+    }, []);
+    const listaCategorias = todasCategorias || categorias || [];
+    // Las categorias sin area (Filtros, Frenos, Aceites...) son las de mecanica
+    // de siempre: se listan en Mecanica sin obligar a cambiar de inventario.
+    const categoriasDe = (a) => listaCategorias.filter(c => (c.area || 'mecanica') === a);
 
     const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+    // Elegir una categoria de un inventario mueve el producto a ese inventario.
+    const handleCategoria = (e) => {
+        const id = e.target.value;
+        const cat = listaCategorias.find(c => String(c.id) === String(id));
+        setForm(f => ({ ...f, categoria_id: id, area: cat?.area || f.area }));
+    };
+
+    // Cambiar de inventario quita una categoria que pertenece al otro.
+    const handleArea = (e) => {
+        const nueva = e.target.value;
+        setForm(f => {
+            const cat = listaCategorias.find(c => String(c.id) === String(f.categoria_id));
+            const choca = cat?.area && cat.area !== nueva;
+            return { ...f, area: nueva, categoria_id: choca ? '' : f.categoria_id };
+        });
+    };
     const onFocus = (e) => { e.target.style.borderColor = SKY; e.target.style.boxShadow = `0 0 0 3px rgba(14,165,233,.14)`; };
     const onBlur  = (e) => { e.target.style.borderColor = bdr; e.target.style.boxShadow = 'none'; };
 
@@ -117,7 +160,9 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
     const handleSubmit = async (e) => {
         e.preventDefault();
         setSaving(true);
-        await onGuardar({ ...form, imagen_url: form.imagen_url || '' });
+        // La referencia interna no se envia: la genera (y la conserva) el servidor.
+        const { codigo, ...datos } = form;
+        await onGuardar({ ...datos, codigo_proveedor: (form.codigo_proveedor || '').trim(), imagen_url: form.imagen_url || '' });
         setSaving(false);
     };
 
@@ -134,12 +179,12 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
                     <div>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '3px 9px', borderRadius: 999, background: SKY_PALE, border: `1px solid ${SKY_BDR}`, marginBottom: 6 }}>
                             <span style={{ width: 5, height: 5, borderRadius: '50%', background: SKY }} />
-                            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.24em', color: SKY_DEEP }}>ADMIN · INVENTARIO</p>
+                            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.24em', color: SKY_DEEP }}>ADMIN · INVENTARIO</p>
                         </div>
                         <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.7rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>
                             {esEdicion ? 'Editar Repuesto' : 'Nuevo Repuesto'}
                         </h2>
-                        <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.78rem', color: mut, marginTop: 5 }}>
+                        <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.78rem', color: mut, marginTop: 5 }}>
                             {esEdicion ? 'Modifica la informacion del repuesto en catalogo' : 'Registra un nuevo articulo en el inventario'}
                         </p>
                     </div>
@@ -153,14 +198,21 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
 
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 13 }}>
-                        {/* Codigo */}
+                        {/* Referencia interna (automatica) */}
                         <div>
-                            <label style={labelSt}>CODIGO *</label>
-                            <input name="codigo" value={form.codigo} onChange={handleChange}
-                                onFocus={onFocus} onBlur={onBlur}
-                                required disabled={esEdicion}
-                                placeholder="ACE-MOT-5W30"
-                                style={{ ...inputSt, opacity: esEdicion ? .5 : 1, textTransform: 'uppercase' }} />
+                            <label style={labelSt}>CÓDIGO DE REFERENCIA INTERNO</label>
+                            <input value={esEdicion ? form.codigo : 'Se genera automáticamente'} readOnly disabled
+                                title="Lo genera el sistema al guardar; es el único código que aparece en proformas"
+                                style={{ ...inputSt, opacity: .6, fontStyle: esEdicion ? 'normal' : 'italic' }} />
+                        </div>
+
+                        {/* Codigo del proveedor / fabricante */}
+                        <div>
+                            <label style={labelSt}>CÓDIGO DE PROVEEDOR / FABRICANTE</label>
+                            <input name="codigo_proveedor" value={form.codigo_proveedor} onChange={handleChange}
+                                onFocus={onFocus} onBlur={onBlur} maxLength={100}
+                                placeholder="Opcional (ej. 90915-YZZE1)"
+                                style={inputSt} />
                         </div>
 
                         {/* Unidad */}
@@ -168,7 +220,16 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
                             <label style={labelSt}>UNIDAD DE MEDIDA</label>
                             <select name="unidad_medida" value={form.unidad_medida} onChange={handleChange}
                                 onFocus={onFocus} onBlur={onBlur} style={inputSt}>
-                                {['unidad','litro','kg','metro','juego','par','caja'].map(u => <option key={u}>{u}</option>)}
+                                {['unidad','litro','galon','kg','metro','juego','par','caja','pliego'].map(u => <option key={u}>{u}</option>)}
+                            </select>
+                        </div>
+
+                        {/* Inventario / area (Sprint 14) */}
+                        <div style={{ gridColumn: '1/-1' }}>
+                            <label style={labelSt}>INVENTARIO</label>
+                            <select name="area" value={form.area} onChange={handleArea} onFocus={onFocus} onBlur={onBlur} style={inputSt}>
+                                <option value="mecanica">Inventario Mecánica</option>
+                                <option value="colisiones">Inventario Colisiones / Pintura</option>
                             </select>
                         </div>
 
@@ -191,7 +252,7 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
 
                         {/* Imagen */}
                         <div style={{ gridColumn: '1/-1' }}>
-                            <label className="SS SWAP-label">FOTO DEL REPUESTO</label>
+                            <label className="ssswap-label">FOTO DEL REPUESTO</label>
                             <div style={{ display: 'grid', gridTemplateColumns: '108px 1fr', gap: 12, alignItems: 'stretch' }}>
                                 <div style={{ minHeight: 108, borderRadius: 14, border: `1px dashed ${bdr}`, background: isDark ? 'rgba(255,255,255,.025)' : 'rgba(124,58,237,.035)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', color: mut }}>
                                     {preview ? (
@@ -199,16 +260,16 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
                                     ) : (
                                         <div style={{ textAlign: 'center' }}>
                                             <IconImage />
-                                            <p style={{ fontFamily: "'Outfit'", fontSize: '.68rem', marginTop: 6 }}>Sin foto</p>
+                                            <p style={{ fontFamily: "'Outfit'", fontSize: '.76rem', marginTop: 6 }}>Sin foto</p>
                                         </div>
                                     )}
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                    <input className="SS SWAP-input" type="file" accept="image/*" onChange={handleImagenFile} style={{ ...inputSt, padding: '9px 12px' }} />
-                                    <input className="SS SWAP-input" name="imagen_url" value={urlValue} onChange={handleChange}
+                                    <input className="ssswap-input" type="file" accept="image/*" onChange={handleImagenFile} style={{ ...inputSt, padding: '9px 12px' }} />
+                                    <input className="ssswap-input" name="imagen_url" value={urlValue} onChange={handleChange}
                                         placeholder="O pega una URL/ruta de imagen..." style={inputSt} />
                                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
-                                        <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.68rem', color: mut }}>
+                                        <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.76rem', color: mut }}>
                                             {form.imagen_url?.startsWith('data:image/') ? 'Imagen cargada desde archivo.' : 'Puedes pegar una URL o subir una foto.'}
                                         </p>
                                         {preview && (
@@ -224,10 +285,14 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
                         {/* Categoria */}
                         <div style={{ gridColumn: '1/-1' }}>
                             <label style={labelSt}>CATEGORIA</label>
-                            <select name="categoria_id" value={form.categoria_id} onChange={handleChange}
+                            <select name="categoria_id" value={form.categoria_id} onChange={handleCategoria}
                                 onFocus={onFocus} onBlur={onBlur} style={inputSt}>
                                 <option value="">Sin categoria</option>
-                                {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                                {GRUPOS_CATEGORIA.map(g => (
+                                    <optgroup key={g.area} label={g.titulo}>
+                                        {categoriasDe(g.area).map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                                    </optgroup>
+                                ))}
                             </select>
                         </div>
 
@@ -250,7 +315,7 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
                             <label style={labelSt}>
                                 {esEdicion ? 'STOCK ACTUAL (usar Movimientos)' : 'STOCK INICIAL'}
                             </label>
-                            <input type="number" min="0" name="stock_actual"
+                            <input type="number" min="0" step="0.01" name="stock_actual"
                                 onFocus={onFocus} onBlur={onBlur}
                                 value={form.stock_actual} onChange={handleChange}
                                 disabled={esEdicion}
@@ -258,7 +323,7 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
                         </div>
                         <div>
                             <label style={labelSt}>STOCK MINIMO (alerta)</label>
-                            <input type="number" min="0" name="stock_minimo"
+                            <input type="number" min="0" step="0.01" name="stock_minimo"
                                 onFocus={onFocus} onBlur={onBlur}
                                 value={form.stock_minimo} onChange={handleChange} style={inputSt} />
                         </div>
@@ -273,7 +338,7 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
                                 style={{ width: 16, height: 16, accentColor: SKY, marginTop: 2 }}
                             />
                             <span>
-                                <span style={{ display: 'block', fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.22em', color: SKY_DEEP }}>MARCAR PARA VENTA</span>
+                                <span style={{ display: 'block', fontFamily: "'Bebas Neue'", fontSize: '.74rem', letterSpacing: '.22em', color: SKY_DEEP }}>MARCAR PARA VENTA</span>
                                 <span style={{ display: 'block', fontFamily: "'Outfit'", fontSize: '.78rem', color: mut, marginTop: 4 }}>
                                     Si está activado, el producto aparecerá en el panel del cliente como disponible para compra.
                                 </span>
@@ -285,14 +350,14 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
                     {form.precio_compra && form.precio_venta && parseFloat(form.precio_compra) > 0 && (
                         <div style={{ padding: '12px 16px', borderRadius: 12, background: SKY_PALE, border: `1px solid ${SKY_BDR}`, display: 'flex', alignItems: 'center', gap: 24 }}>
                             <div>
-                                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.2em', color: SKY_DEEP }}>MARGEN</p>
+                                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.2em', color: SKY_DEEP }}>MARGEN</p>
                                 <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.4rem', letterSpacing: '.04em', color: '#10b981', lineHeight: 1, marginTop: 2 }}>
                                     {((parseFloat(form.precio_venta) - parseFloat(form.precio_compra)) / parseFloat(form.precio_compra) * 100).toFixed(1)}%
                                 </p>
                             </div>
                             <div style={{ width: 1, height: 30, background: SKY_BDR }} />
                             <div>
-                                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.2em', color: SKY_DEEP }}>UTILIDAD POR UNIDAD</p>
+                                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.2em', color: SKY_DEEP }}>UTILIDAD POR UNIDAD</p>
                                 <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.4rem', letterSpacing: '.04em', color: SKY_DEEP, lineHeight: 1, marginTop: 2 }}>
                                     ${(parseFloat(form.precio_venta) - parseFloat(form.precio_compra)).toFixed(2)}
                                 </p>
