@@ -267,7 +267,7 @@ d('Sprint 20 - pagares, anticipos, alertas, codigos y PDF', () => {
         });
         const mec = pymupdf(Buffer.concat(chunks));
         expect(mec.paginas).toBeGreaterThan(1);
-        expect(mec.texto).toContain('SS Swap - SSarango Sosa Intercambio Inteligente');
+        expect(mec.texto).toContain('SS Swap - Sarango Sosa Intercambio Inteligente');
         expect(mec.texto).not.toContain('Mecánica Automotriz');
         expect(mec.texto).toContain(refCreada.codigo);           // referencia interna
         expect(mec.texto).not.toContain('OEM-123');              // nunca el codigo del proveedor

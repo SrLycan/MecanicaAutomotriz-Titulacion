@@ -12,7 +12,7 @@ const router  = express.Router();
 const { verificarToken, requiereAlguno, requierePermiso, LECTURA_REPUESTOS } = require('../middleware/auth.middleware');
 const { areaDelCuerpo, areaDelRepuesto, areaDeCategoria } = require('../middleware/permisosRecurso.middleware');
 const {
-    listarRepuestos, obtenerRepuesto, crearRepuesto, actualizarRepuesto, eliminarRepuesto,
+    listarRepuestos, listarHistorialCreacion, obtenerRepuesto, crearRepuesto, actualizarRepuesto, eliminarRepuesto,
     registrarMovimiento, listarMovimientos, filtrosMovimientos, listarCategorias, crearCategoria, actualizarCategoria, eliminarCategoria, toggleEnVenta, listarPublico
 } = require('../controllers/inventory.controller');
 
@@ -33,6 +33,7 @@ router.delete('/categorias/:id', algunaArea('editar'), areaDeCategoria('editar')
 
 // Repuestos — la lista se filtra por las areas visibles en el controlador
 router.get('/repuestos',          requiereAlguno(...LECTURA_REPUESTOS), listarRepuestos);
+router.get('/historial-creacion', requiereAlguno(...LECTURA_REPUESTOS), listarHistorialCreacion);
 router.get('/repuestos/:id',      requiereAlguno(...LECTURA_REPUESTOS), areaDelRepuesto('ver'), obtenerRepuesto);
 router.post('/repuestos',         algunaArea('crear'),    areaDelCuerpo('crear'),      crearRepuesto);
 router.put('/repuestos/:id',      algunaArea('editar'),   areaDelRepuesto('editar'),   actualizarRepuesto);

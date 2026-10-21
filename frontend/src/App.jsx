@@ -39,8 +39,9 @@ const PanelCliente    = lazy(() => import('./pages/PanelCliente'));
 const Layout              = lazy(() => import('./components/layout/Layout'));
 const Dashboard           = lazy(() => import('./pages/Dashboard'));
 const Inventario          = lazy(() => import('./pages/Inventario'));
-const Movimientos         = lazy(() => import('./pages/Movimientos'));
-const RegistrarMovimiento = lazy(() => import('./pages/RegistrarMovimiento'));
+// Sprint 27: Registros + Registrar movimiento en una sola página ("Entradas y salidas").
+const EntradasSalidas     = lazy(() => import('./pages/EntradasSalidas'));
+const HistorialProductos  = lazy(() => import('./pages/HistorialProductos'));
 const Usuarios            = lazy(() => import('./pages/Usuarios'));
 const Sucursales          = lazy(() => import('./pages/Sucursales'));
 const OrdenesTrabajo      = lazy(() => import('./pages/OrdenesTrabajo'));
@@ -85,6 +86,9 @@ function InicioPanel() {
     return <Dashboard />;
 }
 
+/** Enlaces antiguos a /dashboard/registrar: abren la pestaña "Registrar" de Entradas y salidas. */
+const RedirigirRegistrar = () => <Navigate to="/dashboard/movimientos?tab=registrar" replace />;
+
 const PROF_VER    = ['proformas_mecanica:ver', 'proformas_colisiones:ver'];
 const PROF_CREAR  = ['proformas_mecanica:crear', 'proformas_colisiones:crear'];
 const PROF_EDITAR = ['proformas_mecanica:editar', 'proformas_colisiones:editar'];
@@ -92,8 +96,9 @@ const PROF_EDITAR = ['proformas_mecanica:editar', 'proformas_colisiones:editar']
 // Paginas del panel y el permiso que exige cada una (basta con uno de la lista).
 const RUTAS_PANEL = [
     { path: 'inventario',           Pagina: Inventario,          permiso: ['inventario_mecanica:ver', 'inventario_colisiones:ver'] },
-    { path: 'registrar',            Pagina: RegistrarMovimiento, permiso: 'registros_inventario:crear' },
-    { path: 'movimientos',          Pagina: Movimientos,         permiso: 'registros_inventario:ver' },
+    { path: 'registrar',            Pagina: RedirigirRegistrar,  permiso: 'registros_inventario:crear' },
+    { path: 'movimientos',          Pagina: EntradasSalidas,     permiso: ['registros_inventario:ver', 'registros_inventario:crear'] },
+    { path: 'historial-productos',  Pagina: HistorialProductos,  permiso: ['inventario_mecanica:ver', 'inventario_colisiones:ver'] },
     { path: 'pedidos',              Pagina: Pedidos,             permiso: 'pedidos_tienda:ver' },
     { path: 'ordenes',              Pagina: OrdenesTrabajo,      permiso: 'ordenes:ver' },
     { path: 'proformas',            Pagina: Proformas,           permiso: PROF_VER },

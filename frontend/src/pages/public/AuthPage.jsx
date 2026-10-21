@@ -2,6 +2,7 @@
  * SS SWAP - Portal de Autenticación Unificado (Login / Registro)
  * Maneja el inicio de sesión y registro de clientes, así como el acceso administrativo (staffOnly),
  * gestionando tokens JWT y sincronización de sesión en el navegador.
+ * Estilos en AuthPage.css (clases auth-*; no hay reglas globales nuevas).
  */
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
@@ -100,13 +101,13 @@ export default function AuthPage({ staffOnly = false }) {
 
     const inputBase = {
         width: '100%', padding: '12px 14px 12px 42px', borderRadius: 10,
-        border: '1px solid rgba(255,255,255,.1)', background: 'rgba(255,255,255,.04)',
-        color: '#fff', fontFamily: "'Outfit'", fontSize: '.88rem', outline: 'none',
+        border: '1px solid rgba(255,255,255,.14)', background: 'rgba(255,255,255,.05)',
+        color: '#fff', fontFamily: "'Outfit'", fontSize: '.95rem', outline: 'none',
         transition: 'border-color .2s, background .2s', boxSizing: 'border-box',
     };
     const labelBase = {
         display: 'block', marginBottom: 6, fontFamily: "'Outfit'",
-        fontWeight: 500, fontSize: '.75rem', color: 'rgba(255,255,255,.45)',
+        fontWeight: 500, fontSize: '.75rem', color: 'rgba(255,255,255,.66)',
         textTransform: 'uppercase', letterSpacing: '.07em',
     };
 
@@ -123,7 +124,7 @@ export default function AuthPage({ staffOnly = false }) {
     ];
 
     return (
-        <div style={{ minHeight: '100vh', background: '#050505', display: 'flex', fontFamily: "'Outfit', sans-serif", position: 'relative' }}>
+        <div className="auth-pagina" style={{ minHeight: '100vh', background: '#0d1117', display: 'flex', fontFamily: "'Outfit', sans-serif", position: 'relative' }}>
 
             {/* Panel izquierdo — branding (desktop) */}
             <div className="auth-panel-left" style={{ flex: 1, position: 'relative', overflow: 'hidden', flexDirection: 'column', justifyContent: 'space-between', padding: '48px 56px', background: '#0a0a0a' }}>
@@ -138,41 +139,39 @@ export default function AuthPage({ staffOnly = false }) {
                 {/* Overlay oscuro + blur adicional para integrar la imagen con la interfaz y asegurar legibilidad del texto */}
                 <div style={{
                     position: 'absolute', inset: 0,
-                    background: 'linear-gradient(180deg, rgba(5,5,5,.55) 0%, rgba(5,5,5,.7) 55%, rgba(5,5,5,.85) 100%)',
+                    background: 'linear-gradient(180deg, rgba(7,9,12,.6) 0%, rgba(7,9,12,.74) 55%, rgba(7,9,12,.9) 100%), radial-gradient(60% 50% at 80% 20%, rgba(61,180,239,.22), transparent 70%)',
                     backdropFilter: 'blur(2px)',
                     WebkitBackdropFilter: 'blur(2px)',
                 }} />
-                <div style={{ position: 'absolute', top: '15%', right: '-5%', width: 340, height: 340, borderRadius: '50%', background: 'radial-gradient(closest-side, rgba(59,123,171,.3), transparent)', animation: 'authOrb 8s ease-in-out infinite' }} />
-                <div style={{ position: 'absolute', bottom: '5%', left: '-8%', width: 280, height: 280, borderRadius: '50%', background: 'radial-gradient(closest-side, rgba(74,131,179,.16), transparent)', animation: 'authOrb 9s ease-in-out infinite 1.5s' }} />
 
                 <Link to="/" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 14, position: 'relative', zIndex: 1 }}>
                     <img className="auth-logo-img" src={logoImg} alt="SS SWAP" style={{ width: 50, height: 50, objectFit: 'contain' }} />
-                    <p className="auth-rainbow-heading" style={{ fontFamily: "'Bebas Neue'", fontSize: '.95rem', letterSpacing: '.04em', lineHeight: 1.25 }}>
+                    <p className="auth-lema" style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.7rem', letterSpacing: '.12em', lineHeight: 1.45 }}>
                         RESTAURAMOS VEHÍCULOS<br />REFORZAMOS<br />CONFIANZA
                     </p>
                 </Link>
 
                 <div style={{ position: 'relative', zIndex: 1 }}>
-                    <p className="mono" style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '.7rem', letterSpacing: '.3em', color: '#7fabce', marginBottom: 18, fontWeight: 500 }}>{staffOnly ? '// ACCESO PERSONAL' : '// PANEL DE CLIENTE'}</p>
-                    <h1 className="auth-rainbow-heading" style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2.2rem, 3.4vw, 3rem)', letterSpacing: '.02em', lineHeight: 1.05, marginBottom: 40, maxWidth: 380 }}>
+                    <p className="auth-eyebrow">{staffOnly ? 'Acceso personal' : 'Panel de cliente'}</p>
+                    <h1 className="auth-titulo" style={{ marginBottom: 40, maxWidth: 420 }}>
                         {staffOnly ? 'Gestiona el taller desde un solo panel.' : 'Todo tu vehículo, en un solo panel.'}
                     </h1>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
                         {BENEFICIOS.map((b, i) => (
                             <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
-                                <div style={{ width: 40, height: 40, minWidth: 40, borderRadius: 11, background: 'rgba(59,123,171,.12)', border: '1px solid rgba(59,123,171,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#7fabce' }}>
+                                <div style={{ width: 40, height: 40, minWidth: 40, borderRadius: 11, background: 'rgba(61,180,239,.14)', border: '1px solid rgba(61,180,239,.32)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#93d6f8' }}>
                                     {b.icon}
                                 </div>
                                 <div>
                                     <p style={{ fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.9rem', color: '#fff', marginBottom: 3 }}>{b.t}</p>
-                                    <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.8rem', color: 'rgba(255,255,255,.45)', lineHeight: 1.5 }}>{b.d}</p>
+                                    <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.85rem', color: 'rgba(255,255,255,.62)', lineHeight: 1.5 }}>{b.d}</p>
                                 </div>
                             </div>
                         ))}
                     </div>
                 </div>
 
-                <p style={{ fontSize: '.75rem', fontWeight: 300, color: 'rgba(255,255,255,.25)', position: 'relative', zIndex: 1 }}>
+                <p style={{ fontSize: '.78rem', fontWeight: 400, color: 'rgba(255,255,255,.45)', position: 'relative', zIndex: 1 }}>
                     Mecánica SS SWAP · Ponciano Alto, Quito · 2026
                 </p>
             </div>
@@ -181,17 +180,13 @@ export default function AuthPage({ staffOnly = false }) {
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, position: 'relative' }}>
 
             {/* Volver */}
-            <Link to="/" style={{ position: 'absolute', top: 24, left: 24, display: 'flex', alignItems: 'center', gap: 7, color: 'rgba(255,255,255,.35)', textDecoration: 'none', fontSize: '.82rem', transition: 'color .2s' }}
-                onMouseEnter={e => e.currentTarget.style.color = '#3b7bab'}
-                onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,.35)'}>
+            <Link to="/" className="auth-enlace-sup" style={{ left: 24 }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
                 Volver al inicio
             </Link>
 
             {/* Link discreto al panel admin */}
-            <Link to="/admin/login" style={{ position: 'absolute', top: 24, right: 24, color: 'rgba(255,255,255,.18)', textDecoration: 'none', fontSize: '.72rem', transition: 'color .2s' }}
-                onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,.38)'}
-                onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,.18)'}>
+            <Link to="/admin/login" className="auth-enlace-sup auth-enlace-sup--discreto" style={{ right: 24 }}>
                 Acceso personal del taller
             </Link>
 
@@ -199,17 +194,17 @@ export default function AuthPage({ staffOnly = false }) {
 
                 {/* Logo de SS SWAP arriba de la tarjeta de login/registro */}
                 <div style={{ textAlign: 'center', marginBottom: 28 }}>
-                    <div className="auth-logo-ring" style={{ width: 74, height: 74, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', background: 'rgba(255,255,255,.04)', margin: '0 auto 16px' }}>
-                        <img className="auth-logo-img" src={logoImg} alt="SS SWAP" style={{ width: '78%', height: '78%', objectFit: 'contain' }} />
+                    <div className="auth-logo-ring" style={{ width: 74, height: 74, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.1)', margin: '0 auto 16px' }}>
+                        <img src={logoImg} alt="SS SWAP" style={{ width: '78%', height: '78%', objectFit: 'contain' }} />
                     </div>
-                    <p style={{ fontSize: '.85rem', fontWeight: 300, color: 'rgba(255,255,255,.38)' }}>
+                    <p style={{ fontSize: '.92rem', fontWeight: 400, color: 'rgba(255,255,255,.66)' }}>
                         {staffOnly ? 'Acceso exclusivo para personal autorizado' : (modo === 'login' ? 'Accede a tu cuenta de cliente' : 'Crea tu cuenta para hacer seguimiento de tu vehículo')}
                     </p>
                 </div>
 
                 {/* Card */}
-                <div style={{ position: 'relative', background: 'linear-gradient(180deg, #141414 0%, #0e0e0e 100%)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 20, overflow: 'hidden', boxShadow: '0 24px 70px -20px rgba(0,0,0,.6)' }}>
-                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, transparent, #3b7bab, transparent)' }} />
+                <div style={{ position: 'relative', background: 'linear-gradient(180deg, #161c24 0%, #11161d 100%)', border: '1px solid rgba(255,255,255,.09)', borderRadius: 20, overflow: 'hidden', boxShadow: '0 24px 70px -20px rgba(0,0,0,.6)' }}>
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, transparent, #3db4ef, transparent)' }} />
 
                     <div style={{ padding: '26px 26px 0' }}>
                         {/* Tabs */}
@@ -226,10 +221,10 @@ export default function AuthPage({ staffOnly = false }) {
                         {modo === 'login' && (
                             <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
                                 <div>
-                                    <label style={labelBase}>Correo electrónico</label>
+                                    <label htmlFor="auth-login-email" style={labelBase}>Correo electrónico</label>
                                     <div className="auth-input-wrap">
                                         <IconMailAuth className="auth-input-icon" />
-                                        <input className="auth-input" style={inputBase} type="email" required
+                                        <input id="auth-login-email" className="auth-input" style={inputBase} type="email" required
                                             maxLength={254}
                                             placeholder="tucorreo@email.com"
                                             value={loginForm.email}
@@ -238,15 +233,15 @@ export default function AuthPage({ staffOnly = false }) {
                                 </div>
 
                                 <div>
-                                    <label style={labelBase}>Contraseña</label>
+                                    <label htmlFor="auth-login-pass" style={labelBase}>Contraseña</label>
                                     <div className="auth-input-wrap" style={{ position: 'relative' }}>
                                         <IconLockAuth className="auth-input-icon" />
-                                        <input className="auth-input" style={inputBase} type={showPass ? 'text' : 'password'} required
+                                        <input id="auth-login-pass" className="auth-input" style={inputBase} type={showPass ? 'text' : 'password'} required
                                             maxLength={72}
                                             placeholder="Tu contraseña"
                                             value={loginForm.password}
                                             onChange={e => setLoginForm({ ...loginForm, password: e.target.value })} />
-                                        <button type="button" className="pass-toggle" onClick={() => setShowPass(p => !p)}>
+                                        <button type="button" className="pass-toggle" onClick={() => setShowPass(p => !p)} aria-label={showPass ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
                                             {showPass
                                                 ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
                                                 : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -259,7 +254,7 @@ export default function AuthPage({ staffOnly = false }) {
                                     {loading ? 'Verificando...' : 'Iniciar Sesión'}
                                 </button>
 
-                                {!staffOnly && <p style={{ textAlign: 'center', fontSize: '.82rem', fontWeight: 300, color: 'rgba(255,255,255,.3)' }}>
+                                {!staffOnly && <p style={{ textAlign: 'center', fontSize: '.85rem', fontWeight: 400, color: 'rgba(255,255,255,.55)' }}>
                                     ¿No tienes cuenta?{' '}
                                     <button type="button" className="text-link" onClick={() => setModo('registro')}>
                                         Regístrate gratis
@@ -272,8 +267,8 @@ export default function AuthPage({ staffOnly = false }) {
                         {!staffOnly && modo === 'registro' && (
                             <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
                                 <div>
-                                    <label style={labelBase}>Nombre completo *</label>
-                                    <input className="auth-input" style={inputBase} type="text" required
+                                    <label htmlFor="auth-reg-nombre" style={labelBase}>Nombre completo *</label>
+                                    <input id="auth-reg-nombre" className="auth-input" style={inputBase} type="text" required
                                         maxLength={120}
                                         placeholder="Ingresa tu nombre"
                                         value={regForm.nombre}
@@ -281,8 +276,8 @@ export default function AuthPage({ staffOnly = false }) {
                                 </div>
 
                                 <div>
-                                    <label style={labelBase}>Correo electrónico *</label>
-                                    <input className="auth-input" style={inputBase} type="email" required
+                                    <label htmlFor="auth-reg-email" style={labelBase}>Correo electrónico *</label>
+                                    <input id="auth-reg-email" className="auth-input" style={inputBase} type="email" required
                                         maxLength={254}
                                         placeholder="tucorreo@email.com"
                                         value={regForm.email}
@@ -291,8 +286,8 @@ export default function AuthPage({ staffOnly = false }) {
 
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                                     <div>
-                                        <label style={labelBase}>Teléfono</label>
-                                        <input className="auth-input" style={inputBase} type="tel"
+                                        <label htmlFor="auth-reg-tel" style={labelBase}>Teléfono</label>
+                                        <input id="auth-reg-tel" className="auth-input" style={inputBase} type="tel"
                                             placeholder="099 XXX XXXX"
                                             value={regForm.telefono}
                                             onChange={e => {
@@ -305,8 +300,8 @@ export default function AuthPage({ staffOnly = false }) {
                                             }} />
                                     </div>
                                     <div>
-                                        <label style={labelBase}>Cédula</label>
-                                        <input className="auth-input" style={inputBase} type="text"
+                                        <label htmlFor="auth-reg-cedula" style={labelBase}>Cédula</label>
+                                        <input id="auth-reg-cedula" className="auth-input" style={inputBase} type="text"
                                             placeholder="1712345678"
                                             maxLength={15}
                                             value={regForm.cedula}
@@ -315,14 +310,14 @@ export default function AuthPage({ staffOnly = false }) {
                                 </div>
 
                                 <div>
-                                    <label style={labelBase}>Contraseña * (8 a 72 caracteres)</label>
+                                    <label htmlFor="auth-reg-pass" style={labelBase}>Contraseña * (8 a 72 caracteres)</label>
                                     <div style={{ position: 'relative' }}>
-                                        <input className="auth-input" style={inputBase} type={showPass ? 'text' : 'password'} required
+                                        <input id="auth-reg-pass" className="auth-input" style={inputBase} type={showPass ? 'text' : 'password'} required
                                             maxLength={72}
                                             placeholder="Mínimo 8 caracteres"
                                             value={regForm.password}
                                             onChange={e => setRegForm({ ...regForm, password: e.target.value })} />
-                                        <button type="button" className="pass-toggle" onClick={() => setShowPass(p => !p)}>
+                                        <button type="button" className="pass-toggle" onClick={() => setShowPass(p => !p)} aria-label={showPass ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
                                             {showPass
                                                 ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
                                                 : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -358,7 +353,7 @@ export default function AuthPage({ staffOnly = false }) {
                                 </button>
 
 
-                                <p style={{ textAlign: 'center', fontSize: '.82rem', fontWeight: 300, color: 'rgba(255,255,255,.3)' }}>
+                                <p style={{ textAlign: 'center', fontSize: '.85rem', fontWeight: 400, color: 'rgba(255,255,255,.55)' }}>
                                     ¿Ya tienes cuenta?{' '}
                                     <button type="button" className="text-link" onClick={() => setModo('login')}>
                                         Inicia sesión
@@ -370,7 +365,7 @@ export default function AuthPage({ staffOnly = false }) {
                 </div>
 
                 {leyendo && <LectorDocumento doc={leyendo} onClose={() => setLeyendo(null)} />}
-                <p style={{ textAlign: 'center', marginTop: 18, fontSize: '.75rem', fontWeight: 300, color: 'rgba(255,255,255,.18)' }}>
+                <p style={{ textAlign: 'center', marginTop: 18, fontSize: '.78rem', fontWeight: 400, color: 'rgba(255,255,255,.4)' }}>
                     Mecánica SS SWAP · Ponciano Alto, Quito · 2026
                 </p>
             </div>

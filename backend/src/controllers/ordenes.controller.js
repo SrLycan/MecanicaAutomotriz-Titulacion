@@ -44,21 +44,43 @@ const validarDatosCliente = ({ nombre, email, telefono, cedula }) => {
  * e indica si el cliente posee una cuenta de acceso al portal web vinculada.
  */
 const listarClientes = async (req, res) => {
-    const { q } = req.query;
-    let query = `SELECT c.*,
-                        (u.id IS NOT NULL) AS cuenta_web
-                 FROM clientes c
+    const { q, page, limit } = req.query;
+    const desde = `FROM clientes c
                  LEFT JOIN usuarios u ON LOWER(u.email) = LOWER(c.email) AND u.rol = 'cliente'
+                 LEFT JOIN usuarios uc ON uc.id = c.creado_por
                  WHERE 1=1`;
+    let filtro = '';
     const params = [];
     if (q) {
         params.push(`%${q}%`);
-        query += ` AND (c.nombre ILIKE $${params.length} OR c.cedula ILIKE $${params.length} OR c.telefono ILIKE $${params.length} OR c.email ILIKE $${params.length})`;
+        filtro += ` AND (c.nombre ILIKE $${params.length} OR c.cedula ILIKE $${params.length} OR c.telefono ILIKE $${params.length} OR c.email ILIKE $${params.length})`;
     }
-    query += ' ORDER BY c.nombre ASC';
+    const query = `SELECT c.*,
+                        (u.id IS NOT NULL) AS cuenta_web,
+                        uc.nombre AS creado_por_nombre
+                 ${desde}${filtro}
+                 ORDER BY c.nombre ASC`;
     try {
-        const { rows } = await pool.query(query, params);
-        return res.json({ clientes: rows });
+        // Sin "page" se devuelve la lista completa (selectores de ordenes,
+        // proformas, vehiculos y pagares). La pagina Clientes pide por paginas.
+        if (page === undefined) {
+            const { rows } = await pool.query(query, params);
+            return res.json({ clientes: rows });
+        }
+        const pageNum = Math.max(1, parseInt(page, 10) || 1);
+        const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+        const [{ rows }, { rows: [r] }] = await Promise.all([
+            pool.query(`${query}, c.id LIMIT $${params.length + 1} OFFSET $${params.length + 2}`, [...params, limitNum, (pageNum - 1) * limitNum]),
+            pool.query(`SELECT COUNT(*)::int AS total,
+                               COUNT(*) FILTER (WHERE NULLIF(c.email, '') IS NOT NULL)::int AS con_email,
+                               COUNT(*) FILTER (WHERE NULLIF(c.telefono, '') IS NOT NULL)::int AS con_telefono
+                        ${desde}${filtro}`, params),
+        ]);
+        return res.json({
+            clientes: rows, total: r.total, page: pageNum, limit: limitNum,
+            totalPages: Math.ceil(r.total / limitNum),
+            resumen: { total: r.total, con_email: r.con_email, con_telefono: r.con_telefono },
+        });
     } catch (err) {
         console.error('Error listarClientes:', err);
         const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
@@ -225,9 +247,10 @@ const actualizarCliente = async (req, res) => {
  */
 const listarVehiculos = async (req, res) => {
     const { cliente_id, q } = req.query;
-    let query = `SELECT v.*, c.nombre AS cliente_nombre
+    let query = `SELECT v.*, c.nombre AS cliente_nombre, uc.nombre AS creado_por_nombre
                  FROM vehiculos v
                  JOIN clientes c ON c.id = v.cliente_id
+                 LEFT JOIN usuarios uc ON uc.id = v.creado_por
                  WHERE 1=1`;
     const params = [];
     if (cliente_id) { params.push(cliente_id); query += ` AND v.cliente_id = $${params.length}`; }

@@ -4,7 +4,7 @@
  * Muestra KPIs de totales y permite filtrar por cédula, nombre o email.
  * Accesible para administradores y recepcionistas.
  */
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useSearchParams } from 'react-router-dom';
 import useParamUrl from '../hooks/useParamUrl';
@@ -13,10 +13,12 @@ import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import { useConfirm } from '../components/common/ConfirmDialog';
 import PagareTab from '../components/clientes/PagareTab';
+import Paginador from '../components/proveedores/Paginador';
 import './Clientes.css';
 import '../pages/Proveedores.css';
 
 import { NombreEmpresa } from '../components/common/MarcaEmpresa';
+import RegistradoPor from '../components/common/RegistradoPor';
 function IconPlus() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>; }
 function IconSearch() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>; }
 function IconEdit() { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>; }
@@ -115,6 +117,9 @@ function ModalCliente({ open, data, onClose, onGuardar, isDark }) {
     );
 }
 
+// Clientes por pagina en la lista.
+const POR_PAGINA = 20;
+
 export default function Clientes() {
     const confirm = useConfirm();
     const { isDark } = useTheme();
@@ -124,6 +129,11 @@ export default function Clientes() {
     const [clientes, setClientes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [busqueda, setBusqueda] = useState('');
+    // La lista se pide por paginas (antes llegaban todos los clientes de una vez).
+    const [consulta, setConsulta] = useState({ q: '', pagina: 1 });
+    const [total, setTotal] = useState(0);
+    const [resumen, setResumen] = useState({ total: 0, con_email: 0, con_telefono: 0 });
+    const debounceRef = useRef(null);
     const [modal, setModal] = useState({ open: false, data: null });
     // ?tab=pagare&cuenta=ID abre directamente un pagare (enlace desde la proforma)
     const [searchParams] = useSearchParams();
@@ -142,13 +152,20 @@ export default function Clientes() {
     const cardSh = isDark ? '0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 40px -16px rgba(0,0,0,0.55)' : '0 1px 2px rgba(15,23,42,0.06), 0 8px 22px -8px rgba(15,23,42,0.20)';
     const inputBg = isDark ? '#0b1220' : '#fafcff';
 
-    const cargarClientes = useCallback(async (q = '') => {
+    const cargarClientes = useCallback(async (q = '', pg = 1) => {
         setLoading(true);
         try {
             const params = new URLSearchParams();
             if (q) params.set('q', q);
+            params.set('page', String(pg));
+            params.set('limit', String(POR_PAGINA));
             const { data } = await api.get(`/ordenes/clientes?${params}`);
+            // Si la pagina quedo fuera de rango (p. ej. tras eliminar), se va a la ultima.
+            const paginas = Math.max(1, data.totalPages || 1);
+            if (pg > paginas && (data.total || 0) > 0) { setConsulta({ q, pagina: paginas }); return; }
             setClientes(data.clientes || []);
+            setTotal(data.total || 0);
+            if (data.resumen) setResumen(data.resumen);
         } catch (err) {
             toast.error(err.response?.data?.error || 'Error al cargar clientes.');
         } finally {
@@ -156,13 +173,18 @@ export default function Clientes() {
         }
     }, []);
 
-    useEffect(() => { if (verClientes) cargarClientes(); }, [cargarClientes, verClientes]);
+    useEffect(() => { if (verClientes) cargarClientes(consulta.q, consulta.pagina); }, [cargarClientes, verClientes, consulta]);
+    useEffect(() => () => clearTimeout(debounceRef.current), []);
 
+    // Una sola consulta cuando se deja de escribir (antes, una por cada tecla).
     const handleBusqueda = (e) => {
         const value = e.target.value;
         setBusqueda(value);
-        setTimeout(() => cargarClientes(value), 300);
+        clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => setConsulta({ q: value, pagina: 1 }), 300);
     };
+    const recargar = () => setConsulta(c => ({ ...c }));
+    const setPagina = (fn) => setConsulta(c => ({ ...c, pagina: typeof fn === 'function' ? fn(c.pagina) : fn }));
 
     const guardarCliente = async (form) => {
         try {
@@ -173,7 +195,7 @@ export default function Clientes() {
             // Avisos de formato de la identificacion (p. ej. RUC que no pasa el digito verificador).
             (data?.advertencias || []).forEach(a => toast(a, { icon: '⚠️', duration: 7000 }));
             setModal({ open: false, data: null });
-            cargarClientes(busqueda);
+            recargar();
         } catch (err) {
             toast.error(err.response?.data?.error || 'Error al guardar cliente.');
         }
@@ -184,17 +206,14 @@ export default function Clientes() {
         try {
             await api.delete(`/ordenes/clientes/${cliente.id}`);
             toast.success('Cliente eliminado.');
-            cargarClientes(busqueda);
+            recargar();
         } catch (err) {
             toast.error(err.response?.data?.error || 'Error al eliminar cliente.');
         }
     };
 
-    const stats = useMemo(() => ({
-        total: clientes.length,
-        conEmail: clientes.filter((c) => c.email).length,
-        conTelefono: clientes.filter((c) => c.telefono).length,
-    }), [clientes]);
+    // Totales de TODOS los clientes que cumplen la busqueda (los calcula el servidor).
+    const stats = { total: resumen.total, conEmail: resumen.con_email, conTelefono: resumen.con_telefono };
 
     return (
         <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1400 }}>
@@ -264,6 +283,8 @@ export default function Clientes() {
                                         {cliente.cedula && <div>🪪 {cliente.cedula}</div>}
                                         {cliente.direccion && <div>📍 {cliente.direccion}</div>}
                                     </div>
+                                    <RegistradoPor nombre={cliente.creado_por_nombre} fechaRegistro={cliente.created_at}
+                                        sinNombre={cliente.cuenta_web ? 'Registrado desde la web' : 'Registro anterior (sin usuario)'} color={mut} />
                                 </div>
                             </div>
                             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -274,6 +295,7 @@ export default function Clientes() {
                     ))}
                 </div>
             )}
+            <Paginador pagina={consulta.pagina} setPagina={setPagina} total={total} porPagina={POR_PAGINA} theme={{ txt, mut, bdr }} />
 
             {modal.open && <ModalCliente open={modal.open} data={modal.data} onClose={() => setModal({ open: false, data: null })} onGuardar={guardarCliente} isDark={isDark} />}
             </>

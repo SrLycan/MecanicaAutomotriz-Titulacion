@@ -2,15 +2,17 @@
  * SS SWAP - Página Institucional "Nosotros"
  * Muestra la historia, misión, visión, línea de tiempo de crecimiento,
  * principios corporativos y el equipo técnico responsable del taller.
+ * Estilos en Nosotros.css + styles/web-publica.css (todo bajo .web).
  */
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../../components/public/Navbar';
 import Footer from '../../components/public/Footer';
+import FondoVivo from '../../components/public/FondoVivo';
 import api from '../../services/api';
+import useRevelar from '../../hooks/useRevelar';
+import '../../styles/web-publica.css';
 import './Nosotros.css';
-
-const GOLD = '#3b7bab';
 
 const VALORES = [
     { titulo: 'Honestidad',    desc: 'Diagnóstico claro antes de reparar. No cambiamos piezas que el vehículo no necesita.', icon: IconEye,    color: '#3b7bab' },
@@ -68,22 +70,17 @@ const TESTIMONIOS = [
 
 export default function Nosotros() {
     const [sucursales, setSucursales] = useState([]);
+    const raiz = useRef(null);
+    const [sinMovimiento] = useState(() => !!window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     useEffect(() => {
         api.get('/sucursales/public').then(r => setSucursales(r.data.sucursales || [])).catch(() => {});
     }, []);
 
-    useEffect(() => {
-        const els = document.querySelectorAll('.reveal');
-        const io = new IntersectionObserver((entries) => {
-            entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in-view'); io.unobserve(e.target); } });
-        }, { threshold: 0.12, rootMargin: '0px 0px -30px 0px' });
-        els.forEach(el => io.observe(el));
-        return () => io.disconnect();
-    }, [sucursales]);
+    useRevelar(raiz, [sucursales]);
 
     /* Linea de tiempo "Un crecimiento planificado, paso a paso." — despliegue en tiempo real
        ligado al scroll (igual mecanismo que "Como funciona" en Servicios): reversible, no es
-       un disparo unico como el resto de .reveal de esta pagina. */
+       un disparo unico como el resto de bloques .w-rev de esta pagina. */
     useEffect(() => {
         let raf = null;
         const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
@@ -123,56 +120,41 @@ export default function Nosotros() {
     }, []);
 
     return (
-        <div style={{ background: '#050505', minHeight: '100vh', color: '#fff' }}>
-
+        <div className="web" ref={raiz}>
             <Navbar />
+            <FondoVivo />
 
-            {/* HERO */}
-            <section className="ns-pad ns-hero" style={{ paddingTop: 150, position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at top left, rgba(13,26,36,.55) 0%, #050505 60%)' }} />
-                <div className="glow-orb" style={{ top: '6%', right: '2%', width: 380, height: 380, background: 'radial-gradient(closest-side, rgba(59,123,171,.28), transparent)', animation: 'nsOrb 8s ease-in-out infinite' }} />
-                <div className="ns-hero-grid" style={{ position: 'relative' }}>
+            {/* CABECERA */}
+            <header className="w-cabecera ns-cabecera">
+                <div className="w-contenedor ns-hero-grid">
                     <div>
-                        <div className="ns-fade ns-hero-eyebrow" style={{ marginBottom: 22 }}>
-                            <span style={{ width: 7, height: 7, borderRadius: '50%', background: GOLD }} />
-                            <p className="mono" style={{ fontSize: '.68rem', letterSpacing: '.2em', color: GOLD, fontWeight: 500 }}>SS SWAP GARAGE</p>
-                        </div>
-                        <h1 className="ns-fade" style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2.3rem, 4.6vw, 3.8rem)', letterSpacing: '.02em', lineHeight: 1.08, marginBottom: 22, animationDelay: '.05s' }}>
-                            <span className="grad-text-white">Un taller pensado para durar, </span>
-                            <span className="grad-text-rainbow">construido con calidad y confianza.</span>
+                        <p className="w-eyebrow w-entrada">SS SWAP Garage</p>
+                        <h1 className="w-entrada" style={{ '--w-retraso': '80ms' }}>
+                            Un taller pensado para durar, <span className="w-acento">construido con calidad y confianza.</span>
                         </h1>
-                        <p className="ns-fade" style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: 'clamp(.95rem,1.3vw,1.05rem)', color: 'rgba(255,255,255,.6)', maxWidth: 520, marginBottom: 34, lineHeight: 1.8, animationDelay: '.1s' }}>
+                        <p className="w-lead w-entrada" style={{ '--w-retraso': '160ms', marginBottom: 32 }}>
                             SS SWAP Garage nace en Tola Chica – La Morita combinando mecánica general y colisiones bajo un mismo techo, con diagnóstico claro, garantía por escrito y atención directa por WhatsApp.
                         </p>
-                        <div className="ns-fade" style={{ display: 'flex', gap: 14, flexWrap: 'wrap', animationDelay: '.15s' }}>
-                            <Link to="/servicios" className="ps-btn-primary"><span>Conocer nuestros servicios</span>
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
-                            </Link>
-                            <Link to="/servicios" className="ps-btn-outline">Agendar servicio</Link>
+                        <div className="w-acciones w-entrada" style={{ '--w-retraso': '240ms' }}>
+                            <Link to="/servicios" className="w-btn w-btn--primario">Conocer nuestros servicios <IconFlecha /></Link>
+                            <Link to="/servicios" className="w-btn w-btn--claro">Agendar servicio</Link>
                         </div>
                     </div>
-                    <div className="ns-hero-photo-wrap reveal">
-                        <img
-                            src="/nosotros/hero-taller.jpeg"
-                            alt="Mecánico de SS SWAP reparando un vehículo en el taller"
-                            onError={e => { e.currentTarget.style.opacity = 0; }}
-                        />
-                        <div className="ns-hero-photo-badge">
-                            <span style={{ fontFamily: "'Bebas Neue'", fontSize: '1.6rem', color: GOLD, lineHeight: 1 }}>100%</span>
-                            <span style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.78rem', color: 'rgba(255,255,255,.75)', lineHeight: 1.3 }}>Garantía por escrito<br/>en cada trabajo</span>
+                    <div className="ns-hero-foto w-entrada" style={{ '--w-retraso': '200ms' }}>
+                        <img src="/nosotros/hero-taller.jpeg" alt="Mecánico de SS SWAP reparando un vehículo en el taller" width="900" height="1125"
+                             onError={e => { e.currentTarget.style.opacity = 0; }} />
+                        <div className="ns-hero-sello">
+                            <span>100%</span>
+                            <span>Garantía por escrito<br />en cada trabajo</span>
                         </div>
                     </div>
                 </div>
-                <div className="ns-scroll-ind">
-                    <span />
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-                </div>
-            </section>
+            </header>
 
             {/* ESTADISTICAS */}
-            <section className="ns-pad" style={{ paddingTop: 64, paddingBottom: 64 }}>
-                <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-                    <div className="ns-stats-grid reveal">
+            <section className="ns-cifras-seccion" aria-label="Nuestros compromisos en cifras">
+                <div className="w-contenedor">
+                    <div className="ns-stats-grid w-rev">
                         {[
                             { valor: 30, sufijo: ' min', label: 'Respuesta por WhatsApp' },
                             { valor: 5,   sufijo: '%', label: 'Retrabajos (máximo)' },
@@ -189,199 +171,173 @@ export default function Nosotros() {
             </section>
 
             {/* MISION Y VISION */}
-            <section className="ns-pad">
-                <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-                    <div className="ns-mv-grid">
-                        <div className="reveal ns-card" style={{ borderColor: 'rgba(59,123,171,.25)' }}>
-                            <p className="mono" style={{ fontSize: '.68rem', letterSpacing: '.25em', color: GOLD, marginBottom: 14 }}>MISIÓN</p>
-                            <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '1rem', color: 'rgba(255,255,255,.75)', lineHeight: 1.8 }}>
-                                Brindar servicios confiables, rápidos y garantizados para vehículos livianos — mecánica general y colisiones — generando fidelización real y un crecimiento sostenible del taller.
-                            </p>
-                        </div>
-                        <div className="reveal ns-card" style={{ transitionDelay: '90ms', borderColor: 'rgba(74,131,179,.2)' }}>
-                            <p className="mono" style={{ fontSize: '.68rem', letterSpacing: '.25em', color: '#4a83b3', marginBottom: 14 }}>VISIÓN</p>
-                            <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '1rem', color: 'rgba(255,255,255,.75)', lineHeight: 1.8 }}>
-                                Convertirnos en uno de los talleres de referencia en Tola Chica – La Morita por calidad, honestidad y tecnología.
-                            </p>
-                        </div>
-                    </div>
+            <section className="w-seccion w-claro" style={{ paddingTop: 0 }} aria-label="Misión y visión">
+                <div className="w-contenedor ns-mv-grid">
+                    <article className="w-tarjeta ns-mv w-rev">
+                        <span className="w-icono"><IconTarget /></span>
+                        <h2 className="ns-mv-titulo">Misión</h2>
+                        <p className="w-texto">
+                            Brindar servicios confiables, rápidos y garantizados para vehículos livianos — mecánica general y colisiones — generando fidelización real y un crecimiento sostenible del taller.
+                        </p>
+                    </article>
+                    <article className="w-tarjeta ns-mv w-rev" style={{ '--w-retraso': '90ms' }}>
+                        <span className="w-icono"><IconEye /></span>
+                        <h2 className="ns-mv-titulo">Visión</h2>
+                        <p className="w-texto">
+                            Convertirnos en uno de los talleres de referencia en Tola Chica – La Morita por calidad, honestidad y tecnología.
+                        </p>
+                    </article>
                 </div>
             </section>
 
             {/* LINEA DE TIEMPO */}
-            <section className="ns-pad">
-                <div style={{ maxWidth: 880, margin: '0 auto' }}>
-                    <div style={{ textAlign: 'center', marginBottom: 56 }}>
-                        <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: GOLD, marginBottom: 12, fontWeight: 500 }}>// HACIA DÓNDE VAMOS</p>
-                        <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2rem, 4vw, 2.8rem)', letterSpacing: '.03em' }}>
-                            <span className="grad-text-white">Un crecimiento </span>
-                            <span className="grad-text-rainbow">planificado, paso a paso.</span>
-                        </h2>
+            <section className="w-seccion w-niebla" aria-labelledby="titulo-hitos">
+                <div className="w-contenedor" style={{ maxWidth: 920 }}>
+                    <div className="w-encabezado w-encabezado--centro">
+                        <p className="w-eyebrow">Hacia dónde vamos</p>
+                        <h2 id="titulo-hitos" className="w-titulo">Un crecimiento <span className="w-acento">planificado, paso a paso.</span></h2>
                     </div>
-                    <div className="ns-timeline-v2">
-                        <div className="ns-tl-fill" />
+                    <ol className="ns-timeline-v2">
+                        <li className="ns-tl-fill" aria-hidden="true" />
                         {HITOS.map((h, i) => (
-                            <div key={h.anio} className={`ns-tl-row${i % 2 === 1 ? ' right' : ''}`}>
-                                <span className="ns-tl-dot" />
-                                <div className="ns-tl-card ns-card">
-                                    <p className="mono ns-tl-year" style={{ marginBottom: 8 }}>{h.anio}</p>
-                                    <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.92rem', color: 'rgba(255,255,255,.65)', lineHeight: 1.65 }}>{h.texto}</p>
+                            <li key={h.anio} className={`ns-tl-row${i % 2 === 1 ? ' right' : ''}`}>
+                                <span className="ns-tl-dot" aria-hidden="true" />
+                                <div className="ns-tl-card w-tarjeta w-rev" style={{ '--w-retraso': '80ms' }}>
+                                    <p className="ns-tl-year">{h.anio}</p>
+                                    <p className="w-texto">{h.texto}</p>
                                 </div>
-                            </div>
+                            </li>
                         ))}
-                    </div>
+                    </ol>
                 </div>
             </section>
 
             {/* DIFERENCIALES */}
-            <section className="ns-pad" style={{ background: 'linear-gradient(180deg, #050505 0%, #0a0a0a 50%, #050505 100%)', borderTop: '1px solid rgba(255,255,255,.04)', borderBottom: '1px solid rgba(255,255,255,.04)' }}>
-                <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-                    <div style={{ textAlign: 'center', marginBottom: 56 }}>
-                        <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: GOLD, marginBottom: 12, fontWeight: 500 }}>// DIFERENCIALES</p>
-                        <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2.2rem, 4.5vw, 3.2rem)', letterSpacing: '.03em' }}>
-                            <span className="grad-text-white">¿Por qué elegir </span>
-                            <span className="grad-text-rainbow">SS SWAP?</span>
-                        </h2>
+            <section className="w-seccion w-grafito" aria-labelledby="titulo-diferenciales">
+                <div className="w-contenedor">
+                    <div className="w-encabezado w-encabezado--centro w-rev">
+                        <p className="w-eyebrow">Diferenciales</p>
+                        <h2 id="titulo-diferenciales" className="w-titulo">¿Por qué elegir <span className="w-acento">SS SWAP?</span></h2>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: 18 }}>
+                    <div className="w-grid w-grid--3">
                         {DIFERENCIALES.map((d, i) => (
-                            <div key={d.titulo} className="ns-card ns-diff-card reveal" style={{ transitionDelay: `${i * 60}ms` }}>
-                                <div className="ns-diff-icon ns-icon"><d.icon /></div>
+                            <article key={d.titulo} className="w-tarjeta ns-diff-card w-rev" style={{ '--w-retraso': `${(i % 3) * 70}ms` }}>
+                                <span className="w-icono"><d.icon /></span>
                                 <div>
-                                    <h3 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.1rem', letterSpacing: '.03em', color: '#fff', marginBottom: 6 }}>{d.titulo}</h3>
-                                    <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.83rem', color: 'rgba(255,255,255,.5)', lineHeight: 1.6 }}>{d.desc}</p>
+                                    <h3 className="w-h3">{d.titulo}</h3>
+                                    <p className="w-texto">{d.desc}</p>
                                 </div>
-                            </div>
+                            </article>
                         ))}
                     </div>
                 </div>
             </section>
 
             {/* VALORES */}
-            <section className="ns-pad" style={{ background: 'linear-gradient(180deg, #050505 0%, #0a0a0a 50%, #050505 100%)', borderTop: '1px solid rgba(255,255,255,.04)', borderBottom: '1px solid rgba(255,255,255,.04)' }}>
-                <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-                    <div style={{ textAlign: 'center', marginBottom: 56 }}>
-                        <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: GOLD, marginBottom: 12, fontWeight: 500 }}>// NUESTROS VALORES</p>
-                        <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2.2rem, 4.5vw, 3.2rem)', letterSpacing: '.03em' }}>
-                            <span className="grad-text-white">Lo que guía cada </span>
-                            <span className="grad-text-rainbow">trabajo que hacemos.</span>
-                        </h2>
+            <section className="w-seccion w-claro" aria-labelledby="titulo-valores">
+                <div className="w-contenedor">
+                    <div className="w-encabezado w-encabezado--centro w-rev">
+                        <p className="w-eyebrow">Nuestros valores</p>
+                        <h2 id="titulo-valores" className="w-titulo">Lo que guía cada <span className="w-acento">trabajo que hacemos.</span></h2>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))', gap: 18 }}>
+                    <div className="w-grid w-grid--4">
                         {VALORES.map((v, i) => (
-                            <div key={v.titulo} className="ns-card reveal" style={{ transitionDelay: `${i * 70}ms` }}>
-                                <div className="ns-icon" style={{ width: 48, height: 48, borderRadius: 12, background: `${v.color}14`, border: `1px solid ${v.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: v.color, marginBottom: 18 }}>
-                                    <v.icon />
-                                </div>
-                                <h3 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.15rem', letterSpacing: '.03em', color: '#fff', marginBottom: 8 }}>{v.titulo}</h3>
-                                <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.85rem', color: 'rgba(255,255,255,.5)', lineHeight: 1.65 }}>{v.desc}</p>
-                            </div>
+                            <article key={v.titulo} className="w-tarjeta w-rev" style={{ '--w-retraso': `${i * 70}ms` }}>
+                                <span className="w-icono ns-valor-icono"><v.icon /></span>
+                                <h3 className="w-h3">{v.titulo}</h3>
+                                <p className="w-texto">{v.desc}</p>
+                            </article>
                         ))}
                     </div>
                 </div>
             </section>
 
             {/* EQUIPO DE MECANICOS */}
-            <section className="ns-pad">
-                <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-                    <div style={{ textAlign: 'center', marginBottom: 56 }}>
-                        <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: GOLD, marginBottom: 12, fontWeight: 500 }}>// NUESTRO EQUIPO</p>
-                        <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2.2rem, 4.5vw, 3.2rem)', letterSpacing: '.03em' }}>
-                            <span className="grad-text-white">Personas detrás de </span>
-                            <span className="grad-text-rainbow">cada reparación.</span>
-                        </h2>
-                        <p className="ns-scroll-hint" style={{ justifyContent: 'center', width: '100%' }}>
+            <section className="w-seccion w-niebla" aria-labelledby="titulo-equipo">
+                <div className="w-contenedor">
+                    <div className="w-encabezado w-encabezado--centro w-rev">
+                        <p className="w-eyebrow">Nuestro equipo</p>
+                        <h2 id="titulo-equipo" className="w-titulo">Personas detrás de <span className="w-acento">cada reparación.</span></h2>
+                        <p className="ns-scroll-hint">
                             Desliza para ver al equipo
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
                         </p>
                     </div>
-                    <div className="ns-team-grid" style={{ maxWidth: 720, margin: '0 auto' }}>
+                    <div className="ns-team-grid">
                         {MECANICOS.map((m, i) => (
-                            <div key={m.nombre} className="ns-team-card reveal" style={{ transitionDelay: `${i * 80}ms` }}>
+                            <article key={m.nombre} className="ns-team-card w-vidrio w-vidrio--interactivo w-rev" style={{ '--w-retraso': `${i * 80}ms` }}>
                                 <div className="ns-team-photo">
-                                    <img src={m.foto} alt={m.nombre} loading="lazy" onError={e => { e.currentTarget.style.opacity = 0; }} />
+                                    <img src={m.foto} alt={m.nombre} loading="lazy" width="600" height="600" onError={e => { e.currentTarget.style.opacity = 0; }} />
                                     <span className="ns-team-exp">{m.badge}</span>
                                 </div>
                                 <div className="ns-team-body">
-                                    <h3 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.25rem', letterSpacing: '.03em', color: '#fff', marginBottom: 4 }}>{m.nombre}</h3>
-                                    <p className="mono" style={{ fontSize: '.66rem', letterSpacing: '.08em', color: GOLD }}>{m.cargo.toUpperCase()}</p>
+                                    <h3 className="w-h3">{m.nombre}</h3>
+                                    <p className="ns-team-cargo">{m.cargo}</p>
                                     <span className="ns-team-tag">{m.especialidad}</span>
                                     <p className="ns-team-quote">&ldquo;{m.frase}&rdquo;</p>
                                 </div>
-                            </div>
+                            </article>
                         ))}
                     </div>
                 </div>
             </section>
 
             {/* ENDEREZADA Y PINTURA */}
-            <section className="ns-pad">
-                <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-                    <div style={{ textAlign: 'center', marginBottom: 48 }}>
-                        <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: GOLD, marginBottom: 12, fontWeight: 500 }}>// NUESTRA ESPECIALIDAD</p>
-                        <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2.2rem, 4.5vw, 3.2rem)', letterSpacing: '.03em' }}>
-                            <span className="grad-text-white">Enderezada y pintura: </span>
-                            <span className="grad-text-rainbow">el fuerte de SS SWAP.</span>
-                        </h2>
-                    </div>
-
-                    <div className="ns-spec-grid reveal">
-                        <div className="ns-spec-photo-main">
-                            <img
-                                src="/nosotros/pintura4.jpeg"
-                                alt="Área de enderezada y pintura de SS SWAP"
-                                onError={e => { e.currentTarget.style.opacity = 0; }}
-                            />
+            <section className="w-seccion w-oscuro" aria-labelledby="titulo-especialidad">
+                <div className="w-contenedor">
+                    <div className="ns-spec-grid">
+                        <div className="ns-spec-photo-main w-rev w-rev-img">
+                            <img src="/nosotros/pintura4.jpeg" alt="Área de enderezada y pintura de SS SWAP" loading="lazy" width="1200" height="900"
+                                 onError={e => { e.currentTarget.style.opacity = 0; }} />
                             <span className="ns-spec-photo-tag">Colisiones</span>
                         </div>
-                        <div>
-                            <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '1rem', color: 'rgba(255,255,255,.65)', lineHeight: 1.8, marginBottom: 22 }}>
+                        <div className="w-rev" style={{ '--w-retraso': '100ms' }}>
+                            <p className="w-eyebrow">Nuestra especialidad</p>
+                            <h2 id="titulo-especialidad" className="w-titulo">Enderezada y pintura: <span className="w-acento">el fuerte de SS SWAP.</span></h2>
+                            <p className="w-lead" style={{ marginBottom: 24 }}>
                                 En colisiones no improvisamos: seguimos un proceso completo de enderezada, templado, soldadura, pintura por capas, pulido y cuadratura de paneles, para que el golpe no se note ni en el color ni en la carrocería.
                             </p>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                            <ul className="ns-spec-chips">
                                 {['Enderezada', 'Templado', 'Soldadura', 'Pintura por capas', 'Pulido', 'Cuadratura de paneles'].map(tag => (
-                                    <span key={tag} className="ns-spec-chip">{tag}</span>
+                                    <li key={tag} className="w-chip">{tag}</li>
                                 ))}
-                            </div>
+                            </ul>
                         </div>
                     </div>
 
-                    <div className="ns-spec-steps">
+                    <div className="w-grid w-grid--3">
                         {[
                             { titulo: 'Aplicación de pintura', desc: 'Pintura aplicada por capas, de forma uniforme y sin defectos, dentro de la cabina.', foto: '/nosotros/pintura2.jpeg' },
                             { titulo: 'Control de calidad',    desc: 'Revisamos cada detalle antes de la entrega: acabado, brillo y funcionamiento.',      video: '/nosotros/video2.mp4' },
                             { titulo: 'Detalle en llantas',    desc: 'También pintamos y renovamos llantas para que combinen con la carrocería.',          foto: '/nosotros/pintura3.jpeg' },
-                        ].map((s, i) => (
-                            <div key={s.titulo} className="ns-card ns-spec-step reveal" style={{ transitionDelay: `${i * 80}ms` }}>
+                        ].map((st, i) => (
+                            <article key={st.titulo} className="w-tarjeta ns-spec-step w-rev" style={{ '--w-retraso': `${i * 80}ms` }}>
                                 <div className="ns-spec-step-photo">
-                                    {s.video ? (
-                                        <video muted loop playsInline autoPlay>
-                                            <source src={s.video} type="video/mp4" />
+                                    {st.video ? (
+                                        <video muted loop playsInline autoPlay={!sinMovimiento} preload="metadata" aria-label={st.titulo}>
+                                            <source src={st.video} type="video/mp4" />
                                         </video>
                                     ) : (
-                                        <img src={s.foto} alt={s.titulo} loading="lazy" onError={e => { e.currentTarget.style.opacity = 0; }} />
+                                        <img src={st.foto} alt={st.titulo} loading="lazy" width="640" height="400" onError={e => { e.currentTarget.style.opacity = 0; }} />
                                     )}
                                 </div>
-                                <h3 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.1rem', letterSpacing: '.03em', color: '#fff', marginBottom: 6 }}>{s.titulo}</h3>
-                                <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.83rem', color: 'rgba(255,255,255,.5)', lineHeight: 1.6 }}>{s.desc}</p>
-                            </div>
+                                <h3 className="w-h3">{st.titulo}</h3>
+                                <p className="w-texto">{st.desc}</p>
+                            </article>
                         ))}
                     </div>
                 </div>
             </section>
 
             {/* GALERIA */}
-            <section className="ns-pad" style={{ background: 'linear-gradient(180deg, #050505 0%, #0a0a0a 50%, #050505 100%)', borderTop: '1px solid rgba(255,255,255,.04)', borderBottom: '1px solid rgba(255,255,255,.04)' }}>
-                <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-                    <div style={{ textAlign: 'center', marginBottom: 48 }}>
-                        <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: GOLD, marginBottom: 12, fontWeight: 500 }}>// GALERÍA</p>
-                        <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2.2rem, 4.5vw, 3.2rem)', letterSpacing: '.03em' }}>
-                            <span className="grad-text-white">Un vistazo a </span>
-                            <span className="grad-text-rainbow">nuestro taller.</span>
-                        </h2>
-                        <p className="ns-scroll-hint-gallery" style={{ justifyContent: 'center', width: '100%' }}>
+            <section className="w-seccion w-claro" aria-labelledby="titulo-galeria">
+                <div className="w-contenedor">
+                    <div className="w-encabezado w-encabezado--centro w-rev">
+                        <p className="w-eyebrow">Galería</p>
+                        <h2 id="titulo-galeria" className="w-titulo">Un vistazo a <span className="w-acento">nuestro taller.</span></h2>
+                        <p className="ns-scroll-hint-gallery">
                             Desliza para ver más fotos
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
                         </p>
                     </div>
                     <Galeria items={GALERIA} />
@@ -389,17 +345,14 @@ export default function Nosotros() {
             </section>
 
             {/* VIDEO INSTITUCIONAL */}
-            <section className="ns-pad">
-                <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-                    <div style={{ textAlign: 'center', marginBottom: 40 }}>
-                        <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: GOLD, marginBottom: 12, fontWeight: 500 }}>// CONÓCENOS</p>
-                        <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2rem, 4vw, 2.8rem)', letterSpacing: '.03em' }}>
-                            <span className="grad-text-white">Un recorrido por </span>
-                            <span className="grad-text-rainbow">SS SWAP.</span>
-                        </h2>
+            <section className="w-seccion w-grafito" aria-labelledby="titulo-video">
+                <div className="w-contenedor" style={{ maxWidth: 1040 }}>
+                    <div className="w-encabezado w-encabezado--centro w-rev">
+                        <p className="w-eyebrow">Conócenos</p>
+                        <h2 id="titulo-video" className="w-titulo">Un recorrido por <span className="w-acento">SS SWAP.</span></h2>
                     </div>
-                    <div className="ns-video-frame reveal">
-                        <video controls poster="/nosotros/pintura1.jpeg">
+                    <div className="ns-video-frame w-rev">
+                        <video controls preload="metadata" poster="/nosotros/pintura1.jpeg">
                             <source src="/nosotros/video1.mp4" type="video/mp4" />
                             Tu navegador no soporta reproducción de video.
                         </video>
@@ -408,30 +361,27 @@ export default function Nosotros() {
             </section>
 
             {/* TESTIMONIOS */}
-            <section className="ns-pad" style={{ background: 'linear-gradient(180deg, #050505 0%, #0a0a0a 50%, #050505 100%)', borderTop: '1px solid rgba(255,255,255,.04)', borderBottom: '1px solid rgba(255,255,255,.04)' }}>
-                <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-                    <div style={{ textAlign: 'center', marginBottom: 48 }}>
-                        <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: GOLD, marginBottom: 12, fontWeight: 500 }}>// TESTIMONIOS</p>
-                        <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2.2rem, 4.5vw, 3.2rem)', letterSpacing: '.03em' }}>
-                            <span className="grad-text-white">Lo que dicen </span>
-                            <span className="grad-text-rainbow">nuestros clientes.</span>
-                        </h2>
+            <section className="w-seccion w-niebla" aria-labelledby="titulo-testimonios">
+                <div className="w-contenedor">
+                    <div className="w-encabezado w-encabezado--centro w-rev">
+                        <p className="w-eyebrow">Testimonios</p>
+                        <h2 id="titulo-testimonios" className="w-titulo">Lo que dicen <span className="w-acento">nuestros clientes.</span></h2>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: 20 }}>
+                    <div className="w-grid w-grid--3">
                         {TESTIMONIOS.map((t, i) => (
-                            <div key={t.nombre} className="ns-card ns-testi-card reveal" style={{ transitionDelay: `${i * 80}ms` }}>
-                                <div className="ns-testi-stars">
+                            <figure key={t.nombre} className="w-tarjeta ns-testi-card w-rev" style={{ '--w-retraso': `${i * 80}ms` }}>
+                                <div className="ns-testi-stars" aria-label="5 de 5 estrellas">
                                     {Array.from({ length: 5 }).map((_, j) => <IconStar key={j} />)}
                                 </div>
-                                <p className="ns-testi-text">&ldquo;{t.texto}&rdquo;</p>
-                                <div className="ns-testi-person">
-                                    <img className="ns-testi-avatar" src={t.foto} alt={t.nombre} loading="lazy" onError={e => { e.currentTarget.style.opacity = 0; }} />
+                                <blockquote className="ns-testi-text">&ldquo;{t.texto}&rdquo;</blockquote>
+                                <figcaption className="ns-testi-person">
+                                    <img className="ns-testi-avatar" src={t.foto} alt="" width="44" height="44" loading="lazy" onError={e => { e.currentTarget.style.opacity = 0; }} />
                                     <div>
                                         <p className="ns-testi-name">{t.nombre}</p>
                                         <p className="ns-testi-role">{t.rol}</p>
                                     </div>
-                                </div>
-                            </div>
+                                </figcaption>
+                            </figure>
                         ))}
                     </div>
                 </div>
@@ -439,22 +389,19 @@ export default function Nosotros() {
 
             {/* SUCURSALES (si existen) */}
             {sucursales.length > 0 && (
-                <section className="ns-pad">
-                    <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-                        <div style={{ textAlign: 'center', marginBottom: 44 }}>
-                            <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: GOLD, marginBottom: 12, fontWeight: 500 }}>// DÓNDE ESTAMOS</p>
-                            <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2rem, 4vw, 2.8rem)', letterSpacing: '.03em' }}>
-                                <span className="grad-text-white">Visítanos en </span>
-                                <span className="grad-text-rainbow">Nuestra Matriz.</span>
-                            </h2>
+                <section className="w-seccion w-claro" aria-labelledby="titulo-sucursales">
+                    <div className="w-contenedor">
+                        <div className="w-encabezado w-encabezado--centro w-rev">
+                            <p className="w-eyebrow">Dónde estamos</p>
+                            <h2 id="titulo-sucursales" className="w-titulo">Visítanos en <span className="w-acento">nuestra matriz.</span></h2>
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))', gap: 16 }}>
+                        <div className="w-grid w-grid--auto">
                             {sucursales.map((s, i) => (
-                                <div key={s.id} className="ns-card reveal" style={{ transitionDelay: `${i * 70}ms` }}>
-                                    <h3 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.15rem', letterSpacing: '.03em', color: '#fff', marginBottom: 4 }}>{s.nombre}</h3>
-                                    {s.ciudad && <p className="mono" style={{ fontSize: '.72rem', color: GOLD, marginBottom: 10 }}>{s.ciudad.toUpperCase()}</p>}
-                                    {s.direccion && <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.85rem', color: 'rgba(255,255,255,.55)', lineHeight: 1.6 }}>{s.direccion}</p>}
-                                </div>
+                                <article key={s.id} className="w-tarjeta w-rev" style={{ '--w-retraso': `${i * 70}ms` }}>
+                                    <h3 className="w-h3">{s.nombre}</h3>
+                                    {s.ciudad && <p className="ns-ciudad">{s.ciudad}</p>}
+                                    {s.direccion && <p className="w-texto">{s.direccion}</p>}
+                                </article>
                             ))}
                         </div>
                     </div>
@@ -462,19 +409,16 @@ export default function Nosotros() {
             )}
 
             {/* CTA */}
-            <section className="ns-pad">
-                <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-                    <div className="reveal in-view ns-cta-box">
-                        <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2rem, 4.5vw, 3.2rem)', letterSpacing: '.03em', marginBottom: 18, lineHeight: 1.05 }}>
-                            <span className="grad-text-white">¿Listo para devolverle la vida a </span>
-                            <span className="grad-text-rainbow">tu vehículo?</span>
-                        </h2>
-                        <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '1rem', color: 'rgba(255,255,255,.58)', maxWidth: 560, margin: '0 auto 36px', lineHeight: 1.7 }}>
+            <section className="w-seccion w-niebla">
+                <div className="w-contenedor">
+                    <div className="w-cta w-rev">
+                        <h2 className="w-titulo">¿Listo para devolverle la vida a <span className="w-acento">tu vehículo?</span></h2>
+                        <p className="w-lead">
                             Revisa nuestro catálogo de servicios o crea tu cuenta para llevar el control de tu historial automotriz.
                         </p>
-                        <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
-                            <Link to="/servicios" className="ps-btn-primary"><span>Agenda tu cita</span></Link>
-                            <Link to="/auth?modo=registro" className="ps-btn-outline">Crear cuenta gratis</Link>
+                        <div className="w-acciones">
+                            <Link to="/servicios" className="w-btn w-btn--primario">Agenda tu cita <IconFlecha /></Link>
+                            <Link to="/auth?modo=registro" className="w-btn w-btn--claro">Crear cuenta gratis</Link>
                         </div>
                     </div>
                 </div>
@@ -497,7 +441,7 @@ function Galeria({ items }) {
 
     return (
         <>
-            <div className="ns-gallery reveal">
+            <div className="ns-gallery w-rev">
                 {items.map((g, i) => (
                     <div
                         key={i}
@@ -505,10 +449,11 @@ function Galeria({ items }) {
                         onClick={() => setActivo(i)}
                         role="button"
                         tabIndex={0}
-                        onKeyDown={e => { if (e.key === 'Enter') setActivo(i); }}
+                        aria-label={`Ampliar foto: ${g.cap}`}
+                        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActivo(i); } }}
                     >
-                        <img src={g.url} alt={g.cap} loading="lazy" onError={e => { e.currentTarget.style.opacity = 0; }} />
-                        <span className="ns-gallery-expand"><IconExpand /></span>
+                        <img src={g.url} alt={g.cap} loading="lazy" width="460" height="400" onError={e => { e.currentTarget.style.opacity = 0; }} />
+                        <span className="ns-gallery-expand" aria-hidden="true"><IconExpand /></span>
                         <div className="ns-gallery-overlay">
                             <p className="ns-gallery-caption">{g.cap}</p>
                         </div>
@@ -516,8 +461,8 @@ function Galeria({ items }) {
                 ))}
             </div>
             {activo !== null && (
-                <div className="ns-lightbox" onClick={() => setActivo(null)}>
-                    <button className="ns-lightbox-close" onClick={() => setActivo(null)} aria-label="Cerrar">
+                <div className="ns-lightbox" role="dialog" aria-modal="true" aria-label={items[activo].cap} onClick={() => setActivo(null)}>
+                    <button type="button" className="ns-lightbox-close" onClick={() => setActivo(null)} aria-label="Cerrar" autoFocus>
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                     </button>
                     <img src={items[activo].url} alt={items[activo].cap} onClick={e => e.stopPropagation()} />
@@ -571,4 +516,4 @@ function AnimatedStat({ valor, sufijo = '' }) {
     }, [valor]);
 
     return <p ref={ref} className="ns-stat-num">{n}{sufijo}</p>;
-}
+}function IconFlecha() { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>; }

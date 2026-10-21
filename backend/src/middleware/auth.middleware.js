@@ -115,6 +115,7 @@ const verificarToken = async (req, res, next) => {
         };
 
         // Todo lo que siga en esta peticion queda aislado en esa empresa.
+        // usuarioId: la BD lo usa como creador por defecto (usuario_actual()).
         return conEmpresa(req.usuario.empresa_id, () => {
             // Trazabilidad del soporte: cada accion que modifica algo queda auditada.
             if (soporte && req.method !== 'GET' && req.method !== 'HEAD') {

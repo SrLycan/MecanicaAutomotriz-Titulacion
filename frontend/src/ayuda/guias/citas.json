@@ -1,0 +1,68 @@
+{
+  "id": "citas",
+  "grupo": "TALLER",
+  "titulo": "Citas y solicitudes",
+  "version": "1.0",
+  "actualizada": "2026-10-14",
+  "rutas": [
+    {
+      "path": "/dashboard/citas"
+    }
+  ],
+  "descripcion": "Agenda de citas que los clientes piden desde el sitio web o su portal. Aquí se revisan y se aceptan o cancelan las pendientes.",
+  "funciones": [
+    "Ver indicadores de citas pendientes, confirmadas y completadas.",
+    "Filtrar por estado y ordenar por fecha de la cita o de registro.",
+    "Aceptar o cancelar las citas pendientes."
+  ],
+  "pasos": [
+    {
+      "titulo": "Filtre y ordene la agenda",
+      "texto": [
+        "Elija el estado (Pendientes, Confirmadas, Completadas, Canceladas o Todas) y el orden. Las tarjetas muestran cliente, vehículo, servicio, sucursal y horario."
+      ],
+      "imagen": {
+        "archivo": "v27/citas/01-agenda.png",
+        "alt": "Citas y solicitudes con los indicadores y los selectores de estado y orden",
+        "tipo": "captura",
+        "captura": {
+          "url": "/dashboard/citas",
+          "esperar": {
+            "etiqueta": "Filtrar por estado"
+          }
+        }
+      },
+      "marcas": [
+        {
+          "texto": "Filtro por estado.",
+          "objetivo": {
+            "etiqueta": "Filtrar por estado"
+          }
+        },
+        {
+          "texto": "Orden de la lista.",
+          "objetivo": {
+            "etiqueta": "Ordenar citas"
+          }
+        }
+      ]
+    },
+    {
+      "titulo": "Atienda las citas pendientes",
+      "texto": [
+        "En cada cita pendiente pulse «Aceptar cita» para confirmarla (el cliente la ve confirmada en su portal) o «Cancelar» si no se puede atender."
+      ]
+    }
+  ],
+  "resultado": "La cita pasa a Confirmada o Cancelada, el cliente lo ve en su portal y los indicadores se actualizan.",
+  "advertencias": [
+    "Las citas las crean los clientes desde el sitio o su portal; desde el panel se aceptan o cancelan.",
+    "Los botones solo aparecen en citas pendientes y con el permiso «Citas: editar»."
+  ],
+  "problemas": [
+    {
+      "problema": "No aparece una cita.",
+      "solucion": "Revise el filtro de estado y elija «Todas»; cambie el orden si busca una cita antigua."
+    }
+  ]
+}

@@ -1760,43 +1760,45 @@ INSERT INTO permisos_catalogo (modulo, accion, modulo_nombre, accion_nombre, gru
     ('caja', 'ver', 'Caja diaria', 'Ver', 'Finanzas', 49, FALSE),
     ('caja', 'crear', 'Caja diaria', 'Registrar movimientos de caja', 'Finanzas', 50, FALSE),
     ('caja', 'aprobar', 'Caja diaria', 'Abrir y cerrar caja', 'Finanzas', 51, FALSE),
-    ('finanzas', 'ver', 'Finanzas, cuentas y nómina', 'Ver', 'Finanzas', 52, FALSE),
-    ('finanzas', 'crear', 'Finanzas, cuentas y nómina', 'Crear', 'Finanzas', 53, FALSE),
-    ('finanzas', 'editar', 'Finanzas, cuentas y nómina', 'Editar', 'Finanzas', 54, FALSE),
-    ('finanzas', 'eliminar', 'Finanzas, cuentas y nómina', 'Anular movimientos / pagos', 'Finanzas', 55, FALSE),
-    ('proveedores', 'ver', 'Proveedores, compras y gastos', 'Ver', 'Proveedores', 56, FALSE),
-    ('proveedores', 'crear', 'Proveedores, compras y gastos', 'Crear', 'Proveedores', 57, FALSE),
-    ('proveedores', 'editar', 'Proveedores, compras y gastos', 'Editar', 'Proveedores', 58, FALSE),
-    ('proveedores', 'eliminar', 'Proveedores, compras y gastos', 'Eliminar', 'Proveedores', 59, FALSE),
-    ('facturacion', 'ver', 'Facturación electrónica (SRI)', 'Ver comprobantes', 'Facturación', 60, FALSE),
-    ('facturacion', 'crear', 'Facturación electrónica (SRI)', 'Preparar borradores', 'Facturación', 61, FALSE),
-    ('facturacion', 'aprobar', 'Facturación electrónica (SRI)', 'Emitir y enviar al SRI', 'Facturación', 62, FALSE),
-    ('facturacion', 'exportar', 'Facturación electrónica (SRI)', 'Descargar XML / RIDE y reenviar correo', 'Facturación', 63, FALSE),
-    ('facturacion', 'anular', 'Facturación electrónica (SRI)', 'Notas de crédito y registro de anulaciones', 'Facturación', 64, FALSE),
-    ('facturacion', 'eliminar', 'Facturación electrónica (SRI)', 'Descartar borradores', 'Facturación', 65, FALSE),
-    ('facturacion_config', 'ver', 'Configuración tributaria y firma electrónica', 'Ver', 'Facturación', 66, FALSE),
-    ('facturacion_config', 'editar', 'Configuración tributaria y firma electrónica', 'Editar datos tributarios, puntos de emisión y certificado', 'Facturación', 67, FALSE),
-    ('facturacion_config', 'aprobar', 'Configuración tributaria y firma electrónica', 'Activar el ambiente de producción', 'Facturación', 68, FALSE),
-    ('estadisticas', 'ver', 'Reportes y estadísticas', 'Ver', 'Reportes', 69, FALSE),
-    ('servicios', 'ver', 'Servicios del taller', 'Ver', 'Ajustes', 70, FALSE),
-    ('servicios', 'crear', 'Servicios del taller', 'Crear', 'Ajustes', 71, FALSE),
-    ('servicios', 'editar', 'Servicios del taller', 'Editar', 'Ajustes', 72, FALSE),
-    ('servicios', 'eliminar', 'Servicios del taller', 'Eliminar', 'Ajustes', 73, FALSE),
-    ('sucursales', 'ver', 'Sucursales', 'Ver', 'Ajustes', 74, FALSE),
-    ('sucursales', 'crear', 'Sucursales', 'Crear', 'Ajustes', 75, FALSE),
-    ('sucursales', 'editar', 'Sucursales', 'Editar', 'Ajustes', 76, FALSE),
-    ('sucursales', 'eliminar', 'Sucursales', 'Eliminar', 'Ajustes', 77, FALSE),
-    ('bitacora', 'ver', 'Bitácora de operaciones', 'Ver', 'Ajustes', 78, FALSE),
-    ('usuarios', 'ver', 'Usuarios y permisos de la empresa', 'Ver', 'Empresa', 79, FALSE),
-    ('usuarios', 'crear', 'Usuarios y permisos de la empresa', 'Crear', 'Empresa', 80, FALSE),
-    ('usuarios', 'editar', 'Usuarios y permisos de la empresa', 'Editar, activar/desactivar, permisos y restablecer acceso', 'Empresa', 81, FALSE),
-    ('usuarios', 'eliminar', 'Usuarios y permisos de la empresa', 'Eliminar', 'Empresa', 82, FALSE),
-    ('auditoria', 'ver', 'Auditoría de la empresa', 'Ver', 'Empresa', 83, FALSE),
-    ('empresa', 'ver', 'Configuración de la empresa', 'Ver', 'Empresa', 84, FALSE),
-    ('empresa', 'editar', 'Configuración de la empresa', 'Editar', 'Empresa', 85, FALSE),
-    ('legal', 'ver', 'Documentos legales y aceptaciones', 'Ver documentos, aceptaciones y constancias', 'Empresa', 86, FALSE),
-    ('legal', 'editar', 'Documentos legales y aceptaciones', 'Redactar borradores', 'Empresa', 87, FALSE),
-    ('legal', 'aprobar', 'Documentos legales y aceptaciones', 'Publicar versiones', 'Empresa', 88, FALSE)
+    ('caja', 'eliminar', 'Caja diaria', 'Anular movimientos manuales de caja', 'Finanzas', 52, FALSE),
+    ('caja', 'reabrir', 'Caja diaria', 'Reabrir una caja cerrada', 'Finanzas', 53, FALSE),
+    ('finanzas', 'ver', 'Finanzas, cuentas y nómina', 'Ver', 'Finanzas', 54, FALSE),
+    ('finanzas', 'crear', 'Finanzas, cuentas y nómina', 'Crear', 'Finanzas', 55, FALSE),
+    ('finanzas', 'editar', 'Finanzas, cuentas y nómina', 'Editar', 'Finanzas', 56, FALSE),
+    ('finanzas', 'eliminar', 'Finanzas, cuentas y nómina', 'Anular movimientos / pagos', 'Finanzas', 57, FALSE),
+    ('proveedores', 'ver', 'Proveedores, compras y gastos', 'Ver', 'Proveedores', 58, FALSE),
+    ('proveedores', 'crear', 'Proveedores, compras y gastos', 'Crear', 'Proveedores', 59, FALSE),
+    ('proveedores', 'editar', 'Proveedores, compras y gastos', 'Editar', 'Proveedores', 60, FALSE),
+    ('proveedores', 'eliminar', 'Proveedores, compras y gastos', 'Eliminar', 'Proveedores', 61, FALSE),
+    ('facturacion', 'ver', 'Facturación electrónica (SRI)', 'Ver comprobantes', 'Facturación', 62, FALSE),
+    ('facturacion', 'crear', 'Facturación electrónica (SRI)', 'Preparar borradores', 'Facturación', 63, FALSE),
+    ('facturacion', 'aprobar', 'Facturación electrónica (SRI)', 'Emitir y enviar al SRI', 'Facturación', 64, FALSE),
+    ('facturacion', 'exportar', 'Facturación electrónica (SRI)', 'Descargar XML / RIDE y reenviar correo', 'Facturación', 65, FALSE),
+    ('facturacion', 'anular', 'Facturación electrónica (SRI)', 'Notas de crédito y registro de anulaciones', 'Facturación', 66, FALSE),
+    ('facturacion', 'eliminar', 'Facturación electrónica (SRI)', 'Descartar borradores', 'Facturación', 67, FALSE),
+    ('facturacion_config', 'ver', 'Configuración tributaria y firma electrónica', 'Ver', 'Facturación', 68, FALSE),
+    ('facturacion_config', 'editar', 'Configuración tributaria y firma electrónica', 'Editar datos tributarios, puntos de emisión y certificado', 'Facturación', 69, FALSE),
+    ('facturacion_config', 'aprobar', 'Configuración tributaria y firma electrónica', 'Activar el ambiente de producción', 'Facturación', 70, FALSE),
+    ('estadisticas', 'ver', 'Reportes y estadísticas', 'Ver', 'Reportes', 71, FALSE),
+    ('servicios', 'ver', 'Servicios del taller', 'Ver', 'Ajustes', 72, FALSE),
+    ('servicios', 'crear', 'Servicios del taller', 'Crear', 'Ajustes', 73, FALSE),
+    ('servicios', 'editar', 'Servicios del taller', 'Editar', 'Ajustes', 74, FALSE),
+    ('servicios', 'eliminar', 'Servicios del taller', 'Eliminar', 'Ajustes', 75, FALSE),
+    ('sucursales', 'ver', 'Sucursales', 'Ver', 'Ajustes', 76, FALSE),
+    ('sucursales', 'crear', 'Sucursales', 'Crear', 'Ajustes', 77, FALSE),
+    ('sucursales', 'editar', 'Sucursales', 'Editar', 'Ajustes', 78, FALSE),
+    ('sucursales', 'eliminar', 'Sucursales', 'Eliminar', 'Ajustes', 79, FALSE),
+    ('bitacora', 'ver', 'Bitácora de operaciones', 'Ver', 'Ajustes', 80, FALSE),
+    ('usuarios', 'ver', 'Usuarios y permisos de la empresa', 'Ver', 'Empresa', 81, FALSE),
+    ('usuarios', 'crear', 'Usuarios y permisos de la empresa', 'Crear', 'Empresa', 82, FALSE),
+    ('usuarios', 'editar', 'Usuarios y permisos de la empresa', 'Editar, activar/desactivar, permisos y restablecer acceso', 'Empresa', 83, FALSE),
+    ('usuarios', 'eliminar', 'Usuarios y permisos de la empresa', 'Eliminar', 'Empresa', 84, FALSE),
+    ('auditoria', 'ver', 'Auditoría de la empresa', 'Ver', 'Empresa', 85, FALSE),
+    ('empresa', 'ver', 'Configuración de la empresa', 'Ver', 'Empresa', 86, FALSE),
+    ('empresa', 'editar', 'Configuración de la empresa', 'Editar', 'Empresa', 87, FALSE),
+    ('legal', 'ver', 'Documentos legales y aceptaciones', 'Ver documentos, aceptaciones y constancias', 'Empresa', 88, FALSE),
+    ('legal', 'editar', 'Documentos legales y aceptaciones', 'Redactar borradores', 'Empresa', 89, FALSE),
+    ('legal', 'aprobar', 'Documentos legales y aceptaciones', 'Publicar versiones', 'Empresa', 90, FALSE)
 ON CONFLICT (modulo, accion) DO UPDATE SET
     modulo_nombre = EXCLUDED.modulo_nombre, accion_nombre = EXCLUDED.accion_nombre,
     grupo = EXCLUDED.grupo, orden = EXCLUDED.orden, solo_superadmin = EXCLUDED.solo_superadmin;
@@ -1871,6 +1873,8 @@ JOIN (VALUES
     ('administrador', 'caja', 'ver'),
     ('administrador', 'caja', 'crear'),
     ('administrador', 'caja', 'aprobar'),
+    ('administrador', 'caja', 'eliminar'),
+    ('administrador', 'caja', 'reabrir'),
     ('administrador', 'finanzas', 'ver'),
     ('administrador', 'finanzas', 'crear'),
     ('administrador', 'finanzas', 'editar'),
@@ -2140,7 +2144,7 @@ COMMENT ON TABLE errores_sistema IS 'Errores 500 del API (ruta y mensaje tecnico
 -- ── 22.2 SS SWAP como primera empresa ──
 -- Los datos de contacto salen de la sucursal principal que YA existe.
 INSERT INTO empresas (slug, nombre, nombre_comercial, direccion, telefono, email, logo_archivo, estado, permite_soporte)
-SELECT 'ss-swap', 'SS SWAP', 'SS Swap - SSarango Sosa Intercambio Inteligente',
+SELECT 'ss-swap', 'SS SWAP', 'SS Swap - Sarango Sosa Intercambio Inteligente',
        s.direccion, s.telefono, s.email, 'asset:logo.png', 'activa', TRUE
 FROM (SELECT 1) x
 LEFT JOIN LATERAL (SELECT direccion, telefono, email FROM sucursales ORDER BY es_principal DESC, id LIMIT 1) s ON TRUE
@@ -2222,43 +2226,45 @@ INSERT INTO permisos_catalogo (modulo, accion, modulo_nombre, accion_nombre, gru
     ('caja', 'ver', 'Caja diaria', 'Ver', 'Finanzas', 49, FALSE),
     ('caja', 'crear', 'Caja diaria', 'Registrar movimientos de caja', 'Finanzas', 50, FALSE),
     ('caja', 'aprobar', 'Caja diaria', 'Abrir y cerrar caja', 'Finanzas', 51, FALSE),
-    ('finanzas', 'ver', 'Finanzas, cuentas y nómina', 'Ver', 'Finanzas', 52, FALSE),
-    ('finanzas', 'crear', 'Finanzas, cuentas y nómina', 'Crear', 'Finanzas', 53, FALSE),
-    ('finanzas', 'editar', 'Finanzas, cuentas y nómina', 'Editar', 'Finanzas', 54, FALSE),
-    ('finanzas', 'eliminar', 'Finanzas, cuentas y nómina', 'Anular movimientos / pagos', 'Finanzas', 55, FALSE),
-    ('proveedores', 'ver', 'Proveedores, compras y gastos', 'Ver', 'Proveedores', 56, FALSE),
-    ('proveedores', 'crear', 'Proveedores, compras y gastos', 'Crear', 'Proveedores', 57, FALSE),
-    ('proveedores', 'editar', 'Proveedores, compras y gastos', 'Editar', 'Proveedores', 58, FALSE),
-    ('proveedores', 'eliminar', 'Proveedores, compras y gastos', 'Eliminar', 'Proveedores', 59, FALSE),
-    ('facturacion', 'ver', 'Facturación electrónica (SRI)', 'Ver comprobantes', 'Facturación', 60, FALSE),
-    ('facturacion', 'crear', 'Facturación electrónica (SRI)', 'Preparar borradores', 'Facturación', 61, FALSE),
-    ('facturacion', 'aprobar', 'Facturación electrónica (SRI)', 'Emitir y enviar al SRI', 'Facturación', 62, FALSE),
-    ('facturacion', 'exportar', 'Facturación electrónica (SRI)', 'Descargar XML / RIDE y reenviar correo', 'Facturación', 63, FALSE),
-    ('facturacion', 'anular', 'Facturación electrónica (SRI)', 'Notas de crédito y registro de anulaciones', 'Facturación', 64, FALSE),
-    ('facturacion', 'eliminar', 'Facturación electrónica (SRI)', 'Descartar borradores', 'Facturación', 65, FALSE),
-    ('facturacion_config', 'ver', 'Configuración tributaria y firma electrónica', 'Ver', 'Facturación', 66, FALSE),
-    ('facturacion_config', 'editar', 'Configuración tributaria y firma electrónica', 'Editar datos tributarios, puntos de emisión y certificado', 'Facturación', 67, FALSE),
-    ('facturacion_config', 'aprobar', 'Configuración tributaria y firma electrónica', 'Activar el ambiente de producción', 'Facturación', 68, FALSE),
-    ('estadisticas', 'ver', 'Reportes y estadísticas', 'Ver', 'Reportes', 69, FALSE),
-    ('servicios', 'ver', 'Servicios del taller', 'Ver', 'Ajustes', 70, FALSE),
-    ('servicios', 'crear', 'Servicios del taller', 'Crear', 'Ajustes', 71, FALSE),
-    ('servicios', 'editar', 'Servicios del taller', 'Editar', 'Ajustes', 72, FALSE),
-    ('servicios', 'eliminar', 'Servicios del taller', 'Eliminar', 'Ajustes', 73, FALSE),
-    ('sucursales', 'ver', 'Sucursales', 'Ver', 'Ajustes', 74, FALSE),
-    ('sucursales', 'crear', 'Sucursales', 'Crear', 'Ajustes', 75, FALSE),
-    ('sucursales', 'editar', 'Sucursales', 'Editar', 'Ajustes', 76, FALSE),
-    ('sucursales', 'eliminar', 'Sucursales', 'Eliminar', 'Ajustes', 77, FALSE),
-    ('bitacora', 'ver', 'Bitácora de operaciones', 'Ver', 'Ajustes', 78, FALSE),
-    ('usuarios', 'ver', 'Usuarios y permisos de la empresa', 'Ver', 'Empresa', 79, FALSE),
-    ('usuarios', 'crear', 'Usuarios y permisos de la empresa', 'Crear', 'Empresa', 80, FALSE),
-    ('usuarios', 'editar', 'Usuarios y permisos de la empresa', 'Editar, activar/desactivar, permisos y restablecer acceso', 'Empresa', 81, FALSE),
-    ('usuarios', 'eliminar', 'Usuarios y permisos de la empresa', 'Eliminar', 'Empresa', 82, FALSE),
-    ('auditoria', 'ver', 'Auditoría de la empresa', 'Ver', 'Empresa', 83, FALSE),
-    ('empresa', 'ver', 'Configuración de la empresa', 'Ver', 'Empresa', 84, FALSE),
-    ('empresa', 'editar', 'Configuración de la empresa', 'Editar', 'Empresa', 85, FALSE),
-    ('legal', 'ver', 'Documentos legales y aceptaciones', 'Ver documentos, aceptaciones y constancias', 'Empresa', 86, FALSE),
-    ('legal', 'editar', 'Documentos legales y aceptaciones', 'Redactar borradores', 'Empresa', 87, FALSE),
-    ('legal', 'aprobar', 'Documentos legales y aceptaciones', 'Publicar versiones', 'Empresa', 88, FALSE)
+    ('caja', 'eliminar', 'Caja diaria', 'Anular movimientos manuales de caja', 'Finanzas', 52, FALSE),
+    ('caja', 'reabrir', 'Caja diaria', 'Reabrir una caja cerrada', 'Finanzas', 53, FALSE),
+    ('finanzas', 'ver', 'Finanzas, cuentas y nómina', 'Ver', 'Finanzas', 54, FALSE),
+    ('finanzas', 'crear', 'Finanzas, cuentas y nómina', 'Crear', 'Finanzas', 55, FALSE),
+    ('finanzas', 'editar', 'Finanzas, cuentas y nómina', 'Editar', 'Finanzas', 56, FALSE),
+    ('finanzas', 'eliminar', 'Finanzas, cuentas y nómina', 'Anular movimientos / pagos', 'Finanzas', 57, FALSE),
+    ('proveedores', 'ver', 'Proveedores, compras y gastos', 'Ver', 'Proveedores', 58, FALSE),
+    ('proveedores', 'crear', 'Proveedores, compras y gastos', 'Crear', 'Proveedores', 59, FALSE),
+    ('proveedores', 'editar', 'Proveedores, compras y gastos', 'Editar', 'Proveedores', 60, FALSE),
+    ('proveedores', 'eliminar', 'Proveedores, compras y gastos', 'Eliminar', 'Proveedores', 61, FALSE),
+    ('facturacion', 'ver', 'Facturación electrónica (SRI)', 'Ver comprobantes', 'Facturación', 62, FALSE),
+    ('facturacion', 'crear', 'Facturación electrónica (SRI)', 'Preparar borradores', 'Facturación', 63, FALSE),
+    ('facturacion', 'aprobar', 'Facturación electrónica (SRI)', 'Emitir y enviar al SRI', 'Facturación', 64, FALSE),
+    ('facturacion', 'exportar', 'Facturación electrónica (SRI)', 'Descargar XML / RIDE y reenviar correo', 'Facturación', 65, FALSE),
+    ('facturacion', 'anular', 'Facturación electrónica (SRI)', 'Notas de crédito y registro de anulaciones', 'Facturación', 66, FALSE),
+    ('facturacion', 'eliminar', 'Facturación electrónica (SRI)', 'Descartar borradores', 'Facturación', 67, FALSE),
+    ('facturacion_config', 'ver', 'Configuración tributaria y firma electrónica', 'Ver', 'Facturación', 68, FALSE),
+    ('facturacion_config', 'editar', 'Configuración tributaria y firma electrónica', 'Editar datos tributarios, puntos de emisión y certificado', 'Facturación', 69, FALSE),
+    ('facturacion_config', 'aprobar', 'Configuración tributaria y firma electrónica', 'Activar el ambiente de producción', 'Facturación', 70, FALSE),
+    ('estadisticas', 'ver', 'Reportes y estadísticas', 'Ver', 'Reportes', 71, FALSE),
+    ('servicios', 'ver', 'Servicios del taller', 'Ver', 'Ajustes', 72, FALSE),
+    ('servicios', 'crear', 'Servicios del taller', 'Crear', 'Ajustes', 73, FALSE),
+    ('servicios', 'editar', 'Servicios del taller', 'Editar', 'Ajustes', 74, FALSE),
+    ('servicios', 'eliminar', 'Servicios del taller', 'Eliminar', 'Ajustes', 75, FALSE),
+    ('sucursales', 'ver', 'Sucursales', 'Ver', 'Ajustes', 76, FALSE),
+    ('sucursales', 'crear', 'Sucursales', 'Crear', 'Ajustes', 77, FALSE),
+    ('sucursales', 'editar', 'Sucursales', 'Editar', 'Ajustes', 78, FALSE),
+    ('sucursales', 'eliminar', 'Sucursales', 'Eliminar', 'Ajustes', 79, FALSE),
+    ('bitacora', 'ver', 'Bitácora de operaciones', 'Ver', 'Ajustes', 80, FALSE),
+    ('usuarios', 'ver', 'Usuarios y permisos de la empresa', 'Ver', 'Empresa', 81, FALSE),
+    ('usuarios', 'crear', 'Usuarios y permisos de la empresa', 'Crear', 'Empresa', 82, FALSE),
+    ('usuarios', 'editar', 'Usuarios y permisos de la empresa', 'Editar, activar/desactivar, permisos y restablecer acceso', 'Empresa', 83, FALSE),
+    ('usuarios', 'eliminar', 'Usuarios y permisos de la empresa', 'Eliminar', 'Empresa', 84, FALSE),
+    ('auditoria', 'ver', 'Auditoría de la empresa', 'Ver', 'Empresa', 85, FALSE),
+    ('empresa', 'ver', 'Configuración de la empresa', 'Ver', 'Empresa', 86, FALSE),
+    ('empresa', 'editar', 'Configuración de la empresa', 'Editar', 'Empresa', 87, FALSE),
+    ('legal', 'ver', 'Documentos legales y aceptaciones', 'Ver documentos, aceptaciones y constancias', 'Empresa', 88, FALSE),
+    ('legal', 'editar', 'Documentos legales y aceptaciones', 'Redactar borradores', 'Empresa', 89, FALSE),
+    ('legal', 'aprobar', 'Documentos legales y aceptaciones', 'Publicar versiones', 'Empresa', 90, FALSE)
 ON CONFLICT (modulo, accion) DO UPDATE SET
     modulo_nombre = EXCLUDED.modulo_nombre, accion_nombre = EXCLUDED.accion_nombre,
     grupo = EXCLUDED.grupo, orden = EXCLUDED.orden, solo_superadmin = EXCLUDED.solo_superadmin;
@@ -3198,43 +3204,45 @@ INSERT INTO permisos_catalogo (modulo, accion, modulo_nombre, accion_nombre, gru
     ('caja', 'ver', 'Caja diaria', 'Ver', 'Finanzas', 49, FALSE),
     ('caja', 'crear', 'Caja diaria', 'Registrar movimientos de caja', 'Finanzas', 50, FALSE),
     ('caja', 'aprobar', 'Caja diaria', 'Abrir y cerrar caja', 'Finanzas', 51, FALSE),
-    ('finanzas', 'ver', 'Finanzas, cuentas y nómina', 'Ver', 'Finanzas', 52, FALSE),
-    ('finanzas', 'crear', 'Finanzas, cuentas y nómina', 'Crear', 'Finanzas', 53, FALSE),
-    ('finanzas', 'editar', 'Finanzas, cuentas y nómina', 'Editar', 'Finanzas', 54, FALSE),
-    ('finanzas', 'eliminar', 'Finanzas, cuentas y nómina', 'Anular movimientos / pagos', 'Finanzas', 55, FALSE),
-    ('proveedores', 'ver', 'Proveedores, compras y gastos', 'Ver', 'Proveedores', 56, FALSE),
-    ('proveedores', 'crear', 'Proveedores, compras y gastos', 'Crear', 'Proveedores', 57, FALSE),
-    ('proveedores', 'editar', 'Proveedores, compras y gastos', 'Editar', 'Proveedores', 58, FALSE),
-    ('proveedores', 'eliminar', 'Proveedores, compras y gastos', 'Eliminar', 'Proveedores', 59, FALSE),
-    ('facturacion', 'ver', 'Facturación electrónica (SRI)', 'Ver comprobantes', 'Facturación', 60, FALSE),
-    ('facturacion', 'crear', 'Facturación electrónica (SRI)', 'Preparar borradores', 'Facturación', 61, FALSE),
-    ('facturacion', 'aprobar', 'Facturación electrónica (SRI)', 'Emitir y enviar al SRI', 'Facturación', 62, FALSE),
-    ('facturacion', 'exportar', 'Facturación electrónica (SRI)', 'Descargar XML / RIDE y reenviar correo', 'Facturación', 63, FALSE),
-    ('facturacion', 'anular', 'Facturación electrónica (SRI)', 'Notas de crédito y registro de anulaciones', 'Facturación', 64, FALSE),
-    ('facturacion', 'eliminar', 'Facturación electrónica (SRI)', 'Descartar borradores', 'Facturación', 65, FALSE),
-    ('facturacion_config', 'ver', 'Configuración tributaria y firma electrónica', 'Ver', 'Facturación', 66, FALSE),
-    ('facturacion_config', 'editar', 'Configuración tributaria y firma electrónica', 'Editar datos tributarios, puntos de emisión y certificado', 'Facturación', 67, FALSE),
-    ('facturacion_config', 'aprobar', 'Configuración tributaria y firma electrónica', 'Activar el ambiente de producción', 'Facturación', 68, FALSE),
-    ('estadisticas', 'ver', 'Reportes y estadísticas', 'Ver', 'Reportes', 69, FALSE),
-    ('servicios', 'ver', 'Servicios del taller', 'Ver', 'Ajustes', 70, FALSE),
-    ('servicios', 'crear', 'Servicios del taller', 'Crear', 'Ajustes', 71, FALSE),
-    ('servicios', 'editar', 'Servicios del taller', 'Editar', 'Ajustes', 72, FALSE),
-    ('servicios', 'eliminar', 'Servicios del taller', 'Eliminar', 'Ajustes', 73, FALSE),
-    ('sucursales', 'ver', 'Sucursales', 'Ver', 'Ajustes', 74, FALSE),
-    ('sucursales', 'crear', 'Sucursales', 'Crear', 'Ajustes', 75, FALSE),
-    ('sucursales', 'editar', 'Sucursales', 'Editar', 'Ajustes', 76, FALSE),
-    ('sucursales', 'eliminar', 'Sucursales', 'Eliminar', 'Ajustes', 77, FALSE),
-    ('bitacora', 'ver', 'Bitácora de operaciones', 'Ver', 'Ajustes', 78, FALSE),
-    ('usuarios', 'ver', 'Usuarios y permisos de la empresa', 'Ver', 'Empresa', 79, FALSE),
-    ('usuarios', 'crear', 'Usuarios y permisos de la empresa', 'Crear', 'Empresa', 80, FALSE),
-    ('usuarios', 'editar', 'Usuarios y permisos de la empresa', 'Editar, activar/desactivar, permisos y restablecer acceso', 'Empresa', 81, FALSE),
-    ('usuarios', 'eliminar', 'Usuarios y permisos de la empresa', 'Eliminar', 'Empresa', 82, FALSE),
-    ('auditoria', 'ver', 'Auditoría de la empresa', 'Ver', 'Empresa', 83, FALSE),
-    ('empresa', 'ver', 'Configuración de la empresa', 'Ver', 'Empresa', 84, FALSE),
-    ('empresa', 'editar', 'Configuración de la empresa', 'Editar', 'Empresa', 85, FALSE),
-    ('legal', 'ver', 'Documentos legales y aceptaciones', 'Ver documentos, aceptaciones y constancias', 'Empresa', 86, FALSE),
-    ('legal', 'editar', 'Documentos legales y aceptaciones', 'Redactar borradores', 'Empresa', 87, FALSE),
-    ('legal', 'aprobar', 'Documentos legales y aceptaciones', 'Publicar versiones', 'Empresa', 88, FALSE)
+    ('caja', 'eliminar', 'Caja diaria', 'Anular movimientos manuales de caja', 'Finanzas', 52, FALSE),
+    ('caja', 'reabrir', 'Caja diaria', 'Reabrir una caja cerrada', 'Finanzas', 53, FALSE),
+    ('finanzas', 'ver', 'Finanzas, cuentas y nómina', 'Ver', 'Finanzas', 54, FALSE),
+    ('finanzas', 'crear', 'Finanzas, cuentas y nómina', 'Crear', 'Finanzas', 55, FALSE),
+    ('finanzas', 'editar', 'Finanzas, cuentas y nómina', 'Editar', 'Finanzas', 56, FALSE),
+    ('finanzas', 'eliminar', 'Finanzas, cuentas y nómina', 'Anular movimientos / pagos', 'Finanzas', 57, FALSE),
+    ('proveedores', 'ver', 'Proveedores, compras y gastos', 'Ver', 'Proveedores', 58, FALSE),
+    ('proveedores', 'crear', 'Proveedores, compras y gastos', 'Crear', 'Proveedores', 59, FALSE),
+    ('proveedores', 'editar', 'Proveedores, compras y gastos', 'Editar', 'Proveedores', 60, FALSE),
+    ('proveedores', 'eliminar', 'Proveedores, compras y gastos', 'Eliminar', 'Proveedores', 61, FALSE),
+    ('facturacion', 'ver', 'Facturación electrónica (SRI)', 'Ver comprobantes', 'Facturación', 62, FALSE),
+    ('facturacion', 'crear', 'Facturación electrónica (SRI)', 'Preparar borradores', 'Facturación', 63, FALSE),
+    ('facturacion', 'aprobar', 'Facturación electrónica (SRI)', 'Emitir y enviar al SRI', 'Facturación', 64, FALSE),
+    ('facturacion', 'exportar', 'Facturación electrónica (SRI)', 'Descargar XML / RIDE y reenviar correo', 'Facturación', 65, FALSE),
+    ('facturacion', 'anular', 'Facturación electrónica (SRI)', 'Notas de crédito y registro de anulaciones', 'Facturación', 66, FALSE),
+    ('facturacion', 'eliminar', 'Facturación electrónica (SRI)', 'Descartar borradores', 'Facturación', 67, FALSE),
+    ('facturacion_config', 'ver', 'Configuración tributaria y firma electrónica', 'Ver', 'Facturación', 68, FALSE),
+    ('facturacion_config', 'editar', 'Configuración tributaria y firma electrónica', 'Editar datos tributarios, puntos de emisión y certificado', 'Facturación', 69, FALSE),
+    ('facturacion_config', 'aprobar', 'Configuración tributaria y firma electrónica', 'Activar el ambiente de producción', 'Facturación', 70, FALSE),
+    ('estadisticas', 'ver', 'Reportes y estadísticas', 'Ver', 'Reportes', 71, FALSE),
+    ('servicios', 'ver', 'Servicios del taller', 'Ver', 'Ajustes', 72, FALSE),
+    ('servicios', 'crear', 'Servicios del taller', 'Crear', 'Ajustes', 73, FALSE),
+    ('servicios', 'editar', 'Servicios del taller', 'Editar', 'Ajustes', 74, FALSE),
+    ('servicios', 'eliminar', 'Servicios del taller', 'Eliminar', 'Ajustes', 75, FALSE),
+    ('sucursales', 'ver', 'Sucursales', 'Ver', 'Ajustes', 76, FALSE),
+    ('sucursales', 'crear', 'Sucursales', 'Crear', 'Ajustes', 77, FALSE),
+    ('sucursales', 'editar', 'Sucursales', 'Editar', 'Ajustes', 78, FALSE),
+    ('sucursales', 'eliminar', 'Sucursales', 'Eliminar', 'Ajustes', 79, FALSE),
+    ('bitacora', 'ver', 'Bitácora de operaciones', 'Ver', 'Ajustes', 80, FALSE),
+    ('usuarios', 'ver', 'Usuarios y permisos de la empresa', 'Ver', 'Empresa', 81, FALSE),
+    ('usuarios', 'crear', 'Usuarios y permisos de la empresa', 'Crear', 'Empresa', 82, FALSE),
+    ('usuarios', 'editar', 'Usuarios y permisos de la empresa', 'Editar, activar/desactivar, permisos y restablecer acceso', 'Empresa', 83, FALSE),
+    ('usuarios', 'eliminar', 'Usuarios y permisos de la empresa', 'Eliminar', 'Empresa', 84, FALSE),
+    ('auditoria', 'ver', 'Auditoría de la empresa', 'Ver', 'Empresa', 85, FALSE),
+    ('empresa', 'ver', 'Configuración de la empresa', 'Ver', 'Empresa', 86, FALSE),
+    ('empresa', 'editar', 'Configuración de la empresa', 'Editar', 'Empresa', 87, FALSE),
+    ('legal', 'ver', 'Documentos legales y aceptaciones', 'Ver documentos, aceptaciones y constancias', 'Empresa', 88, FALSE),
+    ('legal', 'editar', 'Documentos legales y aceptaciones', 'Redactar borradores', 'Empresa', 89, FALSE),
+    ('legal', 'aprobar', 'Documentos legales y aceptaciones', 'Publicar versiones', 'Empresa', 90, FALSE)
 ON CONFLICT (modulo, accion) DO UPDATE SET
     modulo_nombre = EXCLUDED.modulo_nombre, accion_nombre = EXCLUDED.accion_nombre,
     grupo = EXCLUDED.grupo, orden = EXCLUDED.orden, solo_superadmin = EXCLUDED.solo_superadmin;
@@ -3578,4 +3586,493 @@ BEGIN
            jsonb_build_object('tablas', ARRAY['facturas_compra', 'facturas_compra_detalles', 'repuestos_codigos_proveedor'],
                               'columnas', ARRAY['movimientos_inventario.factura_compra_id', 'movimientos_inventario.factura_compra_detalle_id'])
     WHERE NOT EXISTS (SELECT 1 FROM migraciones_registro WHERE version = '25-facturas-compra' AND resultado = 'exito');
+END $$;
+
+
+-- ============================================================
+-- Sprint 26: "Crear compra" con datos del comprobante (estilo de los
+-- sistemas contables): tipo y numero de documento, inventario de destino,
+-- tipo de registro, sustento tributario (tabla del SRI) y vencimiento
+-- elegido por el usuario.
+--
+-- Requiere el Sprint 25. Aditivo e idempotente: no borra datos.
+-- 26.1 compras_proveedor: tipo_documento, numero_documento, area,
+--      tipo_registro, sustento_tributario.
+-- 26.2 compras_proveedor_items.iva_porcentaje (subtotales 15% / 0%).
+-- 26.3 Datos de las compras ya registradas desde facturas (Sprint 25).
+-- 26.4 Sin duplicados: un mismo documento del mismo proveedor no se
+--      registra dos veces (indice unico parcial, por empresa).
+-- 26.5 Registro.
+-- ============================================================
+
+-- ── 26.1 Datos del comprobante en la compra ──
+ALTER TABLE compras_proveedor ADD COLUMN IF NOT EXISTS tipo_documento VARCHAR(20) NOT NULL DEFAULT 'orden';
+ALTER TABLE compras_proveedor ADD COLUMN IF NOT EXISTS numero_documento VARCHAR(20);
+ALTER TABLE compras_proveedor ADD COLUMN IF NOT EXISTS area VARCHAR(30);
+ALTER TABLE compras_proveedor ADD COLUMN IF NOT EXISTS tipo_registro VARCHAR(20) NOT NULL DEFAULT 'inventario';
+ALTER TABLE compras_proveedor ADD COLUMN IF NOT EXISTS sustento_tributario VARCHAR(2);
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_compras_tipo_documento') THEN
+        ALTER TABLE compras_proveedor ADD CONSTRAINT chk_compras_tipo_documento
+            CHECK (tipo_documento IN ('orden', 'factura', 'nota_venta', 'otro'));
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_compras_tipo_registro') THEN
+        ALTER TABLE compras_proveedor ADD CONSTRAINT chk_compras_tipo_registro
+            CHECK (tipo_registro IN ('inventario', 'gasto', 'activo_fijo'));
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_compras_sustento') THEN
+        ALTER TABLE compras_proveedor ADD CONSTRAINT chk_compras_sustento
+            CHECK (sustento_tributario IS NULL OR sustento_tributario ~ '^[0-9]{2}$');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_compras_numero_documento') THEN
+        ALTER TABLE compras_proveedor ADD CONSTRAINT chk_compras_numero_documento
+            CHECK (numero_documento IS NULL OR numero_documento ~ '^[0-9]{3}-[0-9]{3}-[0-9]{9}$');
+    END IF;
+END $$;
+COMMENT ON COLUMN compras_proveedor.tipo_documento IS 'orden (pedido al proveedor, se recibe despues), factura, nota_venta u otro comprobante.';
+COMMENT ON COLUMN compras_proveedor.numero_documento IS 'Establecimiento-punto de emision-secuencial del comprobante del proveedor (001-001-000000123).';
+COMMENT ON COLUMN compras_proveedor.area IS 'Inventario de destino principal (almacen) elegido al crear la compra.';
+COMMENT ON COLUMN compras_proveedor.tipo_registro IS 'inventario, gasto o activo_fijo (como se registra la compra).';
+COMMENT ON COLUMN compras_proveedor.sustento_tributario IS 'Codigo de sustento tributario del SRI (tabla 5 del ATS: 00-15).';
+
+-- ── 26.2 Tarifa de IVA por item ──
+ALTER TABLE compras_proveedor_items ADD COLUMN IF NOT EXISTS iva_porcentaje NUMERIC(5,2) NOT NULL DEFAULT 15;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_compras_items_iva') THEN
+        ALTER TABLE compras_proveedor_items ADD CONSTRAINT chk_compras_items_iva CHECK (iva_porcentaje >= 0 AND iva_porcentaje <= 100);
+    END IF;
+END $$;
+
+-- ── 26.3 Compras ya registradas desde una factura del SRI ──
+UPDATE compras_proveedor c
+   SET tipo_documento = 'factura',
+       numero_documento = f.numero,
+       tipo_registro = 'inventario',
+       sustento_tributario = COALESCE(c.sustento_tributario, '06')
+  FROM facturas_compra f
+ WHERE f.compra_id = c.id AND c.tipo_documento = 'orden'
+   AND f.numero ~ '^[0-9]{3}-[0-9]{3}-[0-9]{9}$';
+
+-- IVA real de los items de esas compras (de los articulos de la factura).
+UPDATE compras_proveedor_items i
+   SET iva_porcentaje = x.tarifa
+  FROM (
+        SELECT c.id AS compra_id, d.descripcion,
+               COALESCE((SELECT MAX((t->>'tarifa')::numeric) FROM jsonb_array_elements(d.impuestos) t WHERE t->>'codigo' = '2'), 0) AS tarifa
+          FROM facturas_compra f
+          JOIN compras_proveedor c ON c.id = f.compra_id
+          JOIN facturas_compra_detalles d ON d.factura_id = f.id
+       ) x
+ WHERE i.compra_id = x.compra_id AND i.descripcion = LEFT(x.descripcion, 200) AND x.tarifa BETWEEN 0 AND 100;
+
+-- ── 26.4 Un documento del proveedor se registra una sola vez ──
+CREATE UNIQUE INDEX IF NOT EXISTS uq_compras_documento
+    ON compras_proveedor (empresa_id, proveedor_id, tipo_documento, numero_documento)
+    WHERE numero_documento IS NOT NULL AND estado <> 'cancelada';
+CREATE INDEX IF NOT EXISTS idx_compras_area ON compras_proveedor (empresa_id, area);
+
+-- ── 26.5 Registro ──
+DO $$
+BEGIN
+    INSERT INTO migraciones_registro (version, descripcion, resultado, detalle)
+    SELECT '26-crear-compra', 'Crear compra con documento, inventario, tipo de registro y sustento tributario', 'exito',
+           jsonb_build_object('columnas', ARRAY['compras_proveedor.tipo_documento', 'compras_proveedor.numero_documento', 'compras_proveedor.area',
+                                                'compras_proveedor.tipo_registro', 'compras_proveedor.sustento_tributario', 'compras_proveedor_items.iva_porcentaje'],
+                              'indices', ARRAY['uq_compras_documento'])
+    WHERE NOT EXISTS (SELECT 1 FROM migraciones_registro WHERE version = '26-crear-compra' AND resultado = 'exito');
+END $$;
+
+-- ═════════════════════════════════════════════════════════════
+-- Sprint 28: historial de productos creados en el inventario
+-- ═════════════════════════════════════════════════════════════
+-- Cada producto guarda COMO nacio (a mano desde Inventario o al registrar
+-- una factura de compra del proveedor) y QUIEN lo creo. Aditivo: los
+-- productos existentes se clasifican con la informacion que ya habia.
+
+-- ── 28.1 Columnas ──
+ALTER TABLE repuestos ADD COLUMN IF NOT EXISTS origen_creacion VARCHAR(20);
+ALTER TABLE repuestos ADD COLUMN IF NOT EXISTS creado_por INTEGER;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_repuestos_origen_creacion') THEN
+        ALTER TABLE repuestos ADD CONSTRAINT chk_repuestos_origen_creacion
+            CHECK (origen_creacion IS NULL OR origen_creacion IN ('manual', 'factura_compra', 'importacion'));
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_repuestos_creado_por') THEN
+        ALTER TABLE repuestos ADD CONSTRAINT fk_repuestos_creado_por
+            FOREIGN KEY (creado_por) REFERENCES usuarios(id) ON DELETE SET NULL;
+    END IF;
+END $$;
+CREATE INDEX IF NOT EXISTS idx_repuestos_created_at ON repuestos (empresa_id, created_at DESC);
+
+-- ── 28.2 Productos ya existentes ──
+-- Los que nacieron de una factura de compra (linea con accion 'nuevo').
+UPDATE repuestos r
+   SET origen_creacion = 'factura_compra',
+       creado_por = COALESCE(r.creado_por, f.registrada_por)
+  FROM facturas_compra_detalles d
+  JOIN facturas_compra f ON f.id = d.factura_id
+ WHERE d.repuesto_id = r.id AND d.accion = 'nuevo' AND r.origen_creacion IS NULL;
+-- El resto se creo a mano (o con el catalogo inicial).
+UPDATE repuestos SET origen_creacion = 'manual' WHERE origen_creacion IS NULL;
+
+COMMENT ON COLUMN repuestos.origen_creacion IS 'Como se creo el producto: manual (Inventario), factura_compra (factura del proveedor) o importacion.';
+COMMENT ON COLUMN repuestos.creado_por IS 'Usuario que creo el producto (NULL en productos anteriores al Sprint 28 creados a mano).';
+
+-- ── 28.3 Registro ──
+DO $$
+BEGIN
+    INSERT INTO migraciones_registro (version, descripcion, resultado, detalle)
+    SELECT '28-historial-productos', 'Historial de productos creados (origen y usuario)', 'exito',
+           jsonb_build_object('columnas', ARRAY['repuestos.origen_creacion', 'repuestos.creado_por'])
+    WHERE NOT EXISTS (SELECT 1 FROM migraciones_registro WHERE version = '28-historial-productos' AND resultado = 'exito');
+END $$;
+
+-- ═════════════════════════════════════════════════════════════
+-- Sprint 28 (b): todo registro nuevo queda a nombre de quien lo creo
+-- ═════════════════════════════════════════════════════════════
+-- config/db.js fija app.usuario_id (usuario de la sesion) en cada consulta,
+-- igual que app.empresa_id. usuario_actual() lo lee y se usa como valor por
+-- defecto del creador: aunque un INSERT no lo mencione, queda registrado.
+-- Fuera de una peticion (scripts, web publica sin sesion) queda NULL.
+CREATE OR REPLACE FUNCTION usuario_actual() RETURNS INTEGER
+LANGUAGE sql STABLE AS $$ SELECT NULLIF(current_setting('app.usuario_id', true), '')::int $$;
+GRANT EXECUTE ON FUNCTION usuario_actual() TO PUBLIC;
+
+-- ── 28.4 Tablas que no guardaban creador ──
+DO $$
+DECLARE t TEXT;
+BEGIN
+    FOREACH t IN ARRAY ARRAY['clientes', 'vehiculos', 'proveedores', 'proveedores_contactos', 'categorias_repuesto',
+                             'tipos_servicio', 'sucursales', 'cuentas_dinero'] LOOP
+        IF to_regclass(t) IS NOT NULL THEN
+            EXECUTE format('ALTER TABLE %I ADD COLUMN IF NOT EXISTS creado_por INTEGER', t);
+            EXECUTE format('ALTER TABLE %I ALTER COLUMN creado_por SET DEFAULT usuario_actual()', t);
+            IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_' || t || '_creado_por') THEN
+                EXECUTE format('ALTER TABLE %I ADD CONSTRAINT %I FOREIGN KEY (creado_por) REFERENCES usuarios(id) ON DELETE SET NULL',
+                               t, 'fk_' || t || '_creado_por');
+            END IF;
+        END IF;
+    END LOOP;
+END $$;
+
+-- ── 28.5 Tablas que ya tenian el usuario: si un INSERT lo omite, se toma el de la sesion ──
+DO $$
+DECLARE r RECORD;
+BEGIN
+    FOR r IN SELECT * FROM (VALUES
+        ('repuestos', 'creado_por'), ('repuestos_codigos_proveedor', 'creado_por'),
+        ('proformas', 'usuario_id'), ('ordenes_trabajo', 'usuario_id'), ('compras_proveedor', 'usuario_id'),
+        ('gastos_proveedor', 'usuario_id'), ('movimientos_inventario', 'usuario_id'), ('movimientos_dinero', 'usuario_id'),
+        ('caja_movimientos', 'usuario_id'), ('cuentas_cobrar', 'usuario_id'), ('pagos_cliente', 'usuario_id'),
+        ('movimientos_financieros_proveedor', 'usuario_id'), ('comprobantes_electronicos', 'creado_por')
+    ) AS v(tabla, columna) LOOP
+        IF EXISTS (SELECT 1 FROM information_schema.columns
+                    WHERE table_schema = 'public' AND table_name = r.tabla AND column_name = r.columna
+                      AND column_default IS NULL) THEN
+            EXECUTE format('ALTER TABLE %I ALTER COLUMN %I SET DEFAULT usuario_actual()', r.tabla, r.columna);
+        END IF;
+    END LOOP;
+END $$;
+
+DO $$
+BEGIN
+    INSERT INTO migraciones_registro (version, descripcion, resultado, detalle)
+    SELECT '28-creador-registros', 'Creador por defecto (usuario de la sesion) en los registros', 'exito',
+           jsonb_build_object('funcion', 'usuario_actual()',
+                              'tablas', ARRAY['clientes', 'vehiculos', 'proveedores', 'proveedores_contactos', 'categorias_repuesto',
+                                              'tipos_servicio', 'sucursales', 'cuentas_dinero'])
+    WHERE NOT EXISTS (SELECT 1 FROM migraciones_registro WHERE version = '28-creador-registros' AND resultado = 'exito');
+END $$;
+
+-- ── 28.6 Correccion del nombre comercial de SS SWAP ("SSarango" -> "Sarango") ──
+-- Se corrige la empresa y la copia guardada en sus proformas y ordenes
+-- (la copia es historica y el trigger la protege: se desactiva solo
+--  durante esta correccion puntual).
+UPDATE empresas
+   SET nombre_comercial = REPLACE(nombre_comercial, 'SSarango Sosa', 'Sarango Sosa')
+ WHERE nombre_comercial LIKE '%SSarango Sosa%';
+
+DO $$
+BEGIN
+    ALTER TABLE proformas       DISABLE TRIGGER trg_proformas_empresa_datos;
+    ALTER TABLE ordenes_trabajo DISABLE TRIGGER trg_ordenes_empresa_datos;
+
+    UPDATE proformas
+       SET empresa_datos = jsonb_set(empresa_datos, '{nombre_comercial}',
+                                     to_jsonb(REPLACE(empresa_datos->>'nombre_comercial', 'SSarango Sosa', 'Sarango Sosa')))
+     WHERE empresa_datos->>'nombre_comercial' LIKE '%SSarango Sosa%';
+    UPDATE ordenes_trabajo
+       SET empresa_datos = jsonb_set(empresa_datos, '{nombre_comercial}',
+                                     to_jsonb(REPLACE(empresa_datos->>'nombre_comercial', 'SSarango Sosa', 'Sarango Sosa')))
+     WHERE empresa_datos->>'nombre_comercial' LIKE '%SSarango Sosa%';
+
+    ALTER TABLE proformas       ENABLE TRIGGER trg_proformas_empresa_datos;
+    ALTER TABLE ordenes_trabajo ENABLE TRIGGER trg_ordenes_empresa_datos;
+END $$;
+
+
+-- ============================================================
+-- Sprint 29: Caja completa (estilo control de cajas)
+--
+-- 100 % aditivo e idempotente. No borra datos ni cambia cierres anteriores.
+-- 29.1 caja_sesiones: cajero responsable (puede ser distinto de quien abre),
+--      declaracion del cajero por forma de pago, resumen congelado al cerrar,
+--      ajuste del cierre (para poder reabrir) e historial de reaperturas.
+-- 29.2 caja_movimientos: anulacion (nunca se borran) con motivo y usuario.
+-- 29.3 v_flujo_dinero deja fuera los movimientos de caja anulados.
+-- 29.4 Permisos nuevos: caja:eliminar (anular movimientos manuales) y
+--      caja:reabrir (reabrir una caja cerrada), para los administradores.
+-- ============================================================
+
+-- ── 29.1 Sesiones de caja ──
+ALTER TABLE caja_sesiones ADD COLUMN IF NOT EXISTS cajero_id          INTEGER REFERENCES usuarios(id);
+ALTER TABLE caja_sesiones ADD COLUMN IF NOT EXISTS declaracion_cierre JSONB;
+ALTER TABLE caja_sesiones ADD COLUMN IF NOT EXISTS resumen_cierre     JSONB;
+ALTER TABLE caja_sesiones ADD COLUMN IF NOT EXISTS ajuste_cierre_id   INTEGER REFERENCES movimientos_dinero(id) ON DELETE SET NULL;
+ALTER TABLE caja_sesiones ADD COLUMN IF NOT EXISTS reaperturas        JSONB NOT NULL DEFAULT '[]'::jsonb;
+UPDATE caja_sesiones SET cajero_id = usuario_apertura_id WHERE cajero_id IS NULL;
+CREATE INDEX IF NOT EXISTS idx_caja_sesiones_cajero ON caja_sesiones(cajero_id);
+-- El cajero siempre es una cuenta de la misma empresa que la caja.
+DO $$
+BEGIN
+    PERFORM agregar_constraint_si_falta('caja_sesiones', 'fk_emp_caja_sesiones_cajero_id', 'FOREIGN KEY (cajero_id, empresa_id) REFERENCES usuarios(id, empresa_id)');
+END $$;
+COMMENT ON COLUMN caja_sesiones.cajero_id IS 'Cajero responsable de la caja (Sprint 29). Por defecto, quien la abrio.';
+COMMENT ON COLUMN caja_sesiones.declaracion_cierre IS 'Lo que el cajero declaro al cerrar por forma de pago: efectivo, cheque, transferencia, tarjeta_credito, tarjeta_debito, retencion_fuente, retencion_iva.';
+COMMENT ON COLUMN caja_sesiones.resumen_cierre IS 'Totales del sistema congelados al cerrar (por forma de pago y efectivo).';
+COMMENT ON COLUMN caja_sesiones.reaperturas IS 'Historial de reaperturas: cierre anterior, quien reabrio, cuando y por que.';
+
+-- ── 29.2 Movimientos manuales anulables ──
+ALTER TABLE caja_movimientos ADD COLUMN IF NOT EXISTS anulado_at       TIMESTAMP WITH TIME ZONE;
+ALTER TABLE caja_movimientos ADD COLUMN IF NOT EXISTS anulado_por      INTEGER REFERENCES usuarios(id) ON DELETE SET NULL;
+ALTER TABLE caja_movimientos ADD COLUMN IF NOT EXISTS motivo_anulacion VARCHAR(255);
+COMMENT ON TABLE caja_movimientos IS 'Ingresos y egresos de efectivo registrados durante una sesion de caja. Nunca se borran: se anulan (Sprint 29).';
+
+-- ── 29.3 Flujo de dinero sin movimientos de caja anulados ──
+CREATE OR REPLACE VIEW v_flujo_dinero AS
+SELECT 'pago_cliente'::text AS origen, p.id AS origen_id, p.fecha, p.created_at AS momento,
+       'ingreso'::text AS tipo, 'cobro_clientes'::text AS categoria, p.monto,
+       p.metodo_pago, COALESCE(p.cuenta_dinero_id, cuenta_dinero_por_metodo(p.metodo_pago)) AS cuenta_dinero_id,
+       ('Pago: ' || cc.concepto)::text AS descripcion, COALESCE(p.numero_comprobante, p.referencia)::text AS referencia,
+       c.nombre::text AS tercero
+FROM pagos_cliente p
+JOIN cuentas_cobrar cc ON cc.id = p.cuenta_id
+JOIN clientes c ON c.id = cc.cliente_id
+WHERE p.anulado_at IS NULL
+UNION ALL
+SELECT 'pago_proveedor', m.id, m.created_at::date, m.created_at,
+       'egreso', 'pago_proveedores', m.monto,
+       m.metodo_pago, COALESCE(m.cuenta_dinero_id, cuenta_dinero_por_metodo(m.metodo_pago)),
+       COALESCE(m.descripcion, INITCAP(m.tipo) || ' a proveedor'), m.referencia, pr.nombre_comercial
+FROM movimientos_financieros_proveedor m
+JOIN proveedores pr ON pr.id = m.proveedor_id
+WHERE m.tipo IN ('pago','abono') AND m.estado = 'confirmado'
+UNION ALL
+SELECT 'gasto', g.id, g.fecha, g.created_at,
+       'egreso', 'gastos_operativos', g.monto,
+       g.metodo_pago, COALESCE(g.cuenta_dinero_id, cuenta_dinero_por_metodo(g.metodo_pago)),
+       g.descripcion, g.numero_comprobante, pr.nombre_comercial
+FROM gastos_proveedor g
+LEFT JOIN proveedores pr ON pr.id = g.proveedor_id
+WHERE g.estado = 'pagado'
+UNION ALL
+SELECT 'caja', cm.id, cm.created_at::date, cm.created_at,
+       cm.tipo, CASE cm.tipo WHEN 'ingreso' THEN 'caja_ingreso' ELSE 'caja_egreso' END, cm.monto,
+       cm.metodo_pago, COALESCE(cm.cuenta_dinero_id, cuenta_dinero_por_metodo(cm.metodo_pago)),
+       cm.concepto, cm.referencia, NULL
+FROM caja_movimientos cm
+WHERE cm.anulado_at IS NULL
+UNION ALL
+SELECT 'pago_empleado', pe.id, pe.fecha, pe.created_at,
+       'egreso', 'nomina', pe.monto_neto,
+       pe.metodo_pago, pe.cuenta_dinero_id,
+       (INITCAP(REPLACE(pe.tipo, '_', ' ')) || ' ' || TO_CHAR(pe.periodo, 'MM/YYYY')), pe.referencia, u.nombre
+FROM pagos_empleados pe
+JOIN usuarios u ON u.id = pe.usuario_id
+WHERE pe.anulado_at IS NULL
+UNION ALL
+SELECT 'movimiento', md.id, md.fecha, md.created_at,
+       md.tipo, md.categoria, md.monto,
+       md.metodo_pago, md.cuenta_dinero_id,
+       md.descripcion, md.referencia, NULL
+FROM movimientos_dinero md
+WHERE md.anulado_at IS NULL;
+ALTER VIEW v_flujo_dinero SET (security_invoker = true);
+COMMENT ON VIEW v_flujo_dinero IS 'Todo el dinero que entra y sale del taller: pagos de clientes, pagos a proveedores, gastos pagados, caja (sin anulados), nomina y otros movimientos.';
+
+-- ── 29.5 Fecha de aprobacion de la proforma (venta por cobrar en el cierre de caja) ──
+-- Una proforma aprobada (o convertida en orden) es una venta aunque todavia
+-- no tenga pagare ni pagos: el cierre de caja la muestra como "por cobrar".
+-- La fecha la pone la base al cambiar de estado; las anteriores quedan NULL.
+ALTER TABLE proformas ADD COLUMN IF NOT EXISTS aprobada_at TIMESTAMP WITH TIME ZONE;
+CREATE INDEX IF NOT EXISTS idx_proformas_aprobada_at ON proformas(aprobada_at) WHERE aprobada_at IS NOT NULL;
+COMMENT ON COLUMN proformas.aprobada_at IS 'Cuando la proforma paso a aprobada/convertida (Sprint 29). NULL si no esta aprobada o si se aprobo antes de este cambio.';
+
+CREATE OR REPLACE FUNCTION marcar_aprobacion_proforma() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+    IF NEW.estado IN ('aprobada', 'convertida') THEN
+        IF TG_OP = 'INSERT' THEN
+            NEW.aprobada_at := COALESCE(NEW.aprobada_at, NOW());
+        ELSIF OLD.estado NOT IN ('aprobada', 'convertida') THEN
+            NEW.aprobada_at := NOW();
+        ELSE
+            NEW.aprobada_at := OLD.aprobada_at;   -- aprobada -> convertida conserva la fecha
+        END IF;
+    ELSE
+        NEW.aprobada_at := NULL;
+    END IF;
+    RETURN NEW;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'trg_proformas_aprobada_at') THEN
+        CREATE TRIGGER trg_proformas_aprobada_at BEFORE INSERT OR UPDATE OF estado ON proformas
+            FOR EACH ROW EXECUTE FUNCTION marcar_aprobacion_proforma();
+    END IF;
+END $$;
+
+-- ── 29.4 Permisos de caja ──
+-- CATALOGO_INICIO (generado desde permisos.js)
+INSERT INTO permisos_catalogo (modulo, accion, modulo_nombre, accion_nombre, grupo, orden, solo_superadmin) VALUES
+    ('dashboard', 'ver', 'Panel principal', 'Ver', 'Panel', 1, FALSE),
+    ('inventario_mecanica', 'ver', 'Inventario de mecánica', 'Ver', 'Inventario', 2, FALSE),
+    ('inventario_mecanica', 'crear', 'Inventario de mecánica', 'Crear', 'Inventario', 3, FALSE),
+    ('inventario_mecanica', 'editar', 'Inventario de mecánica', 'Editar', 'Inventario', 4, FALSE),
+    ('inventario_mecanica', 'eliminar', 'Inventario de mecánica', 'Eliminar', 'Inventario', 5, FALSE),
+    ('inventario_colisiones', 'ver', 'Inventario de colisiones / pintura', 'Ver', 'Inventario', 6, FALSE),
+    ('inventario_colisiones', 'crear', 'Inventario de colisiones / pintura', 'Crear', 'Inventario', 7, FALSE),
+    ('inventario_colisiones', 'editar', 'Inventario de colisiones / pintura', 'Editar', 'Inventario', 8, FALSE),
+    ('inventario_colisiones', 'eliminar', 'Inventario de colisiones / pintura', 'Eliminar', 'Inventario', 9, FALSE),
+    ('registros_inventario', 'ver', 'Entradas y salidas de inventario', 'Ver registros', 'Inventario', 10, FALSE),
+    ('registros_inventario', 'crear', 'Entradas y salidas de inventario', 'Registrar entradas / salidas', 'Inventario', 11, FALSE),
+    ('registros_inventario', 'aprobar', 'Entradas y salidas de inventario', 'Devolver salidas al inventario', 'Inventario', 12, FALSE),
+    ('pedidos_tienda', 'ver', 'Pedidos de la tienda', 'Ver', 'Inventario', 13, FALSE),
+    ('pedidos_tienda', 'editar', 'Pedidos de la tienda', 'Atender / cancelar', 'Inventario', 14, FALSE),
+    ('ordenes', 'ver', 'Órdenes de trabajo', 'Ver', 'Taller', 15, FALSE),
+    ('ordenes', 'crear', 'Órdenes de trabajo', 'Crear', 'Taller', 16, FALSE),
+    ('ordenes', 'editar', 'Órdenes de trabajo', 'Editar', 'Taller', 17, FALSE),
+    ('ordenes', 'eliminar', 'Órdenes de trabajo', 'Eliminar', 'Taller', 18, FALSE),
+    ('ordenes', 'asignar', 'Órdenes de trabajo', 'Asignar técnico', 'Taller', 19, FALSE),
+    ('ordenes', 'aprobar', 'Órdenes de trabajo', 'Cambiar estado de cualquier orden', 'Taller', 20, FALSE),
+    ('proformas_mecanica', 'ver', 'Proformas de mecánica', 'Ver', 'Taller', 21, FALSE),
+    ('proformas_mecanica', 'crear', 'Proformas de mecánica', 'Crear', 'Taller', 22, FALSE),
+    ('proformas_mecanica', 'editar', 'Proformas de mecánica', 'Editar', 'Taller', 23, FALSE),
+    ('proformas_mecanica', 'eliminar', 'Proformas de mecánica', 'Eliminar', 'Taller', 24, FALSE),
+    ('proformas_mecanica', 'exportar', 'Proformas de mecánica', 'Descargar PDF / Excel', 'Taller', 25, FALSE),
+    ('proformas_mecanica', 'aprobar', 'Proformas de mecánica', 'Aprobar, rechazar, convertir en OT y confirmar materiales', 'Taller', 26, FALSE),
+    ('proformas_colisiones', 'ver', 'Proformas de colisiones / pintura', 'Ver', 'Taller', 27, FALSE),
+    ('proformas_colisiones', 'crear', 'Proformas de colisiones / pintura', 'Crear', 'Taller', 28, FALSE),
+    ('proformas_colisiones', 'editar', 'Proformas de colisiones / pintura', 'Editar', 'Taller', 29, FALSE),
+    ('proformas_colisiones', 'eliminar', 'Proformas de colisiones / pintura', 'Eliminar', 'Taller', 30, FALSE),
+    ('proformas_colisiones', 'exportar', 'Proformas de colisiones / pintura', 'Descargar PDF / Excel', 'Taller', 31, FALSE),
+    ('proformas_colisiones', 'aprobar', 'Proformas de colisiones / pintura', 'Aprobar, rechazar, convertir en OT y confirmar materiales', 'Taller', 32, FALSE),
+    ('citas', 'ver', 'Citas', 'Ver', 'Taller', 33, FALSE),
+    ('citas', 'editar', 'Citas', 'Confirmar / cambiar estado', 'Taller', 34, FALSE),
+    ('clientes', 'ver', 'Clientes', 'Ver', 'Clientes', 35, FALSE),
+    ('clientes', 'crear', 'Clientes', 'Crear', 'Clientes', 36, FALSE),
+    ('clientes', 'editar', 'Clientes', 'Editar', 'Clientes', 37, FALSE),
+    ('clientes', 'eliminar', 'Clientes', 'Eliminar', 'Clientes', 38, FALSE),
+    ('vehiculos', 'ver', 'Vehículos', 'Ver', 'Clientes', 39, FALSE),
+    ('vehiculos', 'crear', 'Vehículos', 'Crear', 'Clientes', 40, FALSE),
+    ('vehiculos', 'editar', 'Vehículos', 'Editar', 'Clientes', 41, FALSE),
+    ('vehiculos', 'eliminar', 'Vehículos', 'Eliminar', 'Clientes', 42, FALSE),
+    ('cuentas_cobrar', 'ver', 'Pagarés y cuentas por cobrar', 'Ver', 'Clientes', 43, FALSE),
+    ('cuentas_cobrar', 'crear', 'Pagarés y cuentas por cobrar', 'Crear', 'Clientes', 44, FALSE),
+    ('cuentas_cobrar', 'editar', 'Pagarés y cuentas por cobrar', 'Editar (vencimiento, datos)', 'Clientes', 45, FALSE),
+    ('cuentas_cobrar', 'eliminar', 'Pagarés y cuentas por cobrar', 'Eliminar / anular / reabrir', 'Clientes', 46, FALSE),
+    ('pagos_clientes', 'crear', 'Registro de pagos de clientes', 'Registrar pagos', 'Clientes', 47, FALSE),
+    ('pagos_clientes', 'eliminar', 'Registro de pagos de clientes', 'Anular pagos', 'Clientes', 48, FALSE),
+    ('caja', 'ver', 'Caja diaria', 'Ver', 'Finanzas', 49, FALSE),
+    ('caja', 'crear', 'Caja diaria', 'Registrar movimientos de caja', 'Finanzas', 50, FALSE),
+    ('caja', 'aprobar', 'Caja diaria', 'Abrir y cerrar caja', 'Finanzas', 51, FALSE),
+    ('caja', 'eliminar', 'Caja diaria', 'Anular movimientos manuales de caja', 'Finanzas', 52, FALSE),
+    ('caja', 'reabrir', 'Caja diaria', 'Reabrir una caja cerrada', 'Finanzas', 53, FALSE),
+    ('finanzas', 'ver', 'Finanzas, cuentas y nómina', 'Ver', 'Finanzas', 54, FALSE),
+    ('finanzas', 'crear', 'Finanzas, cuentas y nómina', 'Crear', 'Finanzas', 55, FALSE),
+    ('finanzas', 'editar', 'Finanzas, cuentas y nómina', 'Editar', 'Finanzas', 56, FALSE),
+    ('finanzas', 'eliminar', 'Finanzas, cuentas y nómina', 'Anular movimientos / pagos', 'Finanzas', 57, FALSE),
+    ('proveedores', 'ver', 'Proveedores, compras y gastos', 'Ver', 'Proveedores', 58, FALSE),
+    ('proveedores', 'crear', 'Proveedores, compras y gastos', 'Crear', 'Proveedores', 59, FALSE),
+    ('proveedores', 'editar', 'Proveedores, compras y gastos', 'Editar', 'Proveedores', 60, FALSE),
+    ('proveedores', 'eliminar', 'Proveedores, compras y gastos', 'Eliminar', 'Proveedores', 61, FALSE),
+    ('facturacion', 'ver', 'Facturación electrónica (SRI)', 'Ver comprobantes', 'Facturación', 62, FALSE),
+    ('facturacion', 'crear', 'Facturación electrónica (SRI)', 'Preparar borradores', 'Facturación', 63, FALSE),
+    ('facturacion', 'aprobar', 'Facturación electrónica (SRI)', 'Emitir y enviar al SRI', 'Facturación', 64, FALSE),
+    ('facturacion', 'exportar', 'Facturación electrónica (SRI)', 'Descargar XML / RIDE y reenviar correo', 'Facturación', 65, FALSE),
+    ('facturacion', 'anular', 'Facturación electrónica (SRI)', 'Notas de crédito y registro de anulaciones', 'Facturación', 66, FALSE),
+    ('facturacion', 'eliminar', 'Facturación electrónica (SRI)', 'Descartar borradores', 'Facturación', 67, FALSE),
+    ('facturacion_config', 'ver', 'Configuración tributaria y firma electrónica', 'Ver', 'Facturación', 68, FALSE),
+    ('facturacion_config', 'editar', 'Configuración tributaria y firma electrónica', 'Editar datos tributarios, puntos de emisión y certificado', 'Facturación', 69, FALSE),
+    ('facturacion_config', 'aprobar', 'Configuración tributaria y firma electrónica', 'Activar el ambiente de producción', 'Facturación', 70, FALSE),
+    ('estadisticas', 'ver', 'Reportes y estadísticas', 'Ver', 'Reportes', 71, FALSE),
+    ('servicios', 'ver', 'Servicios del taller', 'Ver', 'Ajustes', 72, FALSE),
+    ('servicios', 'crear', 'Servicios del taller', 'Crear', 'Ajustes', 73, FALSE),
+    ('servicios', 'editar', 'Servicios del taller', 'Editar', 'Ajustes', 74, FALSE),
+    ('servicios', 'eliminar', 'Servicios del taller', 'Eliminar', 'Ajustes', 75, FALSE),
+    ('sucursales', 'ver', 'Sucursales', 'Ver', 'Ajustes', 76, FALSE),
+    ('sucursales', 'crear', 'Sucursales', 'Crear', 'Ajustes', 77, FALSE),
+    ('sucursales', 'editar', 'Sucursales', 'Editar', 'Ajustes', 78, FALSE),
+    ('sucursales', 'eliminar', 'Sucursales', 'Eliminar', 'Ajustes', 79, FALSE),
+    ('bitacora', 'ver', 'Bitácora de operaciones', 'Ver', 'Ajustes', 80, FALSE),
+    ('usuarios', 'ver', 'Usuarios y permisos de la empresa', 'Ver', 'Empresa', 81, FALSE),
+    ('usuarios', 'crear', 'Usuarios y permisos de la empresa', 'Crear', 'Empresa', 82, FALSE),
+    ('usuarios', 'editar', 'Usuarios y permisos de la empresa', 'Editar, activar/desactivar, permisos y restablecer acceso', 'Empresa', 83, FALSE),
+    ('usuarios', 'eliminar', 'Usuarios y permisos de la empresa', 'Eliminar', 'Empresa', 84, FALSE),
+    ('auditoria', 'ver', 'Auditoría de la empresa', 'Ver', 'Empresa', 85, FALSE),
+    ('empresa', 'ver', 'Configuración de la empresa', 'Ver', 'Empresa', 86, FALSE),
+    ('empresa', 'editar', 'Configuración de la empresa', 'Editar', 'Empresa', 87, FALSE),
+    ('legal', 'ver', 'Documentos legales y aceptaciones', 'Ver documentos, aceptaciones y constancias', 'Empresa', 88, FALSE),
+    ('legal', 'editar', 'Documentos legales y aceptaciones', 'Redactar borradores', 'Empresa', 89, FALSE),
+    ('legal', 'aprobar', 'Documentos legales y aceptaciones', 'Publicar versiones', 'Empresa', 90, FALSE)
+ON CONFLICT (modulo, accion) DO UPDATE SET
+    modulo_nombre = EXCLUDED.modulo_nombre, accion_nombre = EXCLUDED.accion_nombre,
+    grupo = EXCLUDED.grupo, orden = EXCLUDED.orden, solo_superadmin = EXCLUDED.solo_superadmin;
+-- CATALOGO_FIN
+
+-- Los administradores existentes reciben los permisos nuevos (una sola vez).
+INSERT INTO usuario_permisos (usuario_id, modulo, accion, empresa_id)
+SELECT u.id, t.modulo, t.accion, u.empresa_id
+FROM usuarios u
+JOIN (VALUES ('caja', 'eliminar'), ('caja', 'reabrir')) AS t(modulo, accion) ON TRUE
+WHERE u.rol = 'administrador' AND u.permisos_inicializados = TRUE AND u.empresa_id IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM migraciones_registro WHERE version = '29-caja-completa' AND resultado = 'exito')
+ON CONFLICT DO NOTHING;
+
+DO $$
+BEGIN
+    INSERT INTO migraciones_registro (version, descripcion, resultado, detalle)
+    SELECT '29-caja-completa', 'Caja: cajero, declaracion por forma de pago, anulacion de movimientos y reapertura', 'exito',
+           jsonb_build_object('columnas', ARRAY['caja_sesiones.cajero_id', 'caja_sesiones.declaracion_cierre', 'caja_sesiones.resumen_cierre',
+                                                'caja_sesiones.ajuste_cierre_id', 'caja_sesiones.reaperturas', 'caja_movimientos.anulado_at'],
+                              'permisos', ARRAY['caja:eliminar', 'caja:reabrir'])
+    WHERE NOT EXISTS (SELECT 1 FROM migraciones_registro WHERE version = '29-caja-completa' AND resultado = 'exito');
+END $$;
+
+-- ============================================================
+-- Rendimiento (2026-10-18): indices de apoyo para las paginas principales
+--
+-- 100 % aditivo e idempotente: solo crea indices si no existen. No cambia
+-- datos ni resultados; solo evita recorrer tablas completas.
+--  R.1 proformas: la lista se ordena por fecha de creacion (dentro de la
+--      empresa); sin indice se leia y ordenaba toda la tabla en cada pagina.
+--  R.2 usuarios: la lista de clientes busca la cuenta web por LOWER(email).
+--  R.3 proforma_items: el Dashboard cuenta proformas con repuestos
+--      pendientes de descontar del inventario.
+-- ============================================================
+CREATE INDEX IF NOT EXISTS idx_proformas_empresa_creada ON proformas (empresa_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_usuarios_email_lower ON usuarios (LOWER(email));
+CREATE INDEX IF NOT EXISTS idx_proforma_items_repuesto_pendiente ON proforma_items (proforma_id)
+    WHERE referencia_tipo = 'repuesto' AND referencia_id IS NOT NULL;
+
+DO $$
+BEGIN
+    INSERT INTO migraciones_registro (version, descripcion, resultado, detalle)
+    SELECT 'rendimiento-2026-10-18', 'Indices de apoyo para listas de proformas, clientes y Dashboard', 'exito',
+           jsonb_build_object('indices', ARRAY['idx_proformas_empresa_creada', 'idx_usuarios_email_lower', 'idx_proforma_items_repuesto_pendiente'])
+    WHERE NOT EXISTS (SELECT 1 FROM migraciones_registro WHERE version = 'rendimiento-2026-10-18' AND resultado = 'exito');
 END $$;

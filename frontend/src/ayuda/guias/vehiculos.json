@@ -1,0 +1,96 @@
+{
+  "id": "vehiculos",
+  "grupo": "CLIENTES",
+  "titulo": "Vehículos",
+  "version": "1.0",
+  "actualizada": "2026-10-14",
+  "rutas": [
+    {
+      "path": "/dashboard/vehiculos"
+    }
+  ],
+  "descripcion": "Vehículos de los clientes (placa, marca, modelo, año, color y número de chasis) con su historial de órdenes de trabajo.",
+  "funciones": [
+    "Buscar por placa, marca, modelo o cliente.",
+    "Registrar un vehículo y asociarlo a su dueño.",
+    "Editar datos o cambiar el cliente asociado.",
+    "Ver el historial de órdenes de cada vehículo."
+  ],
+  "pasos": [
+    {
+      "titulo": "Busque y registre",
+      "texto": [
+        "Use el buscador. Para agregar uno pulse «Nuevo vehículo», elija el cliente, escriba la placa y la marca (obligatorias) y los demás datos."
+      ],
+      "imagen": {
+        "archivo": "v27/vehiculos/01-lista.png",
+        "alt": "Vehículos con el buscador y el botón Nuevo vehículo",
+        "tipo": "captura",
+        "captura": {
+          "url": "/dashboard/vehiculos",
+          "esperar": {
+            "placeholder": "Buscar por placa"
+          }
+        }
+      },
+      "marcas": [
+        {
+          "texto": "Buscador.",
+          "objetivo": {
+            "placeholder": "Buscar por placa"
+          }
+        },
+        {
+          "texto": "Registrar un vehículo.",
+          "objetivo": {
+            "texto": "NUEVO VEHICULO",
+            "tag": "button"
+          }
+        }
+      ]
+    },
+    {
+      "titulo": "Consulte el historial",
+      "texto": [
+        "En cada fila: «Historial de órdenes» muestra los trabajos realizados al vehículo; «Asociar / Editar datos» cambia sus datos o su dueño; «Eliminar» lo quita si se registró por error."
+      ],
+      "imagen": {
+        "archivo": "v27/vehiculos/02-acciones.png",
+        "alt": "Fila de vehículo con los botones Historial de órdenes, Asociar / Editar datos y Eliminar",
+        "tipo": "captura",
+        "captura": {
+          "url": "/dashboard/vehiculos",
+          "esperar": {
+            "etiqueta": "Historial de ordenes"
+          }
+        }
+      },
+      "marcas": [
+        {
+          "texto": "Historial de órdenes.",
+          "objetivo": {
+            "etiqueta": "Historial de ordenes"
+          }
+        },
+        {
+          "texto": "Asociar / editar datos.",
+          "objetivo": {
+            "etiqueta": "Asociar / Editar datos"
+          }
+        }
+      ]
+    }
+  ],
+  "resultado": "El vehículo queda disponible en órdenes y proformas de su cliente y acumula su historial de trabajos.",
+  "advertencias": [
+    "Cliente, placa y marca son obligatorios.",
+    "También puede registrar el vehículo al crear una orden de trabajo, sin salir de ella.",
+    "Un vehículo con órdenes, proformas o cuentas por cobrar no se puede eliminar."
+  ],
+  "problemas": [
+    {
+      "problema": "El vehículo cambió de dueño.",
+      "solucion": "Búsquelo y use «Asociar / Editar datos» para asignarlo al nuevo cliente; no lo registre otra vez, así conserva su historial."
+    }
+  ]
+}

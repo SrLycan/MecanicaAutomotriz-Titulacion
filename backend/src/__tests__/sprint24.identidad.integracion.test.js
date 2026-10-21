@@ -214,7 +214,7 @@ d('Sprint 24 - identidad por empresa y proveedores (HTTP)', () => {
             expect(pa.headers.get('content-type')).toMatch(/pdf/);
             const texto = pa.body.toString('latin1');
             expect(texto).toMatch(/TEST24 Andes Motors/);
-            expect(texto).not.toMatch(/TEST24 Taller Brisa|SSarango/);
+            expect(texto).not.toMatch(/TEST24 Taller Brisa|Sarango Sosa/);
             expect(texto).toMatch(/\/Subtype \/Image/); // el logo va incrustado
             const pb = await api('GET', `/ordenes/ordenes/${t.ot_b}/pdf`, { token: t.b });
             expect(pb.body.toString('latin1')).toMatch(/TEST24 Taller Brisa/);

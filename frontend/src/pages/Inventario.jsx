@@ -190,6 +190,11 @@ export default function Inventario() {
     const [seleccionados, setSeleccionados] = useState([]);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
+    const [porPagina, setPorPagina] = useState(() => {
+        try { const v = Number(localStorage.getItem('inv_por_pagina')); return POR_PAGINA_OPCIONES.includes(v) ? v : 15; } catch { return 15; }
+    });
+    const porPaginaRef = useRef(porPagina);
     const [bulkCategoria, setBulkCategoria] = useState('');
     const [bulkBusy, setBulkBusy] = useState(false);
     const debounceRef = useRef(null);
@@ -244,10 +249,14 @@ export default function Inventario() {
             if (alerta) params.set('bajo_stock', 'true');
             params.set('area', areaRef.current);
             params.set('page', pg);
-            params.set('limit', 15);
+            params.set('limit', porPaginaRef.current);
             const { data } = await api.get(`/inventory/repuestos?${params}`);
+            // Si la pagina pedida quedo fuera de rango (p. ej. tras eliminar), se va a la ultima.
+            const paginas = Math.max(1, data.totalPages || 1);
+            if (pg > paginas && (data.total || 0) > 0) return cargarRepuestos(q, catId, alerta, paginas);
             setRepuestos(data.repuestos || []);
-            setTotalPages(data.totalPages || 1);
+            setTotalPages(paginas);
+            setTotalItems(data.total ?? (data.repuestos || []).length);
             setSeleccionados([]);
         } catch { toast.error('Error al cargar repuestos.'); }
         finally { setLoading(false); }
@@ -468,12 +477,21 @@ export default function Inventario() {
 
     // ── KPIs computados ──
     const stats = useMemo(() => {
-        const total      = repuestos.length;
+        const total      = totalItems;
         const bajo       = repuestos.filter(stockBajo).length;
         const valor      = repuestos.reduce((s, r) => s + (r.stock_actual * parseFloat(r.precio_venta || 0)), 0);
         const unidades   = repuestos.reduce((s, r) => s + (parseInt(r.stock_actual) || 0), 0);
         return { total, bajo, valor, unidades };
-    }, [repuestos]);
+    }, [repuestos, totalItems]);
+
+    const cambiarPorPagina = (n) => {
+        porPaginaRef.current = n;
+        setPorPagina(n);
+        try { localStorage.setItem('inv_por_pagina', String(n)); } catch { /* sin almacenamiento */ }
+        cargarRepuestos(busqueda, filtroCateg, soloAlerta, 1);
+    };
+    const desde = totalItems === 0 ? 0 : (page - 1) * porPagina + 1;
+    const hasta = Math.min(totalItems, (page - 1) * porPagina + repuestos.length);
 
     const inputStyle = { padding: '9px 12px 9px 32px', background: inputBg, border: `1px solid ${bdr}`, borderRadius: 10, color: txt, fontFamily: "'Outfit'", fontSize: '.85rem', outline: 'none', width: 220, transition: 'border-color .18s, box-shadow .18s' };
     const selStyle   = { padding: '9px 12px', background: inputBg, border: `1px solid ${bdr}`, borderRadius: 10, color: txt, fontFamily: "'Outfit'", fontSize: '.85rem', outline: 'none', transition: 'border-color .18s, box-shadow .18s' };
@@ -618,9 +636,9 @@ export default function Inventario() {
             {/* Contador de resultados */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, paddingLeft: 4 }}>
                 <span style={{ fontFamily: "'Outfit'", fontWeight: 500, fontSize: '.82rem', color: txtSoft }}>
-                    {repuestos.length} <span style={{ color: mut, fontWeight: 400 }}>repuesto{repuestos.length !== 1 ? 's' : ''}</span>
+                    {totalItems} <span style={{ color: mut, fontWeight: 400 }}>repuesto{totalItems !== 1 ? 's' : ''}</span>
                 </span>
-                {!loading && totalPages > 1 && (
+                {!loading && (
                     <span style={{ fontFamily: "'Outfit'", fontSize: '.76rem', color: faint }}>
                         · Pagina {page} de {totalPages}
                     </span>
@@ -801,19 +819,25 @@ export default function Inventario() {
                             </tbody>
                         </table>
 
-                        {/* ── Paginacion ── */}
-                        {totalPages > 1 && (
-                            <div style={{
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                gap: 6, padding: '16px 18px',
-                                borderTop: `1px solid ${bdr}`,
-                                background: headBg,
-                            }}>
+                        {/* ── Paginacion (siempre visible: muestra en que pagina esta) ── */}
+                        <div className="inv-paginacion" style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap',
+                            gap: 12, padding: '14px 18px',
+                            borderTop: `1px solid ${bdr}`,
+                            background: headBg,
+                        }}>
+                            <span style={{ fontFamily: "'Outfit'", fontSize: '.8rem', color: txtSoft }}>
+                                Mostrando <b style={{ color: txt }}>{desde}–{hasta}</b> de <b style={{ color: txt }}>{totalItems}</b>
+                                <span style={{ color: mut }}> · Página {page} de {totalPages}</span>
+                            </span>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }} role="navigation" aria-label="Paginación del inventario">
                                 <PageBtn
                                     disabled={page <= 1}
                                     onClick={() => cargarRepuestos(busqueda, filtroCateg, soloAlerta, page - 1)}
                                     bdr={bdr} txtSoft={txtSoft} mut={mut}
                                     isDark={isDark} SKY={SKY} SKY_BDR={SKY_BDR} SKY_PALE={SKY_PALE}
+                                    title="Página anterior"
                                 >
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
                                 </PageBtn>
@@ -825,7 +849,7 @@ export default function Inventario() {
                                         <PageNumBtn
                                             key={p}
                                             active={p === page}
-                                            onClick={() => cargarRepuestos(busqueda, filtroCateg, soloAlerta, p)}
+                                            onClick={() => p !== page && cargarRepuestos(busqueda, filtroCateg, soloAlerta, p)}
                                             isDark={isDark} SKY={SKY} SKY_DEEP={SKY_DEEP} SKY_PALE={SKY_PALE} txt={txt} mut={mut} bdr={bdr}
                                         >
                                             {p}
@@ -838,11 +862,20 @@ export default function Inventario() {
                                     onClick={() => cargarRepuestos(busqueda, filtroCateg, soloAlerta, page + 1)}
                                     bdr={bdr} txtSoft={txtSoft} mut={mut}
                                     isDark={isDark} SKY={SKY} SKY_BDR={SKY_BDR} SKY_PALE={SKY_PALE}
+                                    title="Página siguiente"
                                 >
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
                                 </PageBtn>
                             </div>
-                        )}
+
+                            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: "'Outfit'", fontSize: '.8rem', color: mut }}>
+                                Por página
+                                <select value={porPagina} onChange={e => cambiarPorPagina(Number(e.target.value))}
+                                    style={{ ...selStyle, padding: '6px 10px', fontSize: '.8rem' }}>
+                                    {POR_PAGINA_OPCIONES.map(n => <option key={n} value={n}>{n}</option>)}
+                                </select>
+                            </label>
+                        </div>
                     </div>
                 )}
             </div>
@@ -914,6 +947,9 @@ function FilterChip({ label, onRemove, color, bg, bdr }) {
     );
 }
 
+/* ── Filas por pagina que puede elegir el usuario ── */
+const POR_PAGINA_OPCIONES = [15, 25, 50, 100];
+
 /* ── Generador de numeros de pagina (con elipsis) ── */
 function generarPaginas(current, total) {
     if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
@@ -933,9 +969,9 @@ function generarPaginas(current, total) {
 }
 
 /* ── Boton de pagina anterior/siguiente ── */
-function PageBtn({ disabled, onClick, bdr, txtSoft, mut, isDark, SKY, SKY_BDR, SKY_PALE, children }) {
+function PageBtn({ disabled, onClick, bdr, txtSoft, mut, isDark, SKY, SKY_BDR, SKY_PALE, title, children }) {
     return (
-        <button disabled={disabled} onClick={onClick}
+        <button type="button" disabled={disabled} onClick={onClick} title={title} aria-label={title}
             style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 width: 34, height: 34, borderRadius: 9,
@@ -954,7 +990,7 @@ function PageBtn({ disabled, onClick, bdr, txtSoft, mut, isDark, SKY, SKY_BDR, S
 /* ── Boton de numero de pagina ── */
 function PageNumBtn({ active, onClick, isDark, SKY, SKY_DEEP, SKY_PALE, txt, mut, bdr, children }) {
     return (
-        <button onClick={onClick}
+        <button type="button" onClick={onClick} aria-current={active ? 'page' : undefined}
             style={{
                 minWidth: 34, height: 34, borderRadius: 9,
                 background: active ? `linear-gradient(135deg, ${SKY_DEEP}, ${SKY})` : 'transparent',

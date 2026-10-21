@@ -187,7 +187,7 @@ const listarProformas = async (req, res) => {
         FROM proformas p
         LEFT JOIN usuarios u ON u.id = p.usuario_id
         ${where}
-        ORDER BY p.created_at DESC
+        ORDER BY p.created_at DESC, p.id DESC
         LIMIT $${params.length + 1} OFFSET $${params.length + 2}
     `;
 

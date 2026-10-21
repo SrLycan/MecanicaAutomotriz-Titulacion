@@ -1,0 +1,55 @@
+{
+  "id": "panel",
+  "grupo": "PANEL",
+  "titulo": "Panel de inicio",
+  "version": "1.0",
+  "actualizada": "2026-10-14",
+  "rutas": [{ "path": "/dashboard" }],
+  "descripcion": "Resumen del día del taller adaptado a su rol: lo que necesita atención, dinero disponible, órdenes activas, citas de hoy, stock bajo y accesos rápidos a las operaciones que más usa.",
+  "funciones": [
+    "Ver avisos de lo que requiere atención (pagarés vencidos, stock bajo, proformas por convertir, caja cerrada).",
+    "Consultar indicadores: dinero disponible, ingresos del mes y cuentas por cobrar (si tiene permiso de Finanzas).",
+    "Ver el gráfico de crecimiento de 6 o 12 meses.",
+    "Revisar vehículos en el taller por etapa, citas de hoy y últimos movimientos de inventario.",
+    "Ir directo a sus módulos con los accesos rápidos."
+  ],
+  "pasos": [
+    {
+      "titulo": "Atienda primero los avisos",
+      "texto": ["El bloque «Necesita tu atención» lista lo urgente con una etiqueta de prioridad (URGENTE, HOY, PENDIENTE). Haga clic en un aviso para ir a la sección donde se resuelve."],
+      "imagen": { "archivo": "v27/panel/01-avisos-e-indicadores.png", "alt": "Panel con el bloque Necesita tu atención y las tarjetas de dinero disponible e ingresos del mes", "tipo": "captura",
+        "captura": { "url": "/dashboard", "esperar": { "texto": "Dinero disponible" } } },
+      "marcas": [
+        { "texto": "Avisos que requieren atención (clic para resolver).", "objetivo": { "texto": "Necesita tu atención", "subir": 1 } },
+        { "texto": "Indicadores de dinero del taller.", "objetivo": { "texto": "Dinero disponible", "tag": "p", "subir": 1 } }
+      ]
+    },
+    {
+      "titulo": "Revise el crecimiento y el taller",
+      "texto": ["El gráfico compara órdenes, clientes nuevos, ingresos y egresos por mes; cambie entre 6 y 12 meses con los botones de arriba a la derecha. A la derecha verá cuántos vehículos hay en cada etapa del taller."],
+      "imagen": { "archivo": "v27/panel/02-crecimiento.png", "alt": "Gráfico Crecimiento del taller con los botones 6 meses y 12 meses", "tipo": "captura",
+        "captura": { "url": "/dashboard", "esperar": { "texto": "Crecimiento del taller" } } },
+      "marcas": [
+        { "texto": "Gráfico de crecimiento.", "objetivo": { "texto": "Crecimiento del taller" } },
+        { "texto": "Cambiar a 6 o 12 meses.", "objetivo": { "contiene": "MESES", "tag": "button", "indice": 1 } }
+      ]
+    },
+    {
+      "titulo": "Use los accesos rápidos",
+      "texto": ["Al final del panel están los accesos a sus módulos (solo los que su usuario puede abrir). El menú lateral tiene las mismas secciones agrupadas."],
+      "imagen": { "archivo": "v27/panel/03-accesos-rapidos.png", "alt": "Bloque Accesos rápidos con tarjetas hacia Nueva proforma, Órdenes de trabajo, Inventario y otros módulos", "tipo": "captura",
+        "captura": { "url": "/dashboard", "esperar": { "texto": "Accesos rápidos" }, "acciones": [{ "desplazar": { "texto": "Accesos rápidos" } }] } },
+      "marcas": [
+        { "texto": "Accesos rápidos a sus módulos.", "objetivo": { "texto": "Accesos rápidos" } }
+      ]
+    }
+  ],
+  "resultado": "Con un vistazo sabe qué atender hoy y entra con un clic a la sección correspondiente. Los datos se actualizan solos cada minuto.",
+  "advertencias": [
+    "Las cifras de dinero solo aparecen para usuarios con permiso de Finanzas.",
+    "Si ve el mensaje de error con «Reintentar», el servidor no respondió: pulse Reintentar o recargue la página."
+  ],
+  "problemas": [
+    { "problema": "El panel aparece casi vacío.", "solucion": "Su usuario tiene pocos permisos. Pida al administrador que revise sus permisos en Usuarios y seguridad › Usuarios y permisos." }
+  ]
+}

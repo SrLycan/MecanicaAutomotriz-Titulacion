@@ -141,15 +141,45 @@ const resumenDashboard = async (req, res) => {
         }
         // Crecimiento: cada serie solo si el usuario puede ver ese modulo.
         if (v.taller || v.clientes || v.proformas || v.finanzas) {
+            // Cada tabla se recorre UNA vez y se agrupa por mes (antes eran
+            // subconsultas por cada mes: 12 recorridos por tabla). "x >= primer
+            // mes" equivale a "date_trunc('month', x) >= primer mes".
+            const ctes = [
+                `m AS (SELECT generate_series(date_trunc('month', CURRENT_DATE) - ($1::int - 1) * INTERVAL '1 month',
+                                              date_trunc('month', CURRENT_DATE), INTERVAL '1 month') AS mes)`,
+                'desde AS (SELECT MIN(mes) AS mes FROM m)',
+            ];
+            const unir = [];
+            const col = (activo, expr, alias) => `${activo ? expr : '0'} AS ${alias}`;
+            if (v.taller) {
+                ctes.push(`o AS (SELECT date_trunc('month', created_at) AS mes, COUNT(*) AS n FROM ordenes_trabajo WHERE created_at >= (SELECT mes FROM desde) GROUP BY 1)`);
+                unir.push('LEFT JOIN o ON o.mes = m.mes');
+            }
+            if (v.clientes) {
+                ctes.push(`c AS (SELECT date_trunc('month', created_at) AS mes, COUNT(*) AS n FROM clientes WHERE created_at >= (SELECT mes FROM desde) GROUP BY 1)`);
+                unir.push('LEFT JOIN c ON c.mes = m.mes');
+            }
+            if (v.proformas) {
+                ctes.push(`p AS (SELECT date_trunc('month', fecha_emision) AS mes, COUNT(*) AS n FROM proformas
+                                 WHERE fecha_emision >= (SELECT mes FROM desde) AND ($2::text[] IS NULL OR tipo = ANY($2)) GROUP BY 1)`);
+                unir.push('LEFT JOIN p ON p.mes = m.mes');
+            }
+            if (v.finanzas) {
+                ctes.push(`f AS (SELECT date_trunc('month', fecha) AS mes,
+                                        SUM(monto) FILTER (WHERE tipo = 'ingreso') AS ingresos,
+                                        SUM(monto) FILTER (WHERE tipo = 'egreso') AS egresos
+                                 FROM v_flujo_dinero WHERE categoria <> 'transferencia' AND fecha >= (SELECT mes FROM desde) GROUP BY 1)`);
+                unir.push('LEFT JOIN f ON f.mes = m.mes');
+            }
             consultas.serie = pool.query(
-                `SELECT TO_CHAR(m.mes, 'YYYY-MM') AS mes,
-                        ${v.taller ? `(SELECT COUNT(*) FROM ordenes_trabajo o WHERE date_trunc('month', o.created_at) = m.mes)` : '0'} AS ordenes,
-                        ${v.clientes ? `(SELECT COUNT(*) FROM clientes c WHERE date_trunc('month', c.created_at) = m.mes)` : '0'} AS clientes_nuevos,
-                        ${v.proformas ? `(SELECT COUNT(*) FROM proformas p WHERE date_trunc('month', p.fecha_emision) = m.mes AND ($2::text[] IS NULL OR p.tipo = ANY($2)))` : '0'} AS proformas,
-                        ${v.finanzas ? `(SELECT COALESCE(SUM(f.monto), 0) FROM v_flujo_dinero f WHERE f.tipo = 'ingreso' AND f.categoria <> 'transferencia' AND date_trunc('month', f.fecha) = m.mes)` : '0'} AS ingresos,
-                        ${v.finanzas ? `(SELECT COALESCE(SUM(f.monto), 0) FROM v_flujo_dinero f WHERE f.tipo = 'egreso' AND f.categoria <> 'transferencia' AND date_trunc('month', f.fecha) = m.mes)` : '0'} AS egresos
-                 FROM generate_series(date_trunc('month', CURRENT_DATE) - ($1::int - 1) * INTERVAL '1 month',
-                                      date_trunc('month', CURRENT_DATE), INTERVAL '1 month') AS m(mes)
+                `WITH ${ctes.join(',\n')}
+                 SELECT TO_CHAR(m.mes, 'YYYY-MM') AS mes,
+                        ${col(v.taller, 'COALESCE(o.n, 0)', 'ordenes')},
+                        ${col(v.clientes, 'COALESCE(c.n, 0)', 'clientes_nuevos')},
+                        ${col(v.proformas, 'COALESCE(p.n, 0)', 'proformas')},
+                        ${col(v.finanzas, 'COALESCE(f.ingresos, 0)', 'ingresos')},
+                        ${col(v.finanzas, 'COALESCE(f.egresos, 0)', 'egresos')}
+                 FROM m ${unir.join(' ')}
                  ORDER BY m.mes`, v.proformas ? [meses, v.tipos] : [meses]);
         }
         if (v.cartera) {
@@ -186,7 +216,13 @@ const resumenDashboard = async (req, res) => {
         }
 
         const claves = Object.keys(consultas);
-        const resultados = await Promise.all(Object.values(consultas));
+        // Los saldos de caja y cuentas van en la misma tanda (antes se pedian
+        // despues, uno tras otro, sumando varios viajes a la base).
+        const [resultados, saldoDeCaja, cuentasActivas] = await Promise.all([
+            Promise.all(Object.values(consultas)),
+            v.caja ? saldoCaja(pool) : null,
+            v.finanzas ? saldosCuentas(pool, { soloActivas: true }) : null,
+        ]);
         const r = Object.fromEntries(claves.map((k, i) => [k, resultados[i].rows]));
 
         const datos = {
@@ -244,11 +280,11 @@ const resumenDashboard = async (req, res) => {
             datos.cartera = { por_cobrar: num(c.por_cobrar), vencidas: Number(c.vencidas), monto_vencido: num(c.monto_vencido), cobrado_mes: num(r.cobradoMes[0].total) };
         }
         if (v.caja) {
-            const { saldo } = await saldoCaja(pool);
+            const { saldo } = saldoDeCaja;
             datos.caja = { abierta: Boolean(r.caja[0]), sesion: r.caja[0] || null, saldo };
         }
         if (v.finanzas) {
-            const cuentas = await saldosCuentas(pool, { soloActivas: true });
+            const cuentas = cuentasActivas;
             const f = r.flujoMes[0];
             datos.finanzas = {
                 disponible: redondear2(cuentas.reduce((s, c) => s + c.saldo, 0)),

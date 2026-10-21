@@ -8,6 +8,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors    = require('cors');
+const compression = require('compression');
 
 const authRoutes       = require('./routes/auth.routes');
 const inventoryRoutes  = require('./routes/inventory.routes');
@@ -58,6 +59,9 @@ const PORT = process.env.PORT || 5000;
 app.set('trust proxy', 1);
 app.disable('x-powered-by');
 app.use(cabecerasSeguridad);
+// Respuestas JSON/HTML comprimidas (gzip): los listados pesan 5-10 veces menos.
+// Los PDF, Excel e imagenes no se recomprimen (el filtro solo toma tipos de texto).
+app.use(compression({ threshold: 1024 }));
 
 // ── Middlewares globales ─────────────────────────────────────
 // CORS_ORIGIN admite una o varias URLs separadas por coma, por si el
@@ -171,9 +175,12 @@ process.on('unhandledRejection', (razon) => {
 // ping periodico para que el pool nunca quede vacio por inactividad.
 const pool = require('./config/db');
 const PING_MS = 4 * 60 * 1000;
+// Varias conexiones a la vez: una pagina como el Dashboard lanza sus
+// consultas en paralelo y cada conexion nueva cuesta el saludo TLS completo.
+const CONEXIONES_CALIENTES = Math.max(1, parseInt(process.env.DB_POOL_CALIENTES, 10) || 4);
 function calentarPostgres() {
-    const ping = () => pool.query('SELECT 1').catch(err =>
-        console.warn('[postgres] Ping fallido:', err.message));
+    const ping = () => Promise.all(Array.from({ length: CONEXIONES_CALIENTES }, () => pool.query('SELECT 1')))
+        .catch(err => console.warn('[postgres] Ping fallido:', err.message));
     ping();
     setInterval(ping, PING_MS).unref();
 }

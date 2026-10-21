@@ -1,0 +1,116 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "frontend-build",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "--yes",
+        "serve",
+        "-s",
+        "frontend/build",
+        "-l",
+        "4173"
+      ],
+      "port": 4173
+    },
+    {
+      "name": "backend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "backend",
+        "start"
+      ],
+      "port": 5000
+    },
+    {
+      "name": "backend-test-db",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "-e",
+        "process.chdir('backend');process.env.DB_NAME='ssswap_test';require(require('path').resolve('src/server.js'))"
+      ],
+      "port": 5000
+    },
+    {
+      "name": "backend-test-db-5001",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "-e",
+        "process.chdir('backend');process.env.DB_NAME='ssswap_test';process.env.PORT='5001';process.env.RUN_MIGRATIONS='false';require(require('path').resolve('src/server.js'))"
+      ],
+      "port": 5001
+    },
+    {
+      "name": "frontend-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "frontend",
+        "start"
+      ],
+      "port": 3000
+    },
+    {
+      "name": "frontend-dev-3001",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "-e",
+        "process.env.PORT='3001';process.env.BROWSER='none';process.env.REACT_APP_API_URL='http://localhost:5001/api';process.chdir('frontend');require('child_process').spawn('npx',['react-scripts','start'],{stdio:'inherit',shell:true,env:process.env})"
+      ],
+      "port": 3001
+    },
+    {
+      "name": "sri-simulado",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "C:/Users/ACERNI~1/AppData/Local/Temp/claude/C--Users-Acer-Nitro-Downloads-ssswap-MecanicaAutomotriz-Titulacion/0a9da19b-129f-4b7e-b7a4-f67ccacd5de8/scratchpad/sri_simulado.js"
+      ],
+      "port": 5099
+    },
+    {
+      "name": "backend-test-db-5001-srisim",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "-e",
+        "process.chdir('backend');process.env.DB_NAME='ssswap_test';process.env.PORT='5001';process.env.RUN_MIGRATIONS='false';process.env.SRI_WS_PRUEBAS='http://localhost:5099';require(require('path').resolve('src/server.js'))"
+      ],
+      "port": 5001
+    },
+    {
+      "name": "sri-local-ui",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "C:/Users/ACERNI~1/AppData/Local/Temp/claude/C--Users-Acer-Nitro-Downloads-ssswap-MecanicaAutomotriz-Titulacion/fe89bb0d-39b5-423c-9548-3e1bef991aaa/scratchpad/sri_local_ui.js"
+      ],
+      "port": 5098
+    },
+    {
+      "name": "backend-test-db-5001-sri-local",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "-e",
+        "process.chdir('backend');process.env.DB_NAME='ssswap_test';process.env.PORT='5001';process.env.RUN_MIGRATIONS='false';process.env.SRI_WS_PRODUCCION='http://127.0.0.1:5098';process.env.SRI_WS_PRUEBAS='http://127.0.0.1:5098';require(require('path').resolve('src/server.js'))"
+      ],
+      "port": 5001
+    },
+    {
+      "name": "sri-local-26",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "C:/Users/ACERNI~1/AppData/Local/Temp/claude/C--Users-Acer-Nitro-Downloads-ssswap-MecanicaAutomotriz-Titulacion/91cbf141-a122-46ab-99dd-80dd2f62f150/scratchpad/sri_local_26.js"
+      ],
+      "port": 5098
+    },
+    {
+      "name": "perf-vista",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "-e",
+        "process.env.API_PORT='5061';require('C:/Users/ACERNI~1/AppData/Local/Temp/claude/C--Users-Acer-Nitro-Downloads-ssswap-MecanicaAutomotriz-Titulacion/dcc19c05-ad2f-4a91-b425-8b1254545eab/scratchpad/bench/vista.js')"
+      ],
+      "port": 4174
+    }
+  ]
+}

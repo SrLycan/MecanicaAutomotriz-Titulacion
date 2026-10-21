@@ -112,7 +112,7 @@ export default function Dashboard() {
         { to: '/dashboard/ordenes', label: 'Órdenes de trabajo', sub: 'Avance de los vehículos', permiso: ['ordenes:ver'] },
         { to: '/dashboard/clientes', label: 'Clientes', sub: 'Registrar o buscar', permiso: ['clientes:ver'] },
         { to: '/dashboard/caja', label: 'Caja diaria', sub: 'Efectivo del día', permiso: ['caja:ver'] },
-        { to: '/dashboard/registrar', label: 'Registrar movimiento', sub: 'Entrada / salida de stock', permiso: ['registros_inventario:crear'] },
+        { to: '/dashboard/movimientos?tab=registrar', label: 'Registrar movimiento', sub: 'Entrada / salida de stock', permiso: ['registros_inventario:crear'] },
         { to: '/dashboard/inventario', label: 'Inventario', sub: 'Productos y stock', permiso: ['inventario_mecanica:ver'] },
         { to: '/dashboard/inventario?area=colisiones', label: 'Colisiones / Pintura', sub: 'Inventario del área', permiso: ['inventario_colisiones:ver'] },
         { to: '/dashboard/clientes?tab=pagare', label: 'Pagarés', sub: 'Cartera de clientes', permiso: ['cuentas_cobrar:ver'] },

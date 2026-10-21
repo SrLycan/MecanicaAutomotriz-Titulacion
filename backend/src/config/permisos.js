@@ -79,7 +79,8 @@ const MODULOS = [
 
     // ── Dinero ──
     { codigo: 'caja', nombre: 'Caja diaria', grupo: 'Finanzas',
-      acciones: [A.ver, acc('crear', 'Registrar movimientos de caja'), acc('aprobar', 'Abrir y cerrar caja')] },
+      acciones: [A.ver, acc('crear', 'Registrar movimientos de caja'), acc('aprobar', 'Abrir y cerrar caja'),
+          acc('eliminar', 'Anular movimientos manuales de caja'), propia('reabrir', 'Reabrir una caja cerrada')] },
     { codigo: 'finanzas', nombre: 'Finanzas, cuentas y nómina', grupo: 'Finanzas',
       acciones: [A.ver, A.crear, A.editar, acc('eliminar', 'Anular movimientos / pagos')] },
     { codigo: 'proveedores', nombre: 'Proveedores, compras y gastos', grupo: 'Proveedores', acciones: CRUD },
@@ -159,7 +160,7 @@ const PLANTILLAS = {
         ...p('vehiculos', 'ver', 'crear', 'editar', 'eliminar'),
         ...p('cuentas_cobrar', 'ver', 'crear', 'editar', 'eliminar'),
         ...p('pagos_clientes', 'crear', 'eliminar'),
-        ...p('caja', 'ver', 'crear', 'aprobar'),
+        ...p('caja', 'ver', 'crear', 'aprobar', 'eliminar', 'reabrir'),
         ...p('finanzas', 'ver', 'crear', 'editar', 'eliminar'),
         ...p('proveedores', 'ver', 'crear', 'editar', 'eliminar'),
         ...p('estadisticas', 'ver'),

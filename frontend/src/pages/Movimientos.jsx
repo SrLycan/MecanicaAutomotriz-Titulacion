@@ -33,7 +33,7 @@ export function clasificarMovimiento(m) {
 const fmtCant = (n) => (Number(n) % 1 === 0 ? String(Number(n)) : Number(n).toFixed(2));
 const AREA_LABEL = { mecanica: 'Mecánica', colisiones: 'Colisiones / Pintura' };
 
-export default function Movimientos() {
+export default function Movimientos({ embebido = false }) {
     const { isDark } = useTheme();
     // ?repuesto_id= : historial de un producto (desde Inventario o una factura de compra).
     const [searchParams] = useSearchParams();
@@ -131,7 +131,7 @@ export default function Movimientos() {
 
     return (
         <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1500 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 18, flexWrap: 'wrap', gap: 12 }}>
+            <div style={{ display: embebido ? 'none' : 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 18, flexWrap: 'wrap', gap: 12 }}>
                 <div>
                     <div className="ssswap-chip" style={{ marginBottom: 8 }}><span className="dot" /><span><NombreEmpresa /> · TRAZABILIDAD</span></div>
                     <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.6rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>Registros de inventario</h1>

@@ -26,7 +26,7 @@ const {
 } = require('../controllers/gastosProveedor.controller');
 
 const {
-    alertasCredito, listarCompras, obtenerCompra, crearCompra, actualizarCompra, cambiarEstadoCompra, eliminarCompra,
+    alertasCredito, catalogos, existeDocumento, listarCompras, obtenerCompra, crearCompra, actualizarCompra, cambiarEstadoCompra, eliminarCompra,
 } = require('../controllers/comprasProveedor.controller');
 
 const {
@@ -62,6 +62,8 @@ router.delete('/gastos/:id', eliminarGasto);
 // ── Compras ──────────────────────────────────────────────────
 router.get('/compras',              listarCompras);
 router.get('/compras/alertas-credito', alertasCredito);
+router.get('/compras/catalogos',     catalogos);
+router.get('/compras/documento',     existeDocumento);   // ¿ya existe este documento del proveedor?
 router.get('/compras/:id',          obtenerCompra);
 router.post('/compras',             crearCompra);
 router.put('/compras/:id',          actualizarCompra);

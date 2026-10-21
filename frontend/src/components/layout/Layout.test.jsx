@@ -73,7 +73,7 @@ describe('Layout — menú lateral según permisos', () => {
         mockEstadoAuth.permisos = ['*'];
         mockEstadoAuth.empresa = { id: 1, nombre: 'SS SWAP', slug: 'ss-swap' };
         renderLayout();
-        for (const g of ['Panel', 'Inventario', 'Taller', 'Clientes', 'Proveedores', 'Finanzas', 'Gráficas', 'Ajustes', 'Mi empresa', 'Plataforma']) {
+        for (const g of ['Panel', 'Inventario', 'Taller', 'Clientes', 'Proveedores', 'Finanzas', 'Gráficas', 'Configuración', 'Usuarios y seguridad', 'Plataforma']) {
             expect(menu().getByText(g)).toBeInTheDocument();
         }
         expect(screen.getByText('SUPERADMIN')).toBeInTheDocument();
@@ -85,7 +85,7 @@ describe('Layout — menú lateral según permisos', () => {
         mockEstadoAuth.permisos = [];
         renderLayout();
         expect(menu().getByText('Plataforma')).toBeInTheDocument();
-        for (const g of ['Inventario', 'Taller', 'Clientes', 'Finanzas', 'Mi empresa']) {
+        for (const g of ['Inventario', 'Taller', 'Clientes', 'Finanzas', 'Usuarios y seguridad', 'Configuración']) {
             expect(menu().queryByText(g)).not.toBeInTheDocument();
         }
         expect(screen.getByText('PLATAFORMA')).toBeInTheDocument();
@@ -96,7 +96,8 @@ describe('Layout — menú lateral según permisos', () => {
         mockEstadoAuth.permisos = ['usuarios:ver', 'auditoria:ver', 'empresa:ver', 'clientes:ver'];
         mockEstadoAuth.empresa = { id: 5, nombre: 'Taller Norte', slug: 'taller-norte' };
         renderLayout();
-        expect(menu().getByText('Mi empresa')).toBeInTheDocument();
+        expect(menu().getByText('Usuarios y seguridad')).toBeInTheDocument();
+        expect(menu().getByText('Configuración')).toBeInTheDocument();
         expect(menu().queryByText('Plataforma')).not.toBeInTheDocument();
         expect(screen.getByTitle('Empresa en la que estas trabajando')).toHaveTextContent('TALLER NORTE');
         // Sprint 24: la barra lateral muestra la identidad de la empresa de la sesion, no "SS SWAP".
@@ -129,9 +130,9 @@ describe('Layout — menú lateral según permisos', () => {
         renderLayout();
         expect(menu().getByText('Inventario')).toBeInTheDocument();
         expect(menu().getByText('Colisiones / Pintura')).toBeInTheDocument();
-        expect(menu().getByText('Registrar movimiento')).toBeInTheDocument();
+        expect(menu().getByText('Entradas y salidas')).toBeInTheDocument();
         expect(menu().queryByText('Inventario Mecánica')).not.toBeInTheDocument();
-        for (const g of ['Taller', 'Clientes', 'Proveedores', 'Finanzas', 'Gráficas', 'Ajustes', 'Usuarios y permisos']) {
+        for (const g of ['Taller', 'Clientes', 'Proveedores', 'Finanzas', 'Gráficas', 'Configuración', 'Usuarios y permisos']) {
             expect(menu().queryByText(g)).not.toBeInTheDocument();
         }
         // No consulta datos de modulos que no puede ver (insignias del menu).
@@ -148,6 +149,27 @@ describe('Layout — menú lateral según permisos', () => {
         expect(menu().getByText('Clientes')).toBeInTheDocument();
         expect(menu().getByText('Finanzas')).toBeInTheDocument();
         expect(menu().queryByText('Usuarios y permisos')).not.toBeInTheDocument();
+    });
+
+    test('Sprint 27: el menu no repite las pestañas de una misma pagina y conserva los atajos habituales', () => {
+        mockEstadoAuth.usuario = { id: 1, nombre: 'Dueño', rol: 'superadministrador' };
+        mockEstadoAuth.permisos = ['*'];
+        mockEstadoAuth.empresa = { id: 1, nombre: 'SS SWAP', slug: 'ss-swap' };
+        renderLayout();
+        for (const viejo of ['Registros', 'Registrar movimiento', 'Personal del taller', 'Clientes (portal)', 'Movimientos de dinero', 'Nómina / Empleados', 'Pagos / Historial']) {
+            expect(menu().queryByText(viejo)).not.toBeInTheDocument();
+        }
+        for (const atajo of ['Nueva proforma', 'Crear compra', 'Nueva factura', 'Entradas y salidas', 'Configuración tributaria', 'Bitácora', 'Auditoría']) {
+            expect(menu().getByText(atajo)).toBeInTheDocument();
+        }
+    });
+
+    test('Sprint 27: Graficas (enlace directo) respeta su permiso; registrar sin ver historial sigue en el menu', () => {
+        mockEstadoAuth.usuario = { id: 7, nombre: 'Bodega 2', rol: 'interno' };
+        mockEstadoAuth.permisos = ['registros_inventario:crear'];
+        renderLayout();
+        expect(menu().queryByText('Gráficas')).not.toBeInTheDocument();
+        expect(menu().getByText('Entradas y salidas')).toBeInTheDocument();
     });
 
     test('sin permisos solo aparece el Panel', () => {

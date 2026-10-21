@@ -1,0 +1,226 @@
+{
+  "id": "inventario",
+  "grupo": "INVENTARIO",
+  "titulo": "Inventario de productos",
+  "version": "1.0",
+  "actualizada": "2026-10-14",
+  "rutas": [
+    {
+      "path": "/dashboard/inventario"
+    }
+  ],
+  "descripcion": "Catálogo de repuestos e insumos del taller con su stock en tiempo real. Hay dos inventarios separados: Mecánica (con alertas de stock bajo) y Colisiones / Pintura. Aquí se crean y editan los productos y se ve de un vistazo qué falta.",
+  "funciones": [
+    "Cambiar entre Inventario Mecánica e Inventario Colisiones / Pintura.",
+    "Ver indicadores: total de productos, productos con stock bajo, unidades y valor del inventario.",
+    "Buscar por nombre, referencia o código del proveedor; filtrar por categoría o por stock bajo.",
+    "Crear, editar, desactivar o eliminar productos (según sus permisos).",
+    "Registrar una entrada o salida rápida de un producto y ver su historial.",
+    "Administrar categorías y exportar el listado a CSV (Excel)."
+  ],
+  "pasos": [
+    {
+      "titulo": "Elija el inventario y revise los indicadores",
+      "texto": [
+        "Arriba elija Inventario Mecánica o Inventario Colisiones / Pintura. Los indicadores se recalculan para el inventario elegido.",
+        "«Bajo stock» cuenta los productos de Mecánica que llegaron a su stock mínimo: atiéndalos antes de que falten."
+      ],
+      "imagen": {
+        "archivo": "v27/inventario/01-inventarios-e-indicadores.png",
+        "alt": "Inventario: tarjetas para elegir el inventario e indicadores de productos, stock bajo, unidades y valor",
+        "tipo": "captura",
+        "captura": {
+          "url": "/dashboard/inventario",
+          "esperar": {
+            "texto": "Total Repuestos"
+          }
+        }
+      },
+      "marcas": [
+        {
+          "texto": "Inventario Mecánica (seleccionado).",
+          "objetivo": {
+            "texto": "INVENTARIO MECÁNICA",
+            "tag": "button"
+          }
+        },
+        {
+          "texto": "Inventario Colisiones / Pintura.",
+          "objetivo": {
+            "texto": "INVENTARIO COLISIONES",
+            "tag": "button"
+          }
+        },
+        {
+          "texto": "Productos con stock bajo: requieren reposición.",
+          "objetivo": {
+            "texto": "Bajo Stock",
+            "tag": "p",
+            "subir": 2
+          }
+        }
+      ]
+    },
+    {
+      "titulo": "Busque y filtre",
+      "texto": [
+        "Escriba en el buscador parte del nombre, la referencia interna (MEC-000001) o el código del proveedor. Combine con la categoría o con «Solo bajo stock». Con «Exportar CSV» descarga lo que está viendo para abrirlo en Excel."
+      ],
+      "imagen": {
+        "archivo": "v27/inventario/02-buscar-y-filtrar.png",
+        "alt": "Barra de búsqueda, filtro de categoría, casilla Solo bajo stock y botón Exportar CSV",
+        "tipo": "captura",
+        "captura": {
+          "url": "/dashboard/inventario",
+          "esperar": {
+            "placeholder": "Buscar por nombre"
+          }
+        }
+      },
+      "marcas": [
+        {
+          "texto": "Buscador.",
+          "objetivo": {
+            "placeholder": "Buscar por nombre, referencia"
+          }
+        },
+        {
+          "texto": "Filtro por categoría.",
+          "objetivo": {
+            "selector": "select.inv-input"
+          }
+        },
+        {
+          "texto": "Mostrar solo productos con stock bajo.",
+          "objetivo": {
+            "texto": "Solo bajo stock",
+            "tag": "label"
+          }
+        },
+        {
+          "texto": "Exportar a CSV (Excel).",
+          "objetivo": {
+            "texto": "EXPORTAR CSV",
+            "tag": "button"
+          }
+        }
+      ]
+    },
+    {
+      "titulo": "Cree un producto",
+      "texto": [
+        "Pulse «Nuevo repuesto». Complete al menos el Nombre; el código interno (MEC-000001 / COL-000001) lo asigna el sistema. Indique el inventario, la categoría, los precios de compra y venta y el stock mínimo para recibir alertas.",
+        "Pulse «Crear repuesto» para guardar."
+      ],
+      "imagen": {
+        "archivo": "v27/inventario/03-nuevo-producto.png",
+        "alt": "Formulario Nuevo repuesto con los campos Inventario, Nombre, Categoría, precios y stock mínimo",
+        "tipo": "captura",
+        "captura": {
+          "url": "/dashboard/inventario",
+          "esperar": {
+            "texto": "NUEVO REPUESTO",
+            "tag": "button"
+          },
+          "acciones": [
+            {
+              "clic": {
+                "texto": "NUEVO REPUESTO",
+                "tag": "button"
+              }
+            }
+          ],
+          "recorte": {
+            "selector": ".modal-box"
+          }
+        }
+      },
+      "marcas": [
+        {
+          "texto": "Inventario donde quedará el producto.",
+          "objetivo": {
+            "campo": "INVENTARIO"
+          }
+        },
+        {
+          "texto": "Nombre (obligatorio).",
+          "objetivo": {
+            "campo": "NOMBRE *"
+          }
+        },
+        {
+          "texto": "Categoría.",
+          "objetivo": {
+            "campo": "CATEGORIA"
+          }
+        }
+      ]
+    },
+    {
+      "titulo": "Acciones de cada producto",
+      "texto": [
+        "En la columna Acciones de cada fila: ver el historial de entradas y salidas, registrar un movimiento rápido (entrada o salida), editar, eliminar y poner o quitar el producto de la tienda en línea. Pase el mouse sobre cada ícono para ver su nombre."
+      ],
+      "imagen": {
+        "archivo": "v27/inventario/04-acciones.png",
+        "alt": "Fila de la tabla de inventario con los botones Historial, Registrar movimiento, Editar y Eliminar",
+        "tipo": "captura",
+        "captura": {
+          "url": "/dashboard/inventario",
+          "esperar": {
+            "etiqueta": "Historial de entradas y salidas"
+          }
+        }
+      },
+      "marcas": [
+        {
+          "texto": "Historial de entradas y salidas del producto.",
+          "objetivo": {
+            "etiqueta": "Historial de entradas y salidas"
+          }
+        },
+        {
+          "texto": "Registrar movimiento (entrada / salida).",
+          "objetivo": {
+            "etiqueta": "Registrar movimiento"
+          }
+        },
+        {
+          "texto": "Editar.",
+          "objetivo": {
+            "etiqueta": "Editar"
+          }
+        },
+        {
+          "texto": "Eliminar.",
+          "objetivo": {
+            "etiqueta": "Eliminar"
+          }
+        },
+        {
+          "texto": "Poner en venta en la tienda en línea (o quitarlo).",
+          "objetivo": {
+            "etiqueta": "venta"
+          }
+        }
+      ]
+    }
+  ],
+  "resultado": "El producto aparece en la tabla con su código interno. Cada entrada o salida queda registrada en Inventario › Entradas y salidas con el usuario, la fecha y el stock antes y después.",
+  "advertencias": [
+    "Para crear o editar productos necesita el permiso del inventario correspondiente (Mecánica o Colisiones).",
+    "Un producto con historial no se borra del todo: se desactiva para conservar sus registros.",
+    "Las alertas de stock bajo solo aplican al inventario de Mecánica.",
+    "Las compras a proveedores suman al inventario automáticamente: no las registre otra vez a mano."
+  ],
+  "problemas": [
+    {
+      "problema": "No encuentro un producto que sé que existe.",
+      "solucion": "Revise que esté en el inventario correcto (Mecánica o Colisiones) y quite los filtros activos con «Limpiar todo»."
+    },
+    {
+      "problema": "No me deja registrar una salida.",
+      "solucion": "La salida no puede dejar el stock en negativo. Verifique el stock actual o registre primero la entrada pendiente."
+    }
+  ]
+}

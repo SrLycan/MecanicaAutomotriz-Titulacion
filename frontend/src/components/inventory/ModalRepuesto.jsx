@@ -7,6 +7,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { useTheme } from '../../context/ThemeContext';
 import { resolveImagenSrc, fileToDataUrl, comprimirImagen } from '../../utils/imagen';
+import api from '../../services/api';
+
+// Grupos del selector de categoria: una seccion por inventario.
+const GRUPOS_CATEGORIA = [
+    { area: 'mecanica',   titulo: 'Mecánica' },
+    { area: 'colisiones', titulo: 'Colisiones / Pintura' },
+];
 
 const EMPTY = {
     codigo: '',            // referencia interna: la genera el sistema
@@ -99,7 +106,39 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
         }
     }, [repuesto, areaInicial]);
 
+    // Categorias de los dos inventarios (las del area actual llegan por props;
+    // aqui se piden todas para mostrar Mecanica y Colisiones / Pintura).
+    const [todasCategorias, setTodasCategorias] = useState(null);
+    useEffect(() => {
+        let vivo = true;
+        api.get('/inventory/categorias')
+            .then(r => { if (vivo) setTodasCategorias(r.data.categorias || []); })
+            .catch(() => {});
+        return () => { vivo = false; };
+    }, []);
+    const listaCategorias = todasCategorias || categorias || [];
+    // Las categorias sin area (Filtros, Frenos, Aceites...) son las de mecanica
+    // de siempre: se listan en Mecanica sin obligar a cambiar de inventario.
+    const categoriasDe = (a) => listaCategorias.filter(c => (c.area || 'mecanica') === a);
+
     const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+    // Elegir una categoria de un inventario mueve el producto a ese inventario.
+    const handleCategoria = (e) => {
+        const id = e.target.value;
+        const cat = listaCategorias.find(c => String(c.id) === String(id));
+        setForm(f => ({ ...f, categoria_id: id, area: cat?.area || f.area }));
+    };
+
+    // Cambiar de inventario quita una categoria que pertenece al otro.
+    const handleArea = (e) => {
+        const nueva = e.target.value;
+        setForm(f => {
+            const cat = listaCategorias.find(c => String(c.id) === String(f.categoria_id));
+            const choca = cat?.area && cat.area !== nueva;
+            return { ...f, area: nueva, categoria_id: choca ? '' : f.categoria_id };
+        });
+    };
     const onFocus = (e) => { e.target.style.borderColor = SKY; e.target.style.boxShadow = `0 0 0 3px rgba(14,165,233,.14)`; };
     const onBlur  = (e) => { e.target.style.borderColor = bdr; e.target.style.boxShadow = 'none'; };
 
@@ -188,7 +227,7 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
                         {/* Inventario / area (Sprint 14) */}
                         <div style={{ gridColumn: '1/-1' }}>
                             <label style={labelSt}>INVENTARIO</label>
-                            <select name="area" value={form.area} onChange={handleChange} onFocus={onFocus} onBlur={onBlur} style={inputSt}>
+                            <select name="area" value={form.area} onChange={handleArea} onFocus={onFocus} onBlur={onBlur} style={inputSt}>
                                 <option value="mecanica">Inventario Mecánica</option>
                                 <option value="colisiones">Inventario Colisiones / Pintura</option>
                             </select>
@@ -246,10 +285,14 @@ export default function ModalRepuesto({ repuesto, categorias, onGuardar, onCerra
                         {/* Categoria */}
                         <div style={{ gridColumn: '1/-1' }}>
                             <label style={labelSt}>CATEGORIA</label>
-                            <select name="categoria_id" value={form.categoria_id} onChange={handleChange}
+                            <select name="categoria_id" value={form.categoria_id} onChange={handleCategoria}
                                 onFocus={onFocus} onBlur={onBlur} style={inputSt}>
                                 <option value="">Sin categoria</option>
-                                {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                                {GRUPOS_CATEGORIA.map(g => (
+                                    <optgroup key={g.area} label={g.titulo}>
+                                        {categoriasDe(g.area).map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                                    </optgroup>
+                                ))}
                             </select>
                         </div>
 

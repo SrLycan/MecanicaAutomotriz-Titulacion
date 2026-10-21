@@ -15,7 +15,7 @@
  *    salia como basura ilegible, p. ej. en los datos del vehiculo.
  *    Ademas todo texto pasa por limpiarTexto() (NFC + sin caracteres de
  *    control/ancho cero).
- *  - Encabezado con el nombre comercial "SS Swap - SSarango Sosa
+ *  - Encabezado con el nombre comercial "SS Swap - Sarango Sosa
  *    Intercambio Inteligente" y el logotipo original; numero de proforma
  *    destacado sin recuadros.
  *  - Tablas con el CODIGO DE REFERENCIA INTERNO del inventario (nunca el

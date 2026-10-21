@@ -34,6 +34,7 @@ const { registrarAccionBitacora } = require('./ordenesHistorial.service');
 const { redondear2 } = require('../utils/numeros');
 const { marcaDe, COLUMNAS_EMPRESA_SQL } = require('./marcaEmpresa');
 const { generarFacturaCompraPdf } = require('./facturaCompraPdf.service');
+const { TIPOS_REGISTRO, SUSTENTOS, SUSTENTO_POR_REGISTRO, normalizarNumeroDocumento, tarifaIvaDetalle } = require('../utils/comprasDocumento');
 
 const DIAS_CREDITO = 15;
 const METODOS = ['efectivo', 'transferencia', 'tarjeta', 'cheque', 'otro'];
@@ -485,6 +486,8 @@ async function descartar(id) {
 /**
  * Registra la compra. body:
  * { proveedor_id? | crear_proveedor:true, forma_pago:'contado'|'credito', metodo_pago?, referencia_pago?,
+ *   fecha_vencimiento? (credito; por defecto emision + 15 dias), area? (inventario principal),
+ *   tipo_registro?: 'inventario'|'gasto'|'activo_fijo', sustento_tributario? ('00'-'15'),
  *   aceptar_advertencias?: true,
  *   lineas: [{ detalle_id, accion:'existente'|'nuevo'|'omitir', repuesto_id?, area?, cantidad_recibida?,
  *              confirmar_nuevo?: true, nuevo?: { nombre?, categoria_id?, precio_venta?, stock_minimo?, unidad_medida? } }] }
@@ -498,8 +501,14 @@ async function confirmar(id, body, req) {
     if (!formaPago) throw new ErrorNegocio(400, "Indique la forma de pago: 'contado' o 'credito'.");
     const metodo = body.metodo_pago || 'transferencia';
     if (formaPago === 'contado' && !METODOS.includes(metodo)) throw new ErrorNegocio(400, 'Método de pago inválido.');
+    const tipoRegistro = body.tipo_registro || 'inventario';
+    if (!TIPOS_REGISTRO.includes(tipoRegistro)) throw new ErrorNegocio(400, 'Tipo de registro inválido.');
+    const sustento = body.sustento_tributario ? String(body.sustento_tributario) : SUSTENTO_POR_REGISTRO[tipoRegistro];
+    if (!SUSTENTOS[sustento]) throw new ErrorNegocio(400, 'Sustento tributario inválido.');
     const lineasBody = Array.isArray(body.lineas) ? body.lineas : [];
     const areasSistema = await areasValidas();
+    const areaCompra = body.area || null;
+    if (areaCompra && !areasSistema.includes(areaCompra)) throw new ErrorNegocio(400, 'Inventario de destino inválido.');
     const areasVer = areasInventarioPermitidas(usuario, 'ver');
     const areasCrear = areasInventarioPermitidas(usuario, 'crear');
 
@@ -553,13 +562,37 @@ async function confirmar(id, body, req) {
         if (faltan.length) throw new ErrorNegocio(400, `Falta decidir qué hacer con ${faltan.length} artículo(s) (líneas ${faltan.map(d => d.linea).join(', ')}).`);
         if (decision.size !== detalles.length) throw new ErrorNegocio(400, 'Hay decisiones para artículos que no pertenecen a esta factura.');
 
+        // ── Vencimiento: el elegido (no antes de la emision) o emision + 15 dias ──
+        let vence = null;
+        if (formaPago === 'credito' && body.fecha_vencimiento) {
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(String(body.fecha_vencimiento))) throw new ErrorNegocio(400, 'La fecha de vencimiento es inválida.');
+            const { rows: antes } = await client.query('SELECT $1::date < fecha_emision AS antes FROM facturas_compra WHERE id = $2', [body.fecha_vencimiento, f.id]);
+            if (antes[0]?.antes) throw new ErrorNegocio(400, 'La fecha de vencimiento no puede ser anterior a la fecha de emisión de la factura.');
+            vence = body.fecha_vencimiento;
+        }
+
+        // ── Sin duplicados: el mismo documento del proveedor no entra dos veces ──
+        let numeroDocumento = null;
+        try { numeroDocumento = normalizarNumeroDocumento(f.numero); } catch { numeroDocumento = null; }
+        if (numeroDocumento) {
+            const { rows: dup } = await client.query(
+                `SELECT id FROM compras_proveedor WHERE proveedor_id = $1 AND tipo_documento = 'factura' AND numero_documento = $2 AND estado <> 'cancelada' LIMIT 1`,
+                [proveedorId, numeroDocumento]);
+            if (dup[0]) {
+                throw new ErrorNegocio(409, `Ya existe un registro con esta información: la factura ${numeroDocumento} de este proveedor ya fue ingresada (compra #${dup[0].id}).`,
+                    { codigo: 'DOCUMENTO_DUPLICADO', compra_id: dup[0].id });
+            }
+        }
+
         // ── Compra (Proveedores › Compras), ya recibida ──
         const { rows: cr } = await client.query(
-            `INSERT INTO compras_proveedor (proveedor_id, usuario_id, estado, fecha_solicitud, fecha_recepcion, notas, forma_pago, fecha_vencimiento, subtotal, iva, total)
+            `INSERT INTO compras_proveedor (proveedor_id, usuario_id, estado, fecha_solicitud, fecha_recepcion, notas, forma_pago, fecha_vencimiento, subtotal, iva, total,
+                                            tipo_documento, numero_documento, area, tipo_registro, sustento_tributario)
              VALUES ($1,$2,'recibida',$3::date,CURRENT_DATE,$4,$5::varchar,
-                     CASE WHEN $5::varchar = 'credito' THEN $3::date + $6::int END, $7,$8,$9) RETURNING id`,
+                     CASE WHEN $5::varchar = 'credito' THEN COALESCE($10::date, $3::date + $6::int) END, $7,$8,$9,
+                     'factura',$11,$12,$13,$14) RETURNING id`,
             [proveedorId, usuario.id, f.fecha_emision, `Factura ${f.numero} (clave ${f.clave_acceso}).`, formaPago, DIAS_CREDITO,
-             f.total_sin_impuestos, f.total_iva, f.importe_total]);
+             f.total_sin_impuestos, f.total_iva, f.importe_total, vence, numeroDocumento, areaCompra, tipoRegistro, sustento]);
         const compraId = cr[0].id;
         const referencia = `FC-${f.numero}`;
         const resultado = [];
@@ -617,11 +650,11 @@ async function confirmar(id, body, req) {
                 if (!(precioVenta >= 0) || !(stockMin >= 0)) throw new ErrorNegocio(400, `Línea ${d.linea}: precio de venta o stock mínimo inválidos.`);
                 codigoCreado = await generarCodigoReferencia(client, area);
                 const { rows: nr } = await client.query(
-                    `INSERT INTO repuestos (codigo, nombre, descripcion, categoria_id, precio_compra, precio_venta, stock_actual, stock_minimo, unidad_medida, area, codigo_proveedor, en_venta)
-                     VALUES ($1,$2,$3,$4,$5,$6,0,$7,$8,$9,$10,FALSE) RETURNING id, codigo, nombre, area, stock_actual`,
+                    `INSERT INTO repuestos (codigo, nombre, descripcion, categoria_id, precio_compra, precio_venta, stock_actual, stock_minimo, unidad_medida, area, codigo_proveedor, en_venta, origen_creacion, creado_por)
+                     VALUES ($1,$2,$3,$4,$5,$6,0,$7,$8,$9,$10,FALSE,'factura_compra',$11) RETURNING id, codigo, nombre, area, stock_actual`,
                     [codigoCreado, String(n.nombre || d.descripcion).trim().slice(0, 200), `Ingresado por la factura ${f.numero} de ${f.emisor_razon_social || f.emisor_ruc}.`,
                      categoriaId, costo, precioVenta, stockMin, String(n.unidad_medida || d.unidad_medida || 'unidad').slice(0, 30), area,
-                     codigoProv ? String(codigoProv).slice(0, 100) : null]);
+                     codigoProv ? String(codigoProv).slice(0, 100) : null, usuario.id]);
                 repuesto = nr[0];
             }
 
@@ -647,9 +680,10 @@ async function confirmar(id, body, req) {
                 }
             }
             await client.query(
-                `INSERT INTO compras_proveedor_items (compra_id, repuesto_id, descripcion, cantidad, cantidad_recibida, precio_unitario, subtotal)
-                 VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-                [compraId, repuesto?.id || null, String(d.descripcion).slice(0, 200), cantFact, l.accion === 'omitir' ? 0 : recibida, costo, d.precio_total_sin_impuesto]);
+                `INSERT INTO compras_proveedor_items (compra_id, repuesto_id, descripcion, cantidad, cantidad_recibida, precio_unitario, subtotal, iva_porcentaje)
+                 VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+                [compraId, repuesto?.id || null, String(d.descripcion).slice(0, 200), cantFact, l.accion === 'omitir' ? 0 : recibida, costo, d.precio_total_sin_impuesto,
+                 tarifaIvaDetalle(d.impuestos)]);
             await client.query(
                 `UPDATE facturas_compra_detalles SET accion = $2, repuesto_id = $3, area = $4, cantidad_recibida = $5, costo_unitario = $6 WHERE id = $1`,
                 [d.id, l.accion, repuesto?.id || null, repuesto?.area || null, l.accion === 'omitir' ? null : recibida, costo]);

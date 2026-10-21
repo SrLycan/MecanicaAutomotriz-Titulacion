@@ -135,6 +135,98 @@ const listarRepuestos = async (req, res) => {
 };
 
 /**
+ * GET /api/inventory/historial-creacion
+ * Sprint 28: productos creados en el inventario, del mas reciente al mas
+ * antiguo, con su origen (manual o factura de compra del proveedor), quien
+ * lo creo y, si vino de una factura, el numero, el proveedor y la cantidad
+ * ingresada. Incluye productos dados de baja (activo = FALSE).
+ * Filtros: q, origen, area, fecha_inicio, fecha_fin, page, limit.
+ */
+const ORIGENES_CREACION = ['manual', 'factura_compra', 'importacion'];
+const listarHistorialCreacion = async (req, res) => {
+    const { q, origen, area, fecha_inicio, fecha_fin, page = 1, limit = 25 } = req.query;
+    const pageNum  = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 25));
+    const offset   = (pageNum - 1) * limitNum;
+    const fechaValida = (v) => /^\d{4}-\d{2}-\d{2}$/.test(String(v || ''));
+
+    let where = 'WHERE TRUE';
+    const params = [];
+    if (q) {
+        params.push(`%${q}%`);
+        where += ` AND (r.nombre ILIKE $${params.length} OR r.codigo ILIKE $${params.length} OR r.codigo_proveedor ILIKE $${params.length})`;
+    }
+    if (area && (await areasValidas()).includes(area)) {
+        params.push(area);
+        where += ` AND r.area = $${params.length}`;
+    }
+    if (fechaValida(fecha_inicio)) {
+        params.push(fecha_inicio);
+        where += ` AND r.created_at >= $${params.length}::date`;
+    }
+    if (fechaValida(fecha_fin)) {
+        params.push(fecha_fin);
+        where += ` AND r.created_at < ($${params.length}::date + INTERVAL '1 day')`;
+    }
+    const visibles = areasRepuestosVisibles(req.usuario);
+    if (visibles) {
+        params.push(visibles);
+        where += ` AND r.area = ANY($${params.length})`;
+    }
+    // El resumen por origen ignora el filtro de origen (muestra los tres totales).
+    const whereResumen = where;
+    const paramsResumen = [...params];
+    if (origen && ORIGENES_CREACION.includes(origen)) {
+        params.push(origen);
+        where += ` AND COALESCE(r.origen_creacion, 'manual') = $${params.length}`;
+    }
+
+    // Linea de la factura que creo el producto (solo hay una con accion 'nuevo').
+    const desde = `
+        FROM repuestos r
+        LEFT JOIN categorias_repuesto c ON c.id = r.categoria_id
+        LEFT JOIN LATERAL (
+            SELECT d.factura_id, d.cantidad_recibida, d.costo_unitario
+              FROM facturas_compra_detalles d
+             WHERE d.repuesto_id = r.id AND d.accion = 'nuevo'
+             ORDER BY d.id LIMIT 1
+        ) fd ON TRUE
+        LEFT JOIN facturas_compra f ON f.id = fd.factura_id
+        LEFT JOIN proveedores p ON p.id = f.proveedor_id
+        LEFT JOIN usuarios u ON u.id = COALESCE(r.creado_por, f.registrada_por)`;
+    try {
+        const [{ rows: cnt }, { rows }, { rows: porOrigen }] = await Promise.all([
+            pool.query(`SELECT COUNT(*) AS total ${desde} ${where}`, params),
+            pool.query(
+                `SELECT r.id, r.codigo, r.codigo_proveedor, r.nombre, r.area, r.activo, r.stock_actual, r.precio_compra, r.precio_venta,
+                        r.unidad_medida, r.created_at, c.nombre AS categoria_nombre,
+                        COALESCE(r.origen_creacion, CASE WHEN fd.factura_id IS NOT NULL THEN 'factura_compra' ELSE 'manual' END) AS origen,
+                        u.nombre AS usuario_nombre,
+                        f.id AS factura_id, f.numero AS factura_numero, fd.cantidad_recibida AS cantidad_ingresada, fd.costo_unitario,
+                        COALESCE(p.nombre_comercial, p.razon_social, f.emisor_razon_social) AS proveedor_nombre
+                 ${desde} ${where}
+                 ORDER BY r.created_at DESC NULLS LAST, r.id DESC
+                 LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
+                [...params, limitNum, offset]),
+            pool.query(
+                `SELECT COALESCE(r.origen_creacion, 'manual') AS origen, COUNT(*)::int AS total ${desde} ${whereResumen} GROUP BY 1`, paramsResumen),
+        ]);
+        const total = parseInt(cnt[0].total, 10);
+        const resumen = { manual: 0, factura_compra: 0, importacion: 0 };
+        porOrigen.forEach(x => { resumen[x.origen] = x.total; });
+        return res.json({
+            productos: rows.map(normalizarCantidades),
+            total, page: pageNum, limit: limitNum, totalPages: Math.max(1, Math.ceil(total / limitNum)),
+            resumen,
+        });
+    } catch (err) {
+        console.error('Error listarHistorialCreacion:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
+        return res.status(500).json({ error: 'Error al obtener el historial de productos.' });
+    }
+};
+
+/**
  * GET /api/inventory/repuestos/:id
  */
 const obtenerRepuesto = async (req, res) => {
@@ -190,8 +282,8 @@ const crearRepuesto = async (req, res) => {
         const codigo = await generarCodigoReferencia(pool, area);
         const { rows } = await pool.query(
             `INSERT INTO repuestos
-                (codigo, nombre, descripcion, categoria_id, precio_compra, precio_venta, stock_actual, stock_minimo, unidad_medida, imagen_url, en_venta, area, codigo_proveedor)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+                (codigo, nombre, descripcion, categoria_id, precio_compra, precio_venta, stock_actual, stock_minimo, unidad_medida, imagen_url, en_venta, area, codigo_proveedor, origen_creacion, creado_por)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'manual',$14)
              RETURNING *`,
             [
                 codigo,
@@ -207,6 +299,7 @@ const crearRepuesto = async (req, res) => {
                 en_venta === true || en_venta === 'true',
                 area,
                 limpiarCodigoProveedor(req.body.codigo_proveedor),
+                req.usuario?.id || null,
             ]
         );
         return res.status(201).json(normalizarCantidades(rows[0]));
@@ -671,4 +764,4 @@ const toggleEnVenta = async (req, res) => {
     }
 };
 
-module.exports = { generarCodigoReferencia, areasValidas, listarRepuestos, obtenerRepuesto, crearRepuesto, actualizarRepuesto, eliminarRepuesto, registrarMovimiento, listarMovimientos, filtrosMovimientos, listarCategorias, crearCategoria, actualizarCategoria, eliminarCategoria, toggleEnVenta, listarPublico };
+module.exports = { generarCodigoReferencia, areasValidas, listarRepuestos, listarHistorialCreacion, obtenerRepuesto, crearRepuesto, actualizarRepuesto, eliminarRepuesto, registrarMovimiento, listarMovimientos, filtrosMovimientos, listarCategorias, crearCategoria, actualizarCategoria, eliminarCategoria, toggleEnVenta, listarPublico };

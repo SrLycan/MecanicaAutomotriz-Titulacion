@@ -9,6 +9,7 @@ import api from '../../services/api';
 import { useConfirm } from '../common/ConfirmDialog';
 import { useAuth } from '../../context/AuthContext';
 import { nuevaClaveIdempotencia, conClave } from '../../utils/idempotencia';
+import RegistradoPor from '../common/RegistradoPor';
 
 function IconPlus()  { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>; }
 function IconEdit()  { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>; }
@@ -104,6 +105,7 @@ export default function ProveedoresTab({ theme, proveedores, loading, cargarProv
                                     <td>
                                         <p style={{ fontFamily: "'Outfit'", fontWeight: 600, color: txt }}>{p.nombre_comercial}</p>
                                         {p.razon_social && <p style={{ fontSize: '.74rem', color: mut }}>{p.razon_social}</p>}
+                                        <RegistradoPor nombre={p.creado_por_nombre} fechaRegistro={p.created_at} color={mut} />
                                     </td>
                                     <td style={{ color: txtSf }}>{p.ruc || '—'}</td>
                                     <td style={{ color: txtSf }}>{p.categoria || '—'}</td>
@@ -144,13 +146,13 @@ export default function ProveedoresTab({ theme, proveedores, loading, cargarProv
     );
 }
 
-function ModalProveedor({ theme, data, onClose, onGuardar }) {
+export function ModalProveedor({ theme, data, onClose, onGuardar, etiqueta }) {
     const { txt, mut, bdr, inputBg, boxBg, SKY, SKY_DEEP, labelSt, inputSt } = theme;
     const [form, setForm] = useState(data ? { ...EMPTY_PROV, ...data } : EMPTY_PROV);
     const [saving, setSaving] = useState(false);
     const enviando = useRef(false);                       // bloquea el doble clic antes de re-renderizar
     const [clave] = useState(nuevaClaveIdempotencia);     // una clave por formulario abierto
-    const esEdicion = Boolean(data);
+    const esEdicion = Boolean(data?.id);   // sin id = alta con datos precargados (p. ej. de una factura)
 
     const onChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -168,7 +170,7 @@ function ModalProveedor({ theme, data, onClose, onGuardar }) {
             <div className="modal-box" style={{ maxWidth: 640, background: boxBg, border: `1px solid ${bdr}`, padding: 28 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
                     <div>
-                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 6 }}>PROVEEDORES</p>
+                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 6 }}>{etiqueta || 'PROVEEDORES'}</p>
                         <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.6rem', letterSpacing: '.04em', color: txt }}>{esEdicion ? 'Editar Proveedor' : 'Nuevo Proveedor'}</h2>
                     </div>
                     <button onClick={onClose} style={{ background: 'none', border: `1px solid ${bdr}`, borderRadius: 9, padding: 7, cursor: 'pointer', color: mut }}><IconX /></button>

@@ -1,118 +1,60 @@
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
-* { box-sizing: border-box; }
-body { background: #050505; }
-::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-track { background: #050505; }
-::-webkit-scrollbar-thumb { background: rgba(59,123,171,.3); border-radius: 8px; }
+/* Catálogo público de servicios. Todo bajo .web (ver styles/web-publica.css). */
 
-@keyframes svFadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
-.sv-fade { animation: svFadeUp .6s cubic-bezier(.4,0,.2,1) both; }
-.reveal { opacity: 0; transform: translateY(24px); transition: opacity .6s cubic-bezier(.4,0,.2,1), transform .6s cubic-bezier(.4,0,.2,1); }
-.reveal.in-view { opacity: 1; transform: none; }
+/* ── Cabecera con buscador ── */
+.web .sv-cabecera { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 380px); gap: 32px; align-items: end; }
+.web .sv-cabecera .w-lead { max-width: 58ch; }
+.web .sv-buscador { position: relative; color: rgba(255, 255, 255, .55); }
+.web .sv-buscador svg { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); pointer-events: none; }
+.web .sv-search { width: 100%; min-height: 54px; padding: 0 20px 0 50px; border-radius: 14px; font-family: var(--w-fuente-texto); font-size: 1rem; color: #fff; background: rgba(255, 255, 255, .07); border: 1px solid rgba(255, 255, 255, .18); outline: none; transition: border-color .2s, background-color .2s, box-shadow .2s; }
+.web .sv-search::placeholder { color: rgba(255, 255, 255, .5); }
+.web .sv-search:focus { border-color: var(--w-celeste); background: rgba(255, 255, 255, .1); box-shadow: 0 0 0 4px rgba(61, 180, 239, .18); }
 
-/* ── Despliegue tipo acordeon para "Como funciona" (controlado por scroll, ver JS) ── */
-.hiw-card { --p: 0; opacity: var(--p); transform: translateY(calc((1 - var(--p)) * 42px)) scale(calc(.9 + var(--p) * .1)); will-change: opacity, transform; }
-.hiw-connector { --p: 0; }
-.hiw-connector-fill { width: calc(var(--p) * 100%) !important; }
-
-.mono { font-family: 'JetBrains Mono', monospace; }
-.grad-text-gold { background: linear-gradient(135deg, #3b7bab 0%, #7fabce 50%, #3b7bab 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-.grad-text-white { background: linear-gradient(180deg, #ffffff 0%, rgba(255,255,255,.65) 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-
-/* ── Glow azul (igual que en el Home) ── */
-@keyframes shimmerSweep { 0% { background-position: -300% center; } 100% { background-position: 300% center; } }
-.grad-text-rainbow {
-    background: linear-gradient(90deg, #3b7bab 0%, #7fabce 18%, #cfe3f3 34%, #7fabce 50%, #3b7bab 66%, #4a83b3 82%, #3b7bab 100%);
-    background-size: 280% auto;
-    -webkit-background-clip: text; background-clip: text;
-    -webkit-text-fill-color: transparent;
-    animation: shimmerSweep 5s linear infinite;
-    filter: drop-shadow(0 0 18px rgba(59,123,171,.55)) drop-shadow(0 0 36px rgba(127,171,206,.3));
-}
-
-.sv-search { width: 100%; max-width: 420px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.12); border-radius: 999px; padding: 13px 22px; font-family: 'Outfit', sans-serif; font-size: .92rem; color: #fff; outline: none; transition: border-color .2s, background .2s; }
-.sv-search::placeholder { color: rgba(255,255,255,.35); }
-.sv-search:focus { border-color: #3b7bab; background: rgba(255,255,255,.06); }
-
-.sv-card { background: linear-gradient(180deg, #141414 0%, #0e0e0e 100%); border: 1px solid rgba(255,255,255,.07); border-radius: 18px; padding: 0; transition: all .3s cubic-bezier(.4,0,.2,1); position: relative; overflow: hidden; }
-.sv-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(59,123,171,.6), transparent); opacity: 0; transition: opacity .3s; z-index: 2; }
-.sv-card:hover { border-color: rgba(59,123,171,.4); transform: translateY(-6px); box-shadow: 0 24px 50px -20px rgba(0,0,0,.8); }
-.sv-card:hover::before { opacity: 1; }
-.sv-card:hover .sv-photo img { transform: scale(1.06); }
-.sv-card-body { padding: 20px 24px 26px; }
-.sv-photo { position: relative; width: 100%; height: 160px; overflow: hidden; background: linear-gradient(160deg, rgba(59,123,171,.16), rgba(10,10,10,.5)); }
-.sv-photo img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .5s cubic-bezier(.4,0,.2,1); }
-.sv-photo-fallback { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
-.sv-icon { transition: transform .3s; }
-
-.ps-btn-primary { display: inline-flex; align-items: center; gap: 10px; font-family: 'Outfit', sans-serif; font-weight: 700; font-size: .92rem; color: #0a0a0a; background: #3b7bab; border: none; border-radius: 999px; padding: 15px 32px; cursor: pointer; text-decoration: none; transition: all .25s cubic-bezier(.4,0,.2,1); box-shadow: 0 8px 24px -6px rgba(59,123,171,.5); }
-.ps-btn-primary:hover { background: #5a93c4; transform: translateY(-2px); box-shadow: 0 14px 36px -8px rgba(59,123,171,.7); }
-.ps-btn-outline { display: inline-flex; align-items: center; gap: 10px; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: .92rem; color: #fff; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.18); border-radius: 999px; padding: 14px 32px; cursor: pointer; text-decoration: none; transition: all .25s; }
-.ps-btn-outline:hover { border-color: #3b7bab; color: #3b7bab; background: rgba(59,123,171,.08); transform: translateY(-2px); }
-
-.step-line { position: absolute; top: 26px; left: calc(50% + 26px); right: calc(-50% + 26px); height: 1px; background: linear-gradient(90deg, rgba(59,123,171,.5), rgba(59,123,171,0)); }
-
-/* ── Como funciona (premium) ── */
-@keyframes stepDash { from { stroke-dashoffset: 24; } to { stroke-dashoffset: 0; } }
-.hiw-track { position: relative; }
-.hiw-connector { position: absolute; top: 68px; left: 0; right: 0; height: 2px; z-index: 0; }
-.hiw-connector-line { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(255,255,255,.06), rgba(255,255,255,.06)); border-radius: 2px; }
-.hiw-connector-fill { position: absolute; inset: 0; width: 0%; background: linear-gradient(90deg, #3b7bab, #7fabce); border-radius: 2px; transition: width .15s linear; }
-.hiw-card {
-    position: relative; z-index: 1; text-align: center;
-    padding: 34px 22px 28px;
-    background: linear-gradient(180deg, #131a24 0%, #0b0f16 100%);
-    border: 1px solid rgba(255,255,255,.08);
-    border-radius: 20px;
-    transition: opacity .12s linear, transform .2s cubic-bezier(.4,0,.2,1), border-color .35s, box-shadow .35s, background .35s;
-    overflow: hidden;
-}
-.hiw-card::after {
-    content: ''; position: absolute; inset: 0; border-radius: 20px; padding: 1px;
-    background: linear-gradient(160deg, rgba(59,123,171,0), rgba(59,123,171,0));
-    opacity: 0; transition: opacity .35s;
-}
-.hiw-card:hover {
-    transform: translateY(-8px);
-    border-color: rgba(59,123,171,.45);
-    background: linear-gradient(180deg, #182430 0%, #0c1219 100%);
-    box-shadow: 0 20px 46px -18px rgba(59,123,171,.35), 0 8px 20px -10px rgba(0,0,0,.5);
-}
-.hiw-icon-ring {
-    width: 76px; height: 76px; border-radius: 50%; margin: 0 auto 20px;
-    display: flex; align-items: center; justify-content: center; position: relative;
-    background: radial-gradient(closest-side, rgba(59,123,171,.14), rgba(10,10,10,.4));
-    border: 1px solid rgba(59,123,171,.35);
-    box-shadow: 0 0 0 6px rgba(59,123,171,.05);
-    transition: box-shadow .3s, border-color .3s, transform .3s;
-    color: #3b7bab;
-}
-.hiw-card:hover .hiw-icon-ring { box-shadow: 0 0 0 10px rgba(59,123,171,.09), 0 12px 26px -10px rgba(59,123,171,.5); border-color: rgba(59,123,171,.6); transform: scale(1.05); }
-.hiw-num {
-    position: absolute; top: -6px; right: -6px; width: 26px; height: 26px; border-radius: 50%;
-    background: #0a0a0a; border: 1px solid rgba(59,123,171,.5);
-    display: flex; align-items: center; justify-content: center;
-    font-family: 'JetBrains Mono', monospace; font-size: .65rem; font-weight: 600; color: #3b7bab;
-}
-.hiw-title { font-family: 'Bebas Neue'; font-size: 1.2rem; letter-spacing: .03em; color: #fff; margin-bottom: 8px; }
-.hiw-desc { font-family: 'Outfit', sans-serif; font-weight: 300; font-size: .85rem; color: rgba(255,255,255,.5); line-height: 1.65; max-width: 220px; margin: 0 auto 18px; }
-.hiw-tag {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 5px 12px; border-radius: 999px;
-    background: rgba(59,123,171,.1); border: 1px solid rgba(59,123,171,.28);
-    font-family: 'JetBrains Mono', monospace; font-size: .64rem; letter-spacing: .06em;
-    color: #3b7bab; text-transform: uppercase; white-space: nowrap;
-}
-
+/* ── Tarjetas de servicio ── */
+.web .sv-card { display: flex; flex-direction: column; border-radius: 22px; transition: transform .4s var(--w-curva), box-shadow .4s var(--w-curva), border-color .4s, opacity .8s var(--w-curva) var(--w-retraso, 0ms); }
+.web .sv-photo { position: relative; aspect-ratio: 16 / 9; overflow: hidden; margin: 8px 8px 0; border-radius: 16px; background: linear-gradient(135deg, #1d2530, #11161d); }
+.web .sv-photo img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .8s var(--w-curva); }
+.web .sv-card:hover .sv-photo img { transform: scale(1.05); }
+.web .sv-photo-fallback { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: var(--w-celeste-claro); }
+.web .sv-photo-fallback svg { width: 40px; height: 40px; opacity: .75; }
+.web .sv-card-body { position: relative; z-index: 1; display: flex; flex-direction: column; flex: 1; padding: 20px 22px 22px; }
+.web .sv-desc { font-size: .92rem; margin-bottom: 18px; }
+.web .sv-pie { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, .1); }
+.web .sv-precio { font-family: var(--w-fuente-titulo); font-weight: 700; font-size: 1.25rem; letter-spacing: -.02em; color: #fff; }
+.web .sv-nota { font-size: .8rem; color: var(--w-texto-oscuro-3); margin-top: 3px; }
+.web .sv-agendar { min-height: 42px; padding: 0 16px; font-size: .88rem; border-radius: 10px; }
+.web .sv-vacio { text-align: center; padding: 48px 0; }
 @keyframes svShimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.web .sv-esqueleto { height: 330px; border-radius: 22px; background: linear-gradient(90deg, rgba(255, 255, 255, .04) 0%, rgba(61, 180, 239, .1) 50%, rgba(255, 255, 255, .04) 100%); background-size: 200% 100%; animation: svShimmer 1.4s ease-in-out infinite; }
+
+/* ── Cómo funciona: las tarjetas aparecen una vez (w-rev, escalonadas); la línea
+   que las une se llena con el scroll (efecto en Servicios.jsx). ── */
+.web .hiw-track { position: relative; }
+.web .sv-steps { list-style: none; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; position: relative; }
+.web .hiw-connector { --p: 0; position: absolute; top: 72px; left: 12%; right: 12%; height: 2px; z-index: 0; }
+.web .hiw-connector-line { position: absolute; inset: 0; background: rgba(255, 255, 255, .08); border-radius: 2px; }
+.web .hiw-connector-fill { position: absolute; inset: 0; width: calc(var(--p) * 100%); background: linear-gradient(90deg, var(--w-celeste), var(--w-celeste-claro)); border-radius: 2px; transition: width .15s linear; }
+.web .hiw-card {
+    --p: 0; position: relative; z-index: 1; text-align: center; padding: 34px 22px 28px; border-radius: 22px;
+    background: var(--w-vidrio-fondo); border: 1px solid var(--w-vidrio-borde); box-shadow: var(--w-vidrio-sombra);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    transition: opacity .8s var(--w-curva) var(--w-retraso, 0ms), transform .8s var(--w-curva) var(--w-retraso, 0ms), border-color .35s, background-color .35s;
+}
+.web .hiw-card:hover { border-color: rgba(61, 180, 239, .45); background: linear-gradient(180deg, rgba(61, 180, 239, .1), rgba(255, 255, 255, .02)); }
+.web .hiw-icon-ring { position: relative; width: 76px; height: 76px; margin: 0 auto 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--w-celeste-claro); background: var(--w-carbon); border: 1px solid rgba(61, 180, 239, .4); box-shadow: 0 0 0 6px rgba(61, 180, 239, .06); transition: box-shadow .3s, transform .3s var(--w-curva); }
+.web .hiw-card:hover .hiw-icon-ring { box-shadow: 0 0 0 10px rgba(61, 180, 239, .1); transform: scale(1.05); }
+.web .hiw-num { position: absolute; top: -6px; right: -6px; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--w-fuente-titulo); font-size: .68rem; font-weight: 700; color: #04121c; background: var(--w-celeste); }
+.web .hiw-title { font-family: var(--w-fuente-titulo); font-weight: 600; font-size: 1.08rem; letter-spacing: -.01em; margin-bottom: 8px; }
+.web .hiw-desc { font-size: .9rem; line-height: 1.6; color: var(--w-texto-oscuro-3); max-width: 230px; margin: 0 auto 18px; }
+.web .hiw-tag { display: inline-flex; padding: 6px 12px; border-radius: 999px; font-size: .74rem; font-weight: 600; color: var(--w-celeste-claro); background: rgba(61, 180, 239, .1); border: 1px solid rgba(61, 180, 239, .26); white-space: nowrap; }
 
 @media (max-width: 900px) {
-    .sv-hero-pad { padding: 120px 20px 56px !important; }
-    .sv-pad { padding: 70px 20px !important; }
-    .step-line { display: none; }
-    .sv-steps { grid-template-columns: repeat(2, 1fr) !important; }
-    .hiw-connector { display: none; }
+    .web .sv-cabecera { grid-template-columns: 1fr; }
+    .web .sv-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .web .hiw-connector { display: none; }
 }
 @media (max-width: 520px) {
-    .sv-steps { grid-template-columns: 1fr !important; }
+    .web .sv-steps { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .web .sv-esqueleto { animation: none; }
 }

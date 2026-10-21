@@ -18,7 +18,7 @@ function IconOut()   { return <svg width="14" height="14" viewBox="0 0 24 24" fi
 function IconPkg()   { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>; }
 function IconCheck() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>; }
 
-export default function RegistrarMovimiento() {
+export default function RegistrarMovimiento({ embebido = false }) {
     const { isDark } = useTheme();
     const [repuestos, setRepuestos] = useState([]);
     const [search, setSearch] = useState('');
@@ -112,8 +112,8 @@ export default function RegistrarMovimiento() {
     return (
         <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1200, '--sky-bdr': SKY_BDR, '--sky-pale': SKY_PALE, '--row-hov': rowHov }}>
 
-            {/* Header */}
-            <div style={{ marginBottom: 22 }}>
+            {/* Header (dentro de "Entradas y salidas" el título lo pone la página contenedora) */}
+            <div style={{ marginBottom: 22, display: embebido ? 'none' : undefined }}>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 10px', borderRadius: 999, background: SKY_PALE, border: `1px solid ${SKY_BDR}`, marginBottom: 8 }}>
                     <span style={{ width: 6, height: 6, borderRadius: '50%', background: SKY, boxShadow: `0 0 8px ${SKY}` }} />
                     <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.24em', color: SKY_DEEP }}><NombreEmpresa /> · REGISTRO RAPIDO</p>

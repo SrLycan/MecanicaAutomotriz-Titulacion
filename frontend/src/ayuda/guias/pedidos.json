@@ -1,0 +1,38 @@
+{
+  "id": "pedidos",
+  "grupo": "INVENTARIO",
+  "titulo": "Pedidos de la tienda",
+  "version": "1.0",
+  "actualizada": "2026-10-14",
+  "rutas": [{ "path": "/dashboard/pedidos" }],
+  "descripcion": "Solicitudes de productos que los clientes hacen desde la tienda en línea del sitio público. Aquí se entregan (descontando el stock) o se cancelan.",
+  "funciones": [
+    "Ver pedidos por estado: por atender, entregados, cancelados o todos.",
+    "Buscar por cliente, producto o código.",
+    "Entregar un pedido (indicando si el cliente ya pagó y cómo) o cancelarlo con un motivo."
+  ],
+  "pasos": [
+    {
+      "titulo": "Revise los pedidos por atender",
+      "texto": ["Use las pestañas de estado y el buscador. Cada tarjeta muestra el cliente, el producto, la cantidad y el total."],
+      "imagen": { "archivo": "v27/pedidos/01-lista.png", "alt": "Pedidos de la tienda con las pestañas Por atender, Entregados, Cancelados y Todos y el buscador", "tipo": "captura",
+        "captura": { "url": "/dashboard/pedidos", "esperar": { "placeholder": "Buscar por cliente" } } },
+      "marcas": [
+        { "texto": "Estados del pedido.", "objetivo": { "texto": "POR ATENDER", "tag": "button" } },
+        { "texto": "Buscador.", "objetivo": { "placeholder": "Buscar por cliente" } }
+      ]
+    },
+    {
+      "titulo": "Entregue o cancele",
+      "texto": ["En un pedido por atender pulse «Entregar»: marque si el cliente ya pagó y elija cómo pagó (el cobro se registra en Finanzas). Si no se puede atender, pulse «Cancelar» e indique el motivo."]
+    }
+  ],
+  "resultado": "Al entregar, el stock del producto baja y queda una salida «Venta a cliente (tienda)» en Entradas y salidas; el pedido pasa a Entregados.",
+  "advertencias": [
+    "Entregar descuenta el inventario: no registre además una salida manual.",
+    "Necesita el permiso «Pedidos de la tienda: editar» para entregar o cancelar."
+  ],
+  "problemas": [
+    { "problema": "No hay pedidos.", "solucion": "Los pedidos llegan solo cuando un cliente pide un producto marcado «para venta» en Inventario." }
+  ]
+}

@@ -66,8 +66,10 @@ const listarProveedores = async (req, res) => {
     const countQuery = `SELECT COUNT(*) AS total FROM proveedores p ${where}`;
     const dataQuery  = `
         SELECT p.*,
-               (SELECT COUNT(*) FROM compras_proveedor cp WHERE cp.proveedor_id = p.id) AS total_compras
+               (SELECT COUNT(*) FROM compras_proveedor cp WHERE cp.proveedor_id = p.id) AS total_compras,
+               uc.nombre AS creado_por_nombre
         FROM proveedores p
+        LEFT JOIN usuarios uc ON uc.id = p.creado_por
         ${where}
         ORDER BY p.nombre_comercial ASC
         LIMIT $${params.length + 1} OFFSET $${params.length + 2}

@@ -309,7 +309,7 @@ d('Sprint 22 - plataforma multiempresa (HTTP)', () => {
             expect(pdf.status).toBe(200);
             const texto = pdf.body.toString('latin1');
             expect(texto).toMatch(/TEST22 Taller Norte/);
-            expect(texto).not.toMatch(/SSarango/);
+            expect(texto).not.toMatch(/Sarango Sosa/);
             expect((await api('GET', `/proformas/${t.prof_a}/pdf`, { token: t.b })).status).toBe(404);
             expect((await api('GET', `/proformas/${t.prof_a}/excel`, { token: t.b })).status).toBe(404);
             // Sin permiso de exportar, aunque sea de su empresa.

@@ -5,6 +5,7 @@
  * tipografia Bebas Neue / Outfit) que Sucursales/Servicios/Clientes.
  */
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import useParamUrl from '../hooks/useParamUrl';
 import toast from 'react-hot-toast';
 import { useTemaPanel } from '../components/finanzas/tema';
@@ -13,7 +14,6 @@ import ProveedoresTab from '../components/proveedores/ProveedoresTab';
 import GastosTab from '../components/proveedores/GastosTab';
 import ComprasTab, { textoVencimiento } from '../components/proveedores/ComprasTab';
 import HistorialTab from '../components/proveedores/HistorialTab';
-import FacturasCompraTab from '../components/proveedores/FacturasCompraTab';
 import './Proveedores.css';
 
 import { NombreEmpresa } from '../components/common/MarcaEmpresa';
@@ -21,7 +21,6 @@ const TABS = [
     { id: 'proveedores', label: 'PROVEEDORES' },
     { id: 'gastos', label: 'GASTOS' },
     { id: 'compras', label: 'COMPRAS' },
-    { id: 'facturas', label: 'FACTURAS DE COMPRA' },
     { id: 'historial', label: 'HISTORIAL FINANCIERO' },
 ];
 
@@ -48,7 +47,7 @@ function AvisoCreditos({ alertas, onVer }) {
                 <ul style={{ margin: '6px 0 0', paddingLeft: 18, fontFamily: "'Outfit'", fontSize: '.84rem', color: 'inherit' }}>
                     {alertas.slice(0, 6).map(a => (
                         <li key={a.id}>
-                            <strong>#{a.id} {a.proveedor_nombre}</strong> — saldo ${Number(a.saldo).toFixed(2)} · <span style={{ color: Number(a.dias_para_vencer) < 0 ? '#ef4444' : undefined, fontWeight: 600 }}>{textoVencimiento(a.dias_para_vencer)}</span>
+                            <strong>{a.numero_documento || `#${a.id}`} {a.proveedor_nombre}</strong> — saldo ${Number(a.saldo).toFixed(2)} · <span style={{ color: Number(a.dias_para_vencer) < 0 ? '#ef4444' : undefined, fontWeight: 600 }}>{textoVencimiento(a.dias_para_vencer)}</span>
                         </li>
                     ))}
                     {alertas.length > 6 && <li>y {alertas.length - 6} más…</li>}
@@ -72,7 +71,13 @@ function ResumenCard({ label, value, color, theme }) {
 export default function Proveedores() {
     const theme = useTemaPanel();
     const { txt, mut, bdr, card, SKY, SKY_DEEP } = theme;
-    const [tab, setTab] = useParamUrl('tab', 'proveedores', TABS.map(t => t.id));
+    // Al cambiar de pestaña se cierra la compra abierta / el formulario "Crear compra".
+    const [tab, setTab] = useParamUrl('tab', 'proveedores', TABS.map(t => t.id), ['crear', 'compra']);
+    // Desde el Sprint 26 las facturas de compra se registran en Compras › Crear compra.
+    const [searchParams, setSearchParams] = useSearchParams();
+    useEffect(() => {
+        if (searchParams.get('tab') === 'facturas') setSearchParams(prev => { const p = new URLSearchParams(prev); p.set('tab', 'compras'); return p; }, { replace: true });
+    }, [searchParams, setSearchParams]);
     const [periodo, setPeriodo] = useState('todo');
     const [resumen, setResumen] = useState(null);
     const [proveedores, setProveedores] = useState([]);
@@ -179,8 +184,7 @@ export default function Proveedores() {
                 <ProveedoresTab theme={theme} proveedores={proveedores} loading={loadingProv} cargarProveedores={cargarProveedores} busqueda={busqueda} setBusqueda={setBusqueda} />
             )}
             {tab === 'gastos' && <GastosTab theme={theme} proveedores={proveedores} />}
-            {tab === 'compras' && <ComprasTab theme={theme} proveedores={proveedores} onCambio={() => { cargarAlertas(); cargarResumen(); }} />}
-            {tab === 'facturas' && <FacturasCompraTab theme={theme} proveedores={proveedores} onCambio={() => { cargarAlertas(); cargarResumen(); cargarProveedores(); }} />}
+            {tab === 'compras' && <ComprasTab theme={theme} proveedores={proveedores} onCambio={() => { cargarAlertas(); cargarResumen(); cargarProveedores(); }} />}
             {tab === 'historial' && <HistorialTab theme={theme} proveedores={proveedores} onCambio={() => { cargarAlertas(); cargarResumen(); }} />}
         </div>
     );

@@ -1,39 +1,36 @@
 /**
- * SS SWAP - Pestaña "Compras" (dentro de la seccion Proveedores)
+ * SS SWAP - Pestaña "Compras" (dentro de la sección Proveedores) · Sprint 26
  *
- * Al marcar una compra como "recibida", el backend actualiza el stock real
- * de los repuestos vinculados (repuestos.stock_actual) y registra el
- * movimiento en movimientos_inventario (Fase 3). Items sin repuesto_id
- * vinculado (herramientas, insumos fuera de catalogo) no afectan stock.
+ * Un solo lugar para las compras, como en los sistemas contables:
+ *  - Lista con CREAR, filtros Desde / Hasta / Estado, indicadores TOTAL y
+ *    CANTIDAD, Excel y acciones (ver, imprimir, eliminar).
+ *  - "Crear compra": la factura electrónica se trae del SRI con su
+ *    autorización (o el XML); se revisa a dónde va cada artículo y al
+ *    registrar se suma al inventario. Notas de venta, otros comprobantes y
+ *    órdenes de compra se cargan a mano.
+ *  - Detalle de cada compra con pagos, impresión y totales por tarifa.
+ * La URL guarda la vista (?tab=compras&crear=1 o &compra=ID) para que el
+ * botón "atrás" del navegador funcione.
  */
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import Paginador from './Paginador';
 import { useAuth } from '../../context/AuthContext';
 import { useConfirm } from '../common/ConfirmDialog';
-import { nuevaClaveIdempotencia, conClave } from '../../utils/idempotencia';
+import { dinero } from '../finanzas/tema';
+import CrearCompra from './compras/CrearCompra';
+import RevisionFactura from './compras/RevisionFactura';
+import DetalleCompra, { ImprimirCompra, ModalEditar, tituloCompra } from './compras/DetalleCompra';
+import {
+    AREAS, AREA_LABEL, DOCUMENTO_CORTO, TIPO_REGISTRO_LABEL, ESTADOS_COMPRA,
+    inicioMes, finMes, fechaCorta, descargarCsv, numExcel,
+} from './compras/comunes';
+import { Badge, Indicador, IconCarrito, IconCajas, IconOjo, IconImpresora, IconPapelera, IconMas } from './compras/piezas';
+import RegistradoPor from '../common/RegistradoPor';
 
-function IconPlus() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>; }
-function IconX()    { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>; }
-function IconTrash(){ return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>; }
-function IconEye()  { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>; }
-
-const ESTADOS = ['pendiente', 'solicitada', 'en_proceso', 'recibida', 'cancelada'];
-const ESTADO_COLOR = { pendiente: '#f59e0b', solicitada: '#0ea5e9', en_proceso: '#8b5cf6', recibida: '#10b981', cancelada: '#ef4444' };
-const SIG_ESTADO = { pendiente: 'solicitada', solicitada: 'en_proceso', en_proceso: 'recibida' };
-const ITEM_VACIO = { repuesto_id: '', descripcion: '', cantidad: 1, precio_unitario: '' };
-const METODOS = [
-    { id: 'efectivo', label: 'Efectivo (sale de caja)' },
-    { id: 'transferencia', label: 'Transferencia' },
-    { id: 'tarjeta', label: 'Tarjeta' },
-    { id: 'cheque', label: 'Cheque' },
-    { id: 'otro', label: 'Otro' },
-];
-const DIAS_CREDITO = 15;
-
-/** 2026-10-05 -> 05/10/2026 */
-const fechaCorta = (f) => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(f || '')); return m ? `${m[3]}/${m[2]}/${m[1]}` : '—'; };
+function IconEngranaje() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>; }
 
 /** Texto corto del vencimiento: "vence hoy", "vence en 2 dias", "vencida hace 1 dia" */
 export function textoVencimiento(dias) {
@@ -43,139 +40,239 @@ export function textoVencimiento(dias) {
     return `vencida hace ${-d} día${d !== -1 ? 's' : ''}`;
 }
 
-/** Estado del pago de una compra: CONTADO / PAGADA / vence en N dias / VENCIDA */
+/** Estado del pago: CONTADO / PAGADA / saldo y vencimiento. */
 function EstadoPago({ c }) {
     const saldo = Number(c.saldo);
     if (c.estado === 'cancelada') return <span style={{ color: '#94a3b8' }}>—</span>;
-    if (saldo <= 0.005) {
-        return <span className="prov-badge" style={{ background: '#10b98118', border: '1px solid #10b98144', color: '#10b981' }}>{c.forma_pago === 'contado' ? 'CONTADO · PAGADA' : 'CRÉDITO · PAGADA'}</span>;
-    }
+    if (saldo <= 0.005) return <Badge color="#10b981">{c.forma_pago === 'contado' ? 'CONTADO · PAGADA' : 'CRÉDITO · PAGADA'}</Badge>;
     const dias = Number(c.dias_para_vencer);
     const color = dias < 0 ? '#ef4444' : dias <= 3 ? '#f59e0b' : '#0ea5e9';
     return (
         <div>
-            <span className="prov-badge" style={{ background: `${color}18`, border: `1px solid ${color}44`, color }}>CRÉDITO · SALDO ${saldo.toFixed(2)}</span>
-            {c.fecha_vencimiento && <div style={{ fontSize: '.72rem', color, marginTop: 3, fontWeight: dias <= 3 ? 600 : 400 }}>{fechaCorta(c.fecha_vencimiento)} · {textoVencimiento(dias)}</div>}
+            <Badge color={color}>SALDO {dinero(saldo)}</Badge>
+            {c.fecha_vencimiento && <div style={{ fontSize: '.76rem', color, marginTop: 3, fontWeight: dias <= 3 ? 600 : 400 }}>{fechaCorta(c.fecha_vencimiento)} · {textoVencimiento(dias)}</div>}
         </div>
     );
 }
 
 export default function ComprasTab({ theme, proveedores, onCambio }) {
     const { puede } = useAuth();
-    const { txt, txtSf, mut, bdr, card, cardSh, SKY, SKY_DEEP, SKY_PALE, labelSt, inputSt } = theme;
+    const confirm = useConfirm();
+    const { txt, txtSf, mut, bdr, card, cardSh, SKY_DEEP, SKY_PALE, labelSt, inputSt, btnPrim, btnSec } = theme;
+    const [params, setParams] = useSearchParams();
+    const compraUrl = /^\d+$/.test(params.get('compra') || '') ? Number(params.get('compra')) : null;
+    const crearUrl = params.get('crear') === '1';
+    const [revision, setRevision] = useState(null);     // { facturaId, datos }
+    const [crearDesde, setCrearDesde] = useState(null);  // { facturaInicial?, datos? } al volver de la revisión
+
     const [compras, setCompras] = useState([]);
-    const [total, setTotal]     = useState(0);
+    const [total, setTotal] = useState(0);
+    const [resumen, setResumen] = useState({ valor: 0, cantidad: 0 });
     const [loading, setLoading] = useState(true);
-    const [modal, setModal]     = useState(false);
-    const [detalle, setDetalle] = useState(null);
-    const [filtros, setFiltros] = useState({ proveedor_id: '', estado: '', forma_pago: '' });
+    const [filtros, setFiltros] = useState({ desde: inicioMes(), hasta: finMes(), estado: '', proveedor_id: '', area: '', q: '' });
     const [pagina, setPagina] = useState(1);
+    const [pendientes, setPendientes] = useState([]);
+    const [imprimir, setImprimir] = useState(null);
+    const [editar, setEditar] = useState(null);
+    const [exportando, setExportando] = useState(false);
     const POR_PAGINA = 20;
+
+    const irA = useCallback((cambios) => {
+        const p = new URLSearchParams(params);
+        ['crear', 'compra'].forEach(k => p.delete(k));
+        Object.entries(cambios).forEach(([k, v]) => { if (v !== null && v !== undefined) p.set(k, String(v)); });
+        setParams(p);
+    }, [params, setParams]);
+    const volverLista = useCallback(() => { setRevision(null); setCrearDesde(null); irA({}); }, [irA]);
+    const abrirCompra = useCallback((id) => { setRevision(null); setCrearDesde(null); irA({ compra: id }); }, [irA]);
+
+    const consulta = useCallback((pag, lim) => {
+        const p = new URLSearchParams();
+        Object.entries(filtros).forEach(([k, v]) => { if (v) p.set(k, v); });
+        p.set('page', String(pag)); p.set('limit', String(lim));
+        return p;
+    }, [filtros]);
 
     const cargar = useCallback(async () => {
         setLoading(true);
         try {
-            const params = new URLSearchParams();
-            Object.entries(filtros).forEach(([k, v]) => { if (v) params.set(k, v); });
-            params.set('page', String(pagina));
-            params.set('limit', String(POR_PAGINA));
-            const { data } = await api.get(`/proveedores/compras?${params}`);
+            const { data } = await api.get(`/proveedores/compras?${consulta(pagina, POR_PAGINA)}`);
             setCompras(data.compras || []);
             setTotal(data.total || 0);
-        } catch (err) { toast.error('Error al cargar compras.'); }
+            setResumen(data.resumen || { valor: 0, cantidad: 0 });
+        } catch { toast.error('Error al cargar compras.'); }
         finally { setLoading(false); }
-    }, [filtros, pagina]);
+    }, [consulta, pagina]);
+    const cargarPendientes = useCallback(() => {
+        api.get('/proveedores/facturas-compra?estado=pendiente_confirmacion&limit=5')
+            .then(({ data }) => setPendientes(data.facturas || [])).catch(() => setPendientes([]));
+    }, []);
 
+    const enLista = !compraUrl && !crearUrl && !revision;
     useEffect(() => { setPagina(1); }, [filtros]);
-    useEffect(() => { cargar(); }, [cargar]);
+    useEffect(() => { if (enLista) { const t = setTimeout(cargar, 200); return () => clearTimeout(t); } return undefined; }, [cargar, enLista]);
+    useEffect(() => { if (enLista) cargarPendientes(); }, [enLista, cargarPendientes]);
 
-    const crear = async (payload, clave) => {
+    const exportar = async () => {
+        setExportando(true);
         try {
-            await api.post('/proveedores/compras', payload, conClave(clave));
-            toast.success(payload.forma_pago === 'contado' ? 'Compra registrada y pagada.' : `Compra a crédito registrada (vence en ${DIAS_CREDITO} días).`);
-            setModal(false);
-            cargar();
-            onCambio?.();
-        } catch (err) { toast.error(err.response?.data?.error || 'Error al registrar la compra.'); }
+            const todas = [];
+            for (let pag = 1; pag <= 50; pag++) {
+                const { data } = await api.get(`/proveedores/compras?${consulta(pag, 100)}`);
+                todas.push(...(data.compras || []));
+                if (todas.length >= (data.total || 0) || !(data.compras || []).length) break;
+            }
+            descargarCsv(`compras_${filtros.desde || 'inicio'}_${filtros.hasta || 'hoy'}.csv`, [
+                ['Inventario', 'F. emisión', 'Proveedor', 'RUC', 'Estado', 'Documento', 'Número', 'Tipo registro', 'Sustento', 'Pago', 'Vence', 'Subtotal', 'IVA', 'Total', 'Pagado', 'Saldo'],
+                ...todas.map(c => [AREA_LABEL[c.area] || 'General', fechaCorta(c.fecha_solicitud), c.proveedor_nombre, c.proveedor_ruc || '', (ESTADOS_COMPRA[c.estado] || {}).label || c.estado,
+                    DOCUMENTO_CORTO[c.tipo_documento] || '', c.numero_documento || `#${c.id}`, TIPO_REGISTRO_LABEL[c.tipo_registro] || '', c.sustento_tributario || '',
+                    c.forma_pago === 'contado' ? 'Contado' : 'Crédito', c.forma_pago === 'credito' ? fechaCorta(c.fecha_vencimiento) : '',
+                    numExcel(c.subtotal), numExcel(c.iva), numExcel(c.total), numExcel(c.pagado), numExcel(c.saldo)]),
+            ]);
+            toast.success(`${todas.length} compra(s) exportadas.`);
+        } catch { toast.error('No se pudo exportar.'); }
+        finally { setExportando(false); }
     };
 
-    const abrirDetalle = async (c) => {
-        try {
-            const { data } = await api.get(`/proveedores/compras/${c.id}`);
-            setDetalle(data.compra);
-        } catch (err) { toast.error('Error al cargar el detalle de la compra.'); }
+    const verImpresion = async (c) => {
+        try { const { data } = await api.get(`/proveedores/compras/${c.id}`); setImprimir(data.compra); }
+        catch { toast.error('No se pudo preparar la impresión.'); }
+    };
+    const abrirEditar = async (c) => {
+        try { const { data } = await api.get(`/proveedores/compras/${c.id}`); setEditar(data.compra); }
+        catch { toast.error('No se pudo abrir la compra.'); }
+    };
+    const eliminar = async (c) => {
+        if (!(await confirm({ title: 'Eliminar compra', message: `¿Eliminar ${tituloCompra(c).toLowerCase()} de ${c.proveedor_nombre}? Solo se puede porque sigue pendiente (no sumó inventario ni tiene pagos).`, confirmLabel: 'Eliminar' }))) return;
+        try { await api.delete(`/proveedores/compras/${c.id}`); toast.success('Compra eliminada.'); cargar(); onCambio?.(); }
+        catch (err) { toast.error(err.response?.data?.error || 'No se pudo eliminar.'); }
     };
 
-    const filtroSel = { ...inputSt, padding: '8px 10px', fontSize: '.8rem' };
+    // ── Vistas ──
+    if (compraUrl) return <DetalleCompra theme={theme} compraId={compraUrl} onVolver={volverLista} onCambio={onCambio} />;
+    if (revision) {
+        return <RevisionFactura theme={theme} facturaId={revision.facturaId} datos={revision.datos}
+            onVolver={() => { setCrearDesde({ facturaInicial: revision.facturaId, datos: revision.datos }); setRevision(null); }}
+            onRegistrada={(id) => { onCambio?.(); abrirCompra(id); }} onAbrirCompra={abrirCompra} />;
+    }
+    if (crearUrl) {
+        return <CrearCompra key={crearDesde?.facturaInicial || 'nueva'} theme={theme} facturaInicial={crearDesde?.facturaInicial} datosIniciales={crearDesde?.datos}
+            onRevisarFactura={(r) => setRevision(r)} onCreada={(id) => { onCambio?.(); abrirCompra(id); }} onAbrirCompra={abrirCompra} onVolver={volverLista} />;
+    }
 
+    const f = { ...inputSt, padding: '9px 11px', fontSize: '.86rem' };
     return (
         <div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'flex-end', marginBottom: 16 }}>
-                <div>
-                    <label style={labelSt}>PROVEEDOR</label>
-                    <select style={filtroSel} value={filtros.proveedor_id} onChange={e => setFiltros({ ...filtros, proveedor_id: e.target.value })}>
-                        <option value="">Todos</option>
-                        {proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre_comercial}</option>)}
-                    </select>
+            <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 16, boxShadow: cardSh, padding: 18, marginBottom: 16 }}>
+                <div className="compras-filtros">
+                    {puede('proveedores', 'crear') && (
+                        <button type="button" onClick={() => irA({ crear: 1 })} style={{ ...btnPrim, height: 42, alignSelf: 'end', background: 'linear-gradient(135deg, #0f766e, #0d9488)' }}>
+                            <IconCarrito /> CREAR
+                        </button>
+                    )}
+                    <div><label style={labelSt}>DESDE</label><input type="date" style={f} value={filtros.desde} onChange={e => setFiltros({ ...filtros, desde: e.target.value })} /></div>
+                    <div><label style={labelSt}>HASTA</label><input type="date" style={f} value={filtros.hasta} onChange={e => setFiltros({ ...filtros, hasta: e.target.value })} /></div>
+                    <div><label style={labelSt}>ESTADO</label>
+                        <select style={f} value={filtros.estado} onChange={e => setFiltros({ ...filtros, estado: e.target.value })}>
+                            <option value="">Mostrar todos</option>
+                            {Object.entries(ESTADOS_COMPRA).map(([k, v]) => <option key={k} value={k}>{k === 'recibida' ? 'Registradas / recibidas' : v.label.charAt(0) + v.label.slice(1).toLowerCase()}</option>)}
+                        </select></div>
+                    <div><label style={labelSt}>PROVEEDOR</label>
+                        <select style={f} value={filtros.proveedor_id} onChange={e => setFiltros({ ...filtros, proveedor_id: e.target.value })}>
+                            <option value="">Todos</option>
+                            {proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre_comercial}</option>)}
+                        </select></div>
+                    <div><label style={labelSt}>INVENTARIO</label>
+                        <select style={f} value={filtros.area} onChange={e => setFiltros({ ...filtros, area: e.target.value })}>
+                            <option value="">Todos</option>
+                            {AREAS.map(a => <option key={a.id} value={a.id}>{a.label}</option>)}
+                        </select></div>
                 </div>
-                <div>
-                    <label style={labelSt}>ESTADO</label>
-                    <select style={filtroSel} value={filtros.estado} onChange={e => setFiltros({ ...filtros, estado: e.target.value })}>
-                        <option value="">Todos</option>
-                        {ESTADOS.map(e => <option key={e} value={e}>{e}</option>)}
-                    </select>
+                <div className="compras-indicadores">
+                    <Indicador theme={theme} icono={<IconCarrito />} etiqueta="TOTAL" valor={dinero(resumen.valor)} color="#0d9488" />
+                    <Indicador theme={theme} icono={<IconCajas />} etiqueta="CANTIDAD" valor={resumen.cantidad} color="#db2777" />
                 </div>
-                <div>
-                    <label style={labelSt}>PAGO</label>
-                    <select style={filtroSel} value={filtros.forma_pago} onChange={e => setFiltros({ ...filtros, forma_pago: e.target.value })}>
-                        <option value="">Todos</option>
-                        <option value="contado">Contado</option>
-                        <option value="credito">Crédito</option>
-                    </select>
-                </div>
-                {puede('proveedores', 'crear') && <button onClick={() => setModal(true)}
-                    style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.14em', color: '#fff', background: `linear-gradient(135deg, ${SKY_DEEP}, ${SKY})`, border: 'none', borderRadius: 11, padding: '10px 20px', cursor: 'pointer', height: 38 }}>
-                    <IconPlus /> NUEVA COMPRA
-                </button>}
             </div>
 
-            <p style={{ fontFamily: "'Outfit'", fontSize: '.82rem', color: mut, marginBottom: 12 }}>{total} compra{total !== 1 ? 's' : ''}</p>
+            {pendientes.length > 0 && (
+                <div role="status" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', padding: '12px 14px', borderRadius: 12, background: '#f59e0b14', border: '1px solid #f59e0b55', marginBottom: 14, fontFamily: "'Outfit'", fontSize: '.88rem', color: txt }}>
+                    <strong>{pendientes.length} factura(s) consultada(s) sin registrar:</strong>
+                    {pendientes.map(p => (
+                        <button key={p.id} type="button" onClick={() => { setCrearDesde({ facturaInicial: p.id }); irA({ crear: 1 }); }}
+                            style={{ ...btnSec, padding: '5px 10px' }} title="Continuar el registro">
+                            {p.numero} · {p.proveedor_nombre || p.emisor_razon_social} · {dinero(p.importe_total)}
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            <div style={{ display: 'flex', alignItems: 'end', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <button type="button" onClick={exportar} disabled={exportando || !total} style={{ ...btnSec, padding: '8px 14px' }}>{exportando ? 'EXPORTANDO…' : 'EXCEL'}</button>
+                    <span style={{ fontFamily: "'Outfit'", fontSize: '.86rem', color: mut }}>{total} compra{total !== 1 ? 's' : ''}</span>
+                </div>
+                <div style={{ flex: '0 1 320px', minWidth: 200 }}>
+                    <label style={labelSt}>BUSCAR</label>
+                    <input style={f} value={filtros.q} placeholder="Proveedor, RUC o número de documento" aria-label="Buscar compras" onChange={e => setFiltros({ ...filtros, q: e.target.value })} />
+                </div>
+            </div>
 
             {loading ? (
                 <p style={{ fontFamily: "'Outfit'", color: mut, padding: 40, textAlign: 'center' }}>Cargando compras...</p>
             ) : compras.length === 0 ? (
-                <div style={{ padding: 60, textAlign: 'center', background: card, border: `1px solid ${bdr}`, borderRadius: 14 }}>
-                    <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.2rem', color: txt }}>No hay compras para estos filtros</p>
+                <div style={{ padding: 50, textAlign: 'center', background: card, border: `1px solid ${bdr}`, borderRadius: 14 }}>
+                    <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.3rem', color: txt }}>No hay compras para estos filtros</p>
+                    <p style={{ fontFamily: "'Outfit'", fontSize: '.88rem', color: mut, marginTop: 4 }}>Revise el rango de fechas (por defecto, el mes actual) o cree una compra.</p>
+                    {puede('proveedores', 'crear') && <button type="button" onClick={() => irA({ crear: 1 })} style={{ ...btnPrim, marginTop: 14 }}><IconMas /> CREAR COMPRA</button>}
                 </div>
             ) : (
                 <div className="prov-table-wrap" style={{ background: card, border: `1px solid ${bdr}`, boxShadow: cardSh }}>
-                    <table className="prov-table">
+                    <table className="prov-table" style={{ minWidth: 980 }}>
                         <thead>
                             <tr style={{ background: SKY_PALE }}>
-                                {['#', 'Proveedor', 'Fecha solicitud', 'Items', 'Total', 'Pago', 'Estado', ''].map(h => (
-                                    <th key={h} style={{ color: SKY_DEEP }}>{h}</th>
+                                {['Inventario', 'F. emisión', 'Proveedor', 'Estado', 'Documento', 'Pago', 'Valor', 'Acciones'].map(h => (
+                                    <th key={h} style={{ color: SKY_DEEP, textAlign: h === 'Valor' ? 'right' : h === 'Acciones' ? 'center' : 'left' }}>{h}</th>
                                 ))}
                             </tr>
                         </thead>
                         <tbody>
-                            {compras.map(c => (
-                                <tr key={c.id} style={{ borderColor: bdr }}>
-                                    <td style={{ color: txtSf }}>#{c.id}</td>
-                                    <td style={{ color: txt, fontWeight: 600 }}>{c.proveedor_nombre}</td>
-                                    <td style={{ color: txtSf, whiteSpace: 'nowrap' }}>{c.fecha_solicitud}</td>
-                                    <td style={{ color: txtSf }}>{c.total_items}</td>
-                                    <td style={{ color: txt, fontWeight: 600 }}>${parseFloat(c.total).toFixed(2)}</td>
-                                    <td><EstadoPago c={c} /></td>
-                                    <td>
-                                        <span className="prov-badge" style={{ background: `${ESTADO_COLOR[c.estado]}18`, border: `1px solid ${ESTADO_COLOR[c.estado]}44`, color: ESTADO_COLOR[c.estado] }}>
-                                            {c.estado.replace('_', ' ').toUpperCase()}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <button className="prov-icon-btn" style={{ color: SKY_DEEP }} onClick={() => abrirDetalle(c)}><IconEye /></button>
-                                    </td>
-                                </tr>
-                            ))}
+                            {compras.map(c => {
+                                const est = ESTADOS_COMPRA[c.estado] || ESTADOS_COMPRA.pendiente;
+                                return (
+                                    <tr key={c.id} style={{ borderColor: bdr }}>
+                                        <td style={{ color: txtSf }}>{AREA_LABEL[c.area] || 'General'}</td>
+                                        <td style={{ color: txtSf, whiteSpace: 'nowrap' }}>
+                                            {fechaCorta(c.fecha_solicitud)}
+                                            <RegistradoPor nombre={c.usuario_nombre} prefijo="Registrada por" sinNombre="Sin usuario" color={mut} />
+                                        </td>
+                                        <td style={{ maxWidth: 240 }}>
+                                            <p style={{ fontFamily: "'Outfit'", fontWeight: 600, color: txt }}>{c.proveedor_nombre}</p>
+                                            {c.proveedor_ruc && <p style={{ fontSize: '.78rem', color: mut }}>RUC {c.proveedor_ruc}</p>}
+                                        </td>
+                                        <td><Badge color={est.color}>{est.label}</Badge></td>
+                                        <td>
+                                            <p style={{ fontFamily: "'Outfit'", color: txt, fontSize: '.86rem' }}>{DOCUMENTO_CORTO[c.tipo_documento] || 'COMPRA'}</p>
+                                            <button type="button" onClick={() => abrirCompra(c.id)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: SKY_DEEP, fontFamily: "'Outfit'", fontSize: '.86rem', textDecoration: 'underline', textUnderlineOffset: 2, whiteSpace: 'nowrap' }}>
+                                                {c.numero_documento || `#${c.id}`}
+                                            </button>
+                                        </td>
+                                        <td><EstadoPago c={c} /></td>
+                                        <td style={{ color: txt, fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{dinero(c.total)}</td>
+                                        <td>
+                                            <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+                                                {puede('proveedores', 'editar') && c.estado !== 'cancelada' && (
+                                                    <button type="button" className="prov-icon-btn" title="Editar sustento y notas" aria-label={`Editar ${tituloCompra(c)}`} onClick={() => abrirEditar(c)} style={{ color: '#7c3aed' }}><IconEngranaje /></button>
+                                                )}
+                                                <button type="button" className="prov-icon-btn" title="Ver detalle" aria-label={`Ver ${tituloCompra(c)}`} onClick={() => abrirCompra(c.id)} style={{ color: '#0d9488' }}><IconOjo /></button>
+                                                <button type="button" className="prov-icon-btn" title="Imprimir" aria-label={`Imprimir ${tituloCompra(c)}`} onClick={() => verImpresion(c)} style={{ color: SKY_DEEP }}><IconImpresora /></button>
+                                                {puede('proveedores', 'eliminar') && c.estado === 'pendiente' && (
+                                                    <button type="button" className="prov-icon-btn" title="Eliminar (solo pendientes)" aria-label={`Eliminar ${tituloCompra(c)}`} onClick={() => eliminar(c)} style={{ color: '#ef4444' }}><IconPapelera /></button>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>
@@ -183,314 +280,8 @@ export default function ComprasTab({ theme, proveedores, onCambio }) {
 
             <Paginador pagina={pagina} setPagina={setPagina} total={total} porPagina={POR_PAGINA} theme={theme} />
 
-            {modal && (
-                <ModalNuevaCompra theme={theme} proveedores={proveedores} onClose={() => setModal(false)} onGuardar={crear} />
-            )}
-            {detalle && (
-                <ModalDetalleCompra theme={theme} compra={detalle} onClose={() => setDetalle(null)} onActualizado={() => { setDetalle(null); cargar(); onCambio?.(); }} />
-            )}
-        </div>
-    );
-}
-
-/** Fecha de vencimiento (dd/mm/aaaa) de una compra a credito solicitada en `fecha` (o hoy). */
-function venceEl(fecha) {
-    const base = fecha ? new Date(`${fecha}T12:00:00`) : new Date();
-    base.setDate(base.getDate() + DIAS_CREDITO);
-    return base.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
-}
-
-function ModalNuevaCompra({ theme, proveedores, onClose, onGuardar }) {
-    const { txt, mut, bdr, boxBg, SKY, SKY_DEEP, labelSt, inputSt } = theme;
-    const [proveedorId, setProveedorId] = useState('');
-    const [fecha, setFecha]             = useState('');
-    const [notas, setNotas]             = useState('');
-    const [formaPago, setFormaPago]     = useState('contado');
-    const [metodoPago, setMetodoPago]   = useState('efectivo');
-    const [refPago, setRefPago]         = useState('');
-    const [items, setItems]             = useState([{ ...ITEM_VACIO }]);
-    const [repuestos, setRepuestos]     = useState([]);
-    const [saving, setSaving]           = useState(false);
-    const enviando = useRef(false);
-    const [clave] = useState(nuevaClaveIdempotencia);   // un doble envio no crea dos compras
-
-    useEffect(() => {
-        api.get('/inventory/repuestos?limit=200').then(({ data }) => setRepuestos(data.repuestos || [])).catch(() => {});
-    }, []);
-
-    const actualizarItem = (idx, campo, valor) => {
-        setItems(prev => prev.map((it, i) => {
-            if (i !== idx) return it;
-            const nuevo = { ...it, [campo]: valor };
-            if (campo === 'repuesto_id' && valor) {
-                const rep = repuestos.find(r => String(r.id) === String(valor));
-                if (rep) { nuevo.descripcion = rep.nombre; nuevo.precio_unitario = rep.precio_compra; }
-            }
-            return nuevo;
-        }));
-    };
-    const agregarItem  = () => setItems(prev => [...prev, { ...ITEM_VACIO }]);
-    const quitarItem   = (idx) => setItems(prev => prev.filter((_, i) => i !== idx));
-
-    const subtotal = items.reduce((s, it) => s + (parseFloat(it.cantidad) || 0) * (parseFloat(it.precio_unitario) || 0), 0);
-    const iva      = subtotal * 0.15;
-    const total    = subtotal + iva;
-
-    const onSubmit = async (e) => {
-        e.preventDefault();
-        if (!proveedorId) return toast.error('Selecciona un proveedor.');
-        const itemsValidos = items.filter(it => it.descripcion.trim() && parseFloat(it.cantidad) > 0);
-        if (itemsValidos.length === 0) return toast.error('Agrega al menos un item valido.');
-        if (enviando.current) return;
-        enviando.current = true;
-        setSaving(true);
-        try { await onGuardar({
-            proveedor_id: proveedorId,
-            fecha_solicitud: fecha || undefined,
-            notas,
-            forma_pago: formaPago,
-            metodo_pago: formaPago === 'contado' ? metodoPago : undefined,
-            referencia_pago: formaPago === 'contado' ? refPago : undefined,
-            items: itemsValidos.map(it => ({
-                repuesto_id: it.repuesto_id || undefined,
-                descripcion: it.descripcion,
-                cantidad: parseInt(it.cantidad),
-                precio_unitario: parseFloat(it.precio_unitario) || 0,
-            })),
-        }, clave); } finally { enviando.current = false; setSaving(false); }
-    };
-
-    return (
-        <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
-            <div className="modal-box" style={{ maxWidth: 760, background: boxBg, border: `1px solid ${bdr}`, padding: 28 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
-                    <div>
-                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 6 }}>COMPRAS</p>
-                        <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.6rem', letterSpacing: '.04em', color: txt }}>Nueva Orden de Compra</h2>
-                    </div>
-                    <button onClick={onClose} style={{ background: 'none', border: `1px solid ${bdr}`, borderRadius: 9, padding: 7, cursor: 'pointer', color: mut }}><IconX /></button>
-                </div>
-
-                <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 13 }}>
-                        <div>
-                            <label style={labelSt}>PROVEEDOR *</label>
-                            <select value={proveedorId} onChange={e => setProveedorId(e.target.value)} required style={inputSt}>
-                                <option value="">Seleccionar...</option>
-                                {proveedores.filter(p => p.activo).map(p => <option key={p.id} value={p.id}>{p.nombre_comercial}</option>)}
-                            </select>
-                        </div>
-                        <div>
-                            <label style={labelSt}>FECHA SOLICITUD</label>
-                            <input type="date" value={fecha} onChange={e => setFecha(e.target.value)} style={inputSt} />
-                        </div>
-                    </div>
-
-                    <div>
-                        <label style={labelSt}>ITEMS *</label>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 6 }}>
-                            {items.map((it, idx) => (
-                                <div key={idx} className="prov-items-row">
-                                    <select value={it.repuesto_id} onChange={e => actualizarItem(idx, 'repuesto_id', e.target.value)} style={inputSt}>
-                                        <option value="">Item libre / no es repuesto...</option>
-                                        {repuestos.map(r => <option key={r.id} value={r.id}>{r.codigo} — {r.nombre}</option>)}
-                                    </select>
-                                    <input placeholder="Descripcion" value={it.descripcion} onChange={e => actualizarItem(idx, 'descripcion', e.target.value)} style={inputSt} />
-                                    <input type="number" min="1" placeholder="Cant." value={it.cantidad} onChange={e => actualizarItem(idx, 'cantidad', e.target.value)} style={inputSt} />
-                                    <input type="number" step="0.01" min="0" placeholder="Precio unit." value={it.precio_unitario} onChange={e => actualizarItem(idx, 'precio_unitario', e.target.value)} style={inputSt} />
-                                    <button type="button" onClick={() => quitarItem(idx)} disabled={items.length === 1}
-                                        style={{ background: 'none', border: `1px solid ${bdr}`, borderRadius: 8, padding: 8, cursor: items.length === 1 ? 'not-allowed' : 'pointer', color: '#ef4444', opacity: items.length === 1 ? .4 : 1 }}>
-                                        <IconTrash />
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                        <button type="button" onClick={agregarItem}
-                            style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: `1px dashed ${bdr}`, borderRadius: 9, padding: '8px 14px', cursor: 'pointer', color: SKY_DEEP, fontFamily: "'Outfit'", fontSize: '.82rem' }}>
-                            <IconPlus /> Agregar item
-                        </button>
-                    </div>
-
-                    <div>
-                        <label style={labelSt}>FORMA DE PAGO *</label>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: 10, marginTop: 4 }}>
-                            {[
-                                { id: 'contado', t: 'Contado', d: 'Se paga ahora mismo' },
-                                { id: 'credito', t: `Crédito ${DIAS_CREDITO} días`, d: `Vence el ${venceEl(fecha)} · aviso 3 días antes` },
-                            ].map(o => (
-                                <button type="button" key={o.id} onClick={() => setFormaPago(o.id)}
-                                    style={{ textAlign: 'left', padding: '11px 14px', borderRadius: 10, cursor: 'pointer', fontFamily: "'Outfit'", background: formaPago === o.id ? `${SKY}1a` : 'transparent', border: `1.5px solid ${formaPago === o.id ? SKY_DEEP : bdr}`, color: txt }}>
-                                    <strong style={{ display: 'block', fontSize: '.9rem', color: formaPago === o.id ? SKY_DEEP : txt }}>{o.t}</strong>
-                                    <span style={{ fontSize: '.75rem', color: mut }}>{o.d}</span>
-                                </button>
-                            ))}
-                        </div>
-                        {formaPago === 'contado' && (
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 10 }}>
-                                <select value={metodoPago} onChange={e => setMetodoPago(e.target.value)} style={inputSt}>
-                                    {METODOS.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
-                                </select>
-                                <input placeholder="Referencia / N° comprobante" value={refPago} onChange={e => setRefPago(e.target.value)} style={inputSt} />
-                            </div>
-                        )}
-                    </div>
-
-                    <div>
-                        <label style={labelSt}>NOTAS</label>
-                        <textarea value={notas} onChange={e => setNotas(e.target.value)} rows={2} style={{ ...inputSt, resize: 'vertical' }} />
-                    </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 24, fontFamily: "'Outfit'", fontSize: '.85rem', color: txt, paddingTop: 4 }}>
-                        <span>Subtotal: <strong>${subtotal.toFixed(2)}</strong></span>
-                        <span>IVA 15%: <strong>${iva.toFixed(2)}</strong></span>
-                        <span>Total: <strong style={{ color: SKY_DEEP }}>${total.toFixed(2)}</strong></span>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', paddingTop: 16, borderTop: `1px solid ${bdr}` }}>
-                        <button type="button" onClick={onClose} style={{ fontFamily: "'Bebas Neue'", fontSize: '.72rem', letterSpacing: '.14em', background: 'none', border: `1px solid ${bdr}`, borderRadius: 10, padding: '10px 18px', cursor: 'pointer', color: mut }}>CANCELAR</button>
-                        <button type="submit" disabled={saving} style={{ fontFamily: "'Bebas Neue'", fontSize: '.78rem', letterSpacing: '.14em', color: '#fff', background: `linear-gradient(135deg, ${SKY_DEEP}, ${SKY})`, border: 'none', borderRadius: 10, padding: '10px 22px', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? .6 : 1 }}>
-                            {saving ? 'GUARDANDO...' : 'CREAR COMPRA'}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    );
-}
-
-function ModalDetalleCompra({ theme, compra, onClose, onActualizado }) {
-    const { puede } = useAuth();
-    const { txt, txtSf, mut, bdr, boxBg, inputBg, inputSt, SKY_DEEP, SKY_PALE } = theme;
-    const [cambiando, setCambiando] = useState(false);
-    const saldo = Number(compra.saldo) || 0;
-    const [pago, setPago] = useState({ monto: saldo ? saldo.toFixed(2) : '', metodo_pago: 'efectivo', referencia: '' });
-    const [pagando, setPagando] = useState(false);
-    const confirm = useConfirm();
-    const clavePago = useRef(nuevaClaveIdempotencia());
-
-    const registrarPago = async (e) => {
-        e.preventDefault();
-        const monto = parseFloat(pago.monto);
-        if (!(monto > 0)) return toast.error('Ingresa un monto mayor a cero.');
-        if (pagando) return;
-        setPagando(true);
-        try {
-            const total = monto >= saldo - 0.005;
-            await api.post('/proveedores/movimientos', {
-                proveedor_id: compra.proveedor_id, compra_id: compra.id,
-                tipo: total ? 'pago' : 'abono',
-                descripcion: `${total ? 'Pago' : 'Abono'} compra ${compra.forma_pago === 'contado' ? 'al contado' : 'a crédito'} #${compra.id}`,
-                monto, metodo_pago: pago.metodo_pago, referencia: pago.referencia || undefined,
-            }, conClave(clavePago.current));
-            clavePago.current = nuevaClaveIdempotencia();  // el siguiente pago es otra operacion
-            toast.success(monto >= saldo - 0.005 ? 'Compra pagada por completo.' : 'Abono registrado.');
-            onActualizado();
-        } catch (err) { toast.error(err.response?.data?.error || 'No se pudo registrar el pago.'); }
-        finally { setPagando(false); }
-    };
-    const [cantidades, setCantidades] = useState(() => Object.fromEntries((compra.items || []).map(i => [i.id, i.cantidad_recibida ?? i.cantidad])));
-
-    const avanzarEstado = async (nuevoEstado) => {
-        if (nuevoEstado === 'cancelada') {
-            if (Number(compra.pagado) > 0.005) {
-                toast.error(`Esta compra tiene pagos por $${Number(compra.pagado).toFixed(2)}. Si el proveedor devolvió el dinero o el pago fue un error, anúlalo en "Historial financiero" y luego cancela la compra.`, { duration: 8000 });
-                return;
-            }
-            if (!(await confirm({ title: 'Cancelar compra', message: `¿Cancelar la compra #${compra.id}? Deja de contar como deuda con el proveedor y queda registrada la cancelación en el historial.`, confirmLabel: 'Cancelar compra' }))) return;
-        }
-        setCambiando(true);
-        try {
-            const body = { estado: nuevoEstado };
-            if (nuevoEstado === 'recibida') {
-                body.cantidades_recibidas = Object.entries(cantidades).map(([item_id, cantidad_recibida]) => ({ item_id: parseInt(item_id), cantidad_recibida: parseInt(cantidad_recibida) || 0 }));
-            }
-            const { data } = await api.patch(`/proveedores/compras/${compra.id}/estado`, body);
-            toast.success(`Compra actualizada a "${nuevoEstado}".`);
-            if (nuevoEstado === 'recibida' && Array.isArray(data.stock_actualizado)) {
-                const aplicados = data.stock_actualizado.filter(s => !s.omitido);
-                const omitidos  = data.stock_actualizado.filter(s => s.omitido);
-                if (aplicados.length) toast.success(`Stock actualizado: ${aplicados.length} item(s) sumados al inventario.`, { duration: 5000 });
-                if (omitidos.length) toast.error(`${omitidos.length} item(s) no se pudieron sumar al inventario (repuesto inactivo o no encontrado).`, { duration: 6000 });
-            }
-            onActualizado();
-        } catch (err) { toast.error(err.response?.data?.error || 'Error al cambiar el estado.'); }
-        finally { setCambiando(false); }
-    };
-
-    const siguiente = SIG_ESTADO[compra.estado];
-
-    return (
-        <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
-            <div className="modal-box" style={{ maxWidth: 680, background: boxBg, border: `1px solid ${bdr}`, padding: 28 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
-                    <div>
-                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 6 }}>COMPRA #{compra.id}</p>
-                        <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.5rem', letterSpacing: '.04em', color: txt }}>{compra.proveedor_nombre}</h2>
-                    </div>
-                    <button onClick={onClose} style={{ background: 'none', border: `1px solid ${bdr}`, borderRadius: 9, padding: 7, cursor: 'pointer', color: mut }}><IconX /></button>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
-                    {(compra.items || []).map(it => (
-                        <div key={it.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 12px', borderRadius: 9, background: SKY_PALE, gap: 10 }}>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                                <p style={{ fontFamily: "'Outfit'", fontWeight: 600, color: txt, fontSize: '.86rem' }}>{it.descripcion}</p>
-                                <p style={{ fontFamily: "'Outfit'", fontSize: '.76rem', color: txtSf }}>{it.cantidad} × ${parseFloat(it.precio_unitario).toFixed(2)} = ${parseFloat(it.subtotal).toFixed(2)}</p>
-                            </div>
-                            {compra.estado !== 'recibida' && compra.estado !== 'cancelada' && siguiente === 'recibida' && (
-                                <div>
-                                    <label style={{ fontFamily: "'Outfit'", fontSize: '.7rem', color: txtSf, display: 'block', marginBottom: 2 }}>Recibido</label>
-                                    <input type="number" min="0" max={it.cantidad} value={cantidades[it.id]}
-                                        onChange={e => setCantidades({ ...cantidades, [it.id]: e.target.value })}
-                                        style={{ width: 64, padding: '5px 8px', borderRadius: 7, border: `1px solid ${bdr}`, background: inputBg, color: txt, textAlign: 'center' }} />
-                                </div>
-                            )}
-                        </div>
-                    ))}
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 20, fontFamily: "'Outfit'", fontSize: '.84rem', color: txt, paddingBottom: 16, borderBottom: `1px solid ${bdr}` }}>
-                    <span>Subtotal: ${parseFloat(compra.subtotal).toFixed(2)}</span>
-                    <span>IVA: ${parseFloat(compra.iva).toFixed(2)}</span>
-                    <span>Total: <strong>${parseFloat(compra.total).toFixed(2)}</strong></span>
-                </div>
-
-                {/* Forma de pago y saldo */}
-                <div style={{ marginTop: 14, padding: '12px 14px', borderRadius: 10, border: `1px solid ${bdr}`, fontFamily: "'Outfit'", fontSize: '.84rem', color: txtSf, display: 'flex', flexWrap: 'wrap', gap: '6px 20px', alignItems: 'center' }}>
-                    <span>Pago: <strong style={{ color: txt }}>{compra.forma_pago === 'contado' ? 'Contado' : `Crédito ${DIAS_CREDITO} días`}</strong></span>
-                    {compra.forma_pago === 'credito' && compra.fecha_vencimiento && <span>Vence: <strong style={{ color: txt }}>{fechaCorta(compra.fecha_vencimiento)}</strong></span>}
-                    <span>Pagado: <strong style={{ color: '#10b981' }}>${Number(compra.pagado || 0).toFixed(2)}</strong></span>
-                    <span>Saldo: <strong style={{ color: saldo > 0.005 ? '#f59e0b' : '#10b981' }}>${saldo.toFixed(2)}</strong></span>
-                    {compra.estado !== 'cancelada' && <EstadoPago c={compra} />}
-                </div>
-                {compra.estado !== 'cancelada' && saldo > 0.005 && (
-                    <form onSubmit={registrarPago} style={{ marginTop: 10, display: 'grid', gridTemplateColumns: '1fr 1.3fr 1.3fr auto', gap: 8, alignItems: 'center' }} className="prov-pago-row">
-                        <input type="number" step="0.01" min="0.01" max={saldo.toFixed(2)} value={pago.monto} onChange={e => setPago({ ...pago, monto: e.target.value })} style={inputSt} placeholder="Monto" required />
-                        <select value={pago.metodo_pago} onChange={e => setPago({ ...pago, metodo_pago: e.target.value })} style={inputSt}>
-                            {METODOS.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
-                        </select>
-                        <input value={pago.referencia} onChange={e => setPago({ ...pago, referencia: e.target.value })} style={inputSt} placeholder="Referencia (opcional)" />
-                        <button type="submit" disabled={pagando} style={{ fontFamily: "'Bebas Neue'", fontSize: '.74rem', letterSpacing: '.14em', color: '#fff', background: '#10b981', border: 'none', borderRadius: 10, padding: '11px 16px', cursor: pagando ? 'not-allowed' : 'pointer', opacity: pagando ? .6 : 1, whiteSpace: 'nowrap' }}>
-                            {pagando ? 'GUARDANDO...' : 'REGISTRAR PAGO'}
-                        </button>
-                    </form>
-                )}
-
-                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', paddingTop: 16 }}>
-                    {compra.estado !== 'recibida' && compra.estado !== 'cancelada' && (
-                        puede('proveedores', 'editar') && <button onClick={() => avanzarEstado('cancelada')} disabled={cambiando}
-                            style={{ fontFamily: "'Bebas Neue'", fontSize: '.72rem', letterSpacing: '.14em', background: 'none', border: '1px solid rgba(239,68,68,.3)', color: '#ef4444', borderRadius: 10, padding: '10px 16px', cursor: 'pointer' }}>
-                            CANCELAR COMPRA
-                        </button>
-                    )}
-                    {siguiente && (
-                        puede('proveedores', 'editar') && <button onClick={() => avanzarEstado(siguiente)} disabled={cambiando}
-                            style={{ fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.14em', color: '#fff', background: `${ESTADO_COLOR[siguiente]}`, border: 'none', borderRadius: 10, padding: '10px 20px', cursor: cambiando ? 'not-allowed' : 'pointer', opacity: cambiando ? .6 : 1 }}>
-                            {cambiando ? 'ACTUALIZANDO...' : `MARCAR COMO ${siguiente.replace('_', ' ').toUpperCase()}`}
-                        </button>
-                    )}
-                </div>
-            </div>
+            {imprimir && <ImprimirCompra compra={imprimir} onClose={() => setImprimir(null)} />}
+            {editar && <ModalEditar theme={theme} compra={editar} onClose={() => setEditar(null)} onActualizado={() => { setEditar(null); cargar(); }} />}
         </div>
     );
 }
