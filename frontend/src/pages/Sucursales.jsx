@@ -6,11 +6,13 @@
  */
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { useConfirm } from '../components/common/ConfirmDialog';
 import './Sucursales.css';
 
+import { NombreEmpresa } from '../components/common/MarcaEmpresa';
 function IconPlus()  { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>; }
 function IconEdit()  { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>; }
 function IconTrash() { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>; }
@@ -24,6 +26,7 @@ const EMPTY = { nombre: '', direccion: '', ciudad: '', telefono: '', email: '', 
 
 export default function Sucursales() {
     const confirm = useConfirm();
+    const { puede } = useAuth();
     const { isDark } = useTheme();
     const [sucursales, setSucursales] = useState([]);
     const [loading, setLoading]       = useState(true);
@@ -31,16 +34,16 @@ export default function Sucursales() {
 
     // Paleta
     const SKY = '#0ea5e9'; const SKY_DEEP = '#0284c7';
-    const SKY_PALE = isDark ? 'rgba(14,165,233,0.10)' : 'rgba(14,165,233,0.05)';
-    const SKY_BDR  = isDark ? 'rgba(56,189,248,0.22)' : 'rgba(14,165,233,0.18)';
+    const SKY_PALE = isDark ? 'rgba(14,165,233,0.10)' : 'rgba(14,165,233,0.12)';
+    const SKY_BDR  = isDark ? 'rgba(56,189,248,0.22)' : 'rgba(14,165,233,0.35)';
     const txt    = isDark ? '#f1f5f9' : '#0f172a';
     const txtSf  = isDark ? '#cbd5e1' : '#334155';
-    const mut    = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
-    const bdr    = isDark ? 'rgba(148,163,184,0.18)' : 'rgba(15,23,42,0.07)';
-    const card   = isDark ? 'rgba(255,255,255,0.025)' : '#ffffff';
+    const mut    = isDark ? 'rgba(241,245,249,0.72)' : '#526075';
+    const bdr    = isDark ? 'rgba(148,163,184,0.28)' : '#b6c3d3';
+    const card   = isDark ? 'rgba(255,255,255,0.045)' : '#ffffff';
     const cardSh = isDark
         ? '0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 40px -16px rgba(0,0,0,0.55)'
-        : '0 4px 16px -4px rgba(15,23,42,0.08), 0 2px 4px -2px rgba(15,23,42,0.04)';
+        : '0 1px 2px rgba(15,23,42,0.06), 0 8px 22px -8px rgba(15,23,42,0.20)';
 
     const cargar = async () => {
         setLoading(true);
@@ -81,19 +84,19 @@ export default function Sucursales() {
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 22, flexWrap: 'wrap', gap: 12 }}>
                 <div>
-                    <div className="SS SWAP-chip" style={{ marginBottom: 8 }}>
+                    <div className="ssswap-chip" style={{ marginBottom: 8 }}>
                         <span className="dot" />
-                        <span>SS SWAP · ADMIN · SUCURSALES</span>
+                        <span><NombreEmpresa /> · ADMIN · SUCURSALES</span>
                     </div>
                     <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.6rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>Sucursales</h1>
                     <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.85rem', color: mut, marginTop: 6 }}>
                         Gestion de ubicaciones · Visibles en la pagina principal
                     </p>
                 </div>
-                <button onClick={() => setModal({ open: true, data: null })}
+                {puede('sucursales', 'crear') && <button onClick={() => setModal({ open: true, data: null })}
                     style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: "'Bebas Neue'", fontSize: '.78rem', letterSpacing: '.14em', color: '#fff', background: `linear-gradient(135deg, ${SKY_DEEP}, ${SKY})`, border: 'none', borderRadius: 11, padding: '11px 22px', cursor: 'pointer', boxShadow: `0 6px 18px -6px ${SKY}` }}>
                     <IconPlus /> NUEVA SUCURSAL
-                </button>
+                </button>}
             </div>
 
             {loading ? (
@@ -110,7 +113,7 @@ export default function Sucursales() {
                     <p style={{ fontFamily: "'Outfit'", fontSize: '.82rem', color: mut, marginTop: 4 }}>Crea la primera para que aparezca en la pagina principal</p>
                 </div>
             ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 18 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(340px, 100%), 1fr))', gap: 18 }}>
                     {sucursales.map((s, i) => (
                         <div key={s.id} className="s-card"
                             style={{
@@ -127,12 +130,12 @@ export default function Sucursales() {
                                 <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                                         {s.es_principal && (
-                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 9px', borderRadius: 999, background: SKY_PALE, border: `1px solid ${SKY_BDR}`, color: SKY_DEEP, fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.2em' }}>
+                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 9px', borderRadius: 999, background: SKY_PALE, border: `1px solid ${SKY_BDR}`, color: SKY_DEEP, fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.2em' }}>
                                                 <IconStar /> PRINCIPAL
                                             </span>
                                         )}
                                         {!s.activa && (
-                                            <span style={{ padding: '3px 9px', borderRadius: 999, background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.25)', color: '#ef4444', fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.2em' }}>
+                                            <span style={{ padding: '3px 9px', borderRadius: 999, background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.25)', color: '#ef4444', fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.2em' }}>
                                                 OCULTA
                                             </span>
                                         )}
@@ -141,16 +144,16 @@ export default function Sucursales() {
                                     {s.ciudad && <p style={{ fontFamily: "'Outfit'", fontSize: '.78rem', color: mut, marginTop: 2 }}>{s.ciudad}</p>}
                                 </div>
                                 <div style={{ display: 'flex', gap: 6 }}>
-                                    <button onClick={() => setModal({ open: true, data: s })}
+                                    {puede('sucursales', 'editar') && <button onClick={() => setModal({ open: true, data: s })}
                                             title="Editar"
                                             style={{ background: 'none', border: `1px solid ${bdr}`, borderRadius: 8, padding: 7, cursor: 'pointer', color: SKY_DEEP, display: 'flex' }}>
                                         <IconEdit />
-                                    </button>
-                                    <button onClick={() => eliminar(s)}
+                                    </button>}
+                                    {puede('sucursales', 'eliminar') && <button onClick={() => eliminar(s)}
                                             title="Eliminar"
                                             style={{ background: 'none', border: `1px solid ${bdr}`, borderRadius: 8, padding: 7, cursor: 'pointer', color: '#ef4444', display: 'flex' }}>
                                         <IconTrash />
-                                    </button>
+                                    </button>}
                                 </div>
                             </div>
 
@@ -200,13 +203,13 @@ function ModalSucursal({ data, onClose, onGuardar }) {
 
     const SKY = '#0ea5e9'; const SKY_DEEP = '#0284c7';
     const txt = isDark ? '#f1f5f9' : '#0f172a';
-    const mut = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
-    const bdr = isDark ? 'rgba(148,163,184,0.18)' : 'rgba(15,23,42,0.10)';
+    const mut = isDark ? 'rgba(241,245,249,0.72)' : '#526075';
+    const bdr = isDark ? 'rgba(148,163,184,0.28)' : '#b6c3d3';
     const inputBg = isDark ? '#0b1220' : '#f8fafc';
-    const boxBg = isDark ? '#0a0f1c' : '#ffffff';
+    const boxBg = isDark ? '#111826' : '#ffffff';
 
     const inputSt = { width: '100%', boxSizing: 'border-box', padding: '10px 13px', borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: txt, fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.88rem', outline: 'none' };
-    const labelSt = { display: 'block', marginBottom: 6, fontFamily: "'Bebas Neue'", fontSize: '.62rem', letterSpacing: '.22em', color: SKY_DEEP };
+    const labelSt = { display: 'block', marginBottom: 6, fontFamily: "'Bebas Neue'", fontSize: '.74rem', letterSpacing: '.22em', color: SKY_DEEP };
 
     const handlePhoneChange = (e) => {
         let val = e.target.value.replace(/[^\d+]/g, '');
@@ -235,7 +238,7 @@ function ModalSucursal({ data, onClose, onGuardar }) {
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, transparent, ${SKY}, ${SKY_DEEP}, ${SKY}, transparent)`, borderRadius: '20px 20px 0 0' }} />
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 22 }}>
                     <div>
-                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.58rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 6 }}>ADMIN · SUCURSALES</p>
+                        <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.7rem', letterSpacing: '.24em', color: SKY_DEEP, marginBottom: 6 }}>ADMIN · SUCURSALES</p>
                         <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.7rem', letterSpacing: '.04em', color: txt }}>{esEdicion ? 'Editar Sucursal' : 'Nueva Sucursal'}</h2>
                     </div>
                     <button onClick={onClose} style={{ background: 'none', border: `1px solid ${bdr}`, borderRadius: 9, padding: 7, cursor: 'pointer', color: mut, display: 'flex' }}>
@@ -263,7 +266,7 @@ function ModalSucursal({ data, onClose, onGuardar }) {
                         </div>
                         <div style={{ gridColumn: '1/-1' }}>
                             <label style={labelSt}>EMAIL</label>
-                            <input type="email" name="email" value={form.email || ''} onChange={onChange} placeholder="sucursal@SS SWAP.com" style={inputSt} />
+                            <input type="email" name="email" value={form.email || ''} onChange={onChange} placeholder="sucursal@ssswap.com" style={inputSt} />
                         </div>
                         <div style={{ gridColumn: '1/-1' }}>
                             <label style={labelSt}>HORARIO</label>

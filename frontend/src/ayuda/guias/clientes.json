@@ -1,0 +1,111 @@
+{
+  "id": "clientes",
+  "grupo": "CLIENTES",
+  "titulo": "Clientes del taller",
+  "version": "1.0",
+  "actualizada": "2026-10-14",
+  "rutas": [
+    {
+      "path": "/dashboard/clientes",
+      "query": {
+        "tab": [
+          "",
+          "clientes"
+        ]
+      }
+    }
+  ],
+  "descripcion": "Registro de los clientes del taller (personas o empresas) con su identificación y datos de contacto. Se usan en órdenes, proformas, pagarés y facturas. No confundir con las cuentas del portal de clientes, que se administran en Usuarios y seguridad.",
+  "funciones": [
+    "Buscar por nombre, cédula o teléfono.",
+    "Crear un cliente con tipo de identificación (cédula, RUC, pasaporte o del exterior), correo, teléfono y dirección.",
+    "Editar o eliminar un cliente.",
+    "Pasar a la pestaña Pagaré para ver su cartera."
+  ],
+  "pasos": [
+    {
+      "titulo": "Busque o cree un cliente",
+      "texto": [
+        "Escriba en el buscador para filtrar la lista. Para registrar uno nuevo pulse «Nuevo cliente», complete el nombre, la identificación y al menos un dato de contacto, y guarde."
+      ],
+      "imagen": {
+        "archivo": "v27/clientes/01-lista.png",
+        "alt": "Clientes registrados con las pestañas Clientes y Pagaré, el buscador y el botón Nuevo cliente",
+        "tipo": "captura",
+        "captura": {
+          "url": "/dashboard/clientes",
+          "esperar": {
+            "placeholder": "Buscar por nombre, cédula"
+          }
+        }
+      },
+      "marcas": [
+        {
+          "texto": "Pestañas Clientes y Pagaré.",
+          "objetivo": {
+            "texto": "PAGARÉ",
+            "tag": "button"
+          }
+        },
+        {
+          "texto": "Buscador.",
+          "objetivo": {
+            "placeholder": "Buscar por nombre, cédula"
+          }
+        },
+        {
+          "texto": "Registrar un cliente nuevo.",
+          "objetivo": {
+            "texto": "NUEVO CLIENTE",
+            "tag": "button"
+          }
+        }
+      ]
+    },
+    {
+      "titulo": "Edite o elimine",
+      "texto": [
+        "En cada fila use «Editar» para corregir los datos o «Eliminar» si se registró por error."
+      ],
+      "imagen": {
+        "archivo": "v27/clientes/02-acciones.png",
+        "alt": "Tabla de clientes con los botones Editar y Eliminar de cada fila",
+        "tipo": "captura",
+        "captura": {
+          "url": "/dashboard/clientes",
+          "esperar": {
+            "texto": "Editar",
+            "tag": "button"
+          }
+        }
+      },
+      "marcas": [
+        {
+          "texto": "Editar datos.",
+          "objetivo": {
+            "texto": "Editar",
+            "tag": "button"
+          }
+        },
+        {
+          "texto": "Eliminar.",
+          "objetivo": {
+            "texto": "Eliminar",
+            "tag": "button"
+          }
+        }
+      ]
+    }
+  ],
+  "resultado": "El cliente queda disponible para elegirlo en órdenes, proformas, pagarés y facturas.",
+  "advertencias": [
+    "La identificación debe ser válida para el tipo elegido: la factura electrónica la exige correcta.",
+    "Un cliente con órdenes, proformas o cuentas por cobrar no se puede eliminar (el sistema lo impide para conservar el historial); corrija sus datos en su lugar."
+  ],
+  "problemas": [
+    {
+      "problema": "Aparece «Tipo de identificación no válido» o «La cédula es obligatoria».",
+      "solucion": "Elija el tipo correcto (cédula, RUC, pasaporte o del exterior) y escriba el número completo."
+    }
+  ]
+}

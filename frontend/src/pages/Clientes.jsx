@@ -4,13 +4,21 @@
  * Muestra KPIs de totales y permite filtrar por cédula, nombre o email.
  * Accesible para administradores y recepcionistas.
  */
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
+import { useSearchParams } from 'react-router-dom';
+import useParamUrl from '../hooks/useParamUrl';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import { useConfirm } from '../components/common/ConfirmDialog';
+import PagareTab from '../components/clientes/PagareTab';
+import Paginador from '../components/proveedores/Paginador';
 import './Clientes.css';
+import '../pages/Proveedores.css';
 
+import { NombreEmpresa } from '../components/common/MarcaEmpresa';
+import RegistradoPor from '../components/common/RegistradoPor';
 function IconPlus() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>; }
 function IconSearch() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>; }
 function IconEdit() { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>; }
@@ -20,7 +28,7 @@ function IconUser() { return <svg width="18" height="18" viewBox="0 0 24 24" fil
 function Kpi({ label, value, color, card, bdr, mut, txt, sh }) {
     return (
         <div style={{ background: card, border: `1px solid ${bdr}`, borderRadius: 14, padding: 16, boxShadow: sh }}>
-            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.56rem', letterSpacing: '.18em', color, marginBottom: 6 }}>{label}</p>
+            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.18em', color, marginBottom: 6 }}>{label}</p>
             <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.6rem', color: txt, lineHeight: 1 }}>{value}</p>
             <p style={{ fontFamily: "'Outfit'", fontSize: '.74rem', color: mut, marginTop: 4 }}>Clientes registrados</p>
         </div>
@@ -28,11 +36,12 @@ function Kpi({ label, value, color, card, bdr, mut, txt, sh }) {
 }
 
 function ModalCliente({ open, data, onClose, onGuardar, isDark }) {
-    const [form, setForm] = useState({ nombre: '', email: '', telefono: '', cedula: '', direccion: '' });
+    const [form, setForm] = useState({ nombre: '', email: '', telefono: '', cedula: '', direccion: '', tipo_identificacion: '' });
 
     useEffect(() => {
         if (open) {
             setForm({
+                tipo_identificacion: data?.tipo_identificacion || '',
                 nombre: data?.nombre || '',
                 email: data?.email || '',
                 telefono: data?.telefono || '',
@@ -44,10 +53,10 @@ function ModalCliente({ open, data, onClose, onGuardar, isDark }) {
 
     if (!open) return null;
 
-    const card = isDark ? 'rgba(255,255,255,0.025)' : '#ffffff';
-    const bdr = isDark ? 'rgba(148,163,184,0.18)' : 'rgba(15,23,42,0.08)';
+    const card = isDark ? 'rgba(255,255,255,0.045)' : '#ffffff';
+    const bdr = isDark ? 'rgba(148,163,184,0.28)' : '#b6c3d3';
     const txt = isDark ? '#f1f5f9' : '#0f172a';
-    const mut = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
+    const mut = isDark ? 'rgba(241,245,249,0.72)' : '#526075';
     const inputBg = isDark ? '#0b1220' : '#fafcff';
 
     const handleChange = (e) => setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -80,7 +89,16 @@ function ModalCliente({ open, data, onClose, onGuardar, isDark }) {
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                         <div>
-                            <label style={{ display: 'block', fontFamily: "'Outfit'", fontSize: '.8rem', color: mut, marginBottom: 6 }}>Cédula</label>
+                            {/* Sprint 23: tipo SRI para facturar (se valida el formato; los datos los confirma el personal). */}
+                            <label style={{ display: 'block', fontFamily: "'Outfit'", fontSize: '.8rem', color: mut, marginBottom: 6 }}>Tipo de identificación</label>
+                            <select name="tipo_identificacion" value={form.tipo_identificacion} onChange={handleChange} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: txt, outline: 'none', marginBottom: 10 }}>
+                                <option value="">Sin indicar</option>
+                                <option value="05">Cédula</option>
+                                <option value="04">RUC</option>
+                                <option value="06">Pasaporte</option>
+                                <option value="08">Identificación del exterior</option>
+                            </select>
+                            <label style={{ display: 'block', fontFamily: "'Outfit'", fontSize: '.8rem', color: mut, marginBottom: 6 }}>Cédula / RUC / Pasaporte</label>
                             <input name="cedula" value={form.cedula} onChange={handleChange} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: `1px solid ${bdr}`, background: inputBg, color: txt, outline: 'none' }} />
                         </div>
                         <div>
@@ -99,31 +117,55 @@ function ModalCliente({ open, data, onClose, onGuardar, isDark }) {
     );
 }
 
+// Clientes por pagina en la lista.
+const POR_PAGINA = 20;
+
 export default function Clientes() {
     const confirm = useConfirm();
     const { isDark } = useTheme();
+    const { puede } = useAuth();
+    const verClientes = puede('clientes', 'ver');
+    const verPagare = puede('cuentas_cobrar', 'ver');
     const [clientes, setClientes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [busqueda, setBusqueda] = useState('');
+    // La lista se pide por paginas (antes llegaban todos los clientes de una vez).
+    const [consulta, setConsulta] = useState({ q: '', pagina: 1 });
+    const [total, setTotal] = useState(0);
+    const [resumen, setResumen] = useState({ total: 0, con_email: 0, con_telefono: 0 });
+    const debounceRef = useRef(null);
     const [modal, setModal] = useState({ open: false, data: null });
+    // ?tab=pagare&cuenta=ID abre directamente un pagare (enlace desde la proforma)
+    const [searchParams] = useSearchParams();
+    const [tabUrl, setTab] = useParamUrl('tab', 'clientes', ['clientes', 'pagare'], ['cuenta']);
+    // Solo las pestañas permitidas: sin "ver clientes" se abre directo la cartera.
+    const tab = !verClientes ? 'pagare' : (!verPagare ? 'clientes' : tabUrl);
+    const cuentaInicial = searchParams.get('cuenta');
 
     const SKY = '#c9a227';
     const SKY_DEEP = '#a87a14';
     const txt = isDark ? '#f1f5f9' : '#0f172a';
     const txtSf = isDark ? '#cbd5e1' : '#334155';
-    const mut = isDark ? 'rgba(241,245,249,0.55)' : '#64748b';
-    const bdr = isDark ? 'rgba(148,163,184,0.18)' : 'rgba(15,23,42,0.08)';
-    const card = isDark ? 'rgba(255,255,255,0.025)' : '#ffffff';
-    const cardSh = isDark ? '0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 40px -16px rgba(0,0,0,0.55)' : '0 4px 16px -4px rgba(15,23,42,0.08)';
+    const mut = isDark ? 'rgba(241,245,249,0.72)' : '#526075';
+    const bdr = isDark ? 'rgba(148,163,184,0.28)' : '#b6c3d3';
+    const card = isDark ? 'rgba(255,255,255,0.045)' : '#ffffff';
+    const cardSh = isDark ? '0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 40px -16px rgba(0,0,0,0.55)' : '0 1px 2px rgba(15,23,42,0.06), 0 8px 22px -8px rgba(15,23,42,0.20)';
     const inputBg = isDark ? '#0b1220' : '#fafcff';
 
-    const cargarClientes = useCallback(async (q = '') => {
+    const cargarClientes = useCallback(async (q = '', pg = 1) => {
         setLoading(true);
         try {
             const params = new URLSearchParams();
             if (q) params.set('q', q);
+            params.set('page', String(pg));
+            params.set('limit', String(POR_PAGINA));
             const { data } = await api.get(`/ordenes/clientes?${params}`);
+            // Si la pagina quedo fuera de rango (p. ej. tras eliminar), se va a la ultima.
+            const paginas = Math.max(1, data.totalPages || 1);
+            if (pg > paginas && (data.total || 0) > 0) { setConsulta({ q, pagina: paginas }); return; }
             setClientes(data.clientes || []);
+            setTotal(data.total || 0);
+            if (data.resumen) setResumen(data.resumen);
         } catch (err) {
             toast.error(err.response?.data?.error || 'Error al cargar clientes.');
         } finally {
@@ -131,25 +173,29 @@ export default function Clientes() {
         }
     }, []);
 
-    useEffect(() => { cargarClientes(); }, [cargarClientes]);
+    useEffect(() => { if (verClientes) cargarClientes(consulta.q, consulta.pagina); }, [cargarClientes, verClientes, consulta]);
+    useEffect(() => () => clearTimeout(debounceRef.current), []);
 
+    // Una sola consulta cuando se deja de escribir (antes, una por cada tecla).
     const handleBusqueda = (e) => {
         const value = e.target.value;
         setBusqueda(value);
-        setTimeout(() => cargarClientes(value), 300);
+        clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => setConsulta({ q: value, pagina: 1 }), 300);
     };
+    const recargar = () => setConsulta(c => ({ ...c }));
+    const setPagina = (fn) => setConsulta(c => ({ ...c, pagina: typeof fn === 'function' ? fn(c.pagina) : fn }));
 
     const guardarCliente = async (form) => {
         try {
-            if (modal.data) {
-                await api.put(`/ordenes/clientes/${modal.data.id}`, form);
-                toast.success('Cliente actualizado.');
-            } else {
-                await api.post('/ordenes/clientes', form);
-                toast.success('Cliente creado.');
-            }
+            const { data } = modal.data
+                ? await api.put(`/ordenes/clientes/${modal.data.id}`, form)
+                : await api.post('/ordenes/clientes', form);
+            toast.success(modal.data ? 'Cliente actualizado.' : 'Cliente creado.');
+            // Avisos de formato de la identificacion (p. ej. RUC que no pasa el digito verificador).
+            (data?.advertencias || []).forEach(a => toast(a, { icon: '⚠️', duration: 7000 }));
             setModal({ open: false, data: null });
-            cargarClientes(busqueda);
+            recargar();
         } catch (err) {
             toast.error(err.response?.data?.error || 'Error al guardar cliente.');
         }
@@ -160,37 +206,45 @@ export default function Clientes() {
         try {
             await api.delete(`/ordenes/clientes/${cliente.id}`);
             toast.success('Cliente eliminado.');
-            cargarClientes(busqueda);
+            recargar();
         } catch (err) {
             toast.error(err.response?.data?.error || 'Error al eliminar cliente.');
         }
     };
 
-    const stats = useMemo(() => ({
-        total: clientes.length,
-        conEmail: clientes.filter((c) => c.email).length,
-        conTelefono: clientes.filter((c) => c.telefono).length,
-    }), [clientes]);
+    // Totales de TODOS los clientes que cumplen la busqueda (los calcula el servidor).
+    const stats = { total: resumen.total, conEmail: resumen.con_email, conTelefono: resumen.con_telefono };
 
     return (
         <div style={{ animation: 'fadeIn .35s ease', maxWidth: 1400 }}>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
                 <div>
-                    <div className="SS SWAP-chip" style={{ marginBottom: 8 }}>
+                    <div className="ssswap-chip" style={{ marginBottom: 8 }}>
                         <span className="dot" />
-                        <span>SS SWAP · TALLER · CLIENTES</span>
+                        <span><NombreEmpresa /> · TALLER · CLIENTES</span>
                     </div>
                     <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: '2.6rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>Clientes</h1>
                     <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.85rem', color: mut, marginTop: 6 }}>
                         Gestiona la base de clientes del taller, sus datos y contacto.
                     </p>
                 </div>
+                {tab === 'clientes' && puede('clientes', 'crear') && (
                 <button onClick={() => setModal({ open: true, data: null })} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: "'Bebas Neue'", fontSize: '.78rem', letterSpacing: '.14em', color: '#fff', background: `linear-gradient(135deg, ${SKY_DEEP}, ${SKY})`, border: 'none', borderRadius: 11, padding: '11px 22px', cursor: 'pointer' }}>
                     <IconPlus /> NUEVO CLIENTE
                 </button>
+                )}
             </div>
 
+            <div className="prov-tabs" style={{ '--prov-bdr': bdr, '--prov-mut': mut, '--prov-sky': SKY_DEEP }}>
+                {verClientes && <button className={`prov-tab-btn ${tab === 'clientes' ? 'active' : ''}`} onClick={() => setTab('clientes')}>CLIENTES</button>}
+                {verPagare && <button className={`prov-tab-btn ${tab === 'pagare' ? 'active' : ''}`} onClick={() => setTab('pagare')}>PAGARÉ</button>}
+            </div>
+
+            {tab === 'pagare' ? (
+                <PagareTab theme={{ txt, txtSf, mut, bdr, card, cardSh, inputBg, SKY, SKY_DEEP, isDark }} cuentaInicial={cuentaInicial} />
+            ) : (
+            <>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 14, marginBottom: 20 }}>
                 <Kpi label="Total" value={stats.total} color={SKY} card={card} bdr={bdr} mut={mut} txt={txt} sh={cardSh} />
                 <Kpi label="Con correo" value={stats.conEmail} color="#10b981" card={card} bdr={bdr} mut={mut} txt={txt} sh={cardSh} />
@@ -229,18 +283,23 @@ export default function Clientes() {
                                         {cliente.cedula && <div>🪪 {cliente.cedula}</div>}
                                         {cliente.direccion && <div>📍 {cliente.direccion}</div>}
                                     </div>
+                                    <RegistradoPor nombre={cliente.creado_por_nombre} fechaRegistro={cliente.created_at}
+                                        sinNombre={cliente.cuenta_web ? 'Registrado desde la web' : 'Registro anterior (sin usuario)'} color={mut} />
                                 </div>
                             </div>
                             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                                <button onClick={() => setModal({ open: true, data: cliente })} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: `1px solid ${bdr}`, background: 'transparent', color: SKY_DEEP, borderRadius: 10, padding: '8px 12px', cursor: 'pointer', fontFamily: "'Bebas Neue'", letterSpacing: '.12em' }}><IconEdit /> Editar</button>
-                                <button onClick={() => eliminarCliente(cliente)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: `1px solid ${bdr}`, background: 'transparent', color: '#ef4444', borderRadius: 10, padding: '8px 12px', cursor: 'pointer', fontFamily: "'Bebas Neue'", letterSpacing: '.12em' }}><IconTrash /> Eliminar</button>
+                                {puede('clientes', 'editar') && <button onClick={() => setModal({ open: true, data: cliente })} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: `1px solid ${bdr}`, background: 'transparent', color: SKY_DEEP, borderRadius: 10, padding: '8px 12px', cursor: 'pointer', fontFamily: "'Bebas Neue'", letterSpacing: '.12em' }}><IconEdit /> Editar</button>}
+                                {puede('clientes', 'eliminar') && <button onClick={() => eliminarCliente(cliente)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: `1px solid ${bdr}`, background: 'transparent', color: '#ef4444', borderRadius: 10, padding: '8px 12px', cursor: 'pointer', fontFamily: "'Bebas Neue'", letterSpacing: '.12em' }}><IconTrash /> Eliminar</button>}
                             </div>
                         </div>
                     ))}
                 </div>
             )}
+            <Paginador pagina={consulta.pagina} setPagina={setPagina} total={total} porPagina={POR_PAGINA} theme={{ txt, mut, bdr }} />
 
             {modal.open && <ModalCliente open={modal.open} data={modal.data} onClose={() => setModal({ open: false, data: null })} onGuardar={guardarCliente} isDark={isDark} />}
+            </>
+            )}
         </div>
     );
 }

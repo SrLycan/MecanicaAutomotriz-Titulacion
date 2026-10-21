@@ -6,6 +6,7 @@
  * como principal.
  */
 const pool = require('../config/db');
+const { errorBD } = require('../utils/erroresBD');
 
 /** Lista sucursales activas para visualización en páginas públicas y chatbot */
 // ─────────────────────────────────────────────────────────────
@@ -24,6 +25,7 @@ const listarPublicas = async (_req, res) => {
         return res.json({ sucursales: rows, total: rows.length });
     } catch (err) {
         console.error('Error listarPublicas:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener sucursales.' });
     }
 };
@@ -40,6 +42,7 @@ const listarTodas = async (_req, res) => {
         return res.json({ sucursales: rows, total: rows.length });
     } catch (err) {
         console.error('Error listarTodas:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al obtener sucursales.' });
     }
 };
@@ -68,6 +71,7 @@ const crear = async (req, res) => {
         return res.status(201).json({ sucursal: rows[0] });
     } catch (err) {
         console.error('Error crear sucursal:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al crear sucursal.' });
     }
 };
@@ -98,6 +102,7 @@ const actualizar = async (req, res) => {
         return res.json({ sucursal: rows[0] });
     } catch (err) {
         console.error('Error actualizar sucursal:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al actualizar sucursal.' });
     }
 };
@@ -114,6 +119,7 @@ const eliminar = async (req, res) => {
         return res.json({ ok: true });
     } catch (err) {
         console.error('Error eliminar sucursal:', err);
+        const eBD = errorBD(err); if (eBD) return res.status(eBD.status).json({ error: eBD.error });
         return res.status(500).json({ error: 'Error al eliminar sucursal.' });
     }
 };

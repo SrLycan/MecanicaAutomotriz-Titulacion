@@ -8,6 +8,7 @@
  * auditar qué consulta la gente.
  */
 const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
 const pool = require('../config/db');
 const { hayCuotaDisponible, registrarConsumo, estadoCuota } = require('../services/geminiQuota.service');
 const { responderConIA }                                     = require('../services/chatbot.service');
@@ -35,10 +36,28 @@ const MAX_CHARS_MENSAJE = 500;
  * panel). El guardado en Mongo es best-effort: si falla, no se rompe la
  * respuesta al usuario.
  */
+// sesion_id solo puede ser un texto simple (UUID o similar). Antes se usaba tal
+// cual en el filtro de MongoDB: un objeto como {"$ne": null} coincidia con la
+// conversacion de OTRA persona y permitia escribir en ella (inyeccion NoSQL).
+const SESION_VALIDA = /^[A-Za-z0-9-]{8,80}$/;
+
+// El cliente se identifica por su SESION (token), nunca por un correo que
+// manda el navegador: antes cualquiera podia enviar el correo de otro
+// cliente y meter mensajes en el historial de su panel.
+function emailDeSesion(req) {
+    const m = /^Bearer\s+(.+)$/i.exec(req.headers.authorization || '');
+    if (!m) return '';
+    try {
+        const p = jwt.verify(m[1], process.env.JWT_SECRET);
+        return p && p.rol === 'cliente' && typeof p.email === 'string' ? p.email : '';
+    } catch (_) { return ''; }
+}
+
 const responderMensaje = async (req, res) => {
-    const mensaje       = (req.body?.mensaje || '').toString().trim();
-    const sesionId       = req.body?.sesion_id || crypto.randomUUID();
-    const emailCliente   = (req.body?.email || '').toString().trim();
+    const mensaje       = (typeof req.body?.mensaje === 'string' ? req.body.mensaje : '').trim();
+    const sesionId       = typeof req.body?.sesion_id === 'string' && SESION_VALIDA.test(req.body.sesion_id)
+        ? req.body.sesion_id : crypto.randomUUID();
+    const emailCliente   = emailDeSesion(req);
 
     if (!mensaje) {
         return res.status(400).json({ error: 'El mensaje no puede estar vacio.' });
@@ -66,7 +85,7 @@ const responderMensaje = async (req, res) => {
         let clienteNombre = null;
         if (emailCliente) {
             try {
-                const { rows } = await pool.query('SELECT id, nombre FROM clientes WHERE email = $1 LIMIT 1', [emailCliente]);
+                const { rows } = await pool.query('SELECT id, nombre FROM clientes WHERE LOWER(email) = LOWER($1) ORDER BY id LIMIT 1', [emailCliente]);
                 clienteId = rows[0]?.id ?? null;
                 clienteNombre = rows[0]?.nombre ?? null;
             } catch (_) { /* no critico para responder el chat */ }

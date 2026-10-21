@@ -1,0 +1,44 @@
+{
+  "id": "proforma-formulario",
+  "grupo": "TALLER · PROFORMAS",
+  "titulo": "Crear o editar una proforma",
+  "version": "1.0",
+  "actualizada": "2026-10-14",
+  "rutas": [{ "path": "/dashboard/proformas/nueva" }, { "path": "/dashboard/proformas/:id/editar" }],
+  "descripcion": "Formulario de la cotización: tipo, cliente y vehículo, productos del inventario, servicios o mano de obra, descuento, IVA, anticipo y condiciones. Calcula subtotal, IVA y total en tiempo real.",
+  "funciones": [
+    "Elegir el tipo: Proforma Mecánica o Colisiones / Pintura (con pictograma de daños).",
+    "Seleccionar cliente y vehículo, fecha de emisión, validez y sucursal del encabezado.",
+    "Agregar productos del inventario y servicios / mano de obra.",
+    "Definir descuento, IVA, anticipo, garantía, tiempo estimado, observaciones y condiciones de pago."
+  ],
+  "pasos": [
+    {
+      "titulo": "Elija el tipo, el cliente y el vehículo",
+      "texto": ["Arriba elija el tipo de proforma. Luego seleccione el cliente y su vehículo (si falta, regístrelo en Clientes). Revise la fecha de emisión y hasta cuándo es válida."],
+      "imagen": { "archivo": "v27/proforma-formulario/01-tipo-cliente.png", "alt": "Formulario de nueva proforma con las tarjetas de tipo y los campos Cliente, Vehículo y fechas", "tipo": "captura",
+        "captura": { "url": "/dashboard/proformas/nueva", "esperar": { "campo": "CLIENTE *" } } },
+      "marcas": [
+        { "texto": "Tipo de proforma.", "objetivo": { "contiene": "Proforma Mecánica", "tag": "button" } },
+        { "texto": "Cliente (obligatorio).", "objetivo": { "campo": "CLIENTE *" } },
+        { "texto": "Vehículo (obligatorio).", "objetivo": { "campo": "VEHÍCULO *" } }
+      ]
+    },
+    {
+      "titulo": "Agregue productos y servicios",
+      "texto": ["En «Productos / repuestos» busque en el inventario: el precio de venta se llena solo y, al aprobarse, la proforma descuenta el stock. En «Servicios / mano de obra» agregue el trabajo. El resumen calcula subtotal, IVA y total."]
+    },
+    {
+      "titulo": "Complete condiciones y guarde",
+      "texto": ["Indique descuento, IVA, anticipo requerido (en colisiones siempre es el 70 %), garantía, tiempo estimado y condiciones de pago. Pulse «Crear proforma» (o «Guardar cambios» al editar)."]
+    }
+  ],
+  "resultado": "La proforma queda numerada (PROFORMA-000001) y aparece en la lista; desde su detalle se descarga en PDF, se aprueba, se convierte en orden o se factura.",
+  "advertencias": [
+    "Cliente, vehículo, fecha de emisión y al menos un ítem son obligatorios.",
+    "Los productos del inventario solo se descuentan cuando la proforma se aprueba y se confirma el uso de materiales."
+  ],
+  "problemas": [
+    { "problema": "No encuentro un producto al agregarlo.", "solucion": "Debe estar activo en el inventario del mismo tipo (Mecánica o Colisiones)." }
+  ]
+}

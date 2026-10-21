@@ -3,7 +3,7 @@
  */
 const express = require('express');
 const router  = express.Router();
-const { verificarToken, verificarRol } = require('../middleware/auth.middleware');
+const { verificarToken, requierePermiso } = require('../middleware/auth.middleware');
 const {
     listarServicios, obtenerServicio, crearServicio, actualizarServicio, eliminarServicio
 } = require('../controllers/servicios.controller');
@@ -14,8 +14,8 @@ router.get('/:id',  obtenerServicio);
 
 // Escritura — solo administrador
 router.use(verificarToken);
-router.post('/',       verificarRol('administrador'), crearServicio);
-router.put('/:id',     verificarRol('administrador'), actualizarServicio);
-router.delete('/:id',  verificarRol('administrador'), eliminarServicio);
+router.post('/',       requierePermiso('servicios', 'crear'),    crearServicio);
+router.put('/:id',     requierePermiso('servicios', 'editar'),   actualizarServicio);
+router.delete('/:id',  requierePermiso('servicios', 'eliminar'), eliminarServicio);
 
 module.exports = router;

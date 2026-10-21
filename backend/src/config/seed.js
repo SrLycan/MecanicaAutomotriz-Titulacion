@@ -10,13 +10,19 @@ const fs     = require('fs');
 const path   = require('path');
 
 async function seed() {
+    // Las cuentas demo tienen contrasenas conocidas (estan en el repositorio
+    // publico): jamas deben crearse en una base real.
+    if (process.env.NODE_ENV === 'production' || process.env.PERMITIR_SEED !== 'true') {
+        console.error('Seed bloqueado: crea cuentas demo con contrasenas publicas. Solo para una BD de desarrollo vacia: PERMITIR_SEED=true npm run seed');
+        process.exit(1);
+    }
     const client = await pool.connect();
     try {
         console.log('\n⚙️ SS SWAP - Inicializando base de datos...\n');
 
         // ── 1. Ejecutar schema.sql (tablas + seed basico) ────
         let sql = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf-8');
-        const adminHash = await bcrypt.hash('Admin@SS SWAP2026', 10);
+        const adminHash = await bcrypt.hash('AdminSS2026', 10);
         sql = sql.replace('$2b$10$PLACEHOLDER_REPLACED_BY_SEED', adminHash);
 
         await client.query(sql);
@@ -27,6 +33,11 @@ async function seed() {
         await client.query(mig);
         console.log('[OK] Migraciones ejecutadas');
 
+        // Multiempresa: los datos de ejemplo son de SS SWAP. La sesion de este
+        // cliente queda en esa empresa (las columnas empresa_id toman su valor).
+        const { rows: emp } = await client.query("SELECT id FROM empresas WHERE slug = 'ss-swap'");
+        await client.query("SELECT set_config('app.empresa_id', $1, false)", [String(emp[0].id)]);
+
         // ── 3. Sucursales demo ──────────────────────────────
         const sucursales = [
             {
@@ -34,7 +45,7 @@ async function seed() {
                 direccion: 'Av. Real Audiencia y Manuel Cordova Galarza',
                 ciudad: 'Quito',
                 telefono: '+593 99 123 4567',
-                email: 'contacto@SS SWAP.com',
+                email: 'contacto@ssswap.com',
                 horario: 'Lun-Vie 8:00-18:00 · Sab 8:00-14:00',
                 descripcion: 'Sucursal principal: diagnostico computarizado, mecanica general, alineacion y balanceo.',
                 es_principal: true,
@@ -45,7 +56,7 @@ async function seed() {
                 direccion: 'Av. 10 de Agosto y Naciones Unidas',
                 ciudad: 'Quito',
                 telefono: '+593 99 234 5678',
-                email: 'norte@SS SWAP.com',
+                email: 'norte@ssswap.com',
                 horario: 'Lun-Vie 8:30-17:30',
                 descripcion: 'Taller especializado en motores diesel y sistemas electronicos.',
                 es_principal: false,
@@ -56,7 +67,7 @@ async function seed() {
                 direccion: 'Av. Maldonado y Pedro Vicente Maldonado',
                 ciudad: 'Quito',
                 telefono: '+593 99 345 6789',
-                email: 'sur@SS SWAP.com',
+                email: 'sur@ssswap.com',
                 horario: 'Lun-Vie 8:00-17:00 · Sab 9:00-13:00',
                 descripcion: 'Servicio rapido: cambios de aceite, filtros, frenos y llantas.',
                 es_principal: false,
@@ -84,9 +95,9 @@ async function seed() {
 
         // ── 4. Usuarios adicionales de prueba ──────────────
         const users = [
-            { nombre: 'Tecnico Demo',      email: 'tecnico@SS SWAP.com',   password: 'Tecnico@2026',   rol: 'tecnico'       },
-            { nombre: 'Recepcionista Demo',email: 'recepcion@SS SWAP.com', password: 'Recepcion@2026', rol: 'recepcionista' },
-            { nombre: 'Cliente Demo',      email: 'cliente@SS SWAP.com',   password: 'Cliente@2026',   rol: 'cliente'       },
+            { nombre: 'Tecnico Demo',      email: 'tecnico@ssswap.com',   password: 'Tecnico@2026',   rol: 'tecnico'       },
+            { nombre: 'Recepcionista Demo',email: 'recepcion@ssswap.com', password: 'Recepcion@2026', rol: 'recepcionista' },
+            { nombre: 'Cliente Demo',      email: 'cliente@ssswap.com',   password: 'Cliente@2026',   rol: 'cliente'       },
         ];
 
         for (const u of users) {
@@ -111,7 +122,7 @@ async function seed() {
             await client.query(
                 `INSERT INTO repuestos (codigo, nombre, descripcion, categoria_id, precio_compra, precio_venta, stock_actual, stock_minimo, unidad_medida)
                  VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-                 ON CONFLICT (codigo) DO NOTHING`,
+                 ON CONFLICT (empresa_id, codigo) DO NOTHING`,
                 [r.codigo, r.nombre, r.descripcion, r.categoria_id, r.precio_compra, r.precio_venta, r.stock_actual, r.stock_minimo, r.unidad_medida]
             );
         }
@@ -130,7 +141,7 @@ async function seed() {
             await client.query(
                 `INSERT INTO clientes (nombre, email, telefono, cedula, direccion)
                  VALUES ($1, $2, $3, $4, $5)
-                 ON CONFLICT (cedula) DO NOTHING`,
+                 ON CONFLICT (empresa_id, cedula) DO NOTHING`,
                 [c.nombre, c.email, c.telefono, c.cedula, c.direccion]
             );
         }
@@ -162,10 +173,10 @@ async function seed() {
         // ── Resumen final ──────────────────────────────────
         console.log('\n✅ Seed completado exitosamente.\n');
         console.log('📋 Usuarios disponibles:');
-        console.log('   admin@SS SWAP.com       | Admin@SS SWAP2026    | administrador');
-        console.log('   tecnico@SS SWAP.com     | Tecnico@2026       | tecnico');
-        console.log('   recepcion@SS SWAP.com   | Recepcion@2026     | recepcionista');
-        console.log('   cliente@SS SWAP.com     | Cliente@2026       | cliente');
+        console.log('   admin@ssswap.com        | AdminSS2026         | administrador');
+        console.log('   tecnico@ssswap.com      | Tecnico@2026       | tecnico');
+        console.log('   recepcion@ssswap.com    | Recepcion@2026     | recepcionista');
+        console.log('   cliente@ssswap.com      | Cliente@2026       | cliente');
         console.log('\n🏪 Sucursales: SS SWAP Ponciano Alto, SS SWAP Norte, SS SWAP Sur');
         console.log('👥 Clientes demo: Carlos Mendoza, Maria Sanchez, Pedro Jimenez + 2 mas');
         console.log('🚗 Vehiculos demo: Toyota Hilux, Kia Sportage, Chevrolet Aveo + 2 mas');

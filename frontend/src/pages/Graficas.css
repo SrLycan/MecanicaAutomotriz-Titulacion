@@ -1,0 +1,74 @@
+.graf-tabs {
+    display: flex;
+    gap: 6px;
+    border-bottom: 1px solid var(--graf-bdr, var(--border));
+    margin-bottom: 20px;
+    overflow-x: auto;
+}
+
+.graf-tab-btn {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: .86rem;
+    letter-spacing: .12em;
+    background: none;
+    border: none;
+    padding: 12px 18px 14px;
+    cursor: pointer;
+    color: var(--graf-mut, #64748b);
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: color .15s, border-color .15s;
+}
+
+.graf-tab-btn.active {
+    color: var(--graf-sky, #0284c7);
+    border-bottom-color: var(--graf-sky, #0284c7);
+}
+
+.graf-periodo-btn {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: .76rem;
+    letter-spacing: .1em;
+    padding: 7px 14px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+}
+
+.graf-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 560px;
+}
+
+.graf-table th {
+    text-align: left;
+    padding: 11px 14px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: .8rem;
+    letter-spacing: .16em;
+    white-space: nowrap;
+}
+
+.graf-table td {
+    padding: 11px 14px;
+    font-family: 'Outfit', sans-serif;
+    font-size: .84rem;
+}
+
+.graf-table tbody tr {
+    border-top: 1px solid var(--graf-bdr, var(--border));
+}
+
+.graf-metric-chip {
+    font-family: 'Outfit', sans-serif;
+    font-size: .8rem;
+    padding: 6px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    border: 1px solid var(--graf-bdr, var(--border));
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}

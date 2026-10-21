@@ -1,0 +1,107 @@
+{
+  "id": "proformas",
+  "grupo": "TALLER",
+  "titulo": "Proformas",
+  "version": "1.0",
+  "actualizada": "2026-10-14",
+  "rutas": [
+    {
+      "path": "/dashboard/proformas"
+    }
+  ],
+  "descripcion": "Cotizaciones para el cliente, de Mecánica (productos y servicios) o de Colisiones / Pintura (con pictograma de daños y anticipo del 70 %). Desde aquí se buscan, se abren, se duplican y se descargan.",
+  "funciones": [
+    "Buscar por número, cliente o placa y filtrar por tipo, estado y fechas.",
+    "Crear una proforma nueva.",
+    "Ver, editar, duplicar, eliminar y descargar en PDF o Excel.",
+    "Ver qué proformas ya descontaron el inventario."
+  ],
+  "pasos": [
+    {
+      "titulo": "Encuentre una proforma",
+      "texto": [
+        "Filtre por tipo (Mecánica o Colisiones), estado (borrador, emitida, aprobada, rechazada, vencida, convertida) y fechas, o busque por número, cliente o placa."
+      ],
+      "imagen": {
+        "archivo": "v27/proformas/01-lista-y-filtros.png",
+        "alt": "Lista de proformas con el botón Nueva proforma y los filtros Buscar, Tipo, Estado, Desde y Hasta",
+        "tipo": "captura",
+        "captura": {
+          "url": "/dashboard/proformas",
+          "esperar": {
+            "placeholder": "Número, cliente o placa"
+          }
+        }
+      },
+      "marcas": [
+        {
+          "texto": "Crear una proforma.",
+          "objetivo": {
+            "texto": "NUEVA PROFORMA",
+            "tag": "button"
+          }
+        },
+        {
+          "texto": "Buscar.",
+          "objetivo": {
+            "placeholder": "Número, cliente o placa"
+          }
+        },
+        {
+          "texto": "Filtro por estado.",
+          "objetivo": {
+            "campo": "ESTADO"
+          }
+        }
+      ]
+    },
+    {
+      "titulo": "Acciones de cada proforma",
+      "texto": [
+        "Cada fila tiene: Ver (detalle, aprobar, convertir a orden, facturar), Editar, Duplicar (copia como borrador), Descargar PDF, Descargar Excel y Eliminar."
+      ],
+      "imagen": {
+        "archivo": "v27/proformas/02-acciones.png",
+        "alt": "Fila de proforma con los botones Ver, Editar, Duplicar, Descargar PDF, Descargar Excel y Eliminar",
+        "tipo": "captura",
+        "captura": {
+          "url": "/dashboard/proformas",
+          "esperar": {
+            "etiqueta": "Descargar PDF"
+          }
+        }
+      },
+      "marcas": [
+        {
+          "texto": "Ver el detalle.",
+          "objetivo": {
+            "etiqueta": "Ver"
+          }
+        },
+        {
+          "texto": "Duplicar.",
+          "objetivo": {
+            "etiqueta": "Duplicar"
+          }
+        },
+        {
+          "texto": "Descargar PDF.",
+          "objetivo": {
+            "etiqueta": "Descargar PDF"
+          }
+        }
+      ]
+    }
+  ],
+  "resultado": "Encuentra y comparte la cotización en segundos. El estado de cada proforma indica si el cliente ya la aprobó o si se convirtió en orden.",
+  "advertencias": [
+    "No se puede eliminar una proforma convertida en orden, con movimientos de inventario o con un pagaré activo (se conserva la trazabilidad). Use Rechazar si ya no aplica.",
+    "Los permisos son separados para Mecánica y para Colisiones."
+  ],
+  "problemas": [
+    {
+      "problema": "No veo proformas de colisiones.",
+      "solucion": "Su usuario quizá solo tiene permiso de Mecánica. Revise el filtro Tipo o pida el permiso al administrador."
+    }
+  ]
+}

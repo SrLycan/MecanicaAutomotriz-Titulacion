@@ -1,0 +1,255 @@
+{
+  "imagenes": {
+    "v27/inventario/01-inventarios-e-indicadores.png": {
+      "guia": "inventario",
+      "paso": 1,
+      "url": "/dashboard/inventario",
+      "version_guia": "1.0",
+      "capturada": "2026-10-14T03:34:27.263Z",
+      "commit": "6ba82af",
+      "tema": "claro",
+      "viewport": "1366x860"
+    },
+    "v27/inventario/02-buscar-y-filtrar.png": {
+      "guia": "inventario",
+      "paso": 2,
+      "url": "/dashboard/inventario",
+      "version_guia": "1.0",
+      "capturada": "2026-10-14T03:34:28.674Z",
+      "commit": "6ba82af",
+      "tema": "claro",
+      "viewport": "1366x860"
+    },
+    "v27/inventario/03-nuevo-producto.png": {
+      "guia": "inventario",
+      "paso": 3,
+      "url": "/dashboard/inventario",
+      "version_guia": "1.0",
+      "capturada": "2026-10-14T03:34:30.850Z",
+      "commit": "6ba82af",
+      "tema": "claro",
+      "viewport": "1366x860"
+    },
+    "v27/inventario/04-acciones.png": {
+      "guia": "inventario",
+      "paso": 4,
+      "url": "/dashboard/inventario",
+      "version_guia": "1.0",
+      "capturada": "2026-10-14T03:34:32.229Z",
+      "commit": "6ba82af",
+      "tema": "claro",
+      "viewport": "1366x860"
+    },
+    "v27/panel/01-avisos-e-indicadores.png": {
+      "guia": "panel",
+      "paso": 1,
+      "url": "/dashboard",
+      "version_guia": "1.0",
+      "capturada": "2026-10-14T03:38:10.221Z",
+      "commit": "6ba82af",
+      "tema": "claro",
+      "viewport": "1366x860"
+    },
+    "v27/panel/02-crecimiento.png": {
+      "guia": "panel",
+      "paso": 2,
+      "url": "/dashboard",
+      "version_guia": "1.0",
+      "capturada": "2026-10-14T03:38:11.646Z",
+      "commit": "6ba82af",
+      "tema": "claro",
+      "viewport": "1366x860"
+    },
+    "v27/panel/03-accesos-rapidos.png": {
+      "guia": "panel",
+      "paso": 3,
+      "url": "/dashboard",
+      "version_guia": "1.0",
+      "capturada": "2026-10-14T03:38:13.810Z",
+      "commit": "6ba82af",
+      "tema": "claro",
+      "viewport": "1366x860"
+    },
+    "v27/movimientos-historial/01-indicadores-y-tabla.png": {
+      "guia": "movimientos-historial",
+      "paso": 1,
+      "url": "/dashboard/movimientos",
+      "version_guia": "1.0",
+      "capturada": "2026-10-14T03:38:31.197Z",
+      "commit": "6ba82af",
+      "tema": "claro",
+      "viewport": "1366x860"
+    },
+    "v27/movimientos-historial/02-filtros.png": {
+      "guia": "movimientos-historial",
+      "paso": 2,
+      "url": "/dashboard/movimientos",
+      "version_guia": "1.0",
+      "capturada": "2026-10-14T03:38:32.653Z",
+      "commit": "6ba82af",
+      "tema": "claro",
+      "viewport": "1366x860"
+    },
+    "v27/movimientos-registrar/01-seleccionar.png": {
+      "guia": "movimientos-registrar",
+      "paso": 1,
+      "url": "/dashboard/movimientos?tab=registrar",
+      "version_guia": "1.0",
+      "capturada": "2026-10-14T03:38:50.865Z",
+      "commit": "6ba82af",
+      "tema": "claro",
+      "viewport": "1366x860"
+    },
+    "v27/movimientos-registrar/02-formulario.png": {
+      "guia": "movimientos-registrar",
+      "paso": 2,
+      "url": "/dashboard/movimientos?tab=registrar",
+      "version_guia": "1.0",
+      "capturada": "2026-10-14T03:38:54.295Z",
+      "commit": "6ba82af",
+      "tema": "claro",
+      "viewport": "1366x860"
+    },
+    "v27/pedidos/01-lista.png": {
+      "guia": "pedidos",
+      "paso": 1,
+      "url": "/dashboard/pedidos",
+      "version_guia": "1.0",
+      "capturada": "2026-10-14T03:39:10.736Z",
+      "commit": "6ba82af",
+      "tema": "claro",
+      "viewport": "1366x860"
+    },
+    "v27/proformas/01-lista-y-filtros.png": {
+      "guia": "proformas",
+      "paso": 1,
+      "url": "/dashboard/proformas",
+      "version_guia": "1.0",
+      "capturada": "2026-10-14T03:41:53.366Z",
+      "commit": "6ba82af",
+      "tema": "claro",
+      "viewport": "1366x860"
+    },
+    "v27/proformas/02-acciones.png": {
+      "guia": "proformas",
+      "paso": 2,
+      "url": "/dashboard/proformas",
+      "version_guia": "1.0",
+      "capturada": "2026-10-14T03:41:54.738Z",
+      "commit": "6ba82af",
+      "tema": "claro",
+      "viewport": "1366x860"
+    },
+    "v27/proforma-formulario/01-tipo-cliente.png": {
+      "guia": "proforma-formulario",
+      "paso": 1,
+      "url": "/dashboard/proformas/nueva",
+      "version_guia": "1.0",
+      "capturada": "2026-10-14T03:42:13.231Z",
+      "commit": "6ba82af",
+      "tema": "claro",
+      "viewport": "1366x860"
+    },
+    "v27/proforma-detalle/01-acciones.png": {
+      "guia": "proforma-detalle",
+      "paso": 1,
+      "url": "/dashboard/proformas",
+      "version_guia": "1.0",
+      "capturada": "2026-10-14T03:42:33.738Z",
+      "commit": "6ba82af",
+      "tema": "claro",
+      "viewport": "1366x860"
+    },
+    "v27/citas/01-agenda.png": {
+      "guia": "citas",
+      "paso": 1,
+      "url": "/dashboard/citas",
+      "version_guia": "1.0",
+      "capturada": "2026-10-14T03:42:49.635Z",
+      "commit": "6ba82af",
+      "tema": "claro",
+      "viewport": "1366x860"
+    },
+    "v27/ordenes/01-lista.png": {
+      "guia": "ordenes",
+      "paso": 1,
+      "url": "/dashboard/ordenes",
+      "version_guia": "1.0",
+      "capturada": "2026-10-14T03:43:48.781Z",
+      "commit": "6ba82af",
+      "tema": "claro",
+      "viewport": "1366x860"
+    },
+    "v27/ordenes/02-nueva-orden.png": {
+      "guia": "ordenes",
+      "paso": 2,
+      "url": "/dashboard/ordenes",
+      "version_guia": "1.0",
+      "capturada": "2026-10-14T03:43:51.777Z",
+      "commit": "6ba82af",
+      "tema": "claro",
+      "viewport": "1366x860"
+    },
+    "v27/clientes/01-lista.png": {
+      "guia": "clientes",
+      "paso": 1,
+      "url": "/dashboard/clientes",
+      "version_guia": "1.0",
+      "capturada": "2026-10-14T04:34:29.724Z",
+      "commit": "6ba82af",
+      "tema": "claro",
+      "viewport": "1366x860"
+    },
+    "v27/pagare/01-cartera.png": {
+      "guia": "pagare",
+      "paso": 1,
+      "url": "/dashboard/clientes?tab=pagare",
+      "version_guia": "1.0",
+      "capturada": "2026-10-14T04:34:49.328Z",
+      "commit": "6ba82af",
+      "tema": "claro",
+      "viewport": "1366x860"
+    },
+    "v27/vehiculos/01-lista.png": {
+      "guia": "vehiculos",
+      "paso": 1,
+      "url": "/dashboard/vehiculos",
+      "version_guia": "1.0",
+      "capturada": "2026-10-14T04:33:54.197Z",
+      "commit": "6ba82af",
+      "tema": "claro",
+      "viewport": "1366x860"
+    },
+    "v27/vehiculos/02-acciones.png": {
+      "guia": "vehiculos",
+      "paso": 2,
+      "url": "/dashboard/vehiculos",
+      "version_guia": "1.0",
+      "capturada": "2026-10-14T04:33:55.556Z",
+      "commit": "6ba82af",
+      "tema": "claro",
+      "viewport": "1366x860"
+    },
+    "v27/clientes/02-acciones.png": {
+      "guia": "clientes",
+      "paso": 2,
+      "url": "/dashboard/clientes",
+      "version_guia": "1.0",
+      "capturada": "2026-10-14T04:34:31.147Z",
+      "commit": "6ba82af",
+      "tema": "claro",
+      "viewport": "1366x860"
+    },
+    "v27/pagare/02-registrar-pago.png": {
+      "guia": "pagare",
+      "paso": 2,
+      "url": "/dashboard/clientes?tab=pagare",
+      "version_guia": "1.0",
+      "capturada": "2026-10-14T04:34:51.596Z",
+      "commit": "6ba82af",
+      "tema": "claro",
+      "viewport": "1366x860"
+    }
+  },
+  "generado": "2026-10-14T04:34:52.082Z"
+}

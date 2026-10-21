@@ -6,13 +6,14 @@ import React, { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import api from '../../services/api';
 
+import { NombreEmpresa } from '../common/MarcaEmpresa';
 function IconX()    { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>; }
 function IconIn()   { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>; }
 function IconOut()  { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>; }
 
 export default function ModalMovimiento({ repuesto, onGuardado, onCerrar }) {
     const { isDark } = useTheme();
-    const [form, setForm]     = useState({ tipo: 'entrada', cantidad: '', motivo: '', referencia: '' });
+    const [form, setForm]     = useState({ tipo: 'entrada', cantidad: '', motivo: '', referencia: '', origen: 'manual' });
     const [saving, setSaving] = useState(false);
     const [error,  setError]  = useState('');
 
@@ -23,8 +24,8 @@ export default function ModalMovimiento({ repuesto, onGuardado, onCerrar }) {
     const SKY_BDR  = isDark ? 'rgba(56,189,248,0.22)' : 'rgba(14,165,233,0.22)';
 
     const txt     = isDark ? '#f1f5f9'                : '#0f172a';
-    const mut     = isDark ? 'rgba(241,245,249,0.55)' : 'rgba(15,23,42,0.55)';
-    const bdr     = isDark ? 'rgba(148,163,184,0.18)' : 'rgba(15,23,42,0.10)';
+    const mut     = isDark ? 'rgba(241,245,249,0.72)' : '#526075';
+    const bdr     = isDark ? 'rgba(148,163,184,0.28)' : '#b6c3d3';
     const inputBg = isDark ? '#0b1220'                : '#f8fafc';
     const boxBg   = isDark ? '#0a0f1c'                : '#ffffff';
     const previewBg = isDark ? 'rgba(14,165,233,0.05)' : 'rgba(14,165,233,0.04)';
@@ -38,7 +39,7 @@ export default function ModalMovimiento({ repuesto, onGuardado, onCerrar }) {
     };
     const labelSt = {
         display: 'block', marginBottom: 6,
-        fontFamily: "'Bebas Neue', sans-serif", fontSize: '.62rem', letterSpacing: '.22em',
+        fontFamily: "'Bebas Neue', sans-serif", fontSize: '.74rem', letterSpacing: '.22em',
         color: SKY_DEEP, WebkitTextFillColor: SKY_DEEP, background: 'none',
     };
 
@@ -46,8 +47,8 @@ export default function ModalMovimiento({ repuesto, onGuardado, onCerrar }) {
     // evitar salidas que dejarian el stock en negativo.
     const esEntrada   = form.tipo === 'entrada';
     const accentColor = esEntrada ? '#10b981' : '#ef4444';
-    const qty         = parseInt(form.cantidad) || 0;
-    const stockNuevo  = esEntrada ? repuesto.stock_actual + qty : repuesto.stock_actual - qty;
+    const qty         = Math.round((parseFloat(form.cantidad) || 0) * 100) / 100; // stock decimal (Sprint 14)
+    const stockNuevo  = esEntrada ? Math.round((Number(repuesto.stock_actual) + qty) * 100) / 100 : Math.round((Number(repuesto.stock_actual) - qty) * 100) / 100;
 
     const handleChange = (e) => { setForm({ ...form, [e.target.name]: e.target.value }); setError(''); };
     const onFocus = (e) => { e.target.style.borderColor = SKY; e.target.style.boxShadow = `0 0 0 3px rgba(14,165,233,.14)`; };
@@ -60,7 +61,7 @@ export default function ModalMovimiento({ repuesto, onGuardado, onCerrar }) {
         try {
             await api.post('/inventory/movimientos', {
                 repuesto_id: repuesto.id, tipo: form.tipo, cantidad: qty,
-                motivo: form.motivo, referencia: form.referencia,
+                motivo: form.motivo, referencia: form.referencia, origen: form.origen,
             });
             onGuardado();
         } catch (err) {
@@ -80,12 +81,12 @@ export default function ModalMovimiento({ repuesto, onGuardado, onCerrar }) {
                     <div>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '3px 9px', borderRadius: 999, background: SKY_PALE, border: `1px solid ${SKY_BDR}`, marginBottom: 6 }}>
                             <span style={{ width: 5, height: 5, borderRadius: '50%', background: SKY }} />
-                            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.55rem', letterSpacing: '.24em', color: SKY_DEEP }}>SS SWAP · ALMACEN</p>
+                            <p style={{ fontFamily: "'Bebas Neue'", fontSize: '.76rem', letterSpacing: '.24em', color: SKY_DEEP }}><NombreEmpresa /> · ALMACEN</p>
                         </div>
                         <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.7rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>
                             Movimiento de Stock
                         </h2>
-                        <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.78rem', color: mut, marginTop: 6 }}>
+                        <p style={{ fontFamily: "'Outfit'", fontWeight: 400, fontSize: '.78rem', color: mut, marginTop: 6 }}>
                             <code style={{ fontFamily: 'monospace', fontSize: '.74rem', fontWeight: 600, background: SKY_PALE, padding: '2px 7px', borderRadius: 5, color: SKY_DEEP, border: `1px solid ${SKY_BDR}` }}>{repuesto.codigo}</code>
                             {' '}{repuesto.nombre}
                         </p>
@@ -102,7 +103,7 @@ export default function ModalMovimiento({ repuesto, onGuardado, onCerrar }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 18px', background: previewBg, borderRadius: 12, border: `1px solid ${SKY_BDR}`, marginBottom: 18 }}>
                     <div style={{ textAlign: 'center', flex: 1 }}>
                         <p style={{ fontFamily: "'Bebas Neue'", fontSize: '2.1rem', letterSpacing: '.04em', color: txt, lineHeight: 1 }}>{repuesto.stock_actual}</p>
-                        <p style={{ fontFamily: "'Outfit'", fontWeight: 500, fontSize: '.62rem', color: mut, marginTop: 4, textTransform: 'uppercase', letterSpacing: '.14em' }}>Stock Actual</p>
+                        <p style={{ fontFamily: "'Outfit'", fontWeight: 500, fontSize: '.74rem', color: mut, marginTop: 4, textTransform: 'uppercase', letterSpacing: '.14em' }}>Stock Actual</p>
                     </div>
 
                     {qty > 0 && (
@@ -112,7 +113,7 @@ export default function ModalMovimiento({ repuesto, onGuardado, onCerrar }) {
                             </div>
                             <div style={{ textAlign: 'center', flex: 1, transition: 'transform .25s', transform: 'scale(1)' }}>
                                 <p style={{ fontFamily: "'Bebas Neue'", fontSize: '2.1rem', letterSpacing: '.04em', color: accentColor, lineHeight: 1 }}>{qty}</p>
-                                <p style={{ fontFamily: "'Outfit'", fontWeight: 500, fontSize: '.62rem', color: accentColor, marginTop: 4, textTransform: 'uppercase', letterSpacing: '.14em', opacity: .85 }}>{esEntrada ? 'Entrada' : 'Salida'}</p>
+                                <p style={{ fontFamily: "'Outfit'", fontWeight: 500, fontSize: '.74rem', color: accentColor, marginTop: 4, textTransform: 'uppercase', letterSpacing: '.14em', opacity: .85 }}>{esEntrada ? 'Entrada' : 'Salida'}</p>
                             </div>
                             <div style={{ textAlign: 'center', color: mut }}>
                                 <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.4rem', lineHeight: 1 }}>=</p>
@@ -124,7 +125,7 @@ export default function ModalMovimiento({ repuesto, onGuardado, onCerrar }) {
                                 border: `1px solid ${stockNuevo < 0 ? 'rgba(239,68,68,.25)' : SKY_BDR}`,
                             }}>
                                 <p style={{ fontFamily: "'Bebas Neue'", fontSize: '2.1rem', letterSpacing: '.04em', color: stockNuevo < 0 ? '#ef4444' : SKY_DEEP, lineHeight: 1 }}>{stockNuevo}</p>
-                                <p style={{ fontFamily: "'Outfit'", fontWeight: 500, fontSize: '.62rem', color: stockNuevo < 0 ? '#ef4444' : SKY_DEEP, marginTop: 4, textTransform: 'uppercase', letterSpacing: '.14em', opacity: .85 }}>Nuevo Stock</p>
+                                <p style={{ fontFamily: "'Outfit'", fontWeight: 500, fontSize: '.74rem', color: stockNuevo < 0 ? '#ef4444' : SKY_DEEP, marginTop: 4, textTransform: 'uppercase', letterSpacing: '.14em', opacity: .85 }}>Nuevo Stock</p>
                             </div>
                         </>
                     )}
@@ -154,7 +155,7 @@ export default function ModalMovimiento({ repuesto, onGuardado, onCerrar }) {
                                             cursor: 'pointer', transition: 'all .18s', textTransform: 'uppercase',
                                             boxShadow: active ? `0 6px 18px -8px ${t.color}` : 'none',
                                         }}
-                                        onClick={() => setForm(f => ({ ...f, tipo: t.val }))}>
+                                        onClick={() => setForm(f => ({ ...f, tipo: t.val, origen: t.val === 'salida' && f.origen === 'devolucion' ? 'manual' : f.origen }))}>
                                         {t.icon} {t.label}
                                     </button>
                                 );
@@ -162,10 +163,21 @@ export default function ModalMovimiento({ repuesto, onGuardado, onCerrar }) {
                         </div>
                     </div>
 
+                    {/* Origen (Sprint 14): diferencia salida manual / ajuste / devolucion.
+                        Las salidas por proforma y entradas por compra las registra el sistema. */}
+                    <div>
+                        <label style={labelSt}>ORIGEN DEL MOVIMIENTO</label>
+                        <select value={form.origen} onChange={e => { const o = e.target.value; setForm(f => ({ ...f, origen: o, tipo: o === 'devolucion' ? 'entrada' : f.tipo })); setError(''); }} style={inputSt}>
+                            <option value="manual">{esEntrada ? 'Entrada manual' : 'Salida manual'}</option>
+                            <option value="ajuste">Ajuste de inventario (conteo físico, merma, daño)</option>
+                            <option value="devolucion">Devolución (entrada)</option>
+                        </select>
+                    </div>
+
                     {/* Cantidad */}
                     <div>
                         <label style={labelSt}>CANTIDAD *</label>
-                        <input type="number" min="1" name="cantidad"
+                        <input type="number" min="0.01" step="0.01" name="cantidad"
                             value={form.cantidad} onChange={handleChange}
                             onFocus={onFocus} onBlur={onBlur}
                             required placeholder="0"
@@ -182,7 +194,7 @@ export default function ModalMovimiento({ repuesto, onGuardado, onCerrar }) {
 
                     {/* Referencia */}
                     <div>
-                        <label style={labelSt}>REFERENCIA <span style={{ fontFamily: "'Outfit'", textTransform: 'none', letterSpacing: 0, fontSize: '.7rem', fontWeight: 300, color: mut, WebkitTextFillColor: mut }}>· Nro. factura / OT</span></label>
+                        <label style={labelSt}>REFERENCIA <span style={{ fontFamily: "'Outfit'", textTransform: 'none', letterSpacing: 0, fontSize: '.7rem', fontWeight: 400, color: mut, WebkitTextFillColor: mut }}>· Nro. factura / OT</span></label>
                         <input name="referencia" value={form.referencia} onChange={handleChange}
                             onFocus={onFocus} onBlur={onBlur}
                             placeholder="FAC-001, OT-042" style={inputSt} />

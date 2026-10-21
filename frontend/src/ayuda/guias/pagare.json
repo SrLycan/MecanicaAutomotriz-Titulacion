@@ -1,0 +1,115 @@
+{
+  "id": "pagare",
+  "grupo": "CLIENTES",
+  "titulo": "Pagaré / Cartera de clientes",
+  "version": "1.0",
+  "actualizada": "2026-10-14",
+  "rutas": [
+    {
+      "path": "/dashboard/clientes",
+      "query": {
+        "tab": "pagare"
+      }
+    }
+  ],
+  "descripcion": "Cuentas por cobrar a clientes: las que se generan solas desde una proforma u orden (automáticas) y las que se crean a mano. Aquí se registran los pagos y abonos y se ve qué está vencido.",
+  "funciones": [
+    "Ver indicadores de lo que falta cobrar, cuentas pendientes y vencidas.",
+    "Buscar por cliente, concepto, OT, proforma o placa; filtrar por origen y estado.",
+    "Crear una cuenta por cobrar manual.",
+    "Registrar pagos (con los datos del método: banco, cheque, tarjeta…), anular un pago o anular / reabrir el pagaré."
+  ],
+  "pasos": [
+    {
+      "titulo": "Filtre la cartera",
+      "texto": [
+        "Use el buscador y los filtros Origen (automático o manual) y Estado. Las cuentas vencidas se resaltan en rojo con los días de retraso."
+      ],
+      "imagen": {
+        "archivo": "v27/pagare/01-cartera.png",
+        "alt": "Pagaré / cartera con el buscador, los filtros Origen y Estado y el botón Nueva cuenta manual",
+        "tipo": "captura",
+        "captura": {
+          "url": "/dashboard/clientes?tab=pagare",
+          "esperar": {
+            "placeholder": "Cliente, concepto, OT"
+          }
+        }
+      },
+      "marcas": [
+        {
+          "texto": "Buscador.",
+          "objetivo": {
+            "placeholder": "Cliente, concepto, OT"
+          }
+        },
+        {
+          "texto": "Filtro por origen.",
+          "objetivo": {
+            "campo": "ORIGEN"
+          }
+        },
+        {
+          "texto": "Crear una cuenta por cobrar manual.",
+          "objetivo": {
+            "texto": "NUEVA CUENTA MANUAL",
+            "tag": "button"
+          }
+        }
+      ]
+    },
+    {
+      "titulo": "Registre un pago",
+      "texto": [
+        "Pulse el ícono «Ver / registrar pago» de la cuenta (o «Ver / cobrar» en el aviso de vencidos). Escriba el monto, elija el método de pago y complete los datos que pide (por ejemplo banco y número de comprobante en una transferencia). Pulse «Revisar y registrar pago» y luego «Confirmar registro de pago»."
+      ],
+      "imagen": {
+        "archivo": "v27/pagare/02-registrar-pago.png",
+        "alt": "Ventana del pagaré con el historial de pagos y el formulario Registrar pago",
+        "tipo": "captura",
+        "captura": {
+          "url": "/dashboard/clientes?tab=pagare",
+          "esperar": {
+            "etiqueta": "Ver / registrar pago"
+          },
+          "acciones": [
+            {
+              "clic": {
+                "etiqueta": "Ver / registrar pago"
+              }
+            }
+          ],
+          "recorte": {
+            "selector": ".modal-box"
+          }
+        }
+      },
+      "marcas": [
+        {
+          "texto": "Historial de pagos de este pagaré.",
+          "objetivo": {
+            "texto": "HISTORIAL DE PAGOS"
+          }
+        },
+        {
+          "texto": "Registrar un pago o abono.",
+          "objetivo": {
+            "texto": "REGISTRAR PAGO"
+          }
+        }
+      ]
+    }
+  ],
+  "resultado": "El saldo baja; al cubrir el total el pagaré queda pagado. El cobro aparece también en Finanzas › Movimientos de dinero.",
+  "advertencias": [
+    "Un pagaré pagado por completo nunca cuenta como vencido.",
+    "Anular un pago pide un motivo (ej.: cheque rebotado) y devuelve el saldo pendiente.",
+    "Los pagarés automáticos nacen de proformas u órdenes con anticipo; no los cree otra vez a mano."
+  ],
+  "problemas": [
+    {
+      "problema": "No me deja confirmar el pago.",
+      "solucion": "Faltan datos obligatorios del método elegido (los marcados con *). Complete los campos o cambie el método."
+    }
+  ]
+}

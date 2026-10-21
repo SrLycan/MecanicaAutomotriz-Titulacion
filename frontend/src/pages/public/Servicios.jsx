@@ -2,31 +2,32 @@
  * SS SWAP - Catálogo Público de Servicios Mecánicos
  * Lista servicios activos con precios referenciales y duraciones estimadas,
  * búsqueda instantánea y acceso directo a la reserva de citas en línea.
+ * Estilos en Servicios.css + styles/web-publica.css (todo bajo .web).
  */
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../../components/public/Navbar';
 import Footer from '../../components/public/Footer';
+import FondoVivo from '../../components/public/FondoVivo';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import AgendarCitaModal from '../../components/public/AgendarCitaModal';
-import { resolveImagenSrc } from '../../utils/imagen';
+import fotoServicio from '../../components/public/fotoServicio';
 import mascotaImg from '../../assets/swapbot-mascot.png';
+import useRevelar from '../../hooks/useRevelar';
+import '../../styles/web-publica.css';
 import './Servicios.css';
 
-const GOLD = '#3b7bab';
-
 const ICONOS = [
-    { match: /aceite|mantenimiento|preventiv/i, icon: IconWrench, color: '#3b7bab' },
-    { match: /freno|suspension|amortigu/i,       icon: IconShield, color: '#4a83b3' },
-    { match: /diagnostic|computariz|escaner/i,   icon: IconCpu,    color: '#6f8ba3' },
-    { match: /electric|bateria|alternador/i,      icon: IconZap,    color: '#57708a' },
-    { match: /aliniac|alineac|balanceo/i,         icon: IconTarget, color: '#7fabce' },
-    { match: /pintura|carroceria|latoneria/i,     icon: IconTool,   color: '#3a4149' },
+    { match: /aceite|mantenimiento|preventiv/i, icon: IconWrench },
+    { match: /freno|suspension|amortigu/i,       icon: IconShield },
+    { match: /diagnostic|computariz|escaner/i,   icon: IconCpu },
+    { match: /electric|bateria|alternador/i,      icon: IconZap },
+    { match: /aliniac|alineac|balanceo/i,         icon: IconTarget },
+    { match: /pintura|carroceria|latoneria/i,     icon: IconTool },
 ];
 function iconoPara(nombre = '') {
-    const found = ICONOS.find(i => i.match.test(nombre));
-    return found || { icon: IconWrench, color: GOLD };
+    return ICONOS.find(i => i.match.test(nombre)) || { icon: IconWrench };
 }
 
 export default function Servicios() {
@@ -36,6 +37,7 @@ export default function Servicios() {
     const [error, setError]         = useState(null);
     const [q, setQ]                 = useState('');
     const [servicioAgendando, setServicioAgendando] = useState(null);
+    const raiz = useRef(null);
 
     useEffect(() => {
         api.get('/servicios', { params: { activo: 'true' } })
@@ -44,14 +46,7 @@ export default function Servicios() {
             .finally(() => setLoading(false));
     }, []);
 
-    useEffect(() => {
-        const els = document.querySelectorAll('.reveal');
-        const io = new IntersectionObserver((entries) => {
-            entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in-view'); io.unobserve(e.target); } });
-        }, { threshold: 0.12, rootMargin: '0px 0px -30px 0px' });
-        els.forEach(el => io.observe(el));
-        return () => io.disconnect();
-    }, [servicios]);
+    useRevelar(raiz, [servicios, loading, q]);
 
     // "Como funciona": despliegue progresivo y reversible ligado al scroll (no a un trigger de una sola vez)
     useEffect(() => {
@@ -104,101 +99,87 @@ export default function Servicios() {
     const ctaHref = usuario ? (usuario.rol === 'cliente' ? '/mi-panel' : '/dashboard') : '/auth?modo=registro';
 
     return (
-        <div style={{ background: '#050505', minHeight: '100vh', color: '#fff' }}>
+        <div className="web" ref={raiz}>
             <Navbar />
+            <FondoVivo />
 
-            {/* HERO */}
-            <section className="sv-hero-pad" style={{ padding: '150px 28px 70px', position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at top left, #0d1a24 0%, #0a0a0a 45%, #050505 100%)' }} />
-                <div style={{ maxWidth: 1100, margin: '0 auto', position: 'relative', textAlign: 'center' }}>
-                    <div className="sv-fade" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderRadius: 999, background: 'rgba(59,123,171,.08)', border: '1px solid rgba(59,123,171,.25)', marginBottom: 22 }}>
-                        <span style={{ width: 7, height: 7, borderRadius: '50%', background: GOLD }} />
-                        <p className="mono" style={{ fontSize: '.68rem', letterSpacing: '.2em', color: GOLD, fontWeight: 500 }}>CATALOGO DE SERVICIOS</p>
+            {/* CABECERA */}
+            <header className="w-cabecera">
+                <div className="w-contenedor sv-cabecera">
+                    <div>
+                        <p className="w-eyebrow w-entrada">Catálogo de servicios</p>
+                        <h1 className="w-entrada" style={{ '--w-retraso': '80ms' }}>
+                            Servicios pensados <span className="w-acento">para tu vehículo.</span>
+                        </h1>
+                        <p className="w-lead w-entrada" style={{ '--w-retraso': '160ms' }}>
+                            Consulta precios referenciales y tiempos estimados. Crea una cuenta para agendar tu cita y dar seguimiento en línea al estado de tu vehículo.
+                        </p>
                     </div>
-                    <h1 className="sv-fade" style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2.6rem, 6vw, 4.6rem)', letterSpacing: '.02em', lineHeight: 1, marginBottom: 20, animationDelay: '.05s' }}>
-                        <span className="grad-text-rainbow">Servicios</span><span className="grad-text-white"> pensados </span>
-                        <span className="grad-text-rainbow">para tu vehículo.</span>
-                    </h1>
-                    <p className="sv-fade" style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: 'clamp(.95rem,1.6vw,1.08rem)', color: 'rgba(255,255,255,.6)', maxWidth: 620, margin: '0 auto 34px', lineHeight: 1.75, animationDelay: '.1s' }}>
-                        Consulta precios referenciales y tiempos estimados. Crea una cuenta para agendar tu cita y dar seguimiento en línea al estado de tu vehículo.
-                    </p>
+                    <div className="sv-buscador w-entrada" style={{ '--w-retraso': '240ms' }}>
+                        <label htmlFor="sv-buscar" className="w-sr">Buscar servicio</label>
+                        <IconSearch />
+                        <input id="sv-buscar" type="search" className="sv-search" placeholder="Buscar servicio…" value={q} onChange={e => setQ(e.target.value)} />
+                    </div>
                 </div>
-            </section>
+            </header>
 
             {/* GRID DE SERVICIOS */}
-            <section className="sv-pad" style={{ padding: '20px 28px 100px' }}>
-                <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+            <section className="w-seccion w-niebla" aria-label="Servicios disponibles">
+                <div className="w-contenedor">
                     {loading && (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: 20 }}>
-                            {Array.from({ length: 6 }).map((_, i) => (
-                                <div key={i} style={{ height: 210, borderRadius: 18, background: 'linear-gradient(90deg, #111 0%, #161616 50%, #111 100%)', backgroundSize: '200% 100%', animation: 'svShimmer 1.4s ease-in-out infinite' }} />
-                            ))}
+                        <div className="w-grid w-grid--auto">
+                            {Array.from({ length: 6 }).map((_, i) => <div key={i} className="sv-esqueleto" />)}
                         </div>
                     )}
 
                     {!loading && error && (
-                        <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                            <p style={{ fontFamily: "'Outfit'", color: 'rgba(255,255,255,.5)' }}>{error}</p>
-                        </div>
+                        <p className="w-texto sv-vacio" role="alert">{error}</p>
                     )}
 
                     {!loading && !error && filtrados.length === 0 && (
-                        <div style={{ textAlign: 'center', padding: '80px 0' }}>
-                            <p style={{ fontFamily: "'Outfit'", color: 'rgba(255,255,255,.4)', fontSize: '.95rem' }}>
-                                {servicios.length === 0 ? 'Aún no hay servicios publicados.' : 'No encontramos servicios que coincidan con tu búsqueda.'}
-                            </p>
-                        </div>
+                        <p className="w-texto sv-vacio">
+                            {servicios.length === 0 ? 'Aún no hay servicios publicados.' : 'No encontramos servicios que coincidan con tu búsqueda.'}
+                        </p>
                     )}
 
                     {!loading && !error && filtrados.length > 0 && (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: 20 }}>
+                        <div className="w-grid w-grid--auto">
                             {filtrados.map((s, i) => {
-                                const { icon: Icon, color } = iconoPara(s.nombre);
+                                const { icon: Icon } = iconoPara(s.nombre);
+                                const foto = fotoServicio(s);
                                 return (
-                                    <div key={s.id} className="sv-card reveal" style={{ transitionDelay: `${(i % 6) * 60}ms` }}>
+                                    <article key={s.id} className="sv-card w-vidrio w-vidrio--interactivo w-rev" style={{ '--w-retraso': `${(i % 6) * 60}ms` }}>
                                         <div className="sv-photo">
-                                            {s.imagen_url ? (
-                                                <img src={resolveImagenSrc(s.imagen_url)} alt={s.nombre} loading="lazy" onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.classList.add('sv-photo-fallback'); }} />
+                                            {foto ? (
+                                                <img src={foto} alt={s.nombre} loading="lazy" width="480" height="270" onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.classList.add('sv-photo-fallback'); }} />
                                             ) : (
-                                                <div className="sv-photo-fallback" style={{ color }}>
-                                                    <Icon />
-                                                </div>
+                                                <div className="sv-photo-fallback"><Icon /></div>
                                             )}
                                         </div>
                                         <div className="sv-card-body">
-                                        <h3 style={{ fontFamily: "'Bebas Neue'", fontSize: '1.3rem', letterSpacing: '.03em', color: '#fff', marginBottom: 8, lineHeight: 1.15 }}>{s.nombre}</h3>
-                                        {s.descripcion && (
-                                            <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '.87rem', color: 'rgba(255,255,255,.5)', lineHeight: 1.65, marginBottom: 20, minHeight: 44 }}>
-                                                {s.descripcion}
-                                            </p>
-                                        )}
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 16, borderTop: '1px solid rgba(255,255,255,.06)' }}>
-                                            <div>
-                                                <p style={{ fontFamily: "'Bebas Neue'", fontSize: '1.5rem', color, lineHeight: 1 }}>
-                                                    {Number(s.precio_base) > 0 ? `Desde $${parseFloat(s.precio_base).toFixed(2)}` : 'Cotizar'}
-                                                </p>
-                                                {s.duracion_estimada_min ? (
-                                                    <p style={{ fontFamily: "'Outfit'", fontSize: '.72rem', color: 'rgba(255,255,255,.4)', marginTop: 3 }}>
-                                                        ~ {formatearDuracion(s.duracion_estimada_min)}
+                                            <h2 className="w-h3">{s.nombre}</h2>
+                                            {s.descripcion && <p className="w-texto sv-desc">{s.descripcion}</p>}
+                                            <div className="sv-pie">
+                                                <div>
+                                                    <p className="sv-precio">
+                                                        {Number(s.precio_base) > 0 ? `Desde $${parseFloat(s.precio_base).toFixed(2)}` : 'Cotizar'}
                                                     </p>
+                                                    <p className="sv-nota">
+                                                        {s.duracion_estimada_min ? `~ ${formatearDuracion(s.duracion_estimada_min)}` : 'Precio referencial'}
+                                                    </p>
+                                                </div>
+                                                {usuario?.rol === 'cliente' ? (
+                                                    <button type="button" onClick={() => setServicioAgendando(s)} className="w-btn w-btn--primario sv-agendar" aria-label={`Agendar ${s.nombre}`}>
+                                                        Agendar <IconFlecha />
+                                                    </button>
                                                 ) : (
-                                                    <p style={{ fontFamily: "'Outfit'", fontSize: '.72rem', color: 'rgba(255,255,255,.4)', marginTop: 3 }}>Precio referencial</p>
+                                                    <Link to={ctaHref} className="w-btn w-btn--primario sv-agendar" aria-label={`Agendar ${s.nombre}`}>
+                                                        Agendar <IconFlecha />
+                                                    </Link>
                                                 )}
                                             </div>
-                                            {usuario?.rol === 'cliente' ? (
-                                                <button onClick={() => setServicioAgendando(s)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.8rem', color, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                                                    Agendar
-                                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
-                                                </button>
-                                            ) : (
-                                                <Link to={ctaHref} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'Outfit'", fontWeight: 600, fontSize: '.8rem', color, textDecoration: 'none' }}>
-                                                    Agendar
-                                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
-                                                </Link>
-                                            )}
                                         </div>
-                                        </div>
-                                    </div>
+                                    </article>
                                 );
                             })}
                         </div>
@@ -207,28 +188,25 @@ export default function Servicios() {
             </section>
 
             {/* COMO FUNCIONA */}
-            <section className="sv-pad" style={{ padding: '90px 28px', background: 'linear-gradient(180deg, #050505 0%, #0a0a0a 50%, #050505 100%)', borderTop: '1px solid rgba(255,255,255,.04)', borderBottom: '1px solid rgba(255,255,255,.04)' }}>
-                <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-                    <div style={{ textAlign: 'center', marginBottom: 60 }}>
-                        <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: GOLD, marginBottom: 12, fontWeight: 500 }}>// COMO FUNCIONA</p>
-                        <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2rem, 4vw, 2.8rem)', letterSpacing: '.03em' }}>
-                            <span className="grad-text-white">De la </span><span className="grad-text-rainbow">cita</span><span className="grad-text-white"> a la entrega, </span>
-                            <span className="grad-text-rainbow">sin sorpresas.</span>
-                        </h2>
+            <section className="w-seccion w-grafito" aria-labelledby="titulo-como">
+                <div className="w-contenedor">
+                    <div className="w-encabezado w-encabezado--centro">
+                        <p className="w-eyebrow">Cómo funciona</p>
+                        <h2 id="titulo-como" className="w-titulo">De la cita a la entrega, <span className="w-acento">sin sorpresas.</span></h2>
                     </div>
                     <div className="hiw-track">
-                        <div className="hiw-connector">
+                        <div className="hiw-connector" aria-hidden="true">
                             <div className="hiw-connector-line" />
                             <div className="hiw-connector-fill" />
                         </div>
-                        <div className="sv-steps" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20, position: 'relative' }}>
+                        <ol className="sv-steps">
                             {[
                                 { n: '01', t: 'Agenda tu cita', d: 'Crea tu cuenta y solicita el servicio que necesitas.', tag: 'Solo 2 minutos', icon: <IconCalendar /> },
                                 { n: '02', t: 'Diagnóstico',    d: 'Revisamos tu vehículo con equipo computarizado.',     tag: 'Escáner OBD2',   icon: <IconSearchScan /> },
                                 { n: '03', t: 'Reparación',     d: 'Técnicos certificados trabajan con repuestos garantizados.', tag: 'Garantía incluida', icon: <IconWrench /> },
                                 { n: '04', t: 'Entrega',        d: 'Retiras tu vehículo y consultas el historial en tu panel.', tag: 'Seguimiento en línea', icon: <IconCheckCircle /> },
                             ].map((s, i) => (
-                                <div key={s.n} className="hiw-card" data-hiw-index={i}>
+                                <li key={s.n} className="hiw-card w-rev" data-hiw-index={i} style={{ '--w-retraso': `${i * 110}ms` }}>
                                     <div className="hiw-icon-ring">
                                         {s.icon}
                                         <span className="hiw-num">{s.n}</span>
@@ -236,35 +214,28 @@ export default function Servicios() {
                                     <h3 className="hiw-title">{s.t}</h3>
                                     <p className="hiw-desc">{s.d}</p>
                                     <span className="hiw-tag">{s.tag}</span>
-                                </div>
+                                </li>
                             ))}
-                        </div>
+                        </ol>
                     </div>
                 </div>
             </section>
 
             {/* CTA */}
-            <section className="sv-pad" style={{ padding: '100px 28px' }}>
-                <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-                    <div className="reveal in-view" style={{
-                        position: 'relative', overflow: 'hidden',
-                        backgroundImage: `linear-gradient(135deg, rgba(13,26,36,.9) 0%, rgba(10,10,10,.88) 50%, rgba(6,20,28,.92) 100%), url(${mascotaImg})`,
-                        backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat',
-                        border: '1px solid rgba(59,123,171,.22)', borderRadius: 24,
-                        padding: 'clamp(40px, 7vw, 70px) clamp(28px, 5vw, 56px)', textAlign: 'center',
-                    }}>
-                        <p className="mono" style={{ fontSize: '.7rem', letterSpacing: '.3em', color: GOLD, marginBottom: 16, fontWeight: 500 }}>// LISTO CUANDO TU LO ESTES</p>
-                        <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 'clamp(2rem, 4.5vw, 3.2rem)', letterSpacing: '.03em', marginBottom: 18, lineHeight: 1.05 }}>
-                            <span className="grad-text-white">¿No sabes </span><span className="grad-text-rainbow">qué servicio necesitas?</span>
-                        </h2>
-                        <p style={{ fontFamily: "'Outfit'", fontWeight: 300, fontSize: '1rem', color: 'rgba(255,255,255,.58)', maxWidth: 560, margin: '0 auto 36px', lineHeight: 1.7 }}>
+            <section className="w-seccion w-oscuro">
+                <div className="w-contenedor">
+                    <div className="w-cta w-rev">
+                        <img className="w-cta-fondo" src={mascotaImg} alt="" loading="lazy" aria-hidden="true" />
+                        <p className="w-eyebrow">Listo cuando tú lo estés</p>
+                        <h2 className="w-titulo">¿No sabes <span className="w-acento">qué servicio necesitas?</span></h2>
+                        <p className="w-lead">
                             Chatea con nuestro ChatBot y te ayudaremos a identificar el servicio que tu vehículo necesita. Luego podrás agendar tu cita en línea y dar seguimiento al estado de tu vehículo desde tu panel.
                         </p>
-                        <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
-                            <button type="button" onClick={() => window.dispatchEvent(new Event('swapbot:abrir'))} className="ps-btn-primary" style={{ border: 'none', cursor: 'pointer' }}>
-                                Chatear con SWAPbot
+                        <div className="w-acciones">
+                            <button type="button" onClick={() => window.dispatchEvent(new Event('swapbot:abrir'))} className="w-btn w-btn--primario">
+                                Chatear con SWAPbot <IconFlecha />
                             </button>
-                            <Link to="/nosotros" className="ps-btn-outline">Conocer el taller</Link>
+                            <Link to="/nosotros" className="w-btn w-btn--claro">Conocer el taller</Link>
                         </div>
                     </div>
                 </div>
@@ -296,4 +267,5 @@ function IconCheckCircle(){ return <svg width="26" height="26" viewBox="0 0 24 2
 function IconCpu()    { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>; }
 function IconZap()    { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>; }
 function IconTarget() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>; }
-function IconTool()   { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>; }
+function IconTool()   { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>; }function IconSearch() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>; }
+function IconFlecha() { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>; }

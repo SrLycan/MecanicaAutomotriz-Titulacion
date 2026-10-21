@@ -7,6 +7,7 @@
  * un almacén de documentos en lugar de sobrecargar PostgreSQL.
  */
 const { getMongoDb } = require('../config/mongo');
+const { marcaEmpresa, filtroEmpresa } = require('./mongoEmpresa');
 
 /**
  * Agrega un turno (usuario + bot) a la sesion indicada. Crea el documento
@@ -24,6 +25,7 @@ const registrarTurno = async ({ sesionId, clienteId, clienteNombre, canal, ip, m
             { sesion_id: sesionId },
             {
                 $setOnInsert: {
+                    ...marcaEmpresa(),
                     sesion_id: sesionId,
                     canal: canal || 'publico',
                     ip: ip || null,
@@ -56,7 +58,7 @@ const obtenerHistorialPorCliente = async (clienteId, limite = 10) => {
     if (!db || !clienteId) return [];
     try {
         const docs = await db.collection('chatbot_conversaciones')
-            .find({ cliente_id: clienteId })
+            .find(await filtroEmpresa({ cliente_id: clienteId }))
             .sort({ actualizado_en: -1 })
             .limit(limite)
             .toArray();
@@ -73,14 +75,15 @@ const listarConversaciones = async ({ pagina = 1, porPagina = 20 } = {}) => {
     if (!db) return { total: 0, conversaciones: [] };
     try {
         const skip = (pagina - 1) * porPagina;
+        const filtro = await filtroEmpresa();
         const [docs, total] = await Promise.all([
             db.collection('chatbot_conversaciones')
-                .find({})
+                .find(filtro)
                 .sort({ actualizado_en: -1 })
                 .skip(skip)
                 .limit(porPagina)
                 .toArray(),
-            db.collection('chatbot_conversaciones').countDocuments(),
+            db.collection('chatbot_conversaciones').countDocuments(filtro),
         ]);
         return { total, conversaciones: docs.map(formatearConversacion) };
     } catch (err) {

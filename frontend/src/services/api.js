@@ -18,6 +18,12 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
     const token = localStorage.getItem('SS SWAP_token');
     if (token) config.headers.Authorization = `Bearer ${token}`;
+    // Modo soporte del superadministrador: el servidor comprueba que exista
+    // un acceso de soporte vigente para esa empresa (si no, responde 403).
+    try {
+        const soporte = JSON.parse(localStorage.getItem('SS SWAP_soporte'));
+        if (token && soporte?.id) config.headers['X-Soporte-Empresa'] = String(soporte.id);
+    } catch { /* sin soporte */ }
     return config;
 });
 
@@ -33,11 +39,28 @@ api.interceptors.response.use(
         const teniaToken    = Boolean(error.config?.headers?.Authorization);
 
         if (error.response?.status === 401 && teniaToken && !esAuthPublico) {
+            // Sesion vencida, revocada o cuenta desactivada: el personal vuelve a
+            // su propio acceso (/admin/login) y los clientes al portal (/auth).
+            const enPanel = window.location.pathname.startsWith('/dashboard');
             localStorage.removeItem('SS SWAP_token');
             localStorage.removeItem('SS SWAP_usuario');
-            if (!window.location.pathname.startsWith('/auth')) {
-                window.location.href = '/auth?sesion=expirada';
+            localStorage.removeItem('SS SWAP_permisos');
+            localStorage.removeItem('SS SWAP_sesion');
+            localStorage.removeItem('SS SWAP_soporte');
+            const destino = enPanel ? '/admin/login' : '/auth';
+            if (!window.location.pathname.startsWith(destino)) {
+                window.location.href = `${destino}?sesion=expirada`;
             }
+        }
+        // Sin permiso: puede que el superadministrador acabe de revocarlo;
+        // se pide al AuthContext que refresque los permisos (y el menu).
+        if (error.response?.status === 403 && error.response?.data?.codigo === 'SIN_PERMISO') {
+            window.dispatchEvent(new Event('ssswap:permisos-cambiaron'));
+        }
+        // El acceso de soporte vencio o se cerro: se vuelve a la plataforma.
+        if (error.response?.status === 403 && error.response?.data?.codigo === 'SOPORTE_NO_VALIDO') {
+            localStorage.removeItem('SS SWAP_soporte');
+            window.location.href = '/dashboard/plataforma?soporte=vencido';
         }
         return Promise.reject(error);
     }

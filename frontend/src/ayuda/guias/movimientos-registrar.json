@@ -1,0 +1,48 @@
+{
+  "id": "movimientos-registrar",
+  "grupo": "INVENTARIO · ENTRADAS Y SALIDAS",
+  "titulo": "Registrar una entrada o salida",
+  "version": "1.0",
+  "actualizada": "2026-10-14",
+  "rutas": [{ "path": "/dashboard/movimientos", "query": { "tab": "registrar" } }, { "path": "/dashboard/registrar" }],
+  "descripcion": "Registro manual, paso a paso, de una entrada o salida de stock: reposiciones, consumos internos, ajustes por conteo físico, mermas o devoluciones. El sistema muestra el stock resultante antes de confirmar.",
+  "funciones": [
+    "Buscar el producto por referencia, código del proveedor, nombre o categoría.",
+    "Elegir entrada o salida, el origen (manual, ajuste, devolución) y la cantidad.",
+    "Ver el stock actual y el resultante antes de guardar.",
+    "Registrar varios movimientos seguidos («Nuevo movimiento»)."
+  ],
+  "pasos": [
+    {
+      "titulo": "Seleccione el producto",
+      "texto": ["Escriba en el buscador y haga clic en el producto. Los marcados con «BAJO» están en su stock mínimo."],
+      "imagen": { "archivo": "v27/movimientos-registrar/01-seleccionar.png", "alt": "Registrar movimiento: buscador de productos y tarjetas de productos para seleccionar", "tipo": "captura",
+        "captura": { "url": "/dashboard/movimientos?tab=registrar", "esperar": { "placeholder": "Buscar por referencia" } } },
+      "marcas": [
+        { "texto": "Pestaña Registrar movimiento.", "objetivo": { "ayuda": "movimientos.tab-registrar" } },
+        { "texto": "Buscador de productos.", "objetivo": { "placeholder": "Buscar por referencia" } }
+      ]
+    },
+    {
+      "titulo": "Indique tipo, cantidad y motivo, y confirme",
+      "texto": ["Elija Entrada o Salida y el origen (por ejemplo «Ajuste de inventario» para un conteo físico). Escriba la cantidad: verá el stock «Actual» y el «Resultado». Agregue un motivo y una referencia (factura, OT) para que el historial sea claro, y confirme."],
+      "imagen": { "archivo": "v27/movimientos-registrar/02-formulario.png", "alt": "Formulario del movimiento con tipo, origen, cantidad, motivo, referencia y el stock actual y resultante", "tipo": "captura",
+        "captura": { "url": "/dashboard/movimientos?tab=registrar", "esperar": { "placeholder": "Buscar por referencia" },
+          "acciones": [{ "clic": { "contiene": "Bujía de iridio", "tag": "div", "dato": true } }, { "esperar": 600 }, { "escribir": { "objetivo": { "placeholder": "0" }, "valor": "2" } }] } },
+      "marcas": [
+        { "texto": "Tipo de movimiento: entrada o salida.", "objetivo": { "campo": "TIPO DE MOVIMIENTO" } },
+        { "texto": "Origen del movimiento.", "objetivo": { "campo": "ORIGEN DEL MOVIMIENTO" } },
+        { "texto": "Motivo (queda en el historial).", "objetivo": { "campo": "MOTIVO" } }
+      ]
+    }
+  ],
+  "resultado": "El stock del producto cambia al instante y el movimiento aparece en la pestaña Historial con su usuario, fecha y stock antes y después.",
+  "advertencias": [
+    "Una salida no puede dejar el stock en negativo.",
+    "No registre aquí las compras a proveedores ni las salidas por proforma: esos módulos mueven el inventario solos y se duplicaría.",
+    "Necesita el permiso «Registros de inventario: crear»."
+  ],
+  "problemas": [
+    { "problema": "Aparece «Stock insuficiente».", "solucion": "La salida supera el stock actual. Revise la cantidad o registre primero la entrada pendiente." }
+  ]
+}
