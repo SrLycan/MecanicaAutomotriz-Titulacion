@@ -2,3 +2,20 @@ respaldos/
 
 # Centro de ayuda: credenciales de la empresa DEMO local (Sprint 27)
 frontend/scripts/ayuda/.demo-credenciales.json
+
+# Solo se sube codigo: documentacion, guias, recuperacion, scripts SQL sueltos,
+# videos y herramientas locales se quedan en la PC.
+/docs/
+/video-redes/
+/.claude/
+/package-lock.json
+/*.md
+/*.pdf
+*.mp4
+!frontend/public/nosotros/*.mp4
+*.mov
+*.sql
+!backend/src/config/*.sql
+*.dump
+*.backup
+*.bak
